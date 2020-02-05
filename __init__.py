@@ -1,22 +1,89 @@
 bl_info = {
-    "name": "New Object",
-    "author": "Your Name Here",
-    "version": (1, 0),
+    "name": "CollisionTool",
+    "description": "",
+    "author": "Matthias Patscheider",
+    "version": (0, 5, 0),
     "blender": (2, 81, 0),
-    "location": "View3D > Tools ",
-    "warning": "",
-    "wiki_url": "https://github.com/Weisl/simple_renaming_panel",
-    "tracker_url": "https://github.com/Weisl/simple_renaming_panel/issues",
-    "support": "COMMUNITY",
-    "category": "Add Mesh",
-}
+    "location": "View3D",
+    "warning": "This addon is still in development.",
+    "wiki_url": "",
+    "category": "Object" }
 
 
-import bpy
+import bpy, bmesh
 from bpy.types import Operator
 from bpy.props import FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
+
+colSuffix = "COL_"
+
+def getBoundingBox(obj):
+    return obj.bound_box
+
+def add_object(context, vertices, newName):
+    verts = vertices
+    edges = []
+    faces = [[0, 1, 2, 3],[7,6,5,4],[5,6,2,1],[0,3,7,4],[3,2,6,7],[4,5,1,0]]
+
+    mesh = bpy.data.meshes.new(name=newName)
+    mesh.from_pydata(verts, edges, faces)
+    # useful for development when the mesh may be invalid.
+    # mesh.validate(verbose=True)
+    newObj = object_data_add(context, mesh, operator=None, name=None) # links to object instance
+
+    return newObj
+
+def alignObjects(new, old):
+    new.matrix_world = old.matrix_world
+
+
+
+def boxColliderPerObject(context):
+    global colSuffix
+
+    active_ob = bpy.context.active_object
+    selectedObjects = bpy.context.selected_objects.copy()
+    colliderOb = []
+
+    for i, obj in enumerate(selectedObjects):
+        bBox = getBoundingBox(obj)  # create BoundingBox object for collider
+        newCollider = add_object(context, bBox, obj.name + colSuffix)
+
+        # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
+        # global_bbox_center = obj.matrix_world @ local_bbox_center
+        centre =  sum((Vector(b) for b in obj.bound_box), Vector())
+        print ('CENTRE' + str(centre))
+        centre /= 8
+        print ('CENTRE 2 ' + str(centre))
+        # newCollider.matrix_world = obj.matrix_world * (1 / 8 *
+
+        alignObjects(newCollider, obj)
+
+def cylinderCollider(context):
+    global colSuffix
+
+    activeObject = bpy.context.object
+    selectedObjects = bpy.context.selected_objects.copy()
+    colliderOb = []
+
+    for i, obj in enumerate(selectedObjects):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12,
+                                            radius=max(context.object.dimensions[0] / 2.0,
+                                                       context.object.dimensions[1] / 2.0),
+                                            depth=context.object.dimensions[2])
+        newCollider = bpy.context.object
+
+        centre =  sum((Vector(b) for b in obj.bound_box), Vector())
+        print ('CENTRE' + str(centre))
+        centre /= 8
+        print ('CENTRE 2 ' + str(centre))
+        # newCollider.matrix_world = obj.matrix_world * (1 / 8 *
+
+        alignObjects(newCollider, obj)
+
+
+
 
 
 def convexHull():
@@ -59,8 +126,8 @@ def convexHull():
     return
 
 
-def add_diamond():
-    obj = bpy.context.edit_object
+def add_diamond(context):
+    obj = context.edit_object
     me = obj.data
 
     # Get a BMesh representation
@@ -108,8 +175,8 @@ def add_diamond():
     return verts, faces
 
 
-def add_box():
-    obj = bpy.context.edit_object
+def add_box(context):
+    obj = context.edit_object
     me = obj.data
 
     # Get a BMesh representation
@@ -161,9 +228,12 @@ def add_box():
     return verts, faces
 
 
-def BBoxEditMode(self, context):
+def add_box_from_vertex_face_data(self, context, verts_loc, faces):
+
+    active_ob = bpy.context.object
+
     #        verts_loc, faces = add_box()
-    verts_loc, faces = add_diamond()
+    root_col = bpy.context.scene.collection
 
     mesh = bpy.data.meshes.new("Box")
     bm = bmesh.new()
@@ -178,10 +248,12 @@ def BBoxEditMode(self, context):
     bm.to_mesh(mesh)
     mesh.update()
 
-    # add the mesh as an object into the scene with this utility module
-    from bpy_extras import object_utils
-    object_utils.object_data_add(context, mesh, operator=self)
-
+    # # add the mesh as an object into the scene with this utility module
+    # from bpy_extras import object_utils
+    # object_utils.object_data_add(context, mesh, operator=self)
+    obj = bpy.data.objects.new("Obj", mesh)
+    root_col.objects.link(obj)
+    alignObjects(obj,active_ob)
 
 from bpy.props import (
     BoolProperty,
@@ -193,39 +265,72 @@ from bpy.props import (
 
 
 
-class OBJECT_OT_add_object(Operator, AddObjectHelper):
+class OBJECT_OT_add_diamond_collision(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
-    bl_idname = "mesh.add_object"
-    bl_label = "Add Mesh Object"
+    bl_idname = "mesh.add_diamond_collision"
+    bl_label = "Add Diamond Collision"
     bl_options = {'REGISTER', 'UNDO'}
 
-    scale: FloatVectorProperty(
-        name="scale",
-        default=(1.0, 1.0, 1.0),
-        subtype='TRANSLATION',
-        description="scaling",
-    )
+    # scale: FloatVectorProperty(
+    #     name="scale",
+    #     default=(1.0, 1.0, 1.0),
+    #     subtype='TRANSLATION',
+    #     description="scaling",
+    # )
 
     def execute(self, context):
-        convexHull()
+        verts_loc, faces = add_diamond(context)
+        add_box_from_vertex_face_data(self, context,verts_loc, faces)
+
         return {'FINISHED'}
 
-class OBJECT_OT_add_object(Operator, AddObjectHelper):
+class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
-    bl_idname = "mesh.add_object"
-    bl_label = "Add Mesh Object"
+    bl_idname = "mesh.add_box_collision"
+    bl_label = "Add Box Collision"
     bl_options = {'REGISTER', 'UNDO'}
 
-    scale: FloatVectorProperty(
-        name="scale",
-        default=(1.0, 1.0, 1.0),
-        subtype='TRANSLATION',
-        description="scaling",
-    )
+    # scale: FloatVectorProperty(
+    #     name="scale",
+    #     default=(1.0, 1.0, 1.0),
+    #     subtype='TRANSLATION',
+    #     description="scaling",
+    # )
 
     def execute(self, context):
-        convexHull()
+        verts_loc, faces = add_box(context)
+        add_box_from_vertex_face_data(self,context, verts_loc, faces)
         return {'FINISHED'}
+
+class OBJECT_OT_add_box_per_object_collision(Operator, AddObjectHelper):
+    """Create a new Mesh Object"""
+    bl_idname = "mesh.add_box_per_object_collision"
+    bl_label = "Add Box Collision Ob"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    # scale: FloatVectorProperty(
+    #     name="scale",
+    #     default=(1.0, 1.0, 1.0),
+    #     subtype='TRANSLATION',
+    #     description="scaling",
+    # )
+
+    def execute(self, context):
+        boxColliderPerObject(context)
+        return {'FINISHED'}
+
+class OBJECT_OT_add_cylinder_per_object_collision(Operator, AddObjectHelper):
+    """Create a new Mesh Object"""
+    bl_idname = "mesh.add_cylinder_per_object_collision"
+    bl_label = "Add Cylinder Collision Ob"
+    bl_options = {'REGISTER', 'UNDO'}
+
+
+    def execute(self, context):
+        cylinderCollider(context)
+        return {'FINISHED'}
+
+
 
 class CollissionPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
@@ -241,15 +346,16 @@ class CollissionPanel(bpy.types.Panel):
         obj = context.object
 
         row = layout.row()
-        row.label(text="Hello world!", icon='WORLD_DATA')
+        row.operator("mesh.add_box_collision")
+        row = layout.row()
+        row.operator("mesh.add_diamond_collision")
+        row = layout.row()
+        row.operator("mesh.add_cylinder_per_object_collision")
+        row = layout.row()
+        row.operator("mesh.add_box_per_object_collision")
 
-        row = layout.row()
-        row.label(text="Active object is: " + obj.name)
-        row = layout.row()
-        row.prop(obj, "name")
 
-        row = layout.row()
-        row.operator("mesh.primitive_cube_add")
+
 
 # Registration
 
@@ -269,7 +375,10 @@ def add_object_manual_map():
     return url_manual_prefix, url_manual_mapping
 
 classes = (
-    OBJECT_OT_add_object,
+    OBJECT_OT_add_box_collision,
+    OBJECT_OT_add_diamond_collision,
+    OBJECT_OT_add_cylinder_per_object_collision,
+    OBJECT_OT_add_box_per_object_collision,
     CollissionPanel
 )
 
