@@ -67,11 +67,14 @@ def cylinderCollider(context):
     selectedObjects = bpy.context.selected_objects.copy()
     colliderOb = []
 
+
+
     for i, obj in enumerate(selectedObjects):
+        values = [context.object.dimensions[0], context.object.dimensions[1], context.object.dimensions[2]]
         bpy.ops.mesh.primitive_cylinder_add(vertices=12,
-                                            radius=max(context.object.dimensions[0] / 2.0,
-                                                       context.object.dimensions[1] / 2.0),
-                                            depth=context.object.dimensions[2])
+                                            radius=max(sorted(values)[0]/ 2.0,
+                                                       sorted(values)[1] / 2.0),
+                                            depth=sorted(values)[2])
         newCollider = bpy.context.object
 
         centre =  sum((Vector(b) for b in obj.bound_box), Vector())
