@@ -16,7 +16,21 @@ from bpy.props import FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
-colSuffix = "COL_"
+
+meshColSuffix = "_MESH"
+convexColSuffix = "_CONVEX"
+boxColSuffix = "_BOX"
+colPreSuffix = "_COL"
+colSuffix = "_SIMULATION_SCENE"
+
+def setOrigin(ob):
+    oldActive = bpy.context.object
+    bpy.context.view_layer.objects.active = ob
+    
+    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
+    
+    bpy.context.view_layer.objects.active = oldActive
+    
 
 def getBoundingBox(obj):
     return obj.bound_box
@@ -40,7 +54,8 @@ def alignObjects(new, old):
 
 
 def boxColliderPerObject(context):
-    global colSuffix
+
+    global colSuffix, colPreSuffix, boxColSuffix
 
     active_ob = bpy.context.active_object
     selectedObjects = bpy.context.selected_objects.copy()
@@ -48,7 +63,7 @@ def boxColliderPerObject(context):
 
     for i, obj in enumerate(selectedObjects):
         bBox = getBoundingBox(obj)  # create BoundingBox object for collider
-        newCollider = add_object(context, bBox, obj.name + colSuffix)
+        newCollider = add_object(context, bBox, obj.name + colPreSuffix + boxColSuffix + colSuffix)
 
         # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
         # global_bbox_center = obj.matrix_world @ local_bbox_center
@@ -61,7 +76,7 @@ def boxColliderPerObject(context):
         alignObjects(newCollider, obj)
 
 def cylinderCollider(context):
-    global colSuffix
+    global colSuffix, colPreSuffix,convexColSuffix
 
     activeObject = bpy.context.object
     selectedObjects = bpy.context.selected_objects.copy()
@@ -75,7 +90,9 @@ def cylinderCollider(context):
                                             radius=max(sorted(values)[0]/ 2.0,
                                                        sorted(values)[1] / 2.0),
                                             depth=sorted(values)[2])
+        
         newCollider = bpy.context.object
+        newCollider.name = obj.name + colPreSuffix + convexColSuffix + colSuffix
 
         centre =  sum((Vector(b) for b in obj.bound_box), Vector())
         print ('CENTRE' + str(centre))
@@ -233,11 +250,14 @@ def add_box(context):
 
 def add_box_from_vertex_face_data(self, context, verts_loc, faces):
 
-    active_ob = bpy.context.object
+    global colSuffix, colPreSuffix, boxColSuffix
 
+    active_ob = bpy.context.object
     #        verts_loc, faces = add_box()
     root_col = bpy.context.scene.collection
 
+
+    name = active_ob.name + colPreSuffix + boxColSuffix + colSuffix
     mesh = bpy.data.meshes.new("Box")
     bm = bmesh.new()
 
@@ -337,21 +357,24 @@ class OBJECT_OT_add_cylinder_per_object_collision(Operator, AddObjectHelper):
 
 class CollissionPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Hello World Panel"
-    bl_idname = "OBJECT_PT_hello"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = "object"
+    bl_label = "Collision"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Pipeline"
 
     def draw(self, context):
         layout = self.layout
 
         obj = context.object
 
+        
+        
         row = layout.row()
         row.operator("mesh.add_box_collision")
         row = layout.row()
         row.operator("mesh.add_diamond_collision")
+        
+        
         row = layout.row()
         row.operator("mesh.add_cylinder_per_object_collision")
         row = layout.row()
