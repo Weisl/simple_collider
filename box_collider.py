@@ -11,7 +11,7 @@ from bpy.types import Operator
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
-from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod
+from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod, setColliderSettings
 
 
 def add_box_object(context, vertices, newName):
@@ -130,11 +130,6 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     return newCollider
 
 
-def setColliderSettings(self, context, collider):
-    collider.display_type = self.my_collision_shading_view
-    collider.color = self.my_color
-    add_displace_mod(collider, self.my_offset)
-
 
 class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
@@ -149,8 +144,8 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
             ('WIRE', "WIRE", "WIRE"),
             ('BOUNDS', "BOUNDS", "BOUNDS"),
         )
-
     )
+
     my_offset: FloatProperty(
         name="Offset",
         default=0.0
