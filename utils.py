@@ -29,3 +29,8 @@ def setOriginToCenterOfMass(ob):
 
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
     bpy.context.view_layer.objects.active = oldActive
+
+def add_displace_mod(ob, strenght):
+    # add inflate modifier
+    mod = ob.modifiers.new(name="ColliderOffset_disp", type='DISPLACE')
+    mod.strength = strenght

@@ -20,6 +20,7 @@ def generate_cylinder_Collider_Objectmode(context, my_cylinder_axis):
     prefs = bpy.context.preferences.addons[__package__].preferences
     colSuffix = prefs.colSuffix
     colPreSuffix = prefs.colPreSuffix
+    convexColSuffix = prefs.convexColSuffix
 
 
     activeObject = bpy.context.object
@@ -28,9 +29,22 @@ def generate_cylinder_Collider_Objectmode(context, my_cylinder_axis):
 
     for i, obj in enumerate(selectedObjects):
         values = [context.object.dimensions[0], context.object.dimensions[1], context.object.dimensions[2]]
+
+        if my_cylinder_axis == 'X':
+            radius = max(context.object.dimensions[1], context.object.dimensions[2])*0.5
+            depth = context.object.dimensions[0]
+        elif my_cylinder_axis == 'Y':
+            radius = max(context.object.dimensions[0], context.object.dimensions[2])*0.5
+            depth = context.object.dimensions[1]
+        else:
+            radius = max(context.object.dimensions[0], context.object.dimensions[1])*0.5
+            depth = context.object.dimensions[2]
+
+        values = [context.object.dimensions[0], context.object.dimensions[1], context.object.dimensions[2]]
+
         bpy.ops.mesh.primitive_cylinder_add(vertices=12,
-                                            radius=max(values[0], values[1]) / 2.0,
-                                            depth=values[2])
+                                            radius=radius,
+                                            depth=depth)
 
         newCollider = bpy.context.object
         newCollider.name = obj.name + colPreSuffix + convexColSuffix + colSuffix
@@ -53,9 +67,9 @@ class OBJECT_OT_add_cylinder_per_object_collision(Operator, AddObjectHelper):
     my_cylinder_axis: EnumProperty(
         name="Axis",
         items=(
-            ('X', "x", ""),
-            ('Y', "y", ""),
-            ('Z', "z", ""),
+            ('X', "X", "X"),
+            ('Y', "Y", "Y"),
+            ('Z', "Z", "Z"),
         ),
     )
 

@@ -1,5 +1,11 @@
 import bpy
-
+from bpy.props import (
+    BoolProperty,
+    BoolVectorProperty,
+    EnumProperty,
+    FloatProperty,
+    FloatVectorProperty,
+)
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -25,5 +31,5 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
         for propName in self.props:
-            raw = layout.raw()
+            raw = layout.row()
             raw.prop(self, propName)

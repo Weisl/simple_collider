@@ -29,10 +29,7 @@ class CollissionPanel(bpy.types.Panel):
 
         row = layout.row()
         row.operator("mesh.add_box_collision")
-        row = layout.row()
-        row.operator("mesh.add_diamond_collision")
 
         row = layout.row()
         row.operator("mesh.add_cylinder_per_object_collision")
-        # row = layout.row()
-        # row.operator("mesh.add_box_per_object_collision")
+
