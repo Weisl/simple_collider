@@ -34,3 +34,9 @@ def add_displace_mod(ob, strenght):
     # add inflate modifier
     mod = ob.modifiers.new(name="ColliderOffset_disp", type='DISPLACE')
     mod.strength = strenght
+
+def setColliderSettings(self, context, collider):
+    collider.display_type = self.my_collision_shading_view
+    collider.color = self.my_color
+    add_displace_mod(collider, self.my_offset)
+
