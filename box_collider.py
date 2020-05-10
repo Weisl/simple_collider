@@ -146,6 +146,15 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
         )
     )
 
+    my_space: EnumProperty(
+        name="Axis",
+        items=(
+            ('LOCAL', "LOCAL", "LOCAL"),
+            ('GLOBAL', "GLOBAL", "GLOBAL")),
+        default="GLOBAL"
+    )
+
+
     my_offset: FloatProperty(
         name="Offset",
         default=0.0
