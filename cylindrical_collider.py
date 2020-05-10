@@ -16,6 +16,12 @@ from mathutils import Vector
 
 from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, setColliderSettings
 
+#TODO: in Edit mode: Create a new object instead of adding it to current object
+#TODO: Support spaces
+#TODO: Moves base mesh when creating collision in edit mode
+#TODO: Cylindrical collisions are not alligned correctly when switching Axis from Z to any other
+#TODO: Algorithm for cylindrical collision creation is really bad right now. It takes the diagonale of the bounding box to calculate the cylinder radius.
+#TODO: Option for elipse instead of circle profile
 
 def calc_hypothenuse(a, b):
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)

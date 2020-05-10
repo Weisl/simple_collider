@@ -13,6 +13,15 @@ from mathutils import Vector
 
 from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod, setColliderSettings
 
+#TODO: Global, local switch works only in edit mode
+#TODO: Add transparency also to material display
+#TODO: Turn rendering off for colliders
+#TODO: Material options ()
+#TODO: Additional spaces: view and optimal heuristic blablabla
+#TODO: Support multi edit for collision creation (connected, and individual generation)
+#TODO: Parenting -> add collisions to useful place in the hierarchy
+#TODO: Naming -> check current naming options
+#TODO: SELECT all collisions after finishing operation
 
 def add_box_object(context, vertices, newName):
     """Generate a new object from the given vertices"""
@@ -30,7 +39,7 @@ def add_box_object(context, vertices, newName):
     return newObj
 
 
-def add_box(context):
+def add_box(context, space):
     obj = context.edit_object
     me = obj.data
 
@@ -39,26 +48,29 @@ def add_box(context):
 
     selected_verts = [v for v in bm.verts if v.select]
     vertsLoc = []
-    vertsLoc = selected_verts
-
-    #    for v in selected_verts:
-    #        v_local = Vector((v))
-    #        v_global = obj.matrix_world @ v_local
-    #        vertsLoc.append(v_global)
-    #
-    #    for v in selected_verts:
-    #        mat = obj.matrix_world
-    #        vertsLoc.append(v.transform(mat))
 
     # Modify the BMesh, can do anything here...
     positionsX = []
     positionsY = []
     positionsZ = []
 
-    for v in vertsLoc:
-        positionsX.append(v.co.x)
-        positionsY.append(v.co.y)
-        positionsZ.append(v.co.z)
+    if space == 'GLOBAL':
+        for v in selected_verts:
+            v_local = v
+            v_global = obj.matrix_world @ v_local.co
+
+            positionsX.append(v_global[0])
+            positionsY.append(v_global[1])
+            positionsZ.append(v_global[2])
+
+        # for v in selected_verts:
+        #     mat = obj.matrix_world
+        #     vertsLoc.append(v.transform(mat))
+    else:
+        for v in selected_verts:
+            positionsX.append(v.co.x)
+            positionsY.append(v.co.y)
+            positionsZ.append(v.co.z)
 
     verts = [
         (max(positionsX), max(positionsY), min(positionsZ)),
@@ -105,7 +117,9 @@ def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     # object_utils.object_data_add(context, mesh, operator=self)
     newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
     root_col.objects.link(newCollider)
-    alignObjects(newCollider, active_ob)
+
+    if self.my_space == 'LOCAL':
+        alignObjects(newCollider, active_ob)
 
     return newCollider
 
@@ -130,7 +144,6 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     return newCollider
 
 
-
 class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
     """Create a new Mesh Object"""
     bl_idname = "mesh.add_box_collision"
@@ -151,9 +164,8 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
         items=(
             ('LOCAL', "LOCAL", "LOCAL"),
             ('GLOBAL', "GLOBAL", "GLOBAL")),
-        default="GLOBAL"
+        default="LOCAL"
     )
-
 
     my_offset: FloatProperty(
         name="Offset",
@@ -161,10 +173,9 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
     )
 
     my_color: bpy.props.FloatVectorProperty(
-        name="Collision Color", description="", default=(0.36, 0.5, 1, 0.25),min=0.0, max=1.0,
+        name="Collision Color", description="", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
         subtype='COLOR', size=4
     )
-
 
     def execute(self, context):
         prefs = bpy.context.preferences.addons[__package__].preferences
@@ -174,7 +185,7 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
 
         nameSuf = colPreSuffix + boxColSuffix + colSuffix
         if context.object.mode == "EDIT":
-            verts_loc, faces = add_box(context)
+            verts_loc, faces = add_box(context, self.my_space)
             newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
             setColliderSettings(self, context, newCollider)
         else:
@@ -185,18 +196,3 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
         return {'FINISHED'}
 
 
-class OBJECT_OT_add_box_per_object_collision(Operator, AddObjectHelper):
-    """Create a new Mesh Object"""
-    bl_idname = "mesh.add_box_per_object_collision"
-    bl_label = "Add Box Collision Ob"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    # scale: FloatVectorProperty(
-    #     name="scale",
-    #     default=(1.0, 1.0, 1.0),
-    #     subtype='TRANSLATION',
-    #     description="scaling",
-    # )
-
-    def execute(self, context):
-        return {'FINISHED'}

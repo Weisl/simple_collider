@@ -44,7 +44,6 @@ classes = (
     box_collider.OBJECT_OT_add_box_collision,
     cylindrical_collider.OBJECT_OT_add_cylinder_per_object_collision,
     # operators.OBJECT_OT_add_diamond_collision,
-    # operators.OBJECT_OT_add_box_per_object_collision,
     panels.CollissionPanel
 )
 
