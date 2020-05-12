@@ -11,7 +11,8 @@ from bpy.types import Operator
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
-from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod, setColliderSettings
+from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod, setColliderSettings, setMaterial, removeMaterials
+
 
 #TODO: Global, local switch works only in edit mode
 #TODO: Add transparency also to material display
@@ -183,15 +184,18 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
         colPreSuffix = prefs.colPreSuffix
         boxColSuffix = prefs.boxColSuffix
 
+        scene = context.scene
+        matName = scene.CollisionMaterials
+
         nameSuf = colPreSuffix + boxColSuffix + colSuffix
         if context.object.mode == "EDIT":
             verts_loc, faces = add_box(context, self.my_space)
             newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
-            setColliderSettings(self, context, newCollider)
+            setColliderSettings(self, context, newCollider, matName)
         else:
             for i, obj in enumerate(context.selected_objects.copy()):
                 newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
-                setColliderSettings(self, context, newCollider)
+                setColliderSettings(self, context, newCollider, matName)
 
         return {'FINISHED'}
 

@@ -14,7 +14,6 @@ from mathutils import Vector
 
 from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass
 
-
 class CollissionPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
     bl_label = "Collision"
@@ -26,6 +25,7 @@ class CollissionPanel(bpy.types.Panel):
         layout = self.layout
 
         obj = context.object
+        scene = context.scene
 
         row = layout.row()
         row.operator("mesh.add_box_collision")
@@ -33,3 +33,5 @@ class CollissionPanel(bpy.types.Panel):
         row = layout.row()
         row.operator("mesh.add_cylinder_per_object_collision")
 
+        row = layout.row()
+        row.prop(scene, "CollisionMaterials")

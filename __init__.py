@@ -33,6 +33,7 @@ from bpy.props import (
     EnumProperty,
     FloatProperty,
     FloatVectorProperty,
+    StringProperty,
 )
 from bpy.props import FloatVectorProperty
 from bpy.types import Operator
@@ -47,11 +48,22 @@ classes = (
     panels.CollissionPanel
 )
 
+def scene_my_collision_material_poll(self, material):
+    if "COL" in material.name:
+        return material.name
+
 
 def register():
     from bpy.utils import register_class
+
+    bpy.types.Scene.CollisionMaterials = bpy.props.PointerProperty(
+        type=bpy.types.Material,
+        poll=scene_my_collision_material_poll
+    )
+
     for cls in classes:
         register_class(cls)
+
     # bpy.utils.register_manual_map(add_object_manual_map)
     # bpy.types.VIEW3D_MT_mesh_add.append(add_object_button)
 
