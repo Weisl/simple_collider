@@ -34,4 +34,7 @@ class CollissionPanel(bpy.types.Panel):
         row.operator("mesh.add_cylinder_per_object_collision")
 
         row = layout.row()
+        row.prop(scene, "PhysicsIdentifier")
+
+        row = layout.row()
         row.prop(scene, "CollisionMaterials")

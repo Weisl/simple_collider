@@ -49,7 +49,7 @@ classes = (
 )
 
 def scene_my_collision_material_poll(self, material):
-    if "COL" in material.name:
+    if bpy.context.scene.PhysicsIdentifier in material.name:
         return material.name
 
 
@@ -59,6 +59,10 @@ def register():
     bpy.types.Scene.CollisionMaterials = bpy.props.PointerProperty(
         type=bpy.types.Material,
         poll=scene_my_collision_material_poll
+    )
+
+    bpy.types.Scene.PhysicsIdentifier = bpy.props.StringProperty(
+        default = "COL",
     )
 
     for cls in classes:
