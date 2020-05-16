@@ -114,8 +114,11 @@ class OBJECT_OT_add_cylinder_per_object_collision(Operator, AddObjectHelper):
 
         nameSuf = colPreSuffix + convexColSuffix + colSuffix
 
+        scene = context.scene
+        matName = scene.CollisionMaterials
+
         for i, obj in enumerate(context.selected_objects.copy()):
             newCollider = generate_cylinder_Collider_Objectmode(self, context,obj,nameSuf)
-            setColliderSettings(self, context, newCollider)
+            setColliderSettings(self, context, newCollider, matName)
 
         return {'FINISHED'}
