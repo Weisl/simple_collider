@@ -1,28 +1,25 @@
 import bmesh
 import bpy
 from bpy.props import (
-    BoolProperty,
-    BoolVectorProperty,
     EnumProperty,
     FloatProperty,
-    FloatVectorProperty,
 )
 from bpy.types import Operator
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
 
-from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod, setColliderSettings, setMaterial, removeMaterials
+from CollisionHelpers.operators.collision_helpers import alignObjects, getBoundingBox, setColliderSettings
 
 
-#TODO: Global, local switch works only in edit mode
-#TODO: Add transparency also to material display
-#TODO: Turn rendering off for colliders
-#TODO: Material options ()
-#TODO: Additional spaces: view and optimal heuristic blablabla
-#TODO: Support multi edit for collision creation (connected, and individual generation)
-#TODO: Parenting -> add collisions to useful place in the hierarchy
-#TODO: Naming -> check current naming options
-#TODO: SELECT all collisions after finishing operation
+# TODO: Global, local switch works only in edit mode
+# TODO: Add transparency also to material display
+# TODO: Turn rendering off for colliders
+# DONE: Material options ()
+# TODO: Additional spaces: view and optimal heuristic blablabla
+# TODO: Support multi edit for collision creation (connected, and individual generation)
+# TODO: Parenting -> add collisions to useful place in the hierarchy
+# TODO: Naming -> check current naming options
+# TODO: SELECT all collisions after finishing operation
 
 def add_box_object(context, vertices, newName):
     """Generate a new object from the given vertices"""
@@ -41,6 +38,8 @@ def add_box_object(context, vertices, newName):
 
 
 def add_box(context, space):
+    """ """
+
     obj = context.edit_object
     me = obj.data
 
@@ -97,6 +96,7 @@ def add_box(context, space):
 
 
 def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
+    """ """
     active_ob = bpy.context.object
     root_col = bpy.context.scene.collection
 
@@ -179,7 +179,7 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
     )
 
     def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
+        prefs = bpy.context.preferences.addons['CollisionHelpers'].preferences
         colSuffix = prefs.colSuffix
         colPreSuffix = prefs.colPreSuffix
         boxColSuffix = prefs.boxColSuffix
@@ -198,5 +198,3 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
                 setColliderSettings(self, context, newCollider, matName)
 
         return {'FINISHED'}
-
-
