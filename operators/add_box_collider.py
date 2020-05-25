@@ -4,6 +4,7 @@ from bpy.props import (
     EnumProperty,
     FloatProperty,
 )
+
 from bpy.types import Operator
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from mathutils import Vector
@@ -198,3 +199,70 @@ class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
                 setColliderSettings(self, context, newCollider, matName)
 
         return {'FINISHED'}
+
+#
+# import bpy
+# import time
+# from collections import defaultdict
+#
+#
+# def GetAllVerticesNeighbors(verts, edges):
+#     """Returns a dictionary with the vertex indes as key and a dictionary of all connected vertices as dictionary"""
+#     # Initialize the path with all vertices indexes
+#     result = {v.index: set() for v in verts}
+#     # Add the possible paths via edges
+#     for e in edges:
+#         result[e.vertices[0]].add(e.vertices[1])
+#         result[e.vertices[1]].add(e.vertices[0])
+#     return result
+#
+#
+# def FollowEdges(startingIndex, stored_vertices):
+#     current_vert_idx = [startingIndex]
+#
+#     follow = True
+#     while follow:
+#         # Get indexes that are still in the stored_vertices
+#         eligible = set([ind for ind in current_vert_idx if ind in stored_vertices])
+#         if len(eligible) == 0:
+#             follow = False  # Stops if no more
+#         else:
+#             # Get the corresponding links
+#             next = [stored_vertices[i] for i in eligible]
+#             # Remove the previous from the paths
+#             for key in eligible: stored_vertices.pop(key)
+#             # Get the new links as new inputs
+#             current_vert_idx = set([ind for sub in next for ind in sub])
+#
+#
+# def CountIslands(obj):
+#     # Prepare the paths/links from each vertex to others
+#     stored_vertices = GetAllVerticesNeighbors(obj.data.vertices, obj.data.edges)
+#     print("paths" + str(stored_vertices))
+#     found = True
+#     n = 0
+#
+#     while found:
+#         try:
+#             # Get one input as long there is one
+#             startingIndex = next(iter(stored_vertices.keys()))
+#             n = n + 1
+#             # Deplete the paths dictionary following this starting index
+#             FollowEdges(startingIndex, stored_vertices)
+#         except:
+#             found = False
+#     return n
+#
+#
+# print('-------------')
+#
+# # The wanted object
+# obj = bpy.context.object
+#
+# start_time = time.time()
+#
+# for i in range(1):  # For testing purpose in order to evaluate runtime elapse
+#     print('islands', CountIslands(obj))
+#
+# elapsed_time = time.time() - start_time
+# print(elapsed_time)

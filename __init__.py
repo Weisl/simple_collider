@@ -3,15 +3,15 @@ bl_info = {
     "description": "",
     "author": "Matthias Patscheider",
     "version": (0, 5, 0),
-    "blender": (2, 81, 0),
+    "blender": (2, 83, 0),
     "location": "View3D",
     "warning": "This addon is still in development.",
-    "wiki_url": "",
+    "wiki_url": "https://github.com/Weisl/CollisionHelpers",
+    "tracker_url": "https://github.com/Weisl/CollisionHelpers/issues",
     "category": "Object"}
 
+
 # support reloading sub-modules
-
-
 if "bpy" in locals():
     import importlib
 
@@ -26,7 +26,6 @@ else:
     from . import preferences
 
 import bpy
-
 
 def scene_my_collision_material_poll(self, material):
     if bpy.context.scene.PhysicsIdentifier in material.name:
