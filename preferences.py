@@ -1,13 +1,11 @@
 import bpy
-from bpy.props import (
-    BoolProperty,
-    BoolVectorProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-)
+
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
+    # this must match the addon name, use '__package__'
+    # when defining this in a submodule of a python package.
+    bl_idname = __name__
+
     """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
@@ -17,7 +15,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     convexColSuffix: bpy.props.StringProperty(name="Convex Suffix", default="_CONVEX")
     boxColSuffix: bpy.props.StringProperty(name="Box Suffix", default="_BOX")
     colPreSuffix: bpy.props.StringProperty(name="Collision", default="_COL")
-    colSuffix: bpy.props.StringProperty(name="Collision", default="_SIMULATION_SCENE")
+    colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING_")
 
     props = [
         "meshColSuffix",

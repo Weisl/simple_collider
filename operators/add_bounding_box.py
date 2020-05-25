@@ -1,28 +1,21 @@
 import bmesh
 import bpy
-from bpy.props import (
-    BoolProperty,
-    BoolVectorProperty,
-    EnumProperty,
-    FloatProperty,
-    FloatVectorProperty,
-)
 from bpy.types import Operator
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
+from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
 
-from .utils import alignObjects, getBoundingBox, setOriginToCenterOfMass, add_displace_mod, setColliderSettings, setMaterial, removeMaterials
+from CollisionHelpers.operators.collision_helpers import alignObjects, getBoundingBox
+from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
-#TODO: Global, local switch works only in edit mode
-#TODO: Add transparency also to material display
-#TODO: Turn rendering off for colliders
-#TODO: Material options ()
-#TODO: Additional spaces: view and optimal heuristic blablabla
-#TODO: Support multi edit for collision creation (connected, and individual generation)
-#TODO: Parenting -> add collisions to useful place in the hierarchy
-#TODO: Naming -> check current naming options
-#TODO: SELECT all collisions after finishing operation
+# TODO: Global, local switch works only in edit mode
+# TODO: Add transparency also to material display
+# TODO: Turn rendering off for colliders
+# TODO: Additional spaces: view and optimal heuristic blablabla
+# TODO: Support multi edit for collision creation (connected, and individual generation)
+# TODO: Parenting -> add collisions to useful place in the hierarchy
+# TODO: Naming -> check current naming options
+# TODO: SELECT all collisions after finishing operation
 
 def add_box_object(context, vertices, newName):
     """Generate a new object from the given vertices"""
@@ -41,6 +34,8 @@ def add_box_object(context, vertices, newName):
 
 
 def add_box(context, space):
+    """ """
+
     obj = context.edit_object
     me = obj.data
 
@@ -97,6 +92,7 @@ def add_box(context, space):
 
 
 def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
+    """ """
     active_ob = bpy.context.object
     root_col = bpy.context.scene.collection
 
@@ -135,9 +131,7 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
     # global_bbox_center = obj.matrix_world @ local_bbox_center
     centreBase = sum((Vector(b) for b in obj.bound_box), Vector())
-    # print ('CENTRE' + str(centreBase))
     centreBase /= 8
-    # print ('CENTRE 2 ' + str(centreBase))
     # newCollider.matrix_world = centreBase
 
     alignObjects(newCollider, obj)
@@ -145,58 +139,29 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     return newCollider
 
 
-class OBJECT_OT_add_box_collision(Operator, AddObjectHelper):
+class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create a new Mesh Object"""
-    bl_idname = "mesh.add_box_collision"
+    bl_idname = "mesh.add_bounding_box"
     bl_label = "Add Box Collision"
     bl_options = {'REGISTER', 'UNDO'}
 
-    my_collision_shading_view: EnumProperty(
-        name="Axis",
-        items=(
-            ('SOLID', "SOLID", "SOLID"),
-            ('WIRE', "WIRE", "WIRE"),
-            ('BOUNDS', "BOUNDS", "BOUNDS"),
-        )
-    )
-
-    my_space: EnumProperty(
-        name="Axis",
-        items=(
-            ('LOCAL', "LOCAL", "LOCAL"),
-            ('GLOBAL', "GLOBAL", "GLOBAL")),
-        default="LOCAL"
-    )
-
-    my_offset: FloatProperty(
-        name="Offset",
-        default=0.0
-    )
-
-    my_color: bpy.props.FloatVectorProperty(
-        name="Collision Color", description="", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
-        subtype='COLOR', size=4
-    )
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        return self.execute(context)
 
     def execute(self, context):
-        prefs = bpy.context.preferences.addons[__package__].preferences
-        colSuffix = prefs.colSuffix
-        colPreSuffix = prefs.colPreSuffix
-        boxColSuffix = prefs.boxColSuffix
+        nameSuf = self.name_suffix
+        matName = self.physics_material_name
 
-        scene = context.scene
-        matName = scene.CollisionMaterials
-
-        nameSuf = colPreSuffix + boxColSuffix + colSuffix
         if context.object.mode == "EDIT":
             verts_loc, faces = add_box(context, self.my_space)
             newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
-            setColliderSettings(self, context, newCollider, matName)
+
+            self.setColliderSettings(context, newCollider, matName)
         else:
             for i, obj in enumerate(context.selected_objects.copy()):
                 newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
-                setColliderSettings(self, context, newCollider, matName)
+
+                self.setColliderSettings(context, newCollider, matName)
 
         return {'FINISHED'}
-
-
