@@ -15,7 +15,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     convexColSuffix: bpy.props.StringProperty(name="Convex Suffix", default="_CONVEX")
     boxColSuffix: bpy.props.StringProperty(name="Box Suffix", default="_BOX")
     colPreSuffix: bpy.props.StringProperty(name="Collision", default="_COL")
-    colSuffix: bpy.props.StringProperty(name="Collision", default="_SIMULATION_SCENE")
+    colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING_")
 
     props = [
         "meshColSuffix",
