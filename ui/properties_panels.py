@@ -15,10 +15,10 @@ class CollissionPanel(bpy.types.Panel):
         scene = context.scene
 
         row = layout.row()
-        row.operator("mesh.add_box_collision")
+        row.operator("mesh.add_bounding_box")
 
         row = layout.row()
-        row.operator("mesh.add_cylinder_per_object_collision")
+        row.operator("mesh.add_bounding_cylinder")
 
         row = layout.row()
         row.prop(scene, "PhysicsIdentifier")
@@ -33,5 +33,5 @@ class CollisionMenu(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator("mesh.add_box_collision")
-        layout.operator("mesh.add_cylinder_per_object_collision")
+        layout.operator("mesh.add_bounding_box")
+        layout.operator("mesh.add_bounding_cylinder")

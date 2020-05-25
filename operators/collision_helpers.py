@@ -6,8 +6,8 @@ def alignObjects(new, old):
     """Align two objects"""
     new.matrix_world = old.matrix_world
 
-
 def getBoundingBox(obj):
+    """returns the bounding box for an object"""
     return obj.bound_box
 
 
@@ -26,9 +26,3 @@ def add_displace_mod(ob, strenght):
     mod.strength = strenght
 
 
-def setColliderSettings(self, context, collider, matname):
-    collider.display_type = self.my_collision_shading_view
-    collider.color = self.my_color
-    add_displace_mod(collider, self.my_offset)
-    remove_materials(collider)
-    set_material(collider, matname)

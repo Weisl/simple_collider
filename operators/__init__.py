@@ -1,9 +1,13 @@
-from . import add_box_collider
-from . import add_cylindrical_collider
+import bpy
+
+from . import add_bounding_box
+from . import add_bounding_cylinder
+from . import add_bounding_primitive
 
 classes = (
-    add_box_collider.OBJECT_OT_add_box_collision,
-    add_cylindrical_collider.OBJECT_OT_add_cylinder_per_object_collision,
+    #add_bounding_primitive.OBJECT_OT_add_bounding_object,
+    add_bounding_box.OBJECT_OT_add_bounding_box,
+    add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder
 )
 
 
