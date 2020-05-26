@@ -43,12 +43,13 @@ class OBJECT_OT_add_bounding_object():
         subtype='COLOR', size=4
     )
 
-    def setColliderSettings(self, context, collider, matname):
-        collider.display_type = self.my_collision_shading_view
-        collider.color = self.my_color
-        add_displace_mod(collider, self.my_offset)
-        remove_materials(collider)
-        set_material(collider, matname)
+    def setColliderSettings(self, context, bounding_object, physics_material_name):
+        ''' Assign material to the bounding object and visibility settings.'''
+        bounding_object.display_type = self.my_collision_shading_view
+        bounding_object.color = self.my_color
+        add_displace_mod(bounding_object, self.my_offset)
+        remove_materials(bounding_object)
+        set_material(bounding_object, physics_material_name)
 
     def invoke(self, context, event):
         # get collision suffix from preferences
@@ -62,8 +63,6 @@ class OBJECT_OT_add_bounding_object():
         scene = context.scene
         self.physics_material_name = scene.CollisionMaterials
 
-        # Execute gets called twice when calling it from here as well ?!
-        # return self.execute(context)
-
     def execute(self, context):
+        # not sure if I need execute here
         return {'FINISHED'}
