@@ -34,7 +34,7 @@ def add_box_object(context, vertices, newName):
 
 
 def add_box(context, space):
-    """ """
+    """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
 
     obj = context.edit_object
     me = obj.data
@@ -51,6 +51,7 @@ def add_box(context, space):
     positionsZ = []
 
     if space == 'GLOBAL':
+        # get world space coordinates of the vertices
         for v in selected_verts:
             v_local = v
             v_global = obj.matrix_world @ v_local.co
@@ -59,15 +60,13 @@ def add_box(context, space):
             positionsY.append(v_global[1])
             positionsZ.append(v_global[2])
 
-        # for v in selected_verts:
-        #     mat = obj.matrix_world
-        #     vertsLoc.append(v.transform(mat))
     else:
         for v in selected_verts:
             positionsX.append(v.co.x)
             positionsY.append(v.co.y)
             positionsZ.append(v.co.z)
 
+    # get the min and max coordinates for the bounding box
     verts = [
         (max(positionsX), max(positionsY), min(positionsZ)),
         (max(positionsX), min(positionsY), min(positionsZ)),
@@ -92,10 +91,12 @@ def add_box(context, space):
 
 
 def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
-    """ """
-    active_ob = bpy.context.object
-    root_col = bpy.context.scene.collection
+    """Create box collider for selected mesh area in edit mode"""
 
+    active_ob = bpy.context.object
+    root_collection = bpy.context.scene.collection
+
+    # add new mesh
     mesh = bpy.data.meshes.new("Box")
     bm = bmesh.new()
 
@@ -106,14 +107,14 @@ def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     for f_idx in faces:
         bm.faces.new([bm.verts[i] for i in f_idx])
 
+    # update bmesh to draw properly in viewport
     bm.to_mesh(mesh)
     mesh.update()
 
-    # # add the mesh as an object into the scene with this utility module
-    # from bpy_extras import object_utils
-    # object_utils.object_data_add(context, mesh, operator=self)
+    # create new object from mesh and link it to collection
     newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
-    root_col.objects.link(newCollider)
+    root_collection.objects.link(newCollider)
+
 
     if self.my_space == 'LOCAL':
         alignObjects(newCollider, active_ob)
@@ -140,7 +141,7 @@ def box_Collider_from_Objectmode(context, name, obj, i):
 
 
 class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
-    """Create a new Mesh Object"""
+    """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_box"
     bl_label = "Add Box Collision"
     bl_options = {'REGISTER', 'UNDO'}
@@ -158,6 +159,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
 
             self.setColliderSettings(context, newCollider, matName)
+
         else:
             for i, obj in enumerate(context.selected_objects.copy()):
                 newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
