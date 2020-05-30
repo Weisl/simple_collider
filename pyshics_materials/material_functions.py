@@ -1,5 +1,6 @@
 import bpy
 
+
 def remove_materials(obj):
     if obj.type == 'MESH' or obj.type == 'CURVE' or obj.type == 'SURFACE' or obj.type == 'FONT' or obj.type == 'META':
         for i in range(0, len(obj.material_slots)):

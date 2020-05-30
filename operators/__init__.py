@@ -1,11 +1,8 @@
-import bpy
-
 from . import add_bounding_box
 from . import add_bounding_cylinder
 from . import add_bounding_primitive
 
 classes = (
-    #add_bounding_primitive.OBJECT_OT_add_bounding_object,
     add_bounding_box.OBJECT_OT_add_bounding_box,
     add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder
 )

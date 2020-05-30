@@ -3,17 +3,16 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty
 )
-from bpy.types import Operator
-from .collision_helpers import add_displace_mod
-from ..pyshics_materials.material_helpers import remove_materials, set_material
+
+from .object_functions import add_displace_mod
+from ..pyshics_materials.material_functions import remove_materials, set_material
 
 
 class OBJECT_OT_add_bounding_object():
-    """Create a Cylindrical bounding object"""
-    bl_idname = "mesh.add_bounding_object"
-    bl_label = "Abstract add bounding object class"
+    """Abstract parent class to contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
+    # Display setting of the bounding object in the viewport
     my_collision_shading_view: EnumProperty(
         name="Shading",
         items=(
@@ -23,6 +22,7 @@ class OBJECT_OT_add_bounding_object():
         )
     )
 
+    # Tranformation space to be used for creating the bounding object.
     my_space: EnumProperty(
         name="Axis",
         items=(
@@ -31,19 +31,20 @@ class OBJECT_OT_add_bounding_object():
         default="LOCAL"
     )
 
-    # my_offset is used in a displacement modifier to either push the collider inwards or outwards
+    # The offset used in a displacement modifier on the bounding object to
+    # either push the bounding object inwards or outwards
     my_offset: FloatProperty(
         name="Bounding Surface Offset",
         default=0.0
     )
 
-    # Object color for the bounding object
+    # The object color for the bounding object
     my_color: FloatVectorProperty(
         name="Bounding Object Color", description="", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
         subtype='COLOR', size=4
     )
 
-    def setColliderSettings(self, context, bounding_object, physics_material_name):
+    def set_viewport_drawing(self, context, bounding_object, physics_material_name):
         ''' Assign material to the bounding object and visibility settings.'''
         bounding_object.display_type = self.my_collision_shading_view
         bounding_object.color = self.my_color
@@ -63,6 +64,3 @@ class OBJECT_OT_add_bounding_object():
         scene = context.scene
         self.physics_material_name = scene.CollisionMaterials
 
-    def execute(self, context):
-        # not sure if I need execute here
-        return {'FINISHED'}
