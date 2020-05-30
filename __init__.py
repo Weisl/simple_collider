@@ -28,6 +28,7 @@ else:
 import bpy
 
 def scene_my_collision_material_poll(self, material):
+    ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
     if bpy.context.scene.PhysicsIdentifier in material.name:
         return material.name
 
@@ -40,11 +41,13 @@ classes = (
 def register():
     scene = bpy.types.Scene
 
+    #
     scene.CollisionMaterials = bpy.props.PointerProperty(
         type=bpy.types.Material,
         poll=scene_my_collision_material_poll
     )
 
+    #
     scene.PhysicsIdentifier = bpy.props.StringProperty(
         default="COL",
     )

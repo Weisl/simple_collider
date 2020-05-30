@@ -1,4 +1,4 @@
-from . import material_helpers
+from . import material_functions
 
 classes = (
 )

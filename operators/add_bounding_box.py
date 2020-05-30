@@ -4,18 +4,9 @@ from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
 
-from CollisionHelpers.operators.collision_helpers import alignObjects, getBoundingBox
+from CollisionHelpers.operators.object_functions import alignObjects, get_bounding_box
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-
-# TODO: Global, local switch works only in edit mode
-# TODO: Add transparency also to material display
-# TODO: Turn rendering off for colliders
-# TODO: Additional spaces: view and optimal heuristic blablabla
-# TODO: Support multi edit for collision creation (connected, and individual generation)
-# TODO: Parenting -> add collisions to useful place in the hierarchy
-# TODO: Naming -> check current naming options
-# TODO: SELECT all collisions after finishing operation
 
 def add_box_object(context, vertices, newName):
     """Generate a new object from the given vertices"""
@@ -93,8 +84,8 @@ def add_box(context, space):
 def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     """Create box collider for selected mesh area in edit mode"""
 
-    active_ob = bpy.context.object
-    root_collection = bpy.context.scene.collection
+    active_ob = context.object
+    root_collection = context.scene.collection
 
     # add new mesh
     mesh = bpy.data.meshes.new("Box")
@@ -115,7 +106,6 @@ def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
     root_collection.objects.link(newCollider)
 
-
     if self.my_space == 'LOCAL':
         alignObjects(newCollider, active_ob)
 
@@ -126,7 +116,7 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
-    bBox = getBoundingBox(obj)  # create BoundingBox object for collider
+    bBox = get_bounding_box(obj)  # create BoundingBox object for collider
     newCollider = add_box_object(context, bBox, name)
 
     # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
@@ -158,12 +148,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             verts_loc, faces = add_box(context, self.my_space)
             newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
 
-            self.setColliderSettings(context, newCollider, matName)
+            self.set_viewport_drawing(context, newCollider, matName)
 
         else:
             for i, obj in enumerate(context.selected_objects.copy()):
                 newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
 
-                self.setColliderSettings(context, newCollider, matName)
+                self.set_viewport_drawing(context, newCollider, matName)
 
         return {'FINISHED'}

@@ -46,7 +46,7 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, name_suffi
                                         radius=radius,
                                         depth=depth)
 
-    newCollider = bpy.context.object
+    newCollider = context.object
     newCollider.name = base_object.name + name_suffix
 
     # align newly created object to base mesh
@@ -62,7 +62,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create a Cylindrical bounding object"""
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylinder Collision Ob"
-    bl_options = {'REGISTER', 'UNDO'}
 
     # defines the orientation of bounding cylinder
     my_cylinder_axis: EnumProperty(
@@ -91,6 +90,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         for i, obj in enumerate(context.selected_objects.copy()):
             newCollider = generate_cylinder_Collider_Objectmode(self, context, obj, nameSuf)
-            self.setColliderSettings(context, newCollider, matName)
+            self.set_viewport_drawing(context, newCollider, matName)
 
         return {'FINISHED'}
