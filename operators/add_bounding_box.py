@@ -134,7 +134,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_box"
     bl_label = "Add Box Collision"
-    bl_options = {'REGISTER', 'UNDO'}
 
     def invoke(self, context, event):
         super().invoke(context, event)
