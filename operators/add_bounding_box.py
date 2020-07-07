@@ -136,10 +136,36 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Box Collision"
 
     def invoke(self, context, event):
+        if context.space_data.type != 'VIEW_3D':
+            self.report({'WARNING'}, "Active space must be a View3d")
+            return {'CANCELLED'}
+
+        context.window_manager.modal_handler_add(self)
         super().invoke(context, event)
-        return self.execute(context)
+
+        # return self.execute(context)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            return {'CANCELLED'}
+
+        elif event.type == 'G':
+            self.my_space = 'GLOBAL'
+            print(f"Global {event.type}")
+
+        elif event.type == 'L':
+            self.my_space = 'LOCAL'
+
+        elif event.type == 'LEFTMOUSE':
+            return {'FINISHED'}
+
+        return {'RUNNING_MODAL'}
+
 
     def execute(self, context):
+        print("Lolododo")
         nameSuf = self.name_suffix
         matName = self.physics_material_name
 
