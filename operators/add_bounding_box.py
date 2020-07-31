@@ -136,38 +136,49 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Box Collision"
 
     def invoke(self, context, event):
-        if context.space_data.type != 'VIEW_3D':
-            self.report({'WARNING'}, "Active space must be a View3d")
-            return {'CANCELLED'}
-
-        context.window_manager.modal_handler_add(self)
         super().invoke(context, event)
-
         # return self.execute(context)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
 
+        # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
             return {'CANCELLED'}
 
-        elif event.type == 'G':
+        # TODO: mouse move to shrink, grow collision
+        # TODO:
+
+        # change bounding object settings
+        elif event.type == 'G' and event.value == 'RELEASE':
             self.my_space = 'GLOBAL'
-            print(f"Global {event.type}")
+            self.execute(context)
 
-        elif event.type == 'L':
+        elif event.type == 'L' and event.value == 'RELEASE':
             self.my_space = 'LOCAL'
+            self.execute(context)
 
-        elif event.type == 'LEFTMOUSE':
+        # passthrough specific events to blenders default behavior
+        elif event.type in {'WHEELUPMOUSE','WHEELDOWNMOUSE'}:
+            return {'PASS_THROUGH'}
+
+        #apply operator
+        elif event.type in {'LEFTMOUSE','RET','NUMPAD_ENTER'}:
             return {'FINISHED'}
 
-        return {'RUNNING_MODAL'}
+        return{'RUNNING_MODAL'}
 
 
     def execute(self, context):
-        print("Lolododo")
         nameSuf = self.name_suffix
         matName = self.physics_material_name
+        prev_mesh = self.preview_object
+        base_obj = self.active_obj
+
+        if prev_mesh != None:
+            objs = bpy.data.objects
+            objs.remove(prev_mesh, do_unlink=True)
+
 
         if context.object.mode == "EDIT":
             verts_loc, faces = add_box(context, self.my_space)
@@ -181,4 +192,10 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
                 self.set_viewport_drawing(context, newCollider, matName)
 
-        return {'FINISHED'}
+        self.preview_object = newCollider
+
+        # select base mesh and make it the active object
+        context.view_layer.objects.active = base_obj
+        base_obj.select_set(True)
+
+        # return {'FINISHED'}

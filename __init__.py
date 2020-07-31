@@ -41,13 +41,11 @@ classes = (
 def register():
     scene = bpy.types.Scene
 
-    #
     scene.CollisionMaterials = bpy.props.PointerProperty(
         type=bpy.types.Material,
         poll=scene_my_collision_material_poll
     )
 
-    #
     scene.PhysicsIdentifier = bpy.props.StringProperty(
         default="COL",
     )

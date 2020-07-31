@@ -28,7 +28,7 @@ class OBJECT_OT_add_bounding_object():
         items=(
             ('LOCAL', "LOCAL", "LOCAL"),
             ('GLOBAL', "GLOBAL", "GLOBAL")),
-        default="LOCAL"
+        default="GLOBAL"
     )
 
     # The offset used in a displacement modifier on the bounding object to
@@ -44,8 +44,10 @@ class OBJECT_OT_add_bounding_object():
         subtype='COLOR', size=4
     )
 
+
+
     def set_viewport_drawing(self, context, bounding_object, physics_material_name):
-        ''' Assign material to the bounding object and visibility settings.'''
+        ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = self.my_collision_shading_view
         bounding_object.color = self.my_color
         add_displace_mod(bounding_object, self.my_offset)
@@ -53,6 +55,10 @@ class OBJECT_OT_add_bounding_object():
         set_material(bounding_object, physics_material_name)
 
     def invoke(self, context, event):
+        if context.space_data.type != 'VIEW_3D':
+            self.report({'WARNING'}, "Active space must be a View3d")
+            return {'CANCELLED'}
+
         # get collision suffix from preferences
         prefs = context.preferences.addons['CollisionHelpers'].preferences
         colSuffix = prefs.colSuffix
@@ -63,4 +69,7 @@ class OBJECT_OT_add_bounding_object():
         # get physics material from properties panel
         scene = context.scene
         self.physics_material_name = scene.CollisionMaterials
+        self.preview_object = None
+        self.active_obj = context.object
 
+        context.window_manager.modal_handler_add(self)
