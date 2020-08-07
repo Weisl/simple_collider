@@ -107,12 +107,13 @@ def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     root_collection.objects.link(newCollider)
 
     if self.my_space == 'LOCAL':
+        print("entered Local")
         alignObjects(newCollider, active_ob)
 
     return newCollider
 
 
-def box_Collider_from_Objectmode(context, name, obj, i):
+def box_Collider_from_Objectmode(self,context, name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
@@ -125,7 +126,8 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     centreBase /= 8
     # newCollider.matrix_world = centreBase
 
-    alignObjects(newCollider, obj)
+    if self.my_space == 'LOCAL':
+        alignObjects(newCollider, obj)
 
     return newCollider
 
@@ -188,7 +190,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         else:
             for i, obj in enumerate(context.selected_objects.copy()):
-                newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
+                newCollider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
 
                 self.set_viewport_drawing(context, newCollider, matName)
 
