@@ -113,7 +113,7 @@ def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     return newCollider
 
 
-def box_Collider_from_Objectmode(self,context, name, obj, i):
+def box_Collider_from_Objectmode(self, context, name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
@@ -144,12 +144,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def modal(self, context, event):
 
+        # TODO: mouse move to shrink, grow collision
+        # TODO:
+
+        # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
             return {'CANCELLED'}
-
-        # TODO: mouse move to shrink, grow collision
-        # TODO:
 
         # change bounding object settings
         elif event.type == 'G' and event.value == 'RELEASE':
@@ -161,15 +162,16 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             self.execute(context)
 
         # passthrough specific events to blenders default behavior
-        elif event.type in {'WHEELUPMOUSE','WHEELDOWNMOUSE'}:
+        elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
 
-        #apply operator
-        elif event.type in {'LEFTMOUSE','RET','NUMPAD_ENTER'}:
+        # apply operator
+        elif event.type in {'LEFTMOUSE', 'RET', 'NUMPAD_ENTER'}:
             return {'FINISHED'}
 
-        return{'RUNNING_MODAL'}
+        self.execute(context)
 
+        return {'RUNNING_MODAL'}
 
     def execute(self, context):
         nameSuf = self.name_suffix
@@ -180,7 +182,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         if prev_mesh != None:
             objs = bpy.data.objects
             objs.remove(prev_mesh, do_unlink=True)
-
 
         if context.object.mode == "EDIT":
             verts_loc, faces = add_box(context, self.my_space)

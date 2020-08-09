@@ -39,6 +39,7 @@ classes = (
 
 
 def register():
+    # register variables saved in the blender scene
     scene = bpy.types.Scene
 
     scene.CollisionMaterials = bpy.props.PointerProperty(
@@ -50,9 +51,11 @@ def register():
         default="COL",
     )
 
+    # call the register function of the sub modules
     ui.register()
     operators.register()
 
+    # register classes
     from bpy.utils import register_class
 
     for cls in classes:
@@ -62,12 +65,15 @@ def register():
 def unregister():
     scene = bpy.types.Scene
 
+    # delete variables saved in the scenes file
     del scene.CollisionMaterials
     del scene.PhysicsIdentifier
 
+    # call unregister function of the sub-modules
     operators.unregister()
     ui.unregister()
 
+    # unregister classes
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
