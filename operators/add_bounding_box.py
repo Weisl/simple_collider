@@ -155,11 +155,15 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # change bounding object settings
         elif event.type == 'G' and event.value == 'RELEASE':
             self.my_space = 'GLOBAL'
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             self.execute(context)
+
 
         elif event.type == 'L' and event.value == 'RELEASE':
             self.my_space = 'LOCAL'
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             self.execute(context)
+
 
         # passthrough specific events to blenders default behavior
         elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
