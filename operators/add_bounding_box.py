@@ -164,40 +164,25 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         elif event.type in {'WHEELUPMOUSE','WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
 
-        #apply operator
-        elif event.type in {'LEFTMOUSE','RET','NUMPAD_ENTER'}:
-            return {'FINISHED'}
+        elif event.type == 'LEFTMOUSE':        
+            nameSuf = self.name_suffix
+            matName = self.physics_material_name
 
-        return{'RUNNING_MODAL'}
-
-
-    def execute(self, context):
-        nameSuf = self.name_suffix
-        matName = self.physics_material_name
-        prev_mesh = self.preview_object
-        base_obj = self.active_obj
-
-        if prev_mesh != None:
-            objs = bpy.data.objects
-            objs.remove(prev_mesh, do_unlink=True)
-
-
-        if context.object.mode == "EDIT":
-            verts_loc, faces = add_box(context, self.my_space)
-            newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
-
-            self.set_viewport_drawing(context, newCollider, matName)
-
-        else:
-            for i, obj in enumerate(context.selected_objects.copy()):
-                newCollider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
+            if context.object.mode == "EDIT":
+                verts_loc, faces = add_box(context, self.my_space)
+                newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
 
                 self.set_viewport_drawing(context, newCollider, matName)
 
-        self.preview_object = newCollider
+            else:
+                for i, obj in enumerate(context.selected_objects.copy()):
+                    newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
 
-        # select base mesh and make it the active object
-        context.view_layer.objects.active = base_obj
-        base_obj.select_set(True)
 
-        # return {'FINISHED'}
+                    self.set_viewport_drawing(context, newCollider, matName)
+                    
+            return {'FINISHED'}
+            
+        return {'RUNNING_MODAL'}
+
+
