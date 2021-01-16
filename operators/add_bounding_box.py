@@ -107,12 +107,13 @@ def box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf):
     root_collection.objects.link(newCollider)
 
     if self.my_space == 'LOCAL':
+        print("entered Local")
         alignObjects(newCollider, active_ob)
 
     return newCollider
 
 
-def box_Collider_from_Objectmode(context, name, obj, i):
+def box_Collider_from_Objectmode(self, context, name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
@@ -125,7 +126,8 @@ def box_Collider_from_Objectmode(context, name, obj, i):
     centreBase /= 8
     # newCollider.matrix_world = centreBase
 
-    alignObjects(newCollider, obj)
+    if self.my_space == 'LOCAL':
+        alignObjects(newCollider, obj)
 
     return newCollider
 
@@ -137,11 +139,62 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        return self.execute(context)
+        # return self.execute(context)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+
+        # TODO: mouse move to shrink, grow collision
+        # TODO:
+
+        # User Input
+        # aboard operator
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            return {'CANCELLED'}
+
+        # change bounding object settings
+        elif event.type == 'G' and event.value == 'RELEASE':
+            self.my_space = 'GLOBAL'
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            self.execute(context)
+
+
+        elif event.type == 'L' and event.value == 'RELEASE':
+            self.my_space = 'LOCAL'
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            self.execute(context)
+
+
+        # passthrough specific events to blenders default behavior
+        elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            return {'PASS_THROUGH'}
+
+        # apply operator
+        elif event.type in {'LEFTMOUSE', 'RET', 'NUMPAD_ENTER'}:
+            return {'FINISHED'}
+
+#       elif event.type == 'LEFTMOUSE':        
+#           nameSuf = self.name_suffix
+#           matName = self.physics_material_name
+#
+#           if context.object.mode == "EDIT":
+#               verts_loc, faces = add_box(context, self.my_space)
+#               newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
+#               self.set_viewport_drawing(context, newCollider, matName)
+
+        self.execute(context)
+
+        return {'RUNNING_MODAL'}
 
     def execute(self, context):
         nameSuf = self.name_suffix
         matName = self.physics_material_name
+        prev_mesh = self.preview_object
+        base_obj = self.active_obj
+
+        if prev_mesh != None:
+            objs = bpy.data.objects
+            objs.remove(prev_mesh, do_unlink=True)
 
         if context.object.mode == "EDIT":
             verts_loc, faces = add_box(context, self.my_space)
@@ -149,10 +202,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             self.set_viewport_drawing(context, newCollider, matName)
 
-        else:
-            for i, obj in enumerate(context.selected_objects.copy()):
-                newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
 
-                self.set_viewport_drawing(context, newCollider, matName)
+            else:
+                for i, obj in enumerate(context.selected_objects.copy()):
+                    newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
 
-        return {'FINISHED'}
+
+                    self.set_viewport_drawing(context, newCollider, matName)
+                    
+            return {'FINISHED'}
+            

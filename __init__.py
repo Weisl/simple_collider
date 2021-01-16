@@ -34,19 +34,19 @@ def scene_my_collision_material_poll(self, material):
 
 
 def register():
+    # register variables saved in the blender scene
     scene = bpy.types.Scene
 
-    #
     scene.CollisionMaterials = bpy.props.PointerProperty(
         type=bpy.types.Material,
         poll=scene_my_collision_material_poll
     )
 
-    #
     scene.PhysicsIdentifier = bpy.props.StringProperty(
         default="COL",
     )
 
+    # call the register function of the sub modules
     ui.register()
     operators.register()
     preferences.register()
@@ -55,9 +55,12 @@ def register():
 def unregister():
     scene = bpy.types.Scene
 
+    # delete variables saved in the scenes file
     del scene.CollisionMaterials
     del scene.PhysicsIdentifier
 
+    # call unregister function of the sub-modules
     operators.unregister()
     ui.unregister()
     preferences.unregister()
+
