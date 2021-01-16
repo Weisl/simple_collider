@@ -169,6 +169,15 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         elif event.type in {'LEFTMOUSE', 'RET', 'NUMPAD_ENTER'}:
             return {'FINISHED'}
 
+#       elif event.type == 'LEFTMOUSE':        
+#           nameSuf = self.name_suffix
+#           matName = self.physics_material_name
+#
+#           if context.object.mode == "EDIT":
+#               verts_loc, faces = add_box(context, self.my_space)
+#               newCollider = box_Collider_from_Editmode(self, context, verts_loc, faces, nameSuf)
+#               self.set_viewport_drawing(context, newCollider, matName)
+
         self.execute(context)
 
         return {'RUNNING_MODAL'}
@@ -189,16 +198,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             self.set_viewport_drawing(context, newCollider, matName)
 
-        else:
-            for i, obj in enumerate(context.selected_objects.copy()):
-                newCollider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
 
-                self.set_viewport_drawing(context, newCollider, matName)
+            else:
+                for i, obj in enumerate(context.selected_objects.copy()):
+                    newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
 
-        self.preview_object = newCollider
 
-        # select base mesh and make it the active object
-        context.view_layer.objects.active = base_obj
-        base_obj.select_set(True)
-
-        # return {'FINISHED'}
+                    self.set_viewport_drawing(context, newCollider, matName)
+                    
+            return {'FINISHED'}
+            
