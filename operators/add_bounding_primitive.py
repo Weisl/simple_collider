@@ -1,3 +1,4 @@
+import blf
 import bpy
 from bpy.props import (
     EnumProperty,
@@ -45,8 +46,6 @@ class OBJECT_OT_add_bounding_object():
         subtype='COLOR', size=4
     )
 
-
-
     def set_viewport_drawing(self, context, bounding_object, physics_material_name):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = self.my_collision_shading_view
@@ -76,14 +75,13 @@ class OBJECT_OT_add_bounding_object():
         bgl.glLineWidth(1)
         bgl.glDisable(bgl.GL_BLEND)
 
-
     def invoke(self, context, event):
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
 
         # get collision suffix from preferences
-        prefs = context.preferences.addons['CollisionHelpers'].preferences
+        prefs = context.preferences.addons["CollisionHelpers"].preferences
         colSuffix = prefs.colSuffix
         colPreSuffix = prefs.colPreSuffix
         boxColSuffix = prefs.boxColSuffix
@@ -105,4 +103,3 @@ class OBJECT_OT_add_bounding_object():
 
         # add modal handler
         context.window_manager.modal_handler_add(self)
-
