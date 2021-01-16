@@ -1,3 +1,5 @@
+This addon is still in early development. I have been focusing on implementing the base functionality and user experience. Some of the features might not work as expected!
+
 # Creating Bounding Geometry
 Create simple bounding geometry to use for retopology or collision meshes. I am currently working on the addon architecture and user experience. Therefore, a lot of features are still missing or only implemented for the bounding box. 
 

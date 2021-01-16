@@ -3,7 +3,8 @@ import bpy
 
 class CollissionPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
-    bl_label = "COLLISION_PT_Create"
+    bl_label = "Collision Panel"
+    bl_idname = "COLLISION_PT_Create"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Pipeline"

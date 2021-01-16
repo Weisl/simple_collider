@@ -33,11 +33,6 @@ def scene_my_collision_material_poll(self, material):
         return material.name
 
 
-classes = (
-    preferences.CollisionAddonPrefs,
-)
-
-
 def register():
     # register variables saved in the blender scene
     scene = bpy.types.Scene
@@ -54,12 +49,7 @@ def register():
     # call the register function of the sub modules
     ui.register()
     operators.register()
-
-    # register classes
-    from bpy.utils import register_class
-
-    for cls in classes:
-        register_class(cls)
+    preferences.register()
 
 
 def unregister():
@@ -72,8 +62,5 @@ def unregister():
     # call unregister function of the sub-modules
     operators.unregister()
     ui.unregister()
+    preferences.unregister()
 
-    # unregister classes
-    from bpy.utils import unregister_class
-    for cls in reversed(classes):
-        unregister_class(cls)
