@@ -33,11 +33,6 @@ def scene_my_collision_material_poll(self, material):
         return material.name
 
 
-classes = (
-    preferences.CollisionAddonPrefs,
-)
-
-
 def register():
     scene = bpy.types.Scene
 
@@ -54,11 +49,7 @@ def register():
 
     ui.register()
     operators.register()
-
-    from bpy.utils import register_class
-
-    for cls in classes:
-        register_class(cls)
+    preferences.register()
 
 
 def unregister():
@@ -69,7 +60,4 @@ def unregister():
 
     operators.unregister()
     ui.unregister()
-
-    from bpy.utils import unregister_class
-    for cls in reversed(classes):
-        unregister_class(cls)
+    preferences.unregister()
