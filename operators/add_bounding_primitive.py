@@ -93,6 +93,11 @@ class OBJECT_OT_add_bounding_object():
         self.previous_object = None
         self.active_obj = context.object
 
+        # Store shading color type to restore after operator
+        self.color_type = bpy.context.space_data.shading.color_type
+        # Set preview to object color to see transparent collision
+        bpy.context.space_data.shading.color_type = 'OBJECT'
+
         # the arguments we pass the the callback
         args = (self, context)
         # Add the region OpenGL drawing callback

@@ -147,12 +147,21 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
+
+            # Remove previously created collisions
+            if self.previous_object != None:
+                objs = bpy.data.objects
+                objs.remove(self.previous_object, do_unlink=True)
+
+            bpy.context.space_data.shading.color_type = self.color_type
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
 
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER'}:
             self.execute(context)
+
+            bpy.context.space_data.shading.color_type = self.color_type
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
 
@@ -176,13 +185,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         nameSuf = self.name_suffix
         matName = self.physics_material_name
-        prev_mesh = self.previous_object
         base_obj = self.active_obj
 
-        # Delete collision objects created before in this operator. E.g., Deleting the collision created in locat space after switching to global space
-        if prev_mesh != None:
+        # Remove previously created collisions
+        if self.previous_object != None:
             objs = bpy.data.objects
-            objs.remove(prev_mesh, do_unlink=True)
+            objs.remove(self.previous_object, do_unlink=True)
 
         # Create the bounding geometry, depending on edit or object mode.
         if context.object.mode == "EDIT":
