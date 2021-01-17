@@ -1,21 +1,19 @@
 import bpy
+import rna_keymap_ui
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
-    # this must match the addon name, use '__package__'
-    # when defining this in a submodule of a python package.
-    bl_idname = __name__
-
     """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
-    bl_idname = __package__  ### __package__ works on multifile and __name__ not
+    # Has to be named like the main addon folder
+    bl_idname = "CollisionHelpers"  ### __package__ works on multifile and __name__ not
 
     meshColSuffix: bpy.props.StringProperty(name="Mesh", default="_MESH")
     convexColSuffix: bpy.props.StringProperty(name="Convex Suffix", default="_CONVEX")
     boxColSuffix: bpy.props.StringProperty(name="Box Suffix", default="_BOX")
     colPreSuffix: bpy.props.StringProperty(name="Collision", default="_COL")
-    colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING_")
+    colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING")
 
     props = [
         "meshColSuffix",
@@ -31,7 +29,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         for propName in self.props:
             raw = layout.row()
             raw.prop(self, propName)
-
 
         box = layout.box()
         col = box.column()
