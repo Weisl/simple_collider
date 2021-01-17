@@ -117,15 +117,16 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
-    bBox = get_bounding_box(obj)  # create BoundingBox object for collider
+    # create BoundingBox object for collider
+    bBox = get_bounding_box(obj)
     newCollider = add_box_object(context, bBox, name)
 
     # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
     # global_bbox_center = obj.matrix_world @ local_bbox_center
     centreBase = sum((Vector(b) for b in obj.bound_box), Vector())
     centreBase /= 8
-    # newCollider.matrix_world = centreBase
 
+    # newCollider.matrix_world = centreBase
     if self.my_space == 'LOCAL':
         alignObjects(newCollider, obj)
 
@@ -153,7 +154,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 objs = bpy.data.objects
                 objs.remove(self.previous_object, do_unlink=True)
 
-            bpy.context.space_data.shading.color_type = self.color_type
+            context.space_data.shading.color_type = self.color_type
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
 
@@ -161,7 +162,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER'}:
             self.execute(context)
 
-            bpy.context.space_data.shading.color_type = self.color_type
+            context.space_data.shading.color_type = self.color_type
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
 
@@ -187,6 +188,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         matName = self.physics_material_name
         base_obj = self.active_obj
 
+        context.view_layer.objects.active = base_obj
+
         # Remove previously created collisions
         if self.previous_object != None:
             objs = bpy.data.objects
@@ -199,11 +202,10 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             self.set_viewport_drawing(context, newCollider, matName)
         else:
-            for i, obj in enumerate(context.selected_objects.copy()):
-                newCollider = box_Collider_from_Objectmode(context, nameSuf, obj, i)
+            for i, obj in enumerate(self.selected_objects):
+                newCollider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
                 self.set_viewport_drawing(context, newCollider, matName)
 
         self.previous_object = newCollider
 
         return {'RUNNING_MODAL'}
-
