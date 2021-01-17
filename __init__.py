@@ -10,7 +10,6 @@ bl_info = {
     "tracker_url": "https://github.com/Weisl/CollisionHelpers/issues",
     "category": "Object"}
 
-
 # support reloading sub-modules
 if "bpy" in locals():
     import importlib
@@ -26,6 +25,7 @@ else:
     from . import preferences
 
 import bpy
+
 
 def scene_my_collision_material_poll(self, material):
     ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
@@ -60,7 +60,6 @@ def unregister():
     del scene.PhysicsIdentifier
 
     # call unregister function of the sub-modules
+    preferences.unregister()
     operators.unregister()
     ui.unregister()
-    preferences.unregister()
-
