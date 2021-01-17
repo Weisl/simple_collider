@@ -60,6 +60,6 @@ def unregister():
     del scene.PhysicsIdentifier
 
     # call unregister function of the sub-modules
+    preferences.unregister()
     operators.unregister()
     ui.unregister()
-    preferences.unregister()

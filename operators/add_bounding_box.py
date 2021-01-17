@@ -57,12 +57,10 @@ def add_box_edit_mode(obj, space, mode='EDIT'):
     # Get a BMesh representation
     bm = bmesh.from_edit_mesh(me)
 
-
     if mode != 'EDIT':
         for v in bm.verts: v.select = True
 
     used_vertives = [v for v in bm.verts if v.select]
-
 
     # Modify the BMesh, can do anything here...
     positionsX = []
@@ -116,8 +114,8 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf):
     newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
     root_collection.objects.link(newCollider)
 
-    if self.my_space == 'LOCAL':
-        print("entered Local")
+    scene = context.scene
+    if scene.my_space == 'LOCAL':
         alignObjects(newCollider, active_ob)
 
     return newCollider
@@ -127,7 +125,9 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
-    if self.my_space == 'LOCAL':
+    scene = context.scene
+
+    if scene.my_space == 'LOCAL':
         # create BoundingBox object for collider
         bBox = get_bounding_box(obj)
         newCollider = add_box_object(context, bBox, name)
@@ -144,7 +144,7 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
     else:
         context.view_layer.objects.active = obj
         bpy.ops.object.mode_set(mode='EDIT')
-        verts_loc, faces = add_box_edit_mode(obj, self.my_space, mode='OBJECT')
+        verts_loc, faces = add_box_edit_mode(obj, scene.my_space, mode='OBJECT')
         newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, name)
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -170,7 +170,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-
+        scene = context.scene
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -188,18 +188,48 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER'}:
             # self.execute(context)
             context.space_data.shading.color_type = self.color_type
+
+            for obj in self.previous_objects:
+                obj.display_type = scene.my_collision_shading_view
+
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
 
         # change bounding object settings
         elif event.type == 'G' and event.value == 'RELEASE':
-            self.my_space = 'GLOBAL'
+            scene.my_space = 'GLOBAL'
             self.execute(context)
-
 
         elif event.type == 'L' and event.value == 'RELEASE':
-            self.my_space = 'LOCAL'
+            scene.my_space = 'LOCAL'
             self.execute(context)
+
+        elif event.type == 'S' and event.value == 'RELEASE':
+            self.displace_active = not self.displace_active
+            self.opacity_active = False
+
+        elif event.type == 'A' and event.value == 'RELEASE':
+            self.opacity_active = not self.opacity_active
+            self.displace_active = False
+
+        elif event.type == 'MOUSEMOVE':
+            if self.displace_active:
+                delta = self.first_mouse_x - event.mouse_x
+                for mod in self.displace_modifiers:
+                    mod.strength = 1.0 + delta * 0.01
+
+                    # Store displacement strenght to use when regenerating the colliders
+                    scene.my_offset = mod.strength
+
+            if self.opacity_active:
+                delta = self.first_mouse_x - event.mouse_x
+                color_alpha = 0.5 + delta * 0.01
+
+                for obj in self.previous_objects:
+                    obj.color[3] = color_alpha
+
+                scene.my_color[3] = color_alpha
+
 
 
         # passthrough specific events to blenders default behavior
@@ -213,14 +243,19 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         matName = self.physics_material_name
         base_obj = self.active_obj
 
+        scene = context.scene
+
         context.view_layer.objects.active = base_obj
 
         remove_objects(self.previous_objects)
         self.previous_objects = []
 
+        # reset previously stored displace modifiers when creating a new object
+        self.displace_modifiers = []
+
         # Create the bounding geometry, depending on edit or object mode.
         if context.object.mode == "EDIT":
-            verts_loc, faces = add_box_edit_mode(base_obj, self.my_space)
+            verts_loc, faces = add_box_edit_mode(base_obj, scene.my_space)
             newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf)
 
             # save collision objects to delete when canceling the operation
