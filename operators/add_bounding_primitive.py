@@ -84,6 +84,10 @@ class OBJECT_OT_add_bounding_object():
         remove_materials(bounding_object)
         set_material(bounding_object, physics_material_name)
 
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects > 0
+
     def invoke(self, context, event):
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
@@ -96,9 +100,14 @@ class OBJECT_OT_add_bounding_object():
         boxColSuffix = prefs.boxColSuffix
         self.name_suffix = colPreSuffix + boxColSuffix + colSuffix
 
-        # save initial selection and active object to recalculate collisions and restore initial state on cancel
-        self.active_obj = context.object
         self.selected_objects = context.selected_objects.copy()
+
+        # save initial selection and active object to recalculate collisions and restore initial state on cancel
+        if context.object is not None:
+            self.active_obj = context.object
+        else:
+            context.view_layer.objects.active = self.selected_objects[0]
+            self.active_obj = context.object
 
         # get physics material from properties panel
         scene = context.scene
