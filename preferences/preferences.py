@@ -1,4 +1,5 @@
 import bpy
+import rna_keymap_ui
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -12,7 +13,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     convexColSuffix: bpy.props.StringProperty(name="Convex Suffix", default="_CONVEX")
     boxColSuffix: bpy.props.StringProperty(name="Box Suffix", default="_BOX")
     colPreSuffix: bpy.props.StringProperty(name="Collision", default="_COL")
-    colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING_")
+    colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING")
 
     props = [
         "meshColSuffix",
@@ -28,7 +29,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         for propName in self.props:
             raw = layout.row()
             raw.prop(self, propName)
-
 
         box = layout.box()
         col = box.column()

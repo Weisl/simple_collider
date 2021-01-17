@@ -144,9 +144,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def modal(self, context, event):
 
-        # TODO: mouse move to shrink, grow collision
-        # TODO:
-
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
