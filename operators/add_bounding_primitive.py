@@ -16,9 +16,17 @@ def draw_viewport_overlay(self, context):
     font_id = 0  # XXX, need to find out how best to get this.
 
     # draw some text
-    blf.position(font_id, 15, 30, 0)
+    blf.position(font_id, 30, 30, 0)
     blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Hallo World")
+    blf.draw(font_id, "Space: " + self.my_space)
+
+    blf.position(font_id, 30, 60, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, "Offset: " + str(self.my_offset))
+
+    blf.position(font_id, 30, 90, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, "Opacity: " + str(self.my_color[3]))
 
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
@@ -87,13 +95,15 @@ class OBJECT_OT_add_bounding_object():
         colPreSuffix = prefs.colPreSuffix
         boxColSuffix = prefs.boxColSuffix
         self.name_suffix = colPreSuffix + boxColSuffix + colSuffix
+
+        # save initial selection and active object to recalculate collisions and restore initial state on cancel
+        self.active_obj = context.object
         self.selected_objects = context.selected_objects.copy()
 
         # get physics material from properties panel
         scene = context.scene
         self.physics_material_name = scene.CollisionMaterials
-        self.previous_object = None
-        self.active_obj = context.object
+        self.previous_objects = []
 
         # Store shading color type to restore after operator
         self.color_type = context.space_data.shading.color_type
