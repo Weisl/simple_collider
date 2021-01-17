@@ -1,5 +1,7 @@
+import bgl
 import blf
 import bpy
+import gpu
 from bpy.props import (
     EnumProperty,
     FloatProperty,
@@ -60,16 +62,14 @@ class OBJECT_OT_add_bounding_object():
         # draw some text
         blf.position(font_id, 15, 30, 0)
         blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Hello Word ")
+        blf.draw(font_id, "Hallo World")
 
-        # # 50% alpha, 2 pixel width line
-        # shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-        # bgl.glEnable(bgl.GL_BLEND)
-        # bgl.glLineWidth(2)
-        # batch = batch_for_shader(shader, 'LINE_STRIP', str(self.my_space))
-        # shader.bind()
-        # shader.uniform_float("color", (0.0, 0.0, 0.0, 0.5))
-        # batch.draw(shader)
+        # 50% alpha, 2 pixel width line
+        shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+        bgl.glEnable(bgl.GL_BLEND)
+        bgl.glLineWidth(2)
+        shader.bind()
+        shader.uniform_float("color", (0.0, 0.0, 0.0, 0.5))
 
         # restore opengl defaults
         bgl.glLineWidth(1)
@@ -90,10 +90,13 @@ class OBJECT_OT_add_bounding_object():
         # get physics material from properties panel
         scene = context.scene
         self.physics_material_name = scene.CollisionMaterials
-        self.preview_object = None
+        self.previous_object = None
         self.active_obj = context.object
 
-        # add viewport drawing handler
+        # Store shading color type to restore after operator
+        self.color_type = bpy.context.space_data.shading.color_type
+        # Set preview to object color to see transparent collision
+        bpy.context.space_data.shading.color_type = 'OBJECT'
 
         # the arguments we pass the the callback
         args = (self, context)
@@ -103,3 +106,5 @@ class OBJECT_OT_add_bounding_object():
 
         # add modal handler
         context.window_manager.modal_handler_add(self)
+
+        self.execute(context)
