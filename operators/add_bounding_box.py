@@ -132,6 +132,8 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
         bBox = get_bounding_box(obj)
         newCollider = add_box_object(context, bBox, name)
 
+        newCollider.parent = obj
+
         # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
         # global_bbox_center = obj.matrix_world @ local_bbox_center
         centreBase = sum((Vector(b) for b in obj.bound_box), Vector())
@@ -191,9 +193,16 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             for obj in self.previous_objects:
                 obj.display_type = scene.my_collision_shading_view
+                if scene.my_hide:
+                    obj.hide_viewport = scene.my_hide
 
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
+
+        # hide after creation
+        elif event.type == 'H' and event.value == 'RELEASE':
+            scene.my_hide = not scene.my_hide
+            self.execute(context)
 
         # change bounding object settings
         elif event.type == 'G' and event.value == 'RELEASE':
@@ -246,6 +255,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         scene = context.scene
 
         context.view_layer.objects.active = base_obj
+        collections = base_obj.users_collection
 
         remove_objects(self.previous_objects)
         self.previous_objects = []
@@ -253,6 +263,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
 
+        
         # Create the bounding geometry, depending on edit or object mode.
         if context.object.mode == "EDIT":
             verts_loc, faces = add_box_edit_mode(base_obj, scene.my_space)
@@ -260,8 +271,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             # save collision objects to delete when canceling the operation
             self.previous_objects.append(newCollider)
-
-            self.set_viewport_drawing(context, newCollider, matName)
+            self.cleanup(context, newCollider, matName)
+            self.add_to_collections(newCollider, collections)
 
         else:  # mode == "OBJECT":
 
@@ -270,7 +281,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
                 # save collision objects to delete when canceling the operation
                 self.previous_objects.append(newCollider)
-
-                self.set_viewport_drawing(context, newCollider, matName)
+                self.cleanup(context, newCollider, matName)
+                self.add_to_collections(newCollider, collections)
 
         return {'RUNNING_MODAL'}

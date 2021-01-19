@@ -27,6 +27,17 @@ class CollissionPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(scene, "CollisionMaterials")
 
+        row = layout.row()
+        row.operator("object.hide_collisions")
+
+        view = context.space_data
+
+        shading = view.shading
+
+        # row = layout.row(align=True)
+        # row.prop(shading, "type", text="", expand=True)
+        # row = layout.row(align=True)
+        # row.prop(shading, "color_type", text="", expand=True)
 
 class CollisionMenu(bpy.types.Menu):
     bl_idname = "COLLISION_MT_Create"
