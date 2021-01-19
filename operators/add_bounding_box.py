@@ -254,34 +254,39 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         scene = context.scene
 
-        context.view_layer.objects.active = base_obj
-        collections = base_obj.users_collection
-
         remove_objects(self.previous_objects)
         self.previous_objects = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
 
-        
+        # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
+        if context.object not in self.selected_objects:
+            self.selected_objects.append(context.object)
+
         # Create the bounding geometry, depending on edit or object mode.
-        if context.object.mode == "EDIT":
-            verts_loc, faces = add_box_edit_mode(base_obj, scene.my_space)
-            newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf)
+        for i, obj in enumerate(self.selected_objects):
 
-            # save collision objects to delete when canceling the operation
-            self.previous_objects.append(newCollider)
-            self.cleanup(context, newCollider, matName)
-            self.add_to_collections(newCollider, collections)
+            context.view_layer.objects.active = obj
+            collections = obj.users_collection
 
-        else:  # mode == "OBJECT":
+            if obj.mode == "EDIT":
 
-            for i, obj in enumerate(self.selected_objects):
-                newCollider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
+                verts_loc, faces = add_box_edit_mode(obj, scene.my_space)
+                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf)
 
                 # save collision objects to delete when canceling the operation
-                self.previous_objects.append(newCollider)
-                self.cleanup(context, newCollider, matName)
-                self.add_to_collections(newCollider, collections)
+                self.previous_objects.append(new_collider)
+                self.cleanup(context, new_collider, matName)
+                self.add_to_collections(new_collider, collections)
+
+            else:  # mode == "OBJECT":
+
+                new_collider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
+
+                # save collision objects to delete when canceling the operation
+                self.previous_objects.append(new_collider)
+                self.cleanup(context, new_collider, matName)
+                self.add_to_collections(new_collider, collections)
 
         return {'RUNNING_MODAL'}
