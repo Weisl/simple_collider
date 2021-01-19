@@ -267,6 +267,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # Create the bounding geometry, depending on edit or object mode.
         for i, obj in enumerate(self.selected_objects):
 
+            # skip non Mesh objects like lamps, curves etc.
+            if obj.type != "MESH":
+                continue
+
+
             context.view_layer.objects.active = obj
             collections = obj.users_collection
 
