@@ -112,14 +112,28 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf):
 
     # create new object from mesh and link it to collection
     newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
+
     root_collection.objects.link(newCollider)
 
     scene = context.scene
     if scene.my_space == 'LOCAL':
+        newCollider.parent = active_ob
         alignObjects(newCollider, active_ob)
+    else:
+        bpy.ops.object.mode_set(mode='OBJECT')
+        custom_set_parent(context, active_ob, newCollider)
+        bpy.ops.object.mode_set(mode='EDIT')
 
     return newCollider
 
+def custom_set_parent(context, parent, child):
+    # set parent
+    bpy.ops.object.select_all(action='DESELECT')
+    context.view_layer.objects.active = parent
+    parent.select_set(True)
+    child.select_set(True)
+
+    bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
 def box_Collider_from_Objectmode(self, context, name, obj, i):
     """Create box collider for every selected object in object mode"""
@@ -132,6 +146,7 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
         bBox = get_bounding_box(obj)
         newCollider = add_box_object(context, bBox, name)
 
+        #set parent
         newCollider.parent = obj
 
         # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
@@ -148,7 +163,10 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
         bpy.ops.object.mode_set(mode='EDIT')
         verts_loc, faces = add_box_edit_mode(obj, scene.my_space, mode='OBJECT')
         newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, name)
+
         bpy.ops.object.mode_set(mode='OBJECT')
+
+        custom_set_parent(context, obj, newCollider)
 
     return newCollider
 
@@ -267,10 +285,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # Create the bounding geometry, depending on edit or object mode.
         for i, obj in enumerate(self.selected_objects):
 
+            # skip if invalid object
+            if obj is None:
+                continue
+
             # skip non Mesh objects like lamps, curves etc.
             if obj.type != "MESH":
                 continue
-
 
             context.view_layer.objects.active = obj
             collections = obj.users_collection

@@ -83,9 +83,19 @@ class OBJECT_OT_add_bounding_object():
         bounding_object['isCollider'] = True
 
 
-    def add_to_collections(self, newCollider, collections):
+    def add_to_collections(self, obj, collections):
+        old_collection = obj.users_collection
+
         for col in collections:
-            col.objects.link(newCollider)
+            try:
+                col.objects.link(obj)
+            except RuntimeError:
+                pass
+
+        for col in old_collection:
+            if col not in collections:
+                col.objects.unlink(obj)
+
 
     @classmethod
     def poll(cls, context):
