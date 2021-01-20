@@ -197,8 +197,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             # Remove previously created collisions
             if self.previous_objects != None:
-                objs = bpy.data.objects
-                objs.remove(self.previous_objects, do_unlink=True)
+                for obj in self.previous_objects:
+                    objs = bpy.data.objects
+                    objs.remove(obj, do_unlink=True)
 
             context.space_data.shading.color_type = self.color_type
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -243,7 +244,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if self.displace_active:
                 delta = self.first_mouse_x - event.mouse_x
                 for mod in self.displace_modifiers:
-                    mod.strength = 1.0 + delta * 0.01
+                    strenght = 1.0 - delta * 0.01
+                    mod.strength = strenght
 
                     # Store displacement strenght to use when regenerating the colliders
                     scene.my_offset = mod.strength
