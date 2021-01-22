@@ -3,10 +3,12 @@ import bpy
 from . import add_bounding_box
 from . import add_bounding_cylinder
 from . import add_bounding_primitive
+from . import visibility_control
 
 classes = (
     add_bounding_box.OBJECT_OT_add_bounding_box,
-    add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder
+    add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder,
+    visibility_control.COLLISION_OT_Visibility,
 )
 
 
@@ -30,6 +32,11 @@ def register():
             ('LOCAL', "LOCAL", "LOCAL"),
             ('GLOBAL', "GLOBAL", "GLOBAL")),
         default="GLOBAL"
+    )
+
+    scene.my_hide = bpy.props.BoolProperty(
+        name="Hide Boungind Object After Creation",
+        default = False
     )
 
     # The offset used in a displacement modifier on the bounding object to

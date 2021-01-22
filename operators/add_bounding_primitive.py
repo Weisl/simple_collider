@@ -35,6 +35,11 @@ def draw_viewport_overlay(self, context):
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Shading View (S) : " + str(scene.my_collision_shading_view))
 
+    blf.position(font_id, 30, 180, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
+
+
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
     bgl.glEnable(bgl.GL_BLEND)
@@ -51,19 +56,46 @@ class OBJECT_OT_add_bounding_object():
     """Abstract parent class to contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
-    def set_viewport_drawing(self, context, bounding_object, physics_material_name):
+    def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         scene = context.scene
 
         bounding_object.display_type = 'SOLID'
         bounding_object.color = scene.my_color
 
+    def add_bounding_modifiers(self, context, bounding_object):
+        scene = context.scene
+
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
         mod = add_displace_mod(bounding_object, scene.my_offset)
         self.displace_modifiers.append(mod)
 
+    def set_physics_material(self, context, bounding_object, physics_material_name):
         remove_materials(bounding_object)
         set_material(bounding_object, physics_material_name)
+
+    def cleanup(self, context, bounding_object, physics_material_name):
+
+        self.set_viewport_drawing(context, bounding_object)
+        self.add_bounding_modifiers(context, bounding_object)
+        self.set_physics_material(context, bounding_object, physics_material_name)
+
+        bounding_object['isCollider'] = True
+
+
+    def add_to_collections(self, obj, collections):
+        old_collection = obj.users_collection
+
+        for col in collections:
+            try:
+                col.objects.link(obj)
+            except RuntimeError:
+                pass
+
+        for col in old_collection:
+            if col not in collections:
+                col.objects.unlink(obj)
+
 
     @classmethod
     def poll(cls, context):

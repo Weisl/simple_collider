@@ -112,14 +112,28 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf):
 
     # create new object from mesh and link it to collection
     newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
+
     root_collection.objects.link(newCollider)
 
     scene = context.scene
     if scene.my_space == 'LOCAL':
+        newCollider.parent = active_ob
         alignObjects(newCollider, active_ob)
+    else:
+        bpy.ops.object.mode_set(mode='OBJECT')
+        custom_set_parent(context, active_ob, newCollider)
+        bpy.ops.object.mode_set(mode='EDIT')
 
     return newCollider
 
+def custom_set_parent(context, parent, child):
+    # set parent
+    bpy.ops.object.select_all(action='DESELECT')
+    context.view_layer.objects.active = parent
+    parent.select_set(True)
+    child.select_set(True)
+
+    bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
 def box_Collider_from_Objectmode(self, context, name, obj, i):
     """Create box collider for every selected object in object mode"""
@@ -131,6 +145,9 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
         # create BoundingBox object for collider
         bBox = get_bounding_box(obj)
         newCollider = add_box_object(context, bBox, name)
+
+        #set parent
+        newCollider.parent = obj
 
         # local_bbox_center = 1/8 * sum((Vector(b) for b in obj.bound_box), Vector())
         # global_bbox_center = obj.matrix_world @ local_bbox_center
@@ -146,7 +163,10 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
         bpy.ops.object.mode_set(mode='EDIT')
         verts_loc, faces = add_box_edit_mode(obj, scene.my_space, mode='OBJECT')
         newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, name)
+
         bpy.ops.object.mode_set(mode='OBJECT')
+
+        custom_set_parent(context, obj, newCollider)
 
     return newCollider
 
@@ -177,8 +197,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             # Remove previously created collisions
             if self.previous_objects != None:
-                objs = bpy.data.objects
-                objs.remove(self.previous_objects, do_unlink=True)
+                for obj in self.previous_objects:
+                    objs = bpy.data.objects
+                    objs.remove(obj, do_unlink=True)
 
             context.space_data.shading.color_type = self.color_type
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -191,9 +212,16 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             for obj in self.previous_objects:
                 obj.display_type = scene.my_collision_shading_view
+                if scene.my_hide:
+                    obj.hide_viewport = scene.my_hide
 
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
+
+        # hide after creation
+        elif event.type == 'H' and event.value == 'RELEASE':
+            scene.my_hide = not scene.my_hide
+            self.execute(context)
 
         # change bounding object settings
         elif event.type == 'G' and event.value == 'RELEASE':
@@ -216,7 +244,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if self.displace_active:
                 delta = self.first_mouse_x - event.mouse_x
                 for mod in self.displace_modifiers:
-                    mod.strength = 1.0 + delta * 0.01
+                    strenght = 1.0 - delta * 0.01
+                    mod.strength = strenght
 
                     # Store displacement strenght to use when regenerating the colliders
                     scene.my_offset = mod.strength
@@ -245,32 +274,47 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         scene = context.scene
 
-        context.view_layer.objects.active = base_obj
-
         remove_objects(self.previous_objects)
         self.previous_objects = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
 
+        # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
+        if context.object not in self.selected_objects:
+            self.selected_objects.append(context.object)
+
         # Create the bounding geometry, depending on edit or object mode.
-        if context.object.mode == "EDIT":
-            verts_loc, faces = add_box_edit_mode(base_obj, scene.my_space)
-            newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf)
+        for i, obj in enumerate(self.selected_objects):
 
-            # save collision objects to delete when canceling the operation
-            self.previous_objects.append(newCollider)
+            # skip if invalid object
+            if obj is None:
+                continue
 
-            self.set_viewport_drawing(context, newCollider, matName)
+            # skip non Mesh objects like lamps, curves etc.
+            if obj.type != "MESH":
+                continue
 
-        else:  # mode == "OBJECT":
+            context.view_layer.objects.active = obj
+            collections = obj.users_collection
 
-            for i, obj in enumerate(self.selected_objects):
-                newCollider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
+            if obj.mode == "EDIT":
+
+                verts_loc, faces = add_box_edit_mode(obj, scene.my_space)
+                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf)
 
                 # save collision objects to delete when canceling the operation
-                self.previous_objects.append(newCollider)
+                self.previous_objects.append(new_collider)
+                self.cleanup(context, new_collider, matName)
+                self.add_to_collections(new_collider, collections)
 
-                self.set_viewport_drawing(context, newCollider, matName)
+            else:  # mode == "OBJECT":
+
+                new_collider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
+
+                # save collision objects to delete when canceling the operation
+                self.previous_objects.append(new_collider)
+                self.cleanup(context, new_collider, matName)
+                self.add_to_collections(new_collider, collections)
 
         return {'RUNNING_MODAL'}

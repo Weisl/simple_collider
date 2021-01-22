@@ -90,6 +90,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         for i, obj in enumerate(context.selected_objects.copy()):
             newCollider = generate_cylinder_Collider_Objectmode(self, context, obj, nameSuf)
-            self.set_viewport_drawing(context, newCollider, matName)
+            self.cleanup(context, newCollider, matName)
 
         return {'FINISHED'}
