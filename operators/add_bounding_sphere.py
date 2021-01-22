@@ -37,6 +37,7 @@ def create_sphere(pos, diameter, name):
 
     bpy.ops.object.shade_smooth()
 
+    return basic_sphere
 
 class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
@@ -169,6 +170,12 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
 
             # create collision meshes
-            create_sphere(mid_point, radius, obj.name + self.name_suffix + "_" + str(i))
+            new_collider = create_sphere(mid_point, radius, obj.name + self.name_suffix + "_" + str(i))
+            self.custom_set_parent(context, obj, new_collider)
+
+            # save collision objects to delete when canceling the operation
+            self.previous_objects.append(new_collider)
+            self.cleanup(context, new_collider, self.physics_material_name)
+            self.add_to_collections(new_collider, collections)
 
         return {'RUNNING_MODAL'}

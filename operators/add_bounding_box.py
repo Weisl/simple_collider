@@ -157,8 +157,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        nameSuf = self.name_suffix
-        matName = self.physics_material_name
 
         scene = context.scene
 
@@ -195,20 +193,20 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 used_vertices = self.get_vertices(obj, preselect_all=False)
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
-                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, obj.mode + nameSuf)
+                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, obj.mode + self.name_suffix)
 
                 # save collision objects to delete when canceling the operation
                 self.previous_objects.append(new_collider)
-                self.cleanup(context, new_collider, matName)
+                self.cleanup(context, new_collider, self.physics_material_name)
                 self.add_to_collections(new_collider, collections)
 
             else:  # mode == "OBJECT":
 
-                new_collider = box_Collider_from_Objectmode(self, context, nameSuf, obj, i)
+                new_collider = box_Collider_from_Objectmode(self, context, self.name_suffix, obj, i)
 
                 # save collision objects to delete when canceling the operation
                 self.previous_objects.append(new_collider)
-                self.cleanup(context, new_collider, matName)
+                self.cleanup(context, new_collider, self.physics_material_name)
                 self.add_to_collections(new_collider, collections)
 
         return {'RUNNING_MODAL'}
