@@ -1,6 +1,5 @@
 import bgl
 import blf
-import bmesh
 import bpy
 import gpu
 

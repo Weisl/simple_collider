@@ -194,7 +194,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 # Get a BMesh representation
                 bm = bmesh.from_edit_mesh(me)
                 used_vertices = self.get_vertices(bm, preselect_all=False)
-                
+
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
                 new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces,

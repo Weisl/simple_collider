@@ -39,6 +39,7 @@ def create_sphere(pos, diameter, name):
 
     return basic_sphere
 
+
 class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_sphere"
@@ -103,7 +104,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
                 vertices = self.get_vertices(bm, preselect_all=True)
 
-
             # Get vertices wit min and may values
             # First pass
             for i, vertex in enumerate(vertices):
@@ -130,7 +130,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     min_z = v if v.z < min_z.z else min_z
                     max_z = v if v.z > max_z.z else max_z
 
-
             # calculate distances between min and max of every axis
             dx = distance_vec(min_x, max_x)
             dy = distance_vec(min_y, max_y)
@@ -151,7 +150,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             else:
                 mid_point = midpoint(min_z, max_z)
                 radius = dz / 2
-
 
             # second pass
             for i, vertex in enumerate(vertices):

@@ -18,5 +18,4 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
             if ob.get('isCollider'):
                 ob.hide_viewport = scene.my_hide
 
-
         return {'FINISHED'}
