@@ -113,8 +113,12 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
     # Space == 'Global'
     else:
         context.view_layer.objects.active = obj
+
         bpy.ops.object.mode_set(mode='EDIT')
-        used_vertices = self.get_vertices(obj, mode='OBJECT')
+        me = obj.data
+        # Get a BMesh representation
+        bm = bmesh.from_edit_mesh(me)
+        used_vertices = self.get_vertices(bm, preselect_all=True)
         positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
         verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
         newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, name)
@@ -185,15 +189,16 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
 
             if obj.mode == "EDIT":
-                me = context.edit_object.data
-                if self.bm is None or not self.bm.is_valid:
-                    # in edit mode so try make a new bmesh
-                    self.set_bmesh(context)
-
-                used_vertices = self.get_vertices(obj, preselect_all=False)
+                bpy.ops.object.mode_set(mode='EDIT')
+                me = obj.data
+                # Get a BMesh representation
+                bm = bmesh.from_edit_mesh(me)
+                used_vertices = self.get_vertices(bm, preselect_all=False)
+                
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
-                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, obj.mode + self.name_suffix)
+                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces,
+                                                            obj.mode + self.name_suffix)
 
                 # save collision objects to delete when canceling the operation
                 self.previous_objects.append(new_collider)
