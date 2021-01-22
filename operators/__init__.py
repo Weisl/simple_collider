@@ -3,11 +3,13 @@ import bpy
 from . import add_bounding_box
 from . import add_bounding_cylinder
 from . import add_bounding_primitive
+from . import add_bounding_sphere
 from . import visibility_control
 
 classes = (
     add_bounding_box.OBJECT_OT_add_bounding_box,
     add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder,
+    add_bounding_sphere.OBJECT_OT_add_bounding_sphere,
     visibility_control.COLLISION_OT_Visibility,
 )
 
@@ -36,14 +38,7 @@ def register():
 
     scene.my_hide = bpy.props.BoolProperty(
         name="Hide Boungind Object After Creation",
-        default = False
-    )
-
-    # The offset used in a displacement modifier on the bounding object to
-    # either push the bounding object inwards or outwards
-    scene.my_offset = bpy.props.FloatProperty(
-        name="Bounding Surface Offset",
-        default=0.0
+        default=False
     )
 
     # The object color for the bounding object

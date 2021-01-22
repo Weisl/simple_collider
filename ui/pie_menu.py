@@ -18,3 +18,4 @@ class VIEW3D_MT_PIE_template(Menu):
 
         pie.operator("mesh.add_bounding_box")
         pie.operator("mesh.add_bounding_cylinder")
+        pie.operator("mesh.add_bounding_sphere")
