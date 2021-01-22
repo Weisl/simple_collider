@@ -60,14 +60,6 @@ class OBJECT_OT_add_bounding_object():
     # either push the bounding object inwards or outwards
     my_offset: bpy.props.FloatProperty()
 
-    # contains BMESH
-    bm = None
-
-    @classmethod
-    def bmesh(cls, context):
-        me = context.edit_object.data
-        cls.bm = bmesh.from_edit_mesh(me)
-
     def remove_objects(self, list):
         # Remove previously created collisions
         if len(list) > 0:
@@ -84,12 +76,7 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
-    def get_vertices(self, obj, preselect_all=False):
-        me = obj.data
-
-        # Get a BMesh representation
-        bm = bmesh.from_edit_mesh(me)
-
+    def get_vertices(self, bm, preselect_all=False):
         if preselect_all == True:
             for v in bm.verts: v.select = True
 
@@ -207,8 +194,6 @@ class OBJECT_OT_add_bounding_object():
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
 
-        self.bmesh(context)
-
         self.displace_active = False
         self.displace_modifiers = []
 
@@ -224,6 +209,7 @@ class OBJECT_OT_add_bounding_object():
 
     def modal(self, context, event):
         scene = context.scene
+
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -240,9 +226,6 @@ class OBJECT_OT_add_bounding_object():
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
                 pass
-
-            self.bm.free()
-            self.bm = None
 
             return {'CANCELLED'}
 

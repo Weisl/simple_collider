@@ -12,13 +12,13 @@ def distance_vec(point1: Vector, point2: Vector):
 
 
 def midpoint(p1, p2):
-    return Vector((p1 + p2) / 2)
+    return (p1 + p2) * 0.5
 
 
-def create_sphere(pos, diameter):
+def create_sphere(pos, diameter, name):
     # Create an empty mesh and the object.
-    mesh = bpy.data.meshes.new('Sphere')
-    basic_sphere = bpy.data.objects.new("Sphere", mesh)
+    mesh = bpy.data.meshes.new(name)
+    basic_sphere = bpy.data.objects.new(name, mesh)
 
     # Add the object into the scene.
     bpy.context.collection.objects.link(basic_sphere)
@@ -32,7 +32,8 @@ def create_sphere(pos, diameter):
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, diameter=diameter)
     bm.to_mesh(mesh)
-    bm.free()
+    mesh.update()
+    bm.clear()
 
     bpy.ops.object.shade_smooth()
 
@@ -57,11 +58,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        nameSuf = self.name_suffix
-        matName = self.physics_material_name
-        base_obj = self.active_obj
-
-        scene = context.scene
 
         self.remove_objects(self.previous_objects)
         self.previous_objects = []
@@ -88,57 +84,91 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
 
             if obj.mode == "EDIT":
-                me = context.edit_object.data
-                if self.bm is None or not self.bm.is_valid:
-                    # in edit mode so try make a new bmesh
-                    self.bmesh(context)
+                me = obj.data
 
-                vertices = self.get_vertices(obj, preselect_all=False)
+                # Get a BMesh representation
+                bm = bmesh.from_edit_mesh(me)
 
-                # Get vertices wit min and may values
-                for i, vertex in enumerate(vertices):
+                vertices = self.get_vertices(bm, preselect_all=False)
 
-                    # convert to global space
-                    v = obj.matrix_world @ vertex.co
+            else:  # mode == "OBJECT":
+                context.view_layer.objects.active = obj
 
-                    # ignore 1. point since it's already saved
-                    if i == 0:
-                        min_x = v
-                        max_x = v
-                        min_y = v
-                        max_y = v
-                        min_z = v
-                        max_z = v
+                bpy.ops.object.mode_set(mode='EDIT')
+                me = obj.data
 
-                    # compare points to previous min and max
-                    # v.co returns mathutils.Vector
-                    else:
-                        min_x = v if v.x < min_x.x else min_x
-                        max_x = v if v.x > max_x.x else max_x
-                        min_y = v if v.y < min_y.y else min_y
-                        max_y = v if v.y > max_y.y else max_y
-                        min_z = v if v.z < min_z.z else min_z
-                        max_z = v if v.z > max_z.z else max_z
+                # Get a BMesh representation
+                bm = bmesh.from_edit_mesh(me)
 
-                print("min_x %f, max_x, %f, min_y, %f max_y %f, min_z, %f, max_z, %f" % (
-                    min_x.x, max_x.x, min_y.y, max_y.y, min_z.z, max_z.z))
+                vertices = self.get_vertices(bm, preselect_all=True)
 
-                # calculate distances between min and max of every axis
-                dx = distance_vec(Vector((min_x.x, min_x.y, min_x.z)), Vector((max_x.x, max_x.y, max_x.z)))
-                dy = distance_vec(Vector(min_y), Vector(max_y))
-                dz = distance_vec(Vector(min_z), Vector(max_z))
 
-                print("dx %f, dy, %f, dz %f" % (dx, dy, dz))
+            # Get vertices wit min and may values
+            # First pass
+            for i, vertex in enumerate(vertices):
 
-                # Generate sphere for biggest distance
-                if dx >= dy and dx >= dz:
-                    mid_point = midpoint(min_x, max_x)
-                    create_sphere(mid_point, dx/2)
-                elif dy >= dz:
-                    mid_point = midpoint(min_y, max_y)
-                    create_sphere(mid_point, dy/2)
+                # convert to global space
+                v = obj.matrix_world @ vertex.co
+
+                # ignore 1. point since it's already saved
+                if i == 0:
+                    min_x = v
+                    max_x = v
+                    min_y = v
+                    max_y = v
+                    min_z = v
+                    max_z = v
+
+                # compare points to previous min and max
+                # v.co returns mathutils.Vector
                 else:
-                    mid_point = midpoint(min_z, max_z)
-                    create_sphere(mid_point, dz/2)
+                    min_x = v if v.x < min_x.x else min_x
+                    max_x = v if v.x > max_x.x else max_x
+                    min_y = v if v.y < min_y.y else min_y
+                    max_y = v if v.y > max_y.y else max_y
+                    min_z = v if v.z < min_z.z else min_z
+                    max_z = v if v.z > max_z.z else max_z
+
+
+            # calculate distances between min and max of every axis
+            dx = distance_vec(min_x, max_x)
+            dy = distance_vec(min_y, max_y)
+            dz = distance_vec(min_z, max_z)
+
+            # Generate sphere for biggest distance
+            mid_point = None
+            radius = None
+
+            if dx >= dy and dx >= dz:
+                mid_point = midpoint(min_x, max_x)
+                radius = dx / 2
+
+            elif dy >= dz:
+                mid_point = midpoint(min_y, max_y)
+                radius = dy / 2
+
+            else:
+                mid_point = midpoint(min_z, max_z)
+                radius = dz / 2
+
+
+            # second pass
+            for i, vertex in enumerate(vertices):
+                # convert to global space
+                v = obj.matrix_world @ vertex.co
+
+                # calculate distance to center to find out if the point is in or outside the sphere
+                distance_center_to_v = distance_vec(mid_point, v)
+
+                # point is outside the collision sphere
+                if distance_center_to_v > radius:
+                    radius = (radius + distance_center_to_v) / 2
+                    old_to_new = distance_center_to_v - radius
+
+                    # calculate new_midpoint
+                    mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
+
+            # create collision meshes
+            create_sphere(mid_point, radius, obj.name + self.name_suffix + "_" + str(i))
 
         return {'RUNNING_MODAL'}

@@ -159,7 +159,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         nameSuf = self.name_suffix
         matName = self.physics_material_name
-        base_obj = self.active_obj
 
         scene = context.scene
 
@@ -191,12 +190,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 me = context.edit_object.data
                 if self.bm is None or not self.bm.is_valid:
                     # in edit mode so try make a new bmesh
-                    self.bmesh(context)
+                    self.set_bmesh(context)
 
                 used_vertices = self.get_vertices(obj, preselect_all=False)
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
-                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf)
+                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, obj.mode + nameSuf)
 
                 # save collision objects to delete when canceling the operation
                 self.previous_objects.append(new_collider)
