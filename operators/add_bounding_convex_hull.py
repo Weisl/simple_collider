@@ -11,6 +11,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Convex Hull"
 
     def invoke(self, context, event):
+        self.obj_mode = context.object.mode
         super().invoke(context, event)
         return {'RUNNING_MODAL'}
 
@@ -33,10 +34,16 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
+            print("selected_objects" + self.selected_objects)
+        if not context.object:
+            context.view_layer.objects.active = self.selected_objects[0]
 
         # Create the bounding geometry, depending on edit or object mode.
         obj_amount = len(self.selected_objects)
         old_objs = set(context.scene.objects)
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
 
         for i, obj in enumerate(self.selected_objects):
 
@@ -48,15 +55,17 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            obj.select_set(True)
             context.view_layer.objects.active = obj
             collections = obj.users_collection
 
-            if obj.mode == "EDIT":
+            if self.obj_mode == "EDIT":
+                bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.duplicate()
                 bpy.ops.mesh.convex_hull()
                 bpy.ops.mesh.separate(type='SELECTED')
 
-            else:  # mode == "OBJECT":
+            else:  #obj_mode == "OBJECT":
                 bpy.ops.object.mode_set(mode='EDIT')
 
                 # Get a BMesh representation
@@ -73,6 +82,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 pass
 
             bpy.ops.object.mode_set(mode='OBJECT')
+
             new_collider = context.scene.objects[-1]
             new_collider.name = obj.name + self.name_suffix + "_" + str(i)
 
@@ -84,9 +94,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             self.cleanup(context, new_collider, self.physics_material_name)
             self.add_to_collections(new_collider, collections)
 
-            # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
-            # self.report({'INFO'}, infomessage)
+            print('Generated collisions %d/%d' % (i, obj_amount))
 
         self.previous_objects = set(context.scene.objects) - old_objs
+        print("previous_objects" + str(self.previous_objects))
 
         return {'RUNNING_MODAL'}
