@@ -18,11 +18,13 @@ if "bpy" in locals():
     importlib.reload(operators)
     # importlib.reload(physics_materials)
     importlib.reload(preferences)
+    importlib.reload(vhacd_integration)
 else:
     from . import ui
     from . import operators
     # from . import physics_materials
     from . import preferences
+    from . import vhacd_integration
 
 import bpy
 
@@ -49,6 +51,7 @@ def register():
     # call the register function of the sub modules
     ui.register()
     operators.register()
+    vhacd_integration.register()
     preferences.register()
 
 
@@ -61,5 +64,6 @@ def unregister():
 
     # call unregister function of the sub-modules
     preferences.unregister()
+    vhacd_integration.unregister()
     operators.unregister()
     ui.unregister()

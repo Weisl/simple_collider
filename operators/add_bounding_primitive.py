@@ -197,6 +197,8 @@ class OBJECT_OT_add_bounding_object():
         self.displace_modifiers = []
 
         self.opacity_active = False
+        self.cylinder_axis = False
+        self.vertex_count = 12
 
         # reset displace offset every time calling the operator
         self.my_offset = 0.0

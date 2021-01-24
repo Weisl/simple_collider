@@ -1,3 +1,5 @@
+from tempfile import gettempdir
+
 import bpy
 import rna_keymap_ui
 
@@ -15,6 +17,27 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     colPreSuffix: bpy.props.StringProperty(name="Collision", default="_COL")
     colSuffix: bpy.props.StringProperty(name="Collision", default="_BOUNDING")
 
+    executable_path: bpy.props.StringProperty(name='VHACD exe',
+                                              description='Path to VHACD executable',
+                                              default='',
+                                              subtype='FILE_PATH'
+                                              )
+
+    data_path: bpy.props.StringProperty(
+        name='Data Path',
+        description='Data path to store V-HACD meshes and logs',
+        default=gettempdir(),
+        maxlen=1024,
+        subtype='DIR_PATH'
+    )
+
+    # TODO: DELTE!
+    name_template: bpy.props.StringProperty(
+        name='Name Template',
+        description='Name template used for generated hulls.\n? = original mesh name\n# = hull id',
+        default='?_hull_#',
+    )
+
     props = [
         "meshColSuffix",
         "convexColSuffix",
@@ -22,11 +45,23 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colPreSuffix",
         "colSuffix",
     ]
+    vhacd_props = [
+        "executable_path",
+        "data_path",
+        "name_template",
+    ]
 
     # here you specify how they are drawn
     def draw(self, context):
         layout = self.layout
+
         for propName in self.props:
+            raw = layout.row()
+            raw.prop(self, propName)
+
+        layout.separator()
+
+        for propName in self.vhacd_props:
             raw = layout.row()
             raw.prop(self, propName)
 

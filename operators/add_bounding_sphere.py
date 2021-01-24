@@ -47,7 +47,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        # return self.execute(context)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):

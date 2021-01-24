@@ -39,6 +39,7 @@ class CollissionPanel(bpy.types.Panel):
         # row = layout.row(align=True)
         # row.prop(shading, "color_type", text="", expand=True)
 
+
 class CollisionMenu(bpy.types.Menu):
     bl_idname = "COLLISION_MT_Create"
     bl_label = "Collisions"
