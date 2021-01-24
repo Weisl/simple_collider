@@ -243,7 +243,8 @@ class VHACD_OT_convex_decomposition(bpy.types.Operator):
                 hull.name = name
                 hull.data.name = name
                 # Display
-                hull.display_type = 'WIRE'
+                hull.display_type = 'SOLID'
+                hull.color[3] = 0.5
                 # hull.display.show_shadows = False
                 # hull.show_all_edges = True
 
