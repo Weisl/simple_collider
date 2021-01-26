@@ -3,7 +3,6 @@ from . import pie_menu
 
 classes = (
     properties_panels.CollissionPanel,
-    properties_panels.CollisionMenu,
     pie_menu.VIEW3D_MT_PIE_template
 )
 

@@ -38,13 +38,3 @@ class CollissionPanel(bpy.types.Panel):
         # row.prop(shading, "type", text="", expand=True)
         # row = layout.row(align=True)
         # row.prop(shading, "color_type", text="", expand=True)
-
-
-class CollisionMenu(bpy.types.Menu):
-    bl_idname = "COLLISION_MT_Create"
-    bl_label = "Collisions"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator("mesh.add_bounding_box")
-        layout.operator("mesh.add_bounding_cylinder")

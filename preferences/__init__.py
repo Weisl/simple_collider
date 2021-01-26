@@ -4,7 +4,7 @@ from .keymap import add_hotkey, remove_hotkey
 
 classes = (
     preferences.CollisionAddonPrefs,
-    keymap.RENAMING_OT_add_hotkey_renaming,
+    keymap.COLLISION_OT_add_hotkey_renaming,
 )
 
 
