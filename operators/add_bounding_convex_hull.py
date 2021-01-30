@@ -5,10 +5,28 @@ from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
+# TODO: Remove modifiers
+
+def apply_all_modifiers(obj):
+    for mod in obj.modifiers:
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+
+
+def remove_all_modifiers(obj):
+    if obj:
+        for mod in obj.modifiers:
+            obj.modifiers.remove(mod)
+
+
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_convex_hull"
     bl_label = "Add Convex Hull"
+
+    use_modifier_stack: bpy.props.BoolProperty(
+        name='Use Modifier Stack',
+        default=True
+    )
 
     def invoke(self, context, event):
         self.obj_mode = context.object.mode
@@ -62,10 +80,15 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if self.obj_mode == "EDIT":
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.duplicate()
-                bpy.ops.mesh.convex_hull()
+
+                # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
+                # to avoid switching modes multiple times
+                if self.use_modifier_stack == False:
+                    bpy.ops.mesh.convex_hull()
+
                 bpy.ops.mesh.separate(type='SELECTED')
 
-            else:  #obj_mode == "OBJECT":
+            else:  # obj_mode == "OBJECT":
                 bpy.ops.object.mode_set(mode='EDIT')
 
                 # Get a BMesh representation
@@ -76,19 +99,29 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 self.get_vertices(bm, preselect_all=True)
 
                 bpy.ops.mesh.duplicate()
-                bpy.ops.mesh.convex_hull()
+                # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
+                # to avoid switching modes multiple times
+                if self.use_modifier_stack == False:
+                    bpy.ops.mesh.convex_hull()
                 bpy.ops.mesh.separate(type='SELECTED')
-
-                pass
 
             bpy.ops.object.mode_set(mode='OBJECT')
 
-            new_collider = context.scene.objects[-1]
+            new_collider = list(set(context.scene.objects) - old_objs)[-1]
             new_collider.name = obj.name + self.name_suffix + "_" + str(i)
+
+            if self.use_modifier_stack:
+                context.view_layer.objects.active = new_collider
+                apply_all_modifiers(new_collider)
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.convex_hull()
+                bpy.ops.object.mode_set(mode='OBJECT')
 
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
 
+            remove_all_modifiers(new_collider)
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
             self.cleanup(context, new_collider, self.physics_material_name)
