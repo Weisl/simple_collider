@@ -25,7 +25,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     use_modifier_stack: bpy.props.BoolProperty(
         name='Use Modifier Stack',
-        default=True
+        default=False
     )
 
     def invoke(self, context, event):
@@ -43,8 +43,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        self.remove_objects(self.previous_objects)
-        self.previous_objects = []
+        self.remove_objects(self.new_colliders_list)
+        self.new_colliders_list = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
@@ -60,8 +60,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         obj_amount = len(self.selected_objects)
         old_objs = set(context.scene.objects)
 
-        bpy.ops.object.mode_set(mode='OBJECT')
-        bpy.ops.object.select_all(action='DESELECT')
+        # bpy.ops.object.mode_set(mode='OBJECT')
+        # bpy.ops.object.select_all(action='DESELECT')
 
         for i, obj in enumerate(self.selected_objects):
 
@@ -79,12 +79,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             if self.obj_mode == "EDIT":
                 bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.duplicate()
+                bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
 
                 # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
                 # to avoid switching modes multiple times
                 if self.use_modifier_stack == False:
-                    bpy.ops.mesh.convex_hull()
+                    bpy.ops.mesh.convex_hull(delete_unused=True, use_existing_faces=False, make_holes=False, join_triangles=True, face_threshold=0.698132, shape_threshold=0.698132, uvs=False, vcols=False, seam=False, sharp=False, materials=False)
 
                 bpy.ops.mesh.separate(type='SELECTED')
 
@@ -98,11 +98,13 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 # select all vertices
                 self.get_vertices(bm, preselect_all=True)
 
-                bpy.ops.mesh.duplicate()
+                bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
                 # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
                 # to avoid switching modes multiple times
                 if self.use_modifier_stack == False:
-                    bpy.ops.mesh.convex_hull()
+                    bpy.ops.mesh.convex_hull(delete_unused=True, use_existing_faces=False, make_holes=False, join_triangles=True, face_threshold=0.698132, shape_threshold=0.698132, uvs=False, vcols=False, seam=False, sharp=False, materials=False)
+
+
                 bpy.ops.mesh.separate(type='SELECTED')
 
             bpy.ops.object.mode_set(mode='OBJECT')
@@ -124,12 +126,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             remove_all_modifiers(new_collider)
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
-            self.cleanup(context, new_collider, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
             self.add_to_collections(new_collider, collections)
 
             print('Generated collisions %d/%d' % (i, obj_amount))
 
-        self.previous_objects = set(context.scene.objects) - old_objs
-        print("previous_objects" + str(self.previous_objects))
+        self.new_colliders_list = set(context.scene.objects) - old_objs
+        print("previous_objects" + str(self.new_colliders_list))
 
         return {'RUNNING_MODAL'}

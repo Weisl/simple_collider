@@ -128,7 +128,7 @@ class OBJECT_OT_add_bounding_object():
         remove_materials(bounding_object)
         set_material(bounding_object, physics_material_name)
 
-    def cleanup(self, context, bounding_object, physics_material_name):
+    def primitive_postprocessing(self, context, bounding_object, physics_material_name):
 
         self.set_viewport_drawing(context, bounding_object)
         self.add_bounding_modifiers(context, bounding_object)
@@ -177,7 +177,7 @@ class OBJECT_OT_add_bounding_object():
         # get physics material from properties panel
         scene = context.scene
         self.physics_material_name = scene.CollisionMaterials
-        self.previous_objects = []
+        self.new_colliders_list = []
 
         # Store shading color type to restore after operator
         self.color_type = context.space_data.shading.color_type
@@ -216,8 +216,8 @@ class OBJECT_OT_add_bounding_object():
         if event.type in {'RIGHTMOUSE', 'ESC'}:
 
             # Remove previously created collisions
-            if self.previous_objects != None:
-                for obj in self.previous_objects:
+            if self.new_colliders_list != None:
+                for obj in self.new_colliders_list:
                     objs = bpy.data.objects
                     objs.remove(obj, do_unlink=True)
 
@@ -233,9 +233,10 @@ class OBJECT_OT_add_bounding_object():
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER'}:
             # self.execute(context)
-            context.space_data.shading.color_type = self.color_type
+            if bpy.context.space_data.shading.color_type:
+                context.space_data.shading.color_type = self.color_type
 
-            for obj in self.previous_objects:
+            for obj in self.new_colliders_list:
                 obj.display_type = scene.my_collision_shading_view
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
@@ -244,6 +245,15 @@ class OBJECT_OT_add_bounding_object():
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
                 pass
+
+
+            # for obj in self.new_colliders_list:
+            #     bpy.ops.object.mode_set(mode='OBJECT')
+            #     bpy.context.view_layer.objects.active = obj
+            #     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
+
+            #reset active object
+            bpy.context.view_layer.objects.active = self.active_obj
 
             return {'FINISHED'}
 
@@ -276,7 +286,7 @@ class OBJECT_OT_add_bounding_object():
                 delta = self.first_mouse_x - event.mouse_x
                 color_alpha = 0.5 + delta * 0.01
 
-                for obj in self.previous_objects:
+                for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
                 scene.my_color[3] = color_alpha

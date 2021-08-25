@@ -61,8 +61,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def execute(self, context):
 
-        self.remove_objects(self.previous_objects)
-        self.previous_objects = []
+        self.remove_objects(self.new_colliders_list)
+        self.new_colliders_list = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
@@ -172,8 +172,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
-            self.previous_objects.append(new_collider)
-            self.cleanup(context, new_collider, self.physics_material_name)
+            self.new_colliders_list.append(new_collider)
+            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
             self.add_to_collections(new_collider, collections)
 
         return {'RUNNING_MODAL'}

@@ -38,8 +38,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        self.remove_objects(self.previous_objects)
-        self.previous_objects = []
+        self.remove_objects(self.new_colliders_list)
+        self.new_colliders_list = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
@@ -91,12 +91,12 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
-            self.cleanup(context, new_collider, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
             self.add_to_collections(new_collider, collections)
 
             # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
             # self.report({'INFO'}, infomessage)
 
-        self.previous_objects = set(context.scene.objects) - old_objs
+        self.new_colliders_list = set(context.scene.objects) - old_objs
 
         return {'RUNNING_MODAL'}

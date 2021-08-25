@@ -27,8 +27,9 @@ class CollissionPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(scene, "CollisionMaterials")
 
-        row = layout.row()
-        row.operator("object.hide_collisions")
+        row = layout.row(align=True)
+        row.operator("object.hide_collisions", icon='HIDE_ON', text='Collision').hide = True
+        row.operator("object.hide_collisions", icon='HIDE_OFF', text='Collision').hide = False
 
         view = context.space_data
 
