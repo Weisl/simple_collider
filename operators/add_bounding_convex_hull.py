@@ -29,8 +29,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     )
 
     def invoke(self, context, event):
-        self.obj_mode = context.object.mode
         super().invoke(context, event)
+
+        # collider type specific
+        self.use_decimation = True
+
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):

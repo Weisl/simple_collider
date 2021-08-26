@@ -3,41 +3,46 @@ import blf
 import bpy
 import gpu
 
-from .object_functions import add_displace_mod
 from ..pyshics_materials.material_functions import remove_materials, set_material
 
 
 def draw_viewport_overlay(self, context):
     scene = context.scene
     font_id = 0  # XXX, need to find out how best to get this.
+    vertical_px_offset = 30
 
     # draw some text
     global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-    blf.position(font_id, 30, 30, 0)
+    blf.position(font_id, 30, 1*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Global Orient (G): " + global_orient)
 
     # draw some text
     local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-    blf.position(font_id, 30, 60, 0)
+    blf.position(font_id, 30, 2*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Local Orient (L): " + local_orient)
 
-    blf.position(font_id, 30, 90, 0)
+    blf.position(font_id, 30, 3*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Shrink/Inflate (S): " + str(self.my_offset))
+    blf.draw(font_id, "Shrink/Inflate (S): " + str(self.displace_my_offset))
 
-    blf.position(font_id, 30, 120, 0)
+    blf.position(font_id, 30, 4*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Opacity (A) : " + str(scene.my_color[3]))
 
-    blf.position(font_id, 30, 150, 0)
+    blf.position(font_id, 30, 5*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Shading View (S) : " + str(scene.my_collision_shading_view))
+    blf.draw(font_id, "Preview View (V) : " + self.shading_modes[self.shading_idx])
 
-    blf.position(font_id, 30, 180, 0)
+    blf.position(font_id, 30, 6*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
+
+    if self.use_decimation:
+        blf.position(font_id, 30, 7 * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Decimate (D): " + str(self.decimate_amount))
 
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
@@ -57,7 +62,7 @@ class OBJECT_OT_add_bounding_object():
 
     # The offset used in a displacement modifier on the bounding object to
     # either push the bounding object inwards or outwards
-    my_offset: bpy.props.FloatProperty()
+    displace_my_offset: bpy.props.FloatProperty()
 
     def remove_objects(self, list):
         # Remove previously created collisions
@@ -117,12 +122,22 @@ class OBJECT_OT_add_bounding_object():
         bounding_object.display_type = 'SOLID'
         bounding_object.color = scene.my_color
 
-    def add_bounding_modifiers(self, context, bounding_object):
+
+    def add_displacement_modifier(self, context, bounding_object):
         scene = context.scene
 
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
-        mod = add_displace_mod(bounding_object, self.my_offset)
-        self.displace_modifiers.append(mod)
+        modifier = bounding_object.modifiers.new(name="ColliderOffset_disp", type='DISPLACE')
+        modifier.strength = self.displace_my_offset
+        self.displace_modifiers.append(modifier)
+
+    def add_decimate_modifier(self, context, bounding_object):
+        scene = context.scene
+
+        # add decimation modifier and safe it to manipulate the strenght in the modal operator
+        modifier = bounding_object.modifiers.new(name="Decimation", type='DECIMATE')
+        modifier.ratio = self.decimate_amount
+        self.decimate_modifiers.append(modifier)
 
     def set_physics_material(self, context, bounding_object, physics_material_name):
         remove_materials(bounding_object)
@@ -131,7 +146,12 @@ class OBJECT_OT_add_bounding_object():
     def primitive_postprocessing(self, context, bounding_object, physics_material_name):
 
         self.set_viewport_drawing(context, bounding_object)
-        self.add_bounding_modifiers(context, bounding_object)
+        self.add_displacement_modifier(context, bounding_object)
+
+        print('use_decimation = ' + str(self.use_decimation))
+        if self.use_decimation:
+            self.add_decimate_modifier(context, bounding_object)
+
         self.set_physics_material(context, bounding_object, physics_material_name)
 
         bounding_object['isCollider'] = True
@@ -182,10 +202,16 @@ class OBJECT_OT_add_bounding_object():
         # Store shading color type to restore after operator
         self.color_type = context.space_data.shading.color_type
         # Set preview to object color to see transparent collision
-        context.space_data.shading.color_type = 'OBJECT'
+
+        self.shading_idx = 0
+        self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+
+        context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
 
         # add modal handler
         context.window_manager.modal_handler_add(self)
+
+        self.obj_mode = context.object.mode
 
         # the arguments we pass the the callback
         args = (self, context)
@@ -195,13 +221,20 @@ class OBJECT_OT_add_bounding_object():
 
         self.displace_active = False
         self.displace_modifiers = []
+        # reset displace offset every time calling the operator
+        self.displace_my_offset = 0.0
+
+        # Does collision type support decimation. Overwrite in sub classes
+        self.use_decimation = True
+
+        # Decimation Amount
+        self.decimate_active = False
+        self.decimate_modifiers = []
+        self.decimate_amount = 1.0
 
         self.opacity_active = False
         self.cylinder_axis = False
         self.vertex_count = 12
-
-        # reset displace offset every time calling the operator
-        self.my_offset = 0.0
 
         # store mouse position
         self.first_mouse_x = event.mouse_x
@@ -266,9 +299,19 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = not self.displace_active
             self.opacity_active = False
 
+        elif event.type == 'D' and event.value == 'RELEASE':
+            self.decimate_active = not self.decimate_active
+            self.opacity_active = False
+
         elif event.type == 'A' and event.value == 'RELEASE':
             self.opacity_active = not self.opacity_active
             self.displace_active = False
+
+        elif event.type == 'V' and event.value == 'RELEASE':
+            #toggle through display modes
+            self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
+            print('shading_idx = ' + str(self.shading_idx))
+            context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
@@ -280,7 +323,20 @@ class OBJECT_OT_add_bounding_object():
                     mod.show_in_editmode = True
 
                     # Store displacement strenght to use when regenerating the colliders
-                    self.my_offset = mod.strength
+                    self.displace_my_offset = mod.strength
+
+            if self.decimate_active:
+                print('decimation')
+                delta = self.first_mouse_x - event.mouse_x
+                for mod in self.decimate_modifiers:
+                    dec_amount = 1.0 - delta * 0.01
+                    mod.ratio = dec_amount
+                    # mod.show_on_cage = True
+                    # mod.show_in_editmode = True
+
+                    # Store displacement strenght to use when regenerating the colliders
+                    self.decimate_amount = mod.ratio
+
 
             if self.opacity_active:
                 delta = self.first_mouse_x - event.mouse_x

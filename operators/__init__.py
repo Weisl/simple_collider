@@ -66,4 +66,4 @@ def unregister():
     del scene.my_collision_shading_view
     del scene.my_color
     del scene.my_space
-    del scene.my_offset
+    del scene.displace_my_offset
