@@ -1,9 +1,8 @@
-from . import properties_panels
-from . import pie_menu
+from . import vhacd_operator
+
 
 classes = (
-    properties_panels.CollissionPanel,
-    pie_menu.VIEW3D_MT_PIE_template
+    vhacd_operator.VHACD_OT_convex_decomposition,
 )
 
 

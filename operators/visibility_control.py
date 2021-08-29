@@ -1,10 +1,16 @@
 import bpy
 
 
+
 class COLLISION_OT_Visibility(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.hide_collisions"
     bl_label = "Hide Collision Meshes"
+
+    hide: bpy.props.BoolProperty(
+        name='Hide/Unhide',
+        default=True
+    )
 
     # @classmethod
     # def poll(cls, context):
@@ -15,7 +21,11 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
 
         # objects = [ob.hide_set(True) for ob in bpy.context.view_layer.objects if ob.get('isCollider')]
         for ob in bpy.context.view_layer.objects:
-            if ob.get('isCollider'):
-                ob.hide_viewport = scene.my_hide
+            if ob.get('isCollider') == True:
+                ob.hide_viewport = self.hide
+
+                # hide throws errors :(
+                # ob.hide_set = False
+
 
         return {'FINISHED'}

@@ -9,7 +9,7 @@ def remove_hotkey():
     # only works for menues and pie menus
     for km, kmi in addon_keymaps:
         if hasattr(kmi.properties, 'name'):
-            if kmi.properties.name in ['COLLISION_PT_Create']:
+            if kmi.properties.name in ['COLLISION_pie_menu']:
                 km.keymap_items.remove(kmi)
 
     addon_keymaps.clear()
@@ -32,10 +32,9 @@ def add_hotkey(context=None):
 
         km = kc.keymaps.new(name="3D View", space_type='VIEW_3D', region_type='WINDOW')
         kmi = km.keymap_items.new(idname='wm.call_menu_pie', type='C', value='PRESS', ctrl=True, shift=True)
-        kmi.properties.name = "COLLISION_pie_menu"
+        kmi.properties.name = "COLLISION_MT_pie_menu"
         kmi.active = True
         addon_keymaps.append((km, kmi))
-
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
@@ -56,9 +55,9 @@ def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
     return None
 
 
-class RENAMING_OT_add_hotkey_renaming(bpy.types.Operator):
+class COLLISION_OT_add_hotkey_renaming(bpy.types.Operator):
     ''' Add hotkey entry '''
-    bl_idname = "utilities.add_hotkey"
+    bl_idname = "collision_tool.add_hotkey"
     bl_label = "Addon Preferences Example"
     bl_options = {'REGISTER', 'INTERNAL'}
 

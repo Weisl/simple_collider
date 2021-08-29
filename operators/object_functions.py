@@ -20,8 +20,3 @@ def set_origin_to_center_of_mass(context, ob):
     context.view_layer.objects.active = oldActive
 
 
-def add_displace_mod(obj, strenght):
-    # add a displacement modifier to the object to inflate or shrink it
-    modifier = obj.modifiers.new(name="ColliderOffset_disp", type='DISPLACE')
-    modifier.strength = strenght
-    return modifier

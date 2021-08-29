@@ -17,15 +17,17 @@ if "bpy" in locals():
     importlib.reload(ui)
     importlib.reload(operators)
     # importlib.reload(physics_materials)
+    importlib.reload(vhacd_integration)
     importlib.reload(preferences)
+
 else:
     from . import ui
     from . import operators
     # from . import physics_materials
+    from . import vhacd_integration
     from . import preferences
 
 import bpy
-
 
 def scene_my_collision_material_poll(self, material):
     ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
@@ -49,6 +51,9 @@ def register():
     # call the register function of the sub modules
     ui.register()
     operators.register()
+    vhacd_integration.register()
+
+    # keymap and preferences should be last
     preferences.register()
 
 
@@ -61,5 +66,6 @@ def unregister():
 
     # call unregister function of the sub-modules
     preferences.unregister()
+    vhacd_integration.unregister()
     operators.unregister()
     ui.unregister()
