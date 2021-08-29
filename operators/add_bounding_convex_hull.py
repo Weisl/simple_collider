@@ -34,10 +34,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-
-        # collider type specific
-        self.use_decimation = True
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -80,9 +76,13 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            #setup
             obj.select_set(True)
             context.view_layer.objects.active = obj
             collections = obj.users_collection
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.boxColSuffix
+            new_name = super().collider_name(context, type_suffix, i+1)
 
             if self.obj_mode == "EDIT":
                 bpy.ops.object.mode_set(mode='EDIT')
@@ -116,8 +116,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             bpy.ops.object.mode_set(mode='OBJECT')
 
+
             new_collider = list(set(context.scene.objects) - old_objs)[-1]
-            new_collider.name = obj.name + self.name_suffix + "_" + str(i)
+            new_collider.name = new_name
 
             if self.use_modifier_stack:
                 context.view_layer.objects.active = new_collider

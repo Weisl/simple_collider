@@ -121,6 +121,19 @@ class OBJECT_OT_add_bounding_object():
 
         return positionsX, positionsY, positionsZ
 
+    def primitive_postprocessing(self, context, bounding_object, physics_material_name):
+
+        self.set_viewport_drawing(context, bounding_object)
+        self.add_displacement_modifier(context, bounding_object)
+
+        print('use_decimation = ' + str(self.use_decimation))
+        if self.use_decimation:
+            self.add_decimate_modifier(context, bounding_object)
+
+        self.set_physics_material(context, bounding_object, physics_material_name)
+
+        bounding_object['isCollider'] = True
+
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         scene = context.scene
@@ -128,6 +141,38 @@ class OBJECT_OT_add_bounding_object():
         bounding_object.display_type = 'SOLID'
         bounding_object.color = scene.my_color
 
+    def add_to_collections(self, obj, collections):
+        old_collection = obj.users_collection
+
+        for col in collections:
+            try:
+                col.objects.link(obj)
+            except RuntimeError:
+                pass
+
+        for col in old_collection:
+            if col not in collections:
+                col.objects.unlink(obj)
+
+    def unique_name(self,name,count):
+        '''recursive function to find unique name'''
+        nr = str('_{num:{fill}{width}}'.format(num=(count), fill='0', width=3))
+        new_name = name + nr
+        print("entered")
+        if new_name in bpy.data.objects:
+           new_name = self.unique_name(name, count+1)
+        return new_name
+
+    def collider_name(self,context, type_suffix, count):
+        prefs = context.preferences.addons["CollisionHelpers"].preferences
+
+        basename = 'Basename'
+        name_suffix = prefs.colPreSuffix + type_suffix + prefs.optionalSuffix
+        new_name = basename + name_suffix
+        return self.unique_name(new_name,count)
+
+
+    #Modifiers
     def add_displacement_modifier(self, context, bounding_object):
         scene = context.scene
 
@@ -154,35 +199,10 @@ class OBJECT_OT_add_bounding_object():
             mod = bounding_object.modifiers['Collision_decimate']
             bounding_object.modifiers.remove(mod)
 
+    #Materials
     def set_physics_material(self, context, bounding_object, physics_material_name):
         remove_materials(bounding_object)
         set_material(bounding_object, physics_material_name)
-
-    def primitive_postprocessing(self, context, bounding_object, physics_material_name):
-
-        self.set_viewport_drawing(context, bounding_object)
-        self.add_displacement_modifier(context, bounding_object)
-
-        print('use_decimation = ' + str(self.use_decimation))
-        if self.use_decimation:
-            self.add_decimate_modifier(context, bounding_object)
-
-        self.set_physics_material(context, bounding_object, physics_material_name)
-
-        bounding_object['isCollider'] = True
-
-    def add_to_collections(self, obj, collections):
-        old_collection = obj.users_collection
-
-        for col in collections:
-            try:
-                col.objects.link(obj)
-            except RuntimeError:
-                pass
-
-        for col in old_collection:
-            if col not in collections:
-                col.objects.unlink(obj)
 
     def __init__(self):
         # has to be in --init
@@ -202,13 +222,11 @@ class OBJECT_OT_add_bounding_object():
 
         # get collision suffix from preferences
         prefs = context.preferences.addons["CollisionHelpers"].preferences
-        colSuffix = prefs.colSuffix
-        colPreSuffix = prefs.colPreSuffix
-        boxColSuffix = prefs.boxColSuffix
-        self.name_suffix = colPreSuffix + boxColSuffix + colSuffix
+        scene = context.scene
 
+        # INITIAL STATE
         self.selected_objects = context.selected_objects.copy()
-
+        self.obj_mode = context.object.mode
         # save initial selection and active object to recalculate collisions and restore initial state on cancel
         if context.object is not None:
             self.active_obj = context.object
@@ -216,52 +234,34 @@ class OBJECT_OT_add_bounding_object():
             context.view_layer.objects.active = self.selected_objects[0]
             self.active_obj = context.object
 
-        # get physics material from properties panel
-        scene = context.scene
+        # MODIFIERS
+        self.displace_active = False
+        self.displace_modifiers = []
+        self.displace_my_offset = 0.0
+        self.decimate_active = False
+        self.decimate_modifiers = []
+        self.decimate_amount = 1.0
+        self.opacity_active = False
+        self.cylinder_axis = False
+        self.vertex_count_active = False
+        self.color_type = context.space_data.shading.color_type
+        self.shading_idx = 0
+        self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        # store mouse position
+        self.first_mouse_x = event.mouse_x
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
-        # Store shading color type to restore after operator
-        self.color_type = context.space_data.shading.color_type
-        # Set preview to object color to see transparent collision
-
-        self.shading_idx = 0
-        self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
-
+        # Set up scene
         context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
-
-        # add modal handler
-        context.window_manager.modal_handler_add(self)
-
-        self.obj_mode = context.object.mode
 
         # the arguments we pass the the callback
         args = (self, context)
         # Add the region OpenGL drawing callback
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
-
-        self.displace_active = False
-        self.displace_modifiers = []
-        # reset displace offset every time calling the operator
-        self.displace_my_offset = 0.0
-
-        # Does collision type support decimation. Overwrite in sub classes
-
-
-        # Decimation Amount
-        self.decimate_active = False
-        self.decimate_modifiers = []
-        self.decimate_amount = 1.0
-
-        self.opacity_active = False
-        self.cylinder_axis = False
-
-        self.vertex_count_active = False
-
-        # store mouse position
-        self.first_mouse_x = event.mouse_x
-
+        # add modal handler
+        context.window_manager.modal_handler_add(self)
         self.execute(context)
 
     def modal(self, context, event):

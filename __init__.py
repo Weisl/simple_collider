@@ -45,7 +45,8 @@ def register():
     )
 
     scene.PhysicsIdentifier = bpy.props.StringProperty(
-        default="COL",
+        default="",
+        name='Material Filter',
     )
 
     # call the register function of the sub modules

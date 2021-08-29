@@ -7,8 +7,6 @@ from mathutils import Vector
 from CollisionHelpers.operators.object_functions import alignObjects, get_bounding_box
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-#TODO: Remove displacement modifier if value is 0.00000
-#TODO: Naming (make consistant between local/global)
 #TODO: Material, create if none is defined
 #TODO: Keep multi edit selection
 
@@ -54,7 +52,7 @@ def generate_box(positionsX, positionsY, positionsZ):
     return verts, faces
 
 
-def verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf):
+def verts_faces_to_bbox_collider(self, context, verts_loc, faces, new_name):
     """Create box collider for selected mesh area in edit mode"""
 
     active_ob = context.object
@@ -79,7 +77,7 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf):
 
     # create new object from mesh and link it to collection
     # print("active_ob.name = " + active_ob.name)
-    newCollider = bpy.data.objects.new(active_ob.name + nameSuf, mesh)
+    newCollider = bpy.data.objects.new(new_name, mesh)
     root_collection.objects.link(newCollider)
 
     scene = context.scene
@@ -97,7 +95,7 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces, nameSuf):
     return newCollider
 
 
-def box_Collider_from_Objectmode(self, context, name, obj, i):
+def box_Collider_from_Objectmode(self, context, new_name, obj, i):
     """Create box collider for every selected object in object mode"""
     colliderOb = []
 
@@ -106,7 +104,7 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
     if scene.my_space == 'LOCAL':
         # create BoundingBox object for collider
         bBox = get_bounding_box(obj)
-        newCollider = add_box_object(context, bBox, name)
+        newCollider = add_box_object(context, bBox, new_name)
 
         # set parent
         newCollider.parent = obj
@@ -125,7 +123,7 @@ def box_Collider_from_Objectmode(self, context, name, obj, i):
         used_vertices = self.get_vertices(bm, preselect_all=True)
         positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
         verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
-        newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, name)
+        newCollider = verts_faces_to_bbox_collider(self, context, verts_loc, faces, new_name)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -144,7 +142,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        # return self.execute(context)
+
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -171,18 +169,18 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         scene = context.scene
 
+        # CLEANUP
         self.remove_objects(self.new_colliders_list)
         self.new_colliders_list = []
-
-        # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
-
         # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
+
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
 
         # Create the bounding geometry, depending on edit or object mode.
         for object_count, obj in enumerate(self.selected_objects):
+            object_count += 1
 
             # skip if invalid object
             if obj is None:
@@ -192,11 +190,16 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+
             context.view_layer.objects.active = obj
             collections = obj.users_collection
 
-            if obj.mode == "EDIT":
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.boxColSuffix
+            new_name = super().collider_name(context,type_suffix, object_count)
 
+
+            if obj.mode == "EDIT":
 
                 # safety check in case of mode changes between iterating through selected meshes
                 if bpy.context.mode != 'EDIT_MESH':
@@ -210,22 +213,16 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
                 new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces,
-                                                            obj.mode + self.name_suffix)
-
-                #calculate center
-                center_coordinate = 0.125 * sum((Vector(b) for b in verts_loc), Vector())
-
+                                                            new_name)
 
                 # save collision objects to delete when canceling the operation
                 self.new_colliders_list.append(new_collider)
                 self.primitive_postprocessing(context, new_collider, self.physics_material_name)
                 self.add_to_collections(new_collider, collections)
 
-                #Add cleanup to add boudning primitive if possible
-
             else:  # mode == "OBJECT":
 
-                new_collider = box_Collider_from_Objectmode(self, context, self.name_suffix, obj, object_count)
+                new_collider = box_Collider_from_Objectmode(self, context, new_name, obj, object_count)
 
                 # save collision objects to delete when canceling the operation
                 self.new_colliders_list.append(new_collider)
