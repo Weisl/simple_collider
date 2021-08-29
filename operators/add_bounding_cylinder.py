@@ -22,7 +22,7 @@ def calc_hypothenuse(a, b):
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
 
-def generate_cylinder_Collider_Objectmode(self, context, base_object, name_suffix):
+def generate_cylinder_Collider_Objectmode(self, context, base_object, new_name):
     """Create cylindrical collider for every selected object in object mode
     base_object contains a blender object
     name_suffix gets added to the newly created object name
@@ -46,7 +46,7 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, name_suffi
                                         depth=depth)
 
     newCollider = context.object
-    newCollider.name = base_object.name + name_suffix
+    newCollider.name = new_name
 
     # align newly created object to base mesh
     centreBase = sum((Vector(b) for b in base_object.bound_box), Vector()) / 8.0
@@ -75,6 +75,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
+
+        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        # collider type specific
+        self.type_suffix = prefs.convexColSuffix
+
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -103,11 +108,24 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        nameSuf = self.name_suffix
+
+
         matName = self.physics_material_name
 
         for i, obj in enumerate(context.selected_objects.copy()):
-            newCollider = generate_cylinder_Collider_Objectmode(self, context, obj, nameSuf)
+            # skip if invalid object
+            if obj is None:
+                continue
+
+            # skip non Mesh objects like lamps, curves etc.
+            if obj.type != "MESH":
+                continue
+
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.boxColSuffix
+            new_name = super().collider_name(context, type_suffix, i+1)
+
+            newCollider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
             self.primitive_postprocessing(context, newCollider, matName)
 
         return {'FINISHED'}

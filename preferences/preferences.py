@@ -20,7 +20,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="_CONVEX")
     sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="_SPHERE")
     meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="_MESH")
-
+    optionalSuffix: bpy.props.StringProperty(name="Optional Suffix", default="_LOW_HIGH")
     colSuffix: bpy.props.StringProperty(name="Non Collision", default="_BOUNDING")
 
     executable_path: bpy.props.StringProperty(name='VHACD exe',

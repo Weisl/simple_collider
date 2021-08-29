@@ -48,6 +48,11 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
+
+        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        # collider type specific
+        self.type_suffix = prefs.sphereColSuffix
+
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -85,6 +90,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
             collections = obj.users_collection
 
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.boxColSuffix
+            new_name = super().collider_name(context, type_suffix, i+1)
+
             if obj.mode == "EDIT":
                 me = obj.data
 
@@ -103,6 +112,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 bm = bmesh.from_edit_mesh(me)
 
                 vertices = self.get_vertices(bm, preselect_all=True)
+
 
             # Get vertices wit min and may values
             # First pass
@@ -168,7 +178,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
 
             # create collision meshes
-            new_collider = create_sphere(mid_point, radius, obj.name + self.name_suffix + "_" + str(i))
+            new_collider = create_sphere(mid_point, radius, new_name + "_" + str(i))
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
