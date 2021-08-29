@@ -23,6 +23,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_mesh_collision"
     bl_label = "Add Mesh Collision"
 
+    def __init__(self):
+        # has to be in __init__ to get overwritten by children
+        self.use_decimation = True
+
     def invoke(self, context, event):
         super().invoke(context, event)
         self.face_count = 0

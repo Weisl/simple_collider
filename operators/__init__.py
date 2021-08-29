@@ -1,9 +1,9 @@
 import bpy
 
+from . import add_bounding_primitive
 from . import add_bounding_box
 from . import add_bounding_convex_hull
 from . import add_bounding_cylinder
-from . import add_bounding_primitive
 from . import add_bounding_sphere
 from . import add_collision_mesh
 from . import visibility_control

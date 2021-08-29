@@ -17,14 +17,15 @@ if "bpy" in locals():
     importlib.reload(ui)
     importlib.reload(operators)
     # importlib.reload(physics_materials)
-    importlib.reload(preferences)
     importlib.reload(vhacd_integration)
+    importlib.reload(preferences)
+
 else:
     from . import ui
     from . import operators
     # from . import physics_materials
-    from . import preferences
     from . import vhacd_integration
+    from . import preferences
 
 import bpy
 
@@ -51,6 +52,8 @@ def register():
     ui.register()
     operators.register()
     vhacd_integration.register()
+
+    # keymap and preferences should be last
     preferences.register()
 
 

@@ -28,6 +28,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         default=False
     )
 
+    def __init__(self):
+        super().__init__()
+        self.use_decimation = True
+
     def invoke(self, context, event):
         super().invoke(context, event)
 

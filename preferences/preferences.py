@@ -11,6 +11,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # Has to be named like the main addon folder
     bl_idname = "CollisionHelpers"  ### __package__ works on multifile and __name__ not
 
+
     meshColSuffix: bpy.props.StringProperty(name="Mesh", default="_MESH")
     convexColSuffix: bpy.props.StringProperty(name="Convex Suffix", default="_CONVEX")
     boxColSuffix: bpy.props.StringProperty(name="Box Suffix", default="_BOX")
@@ -65,22 +66,27 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             raw = layout.row()
             raw.prop(self, propName)
 
+        ''' KEYMAP UI '''
         box = layout.box()
         col = box.column()
+        col.label(text="keymap")
 
         wm = context.window_manager
         kc = wm.keyconfigs.addon
         km = kc.keymaps['3D View']
 
-        from .keymap import get_hotkey_entry_item
-
         kmis = []
-        kmis.append(get_hotkey_entry_item(km, 'wm.call_panel', 'COLLISION_PT_Create'))
+
+        from .keymap import get_hotkey_entry_item
+        # Menus and Pies
+        kmis.append(get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu'))
 
         for kmi in kmis:
             if kmi:
                 col.context_pointer_set("keymap", km)
                 rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+
             else:
                 col.label(text="No hotkey entry found")
-                col.operator("utilities.add_hotkey", text="Add hotkey entry", icon='ADD')
+                col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
+

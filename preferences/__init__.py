@@ -2,9 +2,10 @@ from . import keymap
 from . import preferences
 from .keymap import add_hotkey, remove_hotkey
 
+#keymap needs to be registered before the preferences UI
 classes = (
-    preferences.CollisionAddonPrefs,
     keymap.COLLISION_OT_add_hotkey_renaming,
+    preferences.CollisionAddonPrefs,
 )
 
 

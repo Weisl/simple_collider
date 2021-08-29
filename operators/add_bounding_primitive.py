@@ -44,6 +44,12 @@ def draw_viewport_overlay(self, context):
         blf.size(font_id, 20, 72)
         blf.draw(font_id, "Decimate (D): " + str(self.decimate_amount))
 
+    if self.use_vertex_count:
+        blf.position(font_id, 30, 8 * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Segments (E): " + str(self.vertex_count))
+
+
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
     bgl.glEnable(bgl.GL_BLEND)
@@ -122,7 +128,6 @@ class OBJECT_OT_add_bounding_object():
         bounding_object.display_type = 'SOLID'
         bounding_object.color = scene.my_color
 
-
     def add_displacement_modifier(self, context, bounding_object):
         scene = context.scene
 
@@ -169,9 +174,16 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
+    def __init__(self):
+        # has to be in --init
+        self.vertex_count = 8
+        self.use_decimation = False
+        self.use_vertex_count = False
+
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
+
 
     def invoke(self, context, event):
         if context.space_data.type != 'VIEW_3D':
@@ -225,7 +237,7 @@ class OBJECT_OT_add_bounding_object():
         self.displace_my_offset = 0.0
 
         # Does collision type support decimation. Overwrite in sub classes
-        self.use_decimation = True
+
 
         # Decimation Amount
         self.decimate_active = False
@@ -234,7 +246,8 @@ class OBJECT_OT_add_bounding_object():
 
         self.opacity_active = False
         self.cylinder_axis = False
-        self.vertex_count = 12
+
+        self.vertex_count_active = False
 
         # store mouse position
         self.first_mouse_x = event.mouse_x
@@ -298,14 +311,26 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active
             self.opacity_active = False
+            self.decimate_active = False
+            self.vertex_count_active = False
 
         elif event.type == 'D' and event.value == 'RELEASE':
             self.decimate_active = not self.decimate_active
             self.opacity_active = False
+            self.displace_active = False
+            self.vertex_count_active = False
 
         elif event.type == 'A' and event.value == 'RELEASE':
             self.opacity_active = not self.opacity_active
             self.displace_active = False
+            self.decimate_active = False
+            self.vertex_count_active = False
+
+        elif event.type == 'E' and event.value == 'RELEASE':
+            self.vertex_count_active = not self.vertex_count_active
+            self.displace_active = False
+            self.decimate_active = False
+            self.opacity_active = False
 
         elif event.type == 'V' and event.value == 'RELEASE':
             #toggle through display modes
@@ -329,7 +354,7 @@ class OBJECT_OT_add_bounding_object():
                 print('decimation')
                 delta = self.first_mouse_x - event.mouse_x
                 for mod in self.decimate_modifiers:
-                    dec_amount = 1.0 - delta * 0.01
+                    dec_amount = 1.0 - delta * 0.005
                     mod.ratio = dec_amount
                     # mod.show_on_cage = True
                     # mod.show_in_editmode = True
@@ -340,12 +365,17 @@ class OBJECT_OT_add_bounding_object():
 
             if self.opacity_active:
                 delta = self.first_mouse_x - event.mouse_x
-                color_alpha = 0.5 + delta * 0.01
+                color_alpha = 0.5 + delta * 0.005
 
                 for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
                 scene.my_color[3] = color_alpha
+
+            if self.vertex_count_active:
+                delta = self.first_mouse_x - event.mouse_x
+                vertex_count = (12 + delta * 1)
+                self.vertex_count = vertex_count
 
         # passthrough specific events to blenders default behavior
         elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:

@@ -41,7 +41,7 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, name_suffi
         depth = base_object.dimensions[2]
 
     # add new cylindrical mesh
-    bpy.ops.mesh.primitive_cylinder_add(vertices=self.my_vertex_count,
+    bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
                                         radius=radius,
                                         depth=depth)
 
@@ -67,6 +67,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         name="Vertices",
         default=8
     )
+
+    def __init__(self):
+        super().__init__()
+        self.vertex_count = 12
+        self.use_vertex_count = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
