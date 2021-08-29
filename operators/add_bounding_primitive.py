@@ -189,6 +189,7 @@ class OBJECT_OT_add_bounding_object():
         self.vertex_count = 8
         self.use_decimation = False
         self.use_vertex_count = False
+        self.name_type_suffix = ''
 
     @classmethod
     def poll(cls, context):
@@ -202,13 +203,17 @@ class OBJECT_OT_add_bounding_object():
 
         # get collision suffix from preferences
         prefs = context.preferences.addons["CollisionHelpers"].preferences
+        scene = context.scene
+
+        # NAMING
         colSuffix = prefs.colSuffix
         colPreSuffix = prefs.colPreSuffix
         boxColSuffix = prefs.boxColSuffix
         self.name_suffix = colPreSuffix + boxColSuffix + colSuffix
 
+        # INITIAL STATE
         self.selected_objects = context.selected_objects.copy()
-
+        self.obj_mode = context.object.mode
         # save initial selection and active object to recalculate collisions and restore initial state on cancel
         if context.object is not None:
             self.active_obj = context.object
@@ -216,52 +221,34 @@ class OBJECT_OT_add_bounding_object():
             context.view_layer.objects.active = self.selected_objects[0]
             self.active_obj = context.object
 
-        # get physics material from properties panel
-        scene = context.scene
+        # MODIFIERS
+        self.displace_active = False
+        self.displace_modifiers = []
+        self.displace_my_offset = 0.0
+        self.decimate_active = False
+        self.decimate_modifiers = []
+        self.decimate_amount = 1.0
+        self.opacity_active = False
+        self.cylinder_axis = False
+        self.vertex_count_active = False
+        self.color_type = context.space_data.shading.color_type
+        self.shading_idx = 0
+        self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        # store mouse position
+        self.first_mouse_x = event.mouse_x
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
-        # Store shading color type to restore after operator
-        self.color_type = context.space_data.shading.color_type
-        # Set preview to object color to see transparent collision
-
-        self.shading_idx = 0
-        self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
-
+        # Set up scene
         context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
-
-        # add modal handler
-        context.window_manager.modal_handler_add(self)
-
-        self.obj_mode = context.object.mode
 
         # the arguments we pass the the callback
         args = (self, context)
         # Add the region OpenGL drawing callback
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
-
-        self.displace_active = False
-        self.displace_modifiers = []
-        # reset displace offset every time calling the operator
-        self.displace_my_offset = 0.0
-
-        # Does collision type support decimation. Overwrite in sub classes
-
-
-        # Decimation Amount
-        self.decimate_active = False
-        self.decimate_modifiers = []
-        self.decimate_amount = 1.0
-
-        self.opacity_active = False
-        self.cylinder_axis = False
-
-        self.vertex_count_active = False
-
-        # store mouse position
-        self.first_mouse_x = event.mouse_x
-
+        # add modal handler
+        context.window_manager.modal_handler_add(self)
         self.execute(context)
 
     def modal(self, context, event):
