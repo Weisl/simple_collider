@@ -1,9 +1,15 @@
+import bpy
 from . import keymap
 from . import preferences
+from . import naming_preset
 from .keymap import add_hotkey, remove_hotkey
+
 
 #keymap needs to be registered before the preferences UI
 classes = (
+    naming_preset.COLLISION_preset,
+    naming_preset.OBJECT_MT_collision_presets,
+
     keymap.COLLISION_OT_add_hotkey_renaming,
     preferences.CollisionAddonPrefs,
 )

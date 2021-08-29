@@ -2,7 +2,8 @@ from tempfile import gettempdir
 
 import bpy
 import rna_keymap_ui
-
+from .naming_preset import COLLISION_preset
+from .naming_preset import OBJECT_MT_collision_presets
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -52,9 +53,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "name_template",
     ]
 
+
+
     # here you specify how they are drawn
     def draw(self, context):
         layout = self.layout
+
+        row = layout.row(align=True)
+        row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+        row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
+        row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
 
         for propName in self.props:
             raw = layout.row()
@@ -76,6 +84,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         km = kc.keymaps['3D View']
 
         kmis = []
+
+
+
+
 
         from .keymap import get_hotkey_entry_item
         # Menus and Pies

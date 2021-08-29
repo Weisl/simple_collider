@@ -8,7 +8,7 @@ from bpy.types import Menu
 
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
-    bl_label = "Select Mode"
+    bl_label = "Collision Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
     def draw(self, context):
