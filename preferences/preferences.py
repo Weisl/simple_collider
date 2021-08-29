@@ -53,8 +53,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "name_template",
     ]
 
-
-
     # here you specify how they are drawn
     def draw(self, context):
         layout = self.layout
@@ -85,6 +83,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         kmis = []
 
+        row = layout.row()
+        row.operator("wm.url_open", text="Open Link").url = "https://github.com/kmammou/v-hacd"
 
 
 

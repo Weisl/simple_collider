@@ -132,17 +132,27 @@ class OBJECT_OT_add_bounding_object():
         scene = context.scene
 
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="ColliderOffset_disp", type='DISPLACE')
+        modifier = bounding_object.modifiers.new(name="Collision_displace", type='DISPLACE')
         modifier.strength = self.displace_my_offset
         self.displace_modifiers.append(modifier)
+
+    def del_displace_modifier(self,context,bounding_object):
+        if bounding_object.modifiers.get('Collision_displace'):
+            mod = bounding_object.modifiers['Collision_displace']
+            bounding_object.modifiers.remove(mod)
 
     def add_decimate_modifier(self, context, bounding_object):
         scene = context.scene
 
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Decimation", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
         modifier.ratio = self.decimate_amount
         self.decimate_modifiers.append(modifier)
+
+    def del_decimate_modifier(self,context,bounding_object):
+        if bounding_object.modifiers.get('Collision_decimate'):
+            mod = bounding_object.modifiers['Collision_decimate']
+            bounding_object.modifiers.remove(mod)
 
     def set_physics_material(self, context, bounding_object, physics_material_name):
         remove_materials(bounding_object)
@@ -283,6 +293,11 @@ class OBJECT_OT_add_bounding_object():
                 context.space_data.shading.color_type = self.color_type
 
             for obj in self.new_colliders_list:
+                if self.displace_my_offset == 0.0:
+                    self.del_displace_modifier(context,obj)
+                if self.decimate_amount == 1.0:
+                    self.del_decimate_modifier(context,obj)
+
                 obj.display_type = scene.my_collision_shading_view
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
