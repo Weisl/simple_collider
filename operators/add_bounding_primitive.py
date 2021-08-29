@@ -204,7 +204,6 @@ class OBJECT_OT_add_bounding_object():
         remove_materials(bounding_object)
         set_material(bounding_object, physics_material_name)
 
-
     def __init__(self):
         # has to be in --init
         self.vertex_count = 8

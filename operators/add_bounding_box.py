@@ -7,7 +7,6 @@ from mathutils import Vector
 from CollisionHelpers.operators.object_functions import alignObjects, get_bounding_box
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-#TODO: Naming (make consistant between local/global)
 #TODO: Material, create if none is defined
 #TODO: Keep multi edit selection
 
