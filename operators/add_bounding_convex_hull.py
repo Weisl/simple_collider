@@ -31,6 +31,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     def __init__(self):
         super().__init__()
         self.use_decimation = True
+        self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -42,6 +43,13 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
+
+        scene = context.scene
+
+        # change bounding object settings
+        if event.type == 'P' and event.value == 'RELEASE':
+            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.execute(context)
 
         return {'RUNNING_MODAL'}
 
@@ -63,9 +71,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         obj_amount = len(self.selected_objects)
         old_objs = set(context.scene.objects)
 
-        # bpy.ops.object.mode_set(mode='OBJECT')
-        # bpy.ops.object.select_all(action='DESELECT')
-
         for i, obj in enumerate(self.selected_objects):
 
             # skip if invalid object
@@ -82,6 +87,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
             prefs = context.preferences.addons["CollisionHelpers"].preferences
             type_suffix = prefs.boxColSuffix
+
             new_name = super().collider_name(context, type_suffix, i+1)
 
             if self.obj_mode == "EDIT":
@@ -122,7 +128,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             if self.use_modifier_stack:
                 context.view_layer.objects.active = new_collider
-                apply_all_modifiers(new_collider)
+
+                scene = context.scene
+                if scene.my_use_modifier_stack == False:
+                    apply_all_modifiers(new_collider)
+
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.select_all(action='SELECT')
                 bpy.ops.mesh.convex_hull()
