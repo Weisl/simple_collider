@@ -10,52 +10,66 @@ def draw_viewport_overlay(self, context):
     scene = context.scene
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
+    i = 1
 
     # draw some text
     global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-    blf.position(font_id, 30, 1*vertical_px_offset, 0)
+    blf.position(font_id, 30, i *vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Global Orient (G): " + global_orient)
+    i += 1
 
     # draw some text
     local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-    blf.position(font_id, 30, 2*vertical_px_offset, 0)
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Local Orient (L): " + local_orient)
+    i += 1
 
-    blf.position(font_id, 30, 3*vertical_px_offset, 0)
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Shrink/Inflate (S): " + str(self.displace_my_offset))
+    i += 1
 
-    blf.position(font_id, 30, 4*vertical_px_offset, 0)
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Opacity (A) : " + str(scene.my_color[3]))
+    i += 1
 
-    blf.position(font_id, 30, 5*vertical_px_offset, 0)
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Preview View (V) : " + self.shading_modes[self.shading_idx])
+    i += 1
 
-    blf.position(font_id, 30, 6*vertical_px_offset, 0)
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
+    i += 1
 
     if self.use_decimation:
-        blf.position(font_id, 30, 7 * vertical_px_offset, 0)
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
         blf.size(font_id, 20, 72)
         blf.draw(font_id, "Decimate (D): " + str(self.decimate_amount))
+        i += 1
 
     if self.use_vertex_count:
-        blf.position(font_id, 30, 8 * vertical_px_offset, 0)
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
         blf.size(font_id, 20, 72)
         blf.draw(font_id, "Segments (E): " + str(self.vertex_count))
+        i += 1
 
+    if self.use_modifier_stack:
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Use Modifier Stack (P) : " + str(scene.my_use_modifier_stack))
+        i += 1
 
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glLineWidth(2)
     shader.bind()
-    shader.uniform_float("color", (0.0, 0.0, 0.0, 0.5))
+    shader.uniform_float("color", (1.0, 1.0, 1.0, 0.5))
 
     # restore opengl defaults
     bgl.glLineWidth(1)
@@ -112,8 +126,7 @@ class OBJECT_OT_add_bounding_object():
                 positionsY.append(v_global[1])
                 positionsZ.append(v_global[2])
 
-        # space == 'LOCAL'
-        else:
+        else: # space == 'LOCAL'
             for v in used_vertives:
                 positionsX.append(v.co.x)
                 positionsY.append(v.co.y)
@@ -209,11 +222,11 @@ class OBJECT_OT_add_bounding_object():
         self.vertex_count = 8
         self.use_decimation = False
         self.use_vertex_count = False
+        self.use_modifer_toggle = False
 
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
-
 
     def invoke(self, context, event):
         if context.space_data.type != 'VIEW_3D':
@@ -227,6 +240,7 @@ class OBJECT_OT_add_bounding_object():
         # INITIAL STATE
         self.selected_objects = context.selected_objects.copy()
         self.obj_mode = context.object.mode
+
         # save initial selection and active object to recalculate collisions and restore initial state on cancel
         if context.object is not None:
             self.active_obj = context.object
@@ -306,7 +320,6 @@ class OBJECT_OT_add_bounding_object():
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
                 pass
-
 
             # for obj in self.new_colliders_list:
             #     bpy.ops.object.mode_set(mode='OBJECT')
