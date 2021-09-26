@@ -4,9 +4,6 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-
-# TODO: Remove modifiers
-
 def apply_all_modifiers(obj):
     for mod in obj.modifiers:
         bpy.ops.object.modifier_apply(modifier=mod.name)

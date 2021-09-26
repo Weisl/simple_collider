@@ -7,9 +7,6 @@ from mathutils import Vector
 from CollisionHelpers.operators.object_functions import alignObjects, get_bounding_box
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-#TODO: Material, create if none is defined
-#TODO: Keep multi edit selection
-
 def add_box_object(context, vertices, newName):
     """Generate a new object from the given vertices"""
     verts = vertices
