@@ -114,6 +114,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = list(set(context.scene.objects) - old_objs)[-1]
             new_collider.name = new_name
+            bpy.ops.object.select_all(action='DESELECT')
 
             if self.use_modifier_stack:
                 context.view_layer.objects.active = new_collider
