@@ -82,6 +82,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             obj.select_set(True)
             context.view_layer.objects.active = obj
             collections = obj.users_collection
+
             prefs = context.preferences.addons["CollisionHelpers"].preferences
             type_suffix = prefs.boxColSuffix
 
@@ -91,31 +92,22 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 bpy.ops.object.mode_set(mode='EDIT')
                 bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
 
+                bpy.ops.mesh.separate(type='SELECTED')
+
                 # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
                 # to avoid switching modes multiple times
                 if self.use_modifier_stack == False:
                     bpy.ops.mesh.convex_hull(delete_unused=True, use_existing_faces=False, make_holes=False, join_triangles=True, face_threshold=0.698132, shape_threshold=0.698132, uvs=False, vcols=False, seam=False, sharp=False, materials=False)
 
-                bpy.ops.mesh.separate(type='SELECTED')
+
 
             else:  # obj_mode == "OBJECT":
-                bpy.ops.object.mode_set(mode='EDIT')
 
-                # Get a BMesh representation
-                me = obj.data
-                bm = bmesh.from_edit_mesh(me)
+                bpy.ops.object.duplicate_move(OBJECT_OT_duplicate=None, TRANSFORM_OT_translate=None)
 
-                # select all vertices
-                self.get_vertices(bm, preselect_all=True)
-
-                bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
-                # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
-                # to avoid switching modes multiple times
                 if self.use_modifier_stack == False:
                     bpy.ops.mesh.convex_hull(delete_unused=True, use_existing_faces=False, make_holes=False, join_triangles=True, face_threshold=0.698132, shape_threshold=0.698132, uvs=False, vcols=False, seam=False, sharp=False, materials=False)
 
-
-                bpy.ops.mesh.separate(type='SELECTED')
 
             bpy.ops.object.mode_set(mode='OBJECT')
 

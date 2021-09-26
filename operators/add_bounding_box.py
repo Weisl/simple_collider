@@ -137,9 +137,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_box"
     bl_label = "Add Box Collision"
 
+    def __init__(self):
+        super().__init__()
+        self.use_space = True
+
     def invoke(self, context, event):
         super().invoke(context, event)
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):

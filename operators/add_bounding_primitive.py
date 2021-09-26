@@ -12,19 +12,20 @@ def draw_viewport_overlay(self, context):
     vertical_px_offset = 30
     i = 1
 
-    # draw some text
-    global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-    blf.position(font_id, 30, i *vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Global Orient (G): " + global_orient)
-    i += 1
+    if self.use_space:
+        # draw some text
+        global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
+        blf.position(font_id, 30, i *vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Global Orient (G): " + global_orient)
+        i += 1
 
-    # draw some text
-    local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Local Orient (L): " + local_orient)
-    i += 1
+        # draw some text
+        local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
+        blf.position(font_id, 30, i*vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Local Orient (L): " + local_orient)
+        i += 1
 
     blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
@@ -139,7 +140,6 @@ class OBJECT_OT_add_bounding_object():
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
 
-        print('use_decimation = ' + str(self.use_decimation))
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
@@ -223,6 +223,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_decimation = False
         self.use_vertex_count = False
         self.use_modifer_toggle = False
+        self.use_space = False
 
     @classmethod
     def poll(cls, context):
