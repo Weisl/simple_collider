@@ -51,6 +51,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        scene = context.scene
+        self.obj_mode = context.object.mode
         self.remove_objects(self.new_colliders_list)
         self.new_colliders_list = []
 
@@ -60,7 +62,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
-            print("selected_objects" + self.selected_objects)
         if not context.object:
             context.view_layer.objects.active = self.selected_objects[0]
 
@@ -68,7 +69,34 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         obj_amount = len(self.selected_objects)
         old_objs = set(context.scene.objects)
 
+        target_objects = []
+        edit_mode = True
+
         for i, obj in enumerate(self.selected_objects):
+
+            if self.obj_mode == "OBJECT":
+                target_objects = self.selected_objects
+                edit_mode = False
+                break
+
+            # skip non Mesh objects like lamps, curves etc.
+            if obj.type != "MESH":
+                continue
+
+            if self.obj_mode == "EDIT":
+                target_objects.append(obj)
+
+        if edit_mode:
+            bpy.ops.object.mode_set(mode='OBJECT')
+            for i, obj in enumerate(target_objects):
+                if scene.my_use_modifier_stack == True:
+                    bpy.ops.object.duplicate_move(OBJECT_OT_duplicate=None, TRANSFORM_OT_translate=None)
+                    apply_all_modifiers(obj)
+                    bpy.ops.object.mode_set(mode='EDIT')
+                    bpy.ops.mesh.select_all(action='INVERT')
+                    bpy.ops.mesh.delete(type='VERT')
+
+        for i, obj in enumerate(target_objects):
 
             # skip if invalid object
             if obj is None:
@@ -79,6 +107,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             #setup
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.select_all(action='DESELECT')
             obj.select_set(True)
             context.view_layer.objects.active = obj
             collections = obj.users_collection
@@ -88,45 +118,20 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             new_name = super().collider_name(context, type_suffix, i+1)
 
-            if self.obj_mode == "EDIT":
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
-
-                bpy.ops.mesh.separate(type='SELECTED')
-
-                # If the modifier is ignored. It's more efficient to call the convex hull operator immedialty
-                # to avoid switching modes multiple times
-                if self.use_modifier_stack == False:
-                    bpy.ops.mesh.convex_hull(delete_unused=True, use_existing_faces=False, make_holes=False, join_triangles=True, face_threshold=0.698132, shape_threshold=0.698132, uvs=False, vcols=False, seam=False, sharp=False, materials=False)
-
-
-
-            else:  # obj_mode == "OBJECT":
-
-                bpy.ops.object.duplicate_move(OBJECT_OT_duplicate=None, TRANSFORM_OT_translate=None)
-
-                if self.use_modifier_stack == False:
-                    bpy.ops.mesh.convex_hull(delete_unused=True, use_existing_faces=False, make_holes=False, join_triangles=True, face_threshold=0.698132, shape_threshold=0.698132, uvs=False, vcols=False, seam=False, sharp=False, materials=False)
-
-
-            bpy.ops.object.mode_set(mode='OBJECT')
-
+            bpy.ops.object.duplicate_move(OBJECT_OT_duplicate=None, TRANSFORM_OT_translate=None)
+            obj.select_set(False)
 
             new_collider = list(set(context.scene.objects) - old_objs)[-1]
             new_collider.name = new_name
+
+            context.view_layer.objects.active = new_collider
+
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.convex_hull()
+            bpy.ops.object.mode_set(mode='OBJECT')
+
             bpy.ops.object.select_all(action='DESELECT')
-
-            if self.use_modifier_stack:
-                context.view_layer.objects.active = new_collider
-
-                scene = context.scene
-                if scene.my_use_modifier_stack == False:
-                    apply_all_modifiers(new_collider)
-
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.select_all(action='SELECT')
-                bpy.ops.mesh.convex_hull()
-                bpy.ops.object.mode_set(mode='OBJECT')
 
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
