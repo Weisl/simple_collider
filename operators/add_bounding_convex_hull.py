@@ -67,6 +67,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
         if self.obj_mode == "EDIT":
             bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
+            bpy.ops.mesh.convex_hull()
             bpy.ops.mesh.separate(type='SELECTED')
 
         else: # self.obj_mode == "OBJECT":
@@ -91,17 +92,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 if scene.my_use_modifier_stack:
                     apply_all_modifiers(context, new_collider)
 
+                obj.select_set(False)
 
         target_objects=set(context.scene.objects) - old_objs
-        bpy.ops.object.select_all(action='DESELECT')
-
         print('Target objects = ' + str(target_objects))
 
         for i, obj in enumerate(target_objects):
-
-            #setup
-            if self.obj_mode == "EDIT":
-                bpy.ops.object.mode_set(mode='OBJECT')
 
             obj.select_set(True)
 
@@ -118,10 +114,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             context.view_layer.objects.active = new_collider
 
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.mesh.convex_hull()
-            bpy.ops.object.mode_set(mode='OBJECT')
+            self.obj_mode == "OBJECT":
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.convex_hull()
+                bpy.ops.object.mode_set(mode='OBJECT')
 
             remove_all_modifiers(context, new_collider)
             # save collision objects to delete when canceling the operation

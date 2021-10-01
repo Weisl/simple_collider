@@ -237,24 +237,15 @@ class OBJECT_OT_add_bounding_object():
         prefs = context.preferences.addons["CollisionHelpers"].preferences
         scene = context.scene
 
+        # Active object
+        if context.object is None:
+            context.view_layer.objects.active = context.selected_objects[0]
+        context.object.select_set(True)
+
         # INITIAL STATE
         self.selected_objects = context.selected_objects.copy()
+        self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
-
-        # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
-        if context.object not in self.selected_objects:
-            self.selected_objects.append(context.object)
-        if not context.object:
-            context.view_layer.objects.active = self.selected_objects[0]
-
-        # save initial selection and active object to recalculate collisions and restore initial state on cancel
-        if context.object is not None:
-            self.active_obj = context.object
-        else:
-            context.view_layer.objects.active = self.selected_objects[0]
-            self.active_obj = context.object
-
-
 
         # MODIFIERS
         self.displace_active = False
