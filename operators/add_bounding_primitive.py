@@ -183,6 +183,13 @@ class OBJECT_OT_add_bounding_object():
         new_name = basename + name_suffix
         return self.unique_name(new_name,count)
 
+    def reset_to_initial_state(self, context):
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in self.selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = self.active_obj
+        bpy.ops.object.mode_set(mode=self.obj_mode)
 
     #Modifiers
     def add_displacement_modifier(self, context, bounding_object):
