@@ -171,7 +171,6 @@ class OBJECT_OT_add_bounding_object():
         '''recursive function to find unique name'''
         nr = str('_{num:{fill}{width}}'.format(num=(count), fill='0', width=3))
         new_name = name + nr
-        print("entered")
         if new_name in bpy.data.objects:
            new_name = self.unique_name(name, count+1)
         return new_name
@@ -242,12 +241,20 @@ class OBJECT_OT_add_bounding_object():
         self.selected_objects = context.selected_objects.copy()
         self.obj_mode = context.object.mode
 
+        # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
+        if context.object not in self.selected_objects:
+            self.selected_objects.append(context.object)
+        if not context.object:
+            context.view_layer.objects.active = self.selected_objects[0]
+
         # save initial selection and active object to recalculate collisions and restore initial state on cancel
         if context.object is not None:
             self.active_obj = context.object
         else:
             context.view_layer.objects.active = self.selected_objects[0]
             self.active_obj = context.object
+
+
 
         # MODIFIERS
         self.displace_active = False
@@ -364,7 +371,6 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'V' and event.value == 'RELEASE':
             #toggle through display modes
             self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
-            print('shading_idx = ' + str(self.shading_idx))
             context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
 
         elif event.type == 'MOUSEMOVE':
@@ -380,7 +386,6 @@ class OBJECT_OT_add_bounding_object():
                     self.displace_my_offset = mod.strength
 
             if self.decimate_active:
-                print('decimation')
                 delta = self.first_mouse_x - event.mouse_x
                 for mod in self.decimate_modifiers:
                     dec_amount = 1.0 - delta * 0.005
