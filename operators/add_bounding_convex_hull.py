@@ -52,7 +52,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     def execute(self, context):
         scene = context.scene
+
         self.obj_mode = context.object.mode
+
         self.remove_objects(self.new_colliders_list)
         self.new_colliders_list = []
 
@@ -72,44 +74,37 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         target_objects = []
         edit_mode = True
 
-        for i, obj in enumerate(self.selected_objects):
+        if self.obj_mode == "EDIT":
+            bpy.ops.mesh.duplicate_move(MESH_OT_duplicate=None, TRANSFORM_OT_translate=None)
+            bpy.ops.mesh.separate(type='SELECTED')
 
-            if self.obj_mode == "OBJECT":
-                target_objects = self.selected_objects
-                edit_mode = False
-                break
+        else: # self.obj_mode == "OBJECT":
+            for i, obj in enumerate(self.selected_objects):
 
-            # skip non Mesh objects like lamps, curves etc.
-            if obj.type != "MESH":
-                continue
+                # skip if invalid object
+                if obj is None:
+                    continue
 
-            if self.obj_mode == "EDIT":
-                target_objects.append(obj)
+                # skip non Mesh objects like lamps, curves etc.
+                if obj.type != "MESH":
+                    continue
 
-        if edit_mode:
-            bpy.ops.object.mode_set(mode='OBJECT')
-            for i, obj in enumerate(target_objects):
-                if scene.my_use_modifier_stack == True:
+                context.view_layer.objects.active = obj
+
+                if self.obj_mode == "OBJECT":
                     bpy.ops.object.duplicate_move(OBJECT_OT_duplicate=None, TRANSFORM_OT_translate=None)
-                    apply_all_modifiers(obj)
-                    bpy.ops.object.mode_set(mode='EDIT')
-                    bpy.ops.mesh.select_all(action='INVERT')
-                    bpy.ops.mesh.delete(type='VERT')
+
+        target_objects=set(context.scene.objects) - old_objs
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
 
         for i, obj in enumerate(target_objects):
 
-            # skip if invalid object
-            if obj is None:
-                continue
-
-            # skip non Mesh objects like lamps, curves etc.
-            if obj.type != "MESH":
-                continue
-
             #setup
             bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.object.select_all(action='DESELECT')
             obj.select_set(True)
+
             context.view_layer.objects.active = obj
             collections = obj.users_collection
 
@@ -118,10 +113,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             new_name = super().collider_name(context, type_suffix, i+1)
 
-            bpy.ops.object.duplicate_move(OBJECT_OT_duplicate=None, TRANSFORM_OT_translate=None)
-            obj.select_set(False)
-
-            new_collider = list(set(context.scene.objects) - old_objs)[-1]
+            new_collider = obj
             new_collider.name = new_name
 
             context.view_layer.objects.active = new_collider
@@ -131,10 +123,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bpy.ops.mesh.convex_hull()
             bpy.ops.object.mode_set(mode='OBJECT')
 
-            bpy.ops.object.select_all(action='DESELECT')
-
             # create collision meshes
-            self.custom_set_parent(context, obj, new_collider)
+            # self.custom_set_parent(context, obj, new_collider)
 
             remove_all_modifiers(new_collider)
             # save collision objects to delete when canceling the operation
@@ -145,6 +135,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             print('Generated collisions %d/%d' % (i, obj_amount))
 
         self.new_colliders_list = set(context.scene.objects) - old_objs
-        print("previous_objects" + str(self.new_colliders_list))
+        print("New_Collider_List" + str(self.new_colliders_list))
 
         return {'RUNNING_MODAL'}
