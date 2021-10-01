@@ -142,6 +142,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         self.new_colliders_list = set(context.scene.objects) - old_objs
         print("New_Collider_List" + str(self.new_colliders_list))
 
+        # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
 
         return {'RUNNING_MODAL'}
