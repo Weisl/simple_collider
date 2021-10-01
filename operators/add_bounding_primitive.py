@@ -12,19 +12,20 @@ def draw_viewport_overlay(self, context):
     vertical_px_offset = 30
     i = 1
 
-    # draw some text
-    global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-    blf.position(font_id, 30, i *vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Global Orient (G): " + global_orient)
-    i += 1
+    if self.use_space:
+        # draw some text
+        global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
+        blf.position(font_id, 30, i *vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Global Orient (G): " + global_orient)
+        i += 1
 
-    # draw some text
-    local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Local Orient (L): " + local_orient)
-    i += 1
+        # draw some text
+        local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
+        blf.position(font_id, 30, i*vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Local Orient (L): " + local_orient)
+        i += 1
 
     blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
@@ -139,7 +140,6 @@ class OBJECT_OT_add_bounding_object():
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
 
-        print('use_decimation = ' + str(self.use_decimation))
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
@@ -171,7 +171,6 @@ class OBJECT_OT_add_bounding_object():
         '''recursive function to find unique name'''
         nr = str('_{num:{fill}{width}}'.format(num=(count), fill='0', width=3))
         new_name = name + nr
-        print("entered")
         if new_name in bpy.data.objects:
            new_name = self.unique_name(name, count+1)
         return new_name
@@ -184,6 +183,13 @@ class OBJECT_OT_add_bounding_object():
         new_name = basename + name_suffix
         return self.unique_name(new_name,count)
 
+    def reset_to_initial_state(self, context):
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in self.selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = self.active_obj
+        bpy.ops.object.mode_set(mode=self.obj_mode)
 
     #Modifiers
     def add_displacement_modifier(self, context, bounding_object):
@@ -223,6 +229,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_decimation = False
         self.use_vertex_count = False
         self.use_modifer_toggle = False
+        self.use_space = False
 
     @classmethod
     def poll(cls, context):
@@ -237,16 +244,15 @@ class OBJECT_OT_add_bounding_object():
         prefs = context.preferences.addons["CollisionHelpers"].preferences
         scene = context.scene
 
+        # Active object
+        if context.object is None:
+            context.view_layer.objects.active = context.selected_objects[0]
+        context.object.select_set(True)
+
         # INITIAL STATE
         self.selected_objects = context.selected_objects.copy()
+        self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
-
-        # save initial selection and active object to recalculate collisions and restore initial state on cancel
-        if context.object is not None:
-            self.active_obj = context.object
-        else:
-            context.view_layer.objects.active = self.selected_objects[0]
-            self.active_obj = context.object
 
         # MODIFIERS
         self.displace_active = False
@@ -363,7 +369,6 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'V' and event.value == 'RELEASE':
             #toggle through display modes
             self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
-            print('shading_idx = ' + str(self.shading_idx))
             context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
 
         elif event.type == 'MOUSEMOVE':
@@ -379,7 +384,6 @@ class OBJECT_OT_add_bounding_object():
                     self.displace_my_offset = mod.strength
 
             if self.decimate_active:
-                print('decimation')
                 delta = self.first_mouse_x - event.mouse_x
                 for mod in self.decimate_modifiers:
                     dec_amount = 1.0 - delta * 0.005

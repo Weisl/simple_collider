@@ -64,6 +64,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.vertex_count = 12
         self.use_vertex_count = True
+        self.use_space = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
