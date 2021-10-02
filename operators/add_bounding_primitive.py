@@ -327,13 +327,7 @@ class OBJECT_OT_add_bounding_object():
             except ValueError:
                 pass
 
-            # for obj in self.new_colliders_list:
-            #     bpy.ops.object.mode_set(mode='OBJECT')
-            #     bpy.context.view_layer.objects.active = obj
-            #     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
-
-            #reset active object
-            bpy.context.view_layer.objects.active = self.active_obj
+            bpy.ops.object.mode_set(mode='OBJECT')
 
             return {'FINISHED'}
 
