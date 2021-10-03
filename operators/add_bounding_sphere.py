@@ -89,17 +89,22 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             context.view_layer.objects.active = obj
-            collections = obj.users_collection
-
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
-            new_name = super().collider_name(context, type_suffix, i+1)
+            scene = context.scene
 
             if obj.mode == "EDIT":
                 me = obj.data
 
-                # Get a BMesh representation
-                bm = bmesh.from_edit_mesh(me)
+                if scene.my_use_modifier_stack == False:
+                    # Get a BMesh representation
+                    bm = bmesh.from_edit_mesh(me)
+
+                else:  # scene.my_use_modifier_stack == True
+
+                    # Get mesh information with the modifiers applied
+                    depsgraph = bpy.context.evaluated_depsgraph_get()
+                    bm = bmesh.new()
+                    bm.from_object(obj, depsgraph)
+                    bm.verts.ensure_lookup_table()
 
                 vertices = self.get_vertices(bm, preselect_all=False)
 
@@ -109,8 +114,17 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 bpy.ops.object.mode_set(mode='EDIT')
                 me = obj.data
 
-                # Get a BMesh representation
-                bm = bmesh.from_edit_mesh(me)
+                if scene.my_use_modifier_stack == False:
+                    # Get a BMesh representation
+                    bm = bmesh.from_edit_mesh(me)
+
+                else:  # scene.my_use_modifier_stack == True
+
+                    # Get mesh information with the modifiers applied
+                    depsgraph = bpy.context.evaluated_depsgraph_get()
+                    bm = bmesh.new()
+                    bm.from_object(obj, depsgraph)
+                    bm.verts.ensure_lookup_table()
 
                 vertices = self.get_vertices(bm, preselect_all=True)
 
@@ -179,12 +193,17 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
 
             # create collision meshes
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.boxColSuffix
+            new_name = super().collider_name(context, type_suffix, i+1)
+
             new_collider = create_sphere(mid_point, radius, new_name + "_" + str(i))
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
             self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+            collections = obj.users_collection
             self.add_to_collections(new_collider, collections)
 
         return {'RUNNING_MODAL'}
