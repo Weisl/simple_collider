@@ -105,9 +105,9 @@ class OBJECT_OT_add_bounding_object():
         if preselect_all == True:
             for v in bm.verts: v.select = True
 
-        used_vertives = [v for v in bm.verts if v.select]
+        used_vertices = [v for v in bm.verts if v.select]
 
-        return used_vertives
+        return used_vertices
 
     def get_point_positions(self, obj, space, used_vertives):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
@@ -192,6 +192,17 @@ class OBJECT_OT_add_bounding_object():
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
     #Modifiers
+    def apply_all_modifiers(self,context, obj):
+        context.view_layer.objects.active = obj
+        for mod in obj.modifiers:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    def remove_all_modifiers(self, context, obj):
+        context.view_layer.objects.active = obj
+        if obj:
+            for mod in obj.modifiers:
+                obj.modifiers.remove(mod)
+
     def add_displacement_modifier(self, context, bounding_object):
         scene = context.scene
 
@@ -228,7 +239,7 @@ class OBJECT_OT_add_bounding_object():
         self.vertex_count = 8
         self.use_decimation = False
         self.use_vertex_count = False
-        self.use_modifer_toggle = False
+        self.use_modifier_stack = False
         self.use_space = False
 
     @classmethod
@@ -327,13 +338,7 @@ class OBJECT_OT_add_bounding_object():
             except ValueError:
                 pass
 
-            # for obj in self.new_colliders_list:
-            #     bpy.ops.object.mode_set(mode='OBJECT')
-            #     bpy.context.view_layer.objects.active = obj
-            #     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
-
-            #reset active object
-            bpy.context.view_layer.objects.active = self.active_obj
+            bpy.ops.object.mode_set(mode='OBJECT')
 
             return {'FINISHED'}
 
@@ -412,3 +417,15 @@ class OBJECT_OT_add_bounding_object():
         # passthrough specific events to blenders default behavior
         elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
+
+    def execute(self, context):
+        self.obj_mode = context.object.mode
+
+        self.remove_objects(self.new_colliders_list)
+        self.new_colliders_list = []
+
+        # reset previously stored displace modifiers when creating a new object
+        self.displace_modifiers = []
+
+        # Create the bounding geometry, depending on edit or object mode.
+        self.old_objs = set(context.scene.objects)

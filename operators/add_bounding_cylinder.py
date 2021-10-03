@@ -65,6 +65,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.vertex_count = 12
         self.use_vertex_count = True
         self.use_space = True
+        self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -98,10 +99,16 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.cylinder_axis = event.type
             self.execute(context)
 
+        # change bounding object settings
+        if event.type == 'P' and event.value == 'RELEASE':
+            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.execute(context)
+
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-
+        # CLEANUP
+        super().execute(context)
 
         matName = self.physics_material_name
 
