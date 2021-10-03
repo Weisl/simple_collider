@@ -4,18 +4,6 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-def apply_all_modifiers(context, obj):
-    context.view_layer.objects.active = obj
-    for mod in obj.modifiers:
-        bpy.ops.object.modifier_apply(modifier=mod.name)
-
-
-def remove_all_modifiers(context, obj):
-    context.view_layer.objects.active = obj
-    if obj:
-        for mod in obj.modifiers:
-            obj.modifiers.remove(mod)
-
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
@@ -50,24 +38,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     def execute(self, context):
         scene = context.scene
-
-        self.obj_mode = context.object.mode
-
-        self.remove_objects(self.new_colliders_list)
-        self.new_colliders_list = []
-
-        # reset previously stored displace modifiers when creating a new object
-        self.displace_modifiers = []
-
-        # Create the bounding geometry, depending on edit or object mode.
-        obj_amount = len(self.selected_objects)
-        old_objs = set(context.scene.objects)
+        # CLEANUP
+        super().execute(context)
 
         target_objects = []
 
-
-
-         # self.obj_mode == "OBJECT":
+        # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:
 
             # skip if invalid object
@@ -93,15 +69,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 self.custom_set_parent(context, obj, new_collider)
 
             if scene.my_use_modifier_stack:
-                apply_all_modifiers(context, new_collider)
+                self.apply_all_modifiers(context, new_collider)
 
             obj.select_set(False)
             target_objects.append(new_collider)
-
-
-        # target_objects=set(context.scene.objects) - old_objs
-        print('Target objects = ' + str(target_objects))
-
 
         for i, obj in enumerate(target_objects):
 
@@ -132,15 +103,14 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bpy.ops.mesh.convex_hull()
             bpy.ops.object.mode_set(mode='OBJECT')
 
-            remove_all_modifiers(context, new_collider)
+            self.remove_all_modifiers(context, new_collider)
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
             self.primitive_postprocessing(context, new_collider, self.physics_material_name)
 
 
 
-        self.new_colliders_list = set(context.scene.objects) - old_objs
-        print("New_Collider_List" + str(self.new_colliders_list))
+        self.new_colliders_list = set(context.scene.objects) - self.old_objs
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
