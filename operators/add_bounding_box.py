@@ -93,7 +93,10 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
     #TODO: Remove the object mode switch that is called for every object to make this operation faster.
     else:
         bpy.ops.object.mode_set(mode='OBJECT')
-        self.custom_set_parent(context, active_ob, newCollider)
+        matrix= newCollider.matrix_world
+        newCollider.parent = active_ob
+        newCollider.matrix_world = matrix
+
         bpy.ops.object.mode_set(mode='EDIT')
 
     return newCollider
@@ -146,9 +149,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
-
-
-
         # Create the bounding geometry, depending on edit or object mode.
         for i, obj in enumerate(self.selected_objects):
 
@@ -161,20 +161,23 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             context.view_layer.objects.active = obj
-            collections = obj.users_collection
-
             initial_mod_state = {}
-
-            if scene.my_use_modifier_stack == False:
-                for mod in obj.modifiers:
-                    initial_mod_state[mod.name] = mod.show_viewport
-                    mod.show_viewport = False
-                context.view_layer.update()
 
             if obj.mode == "EDIT":
                 me = obj.data
-                # Get a BMesh representation
-                bm = bmesh.from_edit_mesh(me)
+
+                if scene.my_use_modifier_stack == False:
+                    # Get a BMesh representation
+                    bm = bmesh.from_edit_mesh(me)
+
+                else:  # scene.my_use_modifier_stack == True
+
+                    # Get mesh information with the modifiers applied
+                    depsgraph = bpy.context.evaluated_depsgraph_get()
+                    bm = bmesh.new()
+                    bm.from_object(obj, depsgraph)
+                    bm.verts.ensure_lookup_table()
+
                 used_vertices = self.get_vertices(bm, preselect_all=False)
 
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
@@ -182,6 +185,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces)
 
             else:  # mode == "OBJECT":
+                if scene.my_use_modifier_stack == False:
+                    for mod in obj.modifiers:
+                        initial_mod_state[mod.name] = mod.show_viewport
+                        mod.show_viewport = False
+                    context.view_layer.update()
+
                 if scene.my_space == 'LOCAL':
                     # create BoundingBox object for collider
                     bBox = obj.bound_box
@@ -213,21 +222,21 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
                     new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces)
 
-            # Reset modifiers of target mesh to initial state
-            if scene.my_use_modifier_stack == False:
-                for mod_name, value in initial_mod_state.items():
-                    print("key %s and value %s" % (mod_name, value))
-                    obj.modifiers[mod_name].show_viewport = value
+                # Reset modifiers of target mesh to initial state
+                if scene.my_use_modifier_stack == False:
+                    for mod_name, value in initial_mod_state.items():
+                        print("key %s and value %s" % (mod_name, value))
+                        obj.modifiers[mod_name].show_viewport = value
 
             # Name generation
             prefs = context.preferences.addons["CollisionHelpers"].preferences
             type_suffix = prefs.boxColSuffix
-
             new_collider.name = super().collider_name(context, type_suffix, i)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
             self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+            collections = obj.users_collection
             self.add_to_collections(new_collider, collections)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters

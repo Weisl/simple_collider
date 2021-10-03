@@ -105,9 +105,9 @@ class OBJECT_OT_add_bounding_object():
         if preselect_all == True:
             for v in bm.verts: v.select = True
 
-        used_vertives = [v for v in bm.verts if v.select]
+        used_vertices = [v for v in bm.verts if v.select]
 
-        return used_vertives
+        return used_vertices
 
     def get_point_positions(self, obj, space, used_vertives):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
