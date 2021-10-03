@@ -196,8 +196,18 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     bpy.ops.object.mode_set(mode='EDIT')
                     me = obj.data
 
-                    # Get a BMesh representation
-                    bm = bmesh.from_edit_mesh(me)
+                    if scene.my_use_modifier_stack == False:
+                        # Get a BMesh representation
+                        bm = bmesh.from_edit_mesh(me)
+
+                    else: #scene.my_use_modifier_stack == True
+
+                        #Get mesh information with the modifiers applied
+                        depsgraph = bpy.context.evaluated_depsgraph_get()
+                        bm = bmesh.new()
+                        bm.from_object(obj, depsgraph)
+                        bm.verts.ensure_lookup_table()
+
                     used_vertices = self.get_vertices(bm, preselect_all=True)
                     positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                     verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
