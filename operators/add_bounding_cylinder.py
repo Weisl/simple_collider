@@ -9,14 +9,6 @@ from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-
-# TODO: in Edit mode: Create a new object instead of adding it to current object
-# TODO: Support spaces
-# TODO: Moves base mesh when creating collision in edit mode
-# TODO: Cylindrical collisions are not alligned correctly when switching Axis from Z to any other
-# TODO: Algorithm for cylindrical collision creation is really bad right now. It takes the diagonale of the bounding box to calculate the cylinder radius.
-# TODO: Option for elipse instead of circle profile
-
 def calc_hypothenuse(a, b):
     """calculate the hypothenuse"""
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
@@ -72,6 +64,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.vertex_count = 12
         self.use_vertex_count = True
+        self.use_space = True
+        self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -105,10 +99,16 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.cylinder_axis = event.type
             self.execute(context)
 
+        # change bounding object settings
+        if event.type == 'P' and event.value == 'RELEASE':
+            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.execute(context)
+
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-
+        # CLEANUP
+        super().execute(context)
 
         matName = self.physics_material_name
 

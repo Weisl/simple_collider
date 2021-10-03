@@ -5,8 +5,6 @@ from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-# TODO: Expose segments
-
 def distance_vec(point1: Vector, point2: Vector):
     """Calculate distance between two points."""
     return (point2 - point1).length
@@ -46,6 +44,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_sphere"
     bl_label = "Add Sphere Collision"
 
+    def __init__(self):
+        super().__init__()
+        self.use_modifier_stack = True
+
     def invoke(self, context, event):
         super().invoke(context, event)
 
@@ -62,19 +64,18 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
 
+        scene = context.scene
+
+        # change bounding object settings
+        if event.type == 'P' and event.value == 'RELEASE':
+            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.execute(context)
+
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-
-        self.remove_objects(self.new_colliders_list)
-        self.new_colliders_list = []
-
-        # reset previously stored displace modifiers when creating a new object
-        self.displace_modifiers = []
-
-        # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
-        if context.object not in self.selected_objects:
-            self.selected_objects.append(context.object)
+        # CLEANUP
+        super().execute(context)
 
         # Create the bounding geometry, depending on edit or object mode.
         for i, obj in enumerate(self.selected_objects):

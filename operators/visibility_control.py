@@ -1,7 +1,6 @@
 import bpy
 
 
-
 class COLLISION_OT_Visibility(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.hide_collisions"

@@ -6,11 +6,6 @@ def alignObjects(new, old):
     new.matrix_world = old.matrix_world
 
 
-def get_bounding_box(obj):
-    """returns the bounding box for an object"""
-    return obj.bound_box
-
-
 def set_origin_to_center_of_mass(context, ob):
     """"""
     oldActive = context.object
