@@ -66,6 +66,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_vertex_count = True
         self.use_space = True
         self.use_modifier_stack = True
+        self.use_global_local_switches = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -110,8 +111,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        matName = self.physics_material_name
-
         for i, obj in enumerate(context.selected_objects.copy()):
             # skip if invalid object
             if obj is None:
@@ -122,10 +121,16 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
+            type_suffix = prefs.convexColSuffix
             new_name = super().collider_name(context, type_suffix, i+1)
 
-            newCollider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
-            self.primitive_postprocessing(context, newCollider, matName)
+            new_collider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
+            self.new_colliders_list.append(new_collider)
+            self.custom_set_parent(context, obj, new_collider)
+            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
 
-        return {'FINISHED'}
+        # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
+        super().reset_to_initial_state(context)
+
+        return {'RUNNING_MODAL'}
+
