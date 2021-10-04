@@ -3,7 +3,7 @@ bl_info = {
     "description": "",
     "author": "Matthias Patscheider",
     "version": (0, 5, 0),
-    "blender": (2, 83, 0),
+    "blender": (2, 93, 0),
     "location": "View3D",
     "warning": "This addon is still in development.",
     "wiki_url": "https://github.com/Weisl/CollisionHelpers",
