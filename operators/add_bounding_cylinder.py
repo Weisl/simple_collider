@@ -1,4 +1,4 @@
-from math import sqrt
+from math import sqrt, radians
 
 import bpy
 from bpy.props import (
@@ -46,6 +46,11 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, new_name):
     newCollider.location = global_bbox_center
     newCollider.rotation_euler = base_object.rotation_euler
 
+    if self.cylinder_axis == 'X':
+        newCollider.rotation_euler.rotate_axis("Y", radians(90))
+    elif self.cylinder_axis == 'Y':
+        newCollider.rotation_euler.rotate_axis("X", radians(90))
+
     return newCollider
 
 
@@ -70,11 +75,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-        # collider type specific
-        self.type_suffix = prefs.convexColSuffix
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -124,10 +124,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             type_suffix = prefs.convexColSuffix
             new_name = super().collider_name(context, type_suffix, i+1)
 
-            new_collider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
-            self.new_colliders_list.append(new_collider)
-            self.custom_set_parent(context, obj, new_collider)
-            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+            if obj.mode == "OBJECT":
+                new_collider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
+                self.new_colliders_list.append(new_collider)
+                self.custom_set_parent(context, obj, new_collider)
+                self.primitive_postprocessing(context, new_collider, self.physics_material_name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
