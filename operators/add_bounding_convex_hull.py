@@ -43,6 +43,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
         target_objects = []
 
+        # TODO: Clean up the geometry update.
+        # Needed to update the mesh after moving, adding, deleting geometry in edit mode before creating a collision mesh. Otherwise the mesh will only generate correctly after switching mod on/off.
+        if self.obj_mode == "EDIT":
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+
         # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:
 
@@ -54,7 +60,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            # if self.obj_mode == "OBJECT":
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
 
@@ -79,7 +84,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             obj.select_set(True)
 
             context.view_layer.objects.active = obj
-
 
             prefs = context.preferences.addons["CollisionHelpers"].preferences
             type_suffix = prefs.boxColSuffix
