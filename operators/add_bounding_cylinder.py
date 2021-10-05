@@ -59,12 +59,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylinder Collision Ob"
 
-    # Defines the resolution of the bounding cylinder
-    vertex_count: IntProperty(
-        name="Vertices",
-        default=8
-    )
-
     def __init__(self):
         super().__init__()
         self.vertex_count = 12
@@ -72,6 +66,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_space = True
         self.use_modifier_stack = True
         self.use_global_local_switches = True
+        self.use_cylinder_axis = True
 
     def invoke(self, context, event):
         super().invoke(context, event)

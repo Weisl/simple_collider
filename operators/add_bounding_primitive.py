@@ -65,6 +65,13 @@ def draw_viewport_overlay(self, context):
         blf.draw(font_id, "Use Modifier Stack (P) : " + str(scene.my_use_modifier_stack))
         i += 1
 
+    if self.use_cylinder_axis:
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis))
+        i += 1
+
+
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
     bgl.glEnable(bgl.GL_BLEND)
@@ -247,6 +254,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_vertex_count = False
         self.use_modifier_stack = False
         self.use_space = False
+        self.use_cylinder_axis = 'Z'
 
     @classmethod
     def poll(cls, context):
