@@ -1,4 +1,4 @@
-from math import sqrt
+from math import sqrt, radians
 
 import bpy
 from bpy.props import (
@@ -46,6 +46,11 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, new_name):
     newCollider.location = global_bbox_center
     newCollider.rotation_euler = base_object.rotation_euler
 
+    if self.cylinder_axis == 'X':
+        newCollider.rotation_euler.rotate_axis("Y", radians(90))
+    elif self.cylinder_axis == 'Y':
+        newCollider.rotation_euler.rotate_axis("X", radians(90))
+
     return newCollider
 
 
@@ -54,26 +59,17 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylinder Collision Ob"
 
-    # Defines the resolution of the bounding cylinder
-    vertex_count: IntProperty(
-        name="Vertices",
-        default=8
-    )
-
     def __init__(self):
         super().__init__()
         self.vertex_count = 12
         self.use_vertex_count = True
         self.use_space = True
         self.use_modifier_stack = True
+        self.use_global_local_switches = True
+        self.use_cylinder_axis = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
-
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-        # collider type specific
-        self.type_suffix = prefs.convexColSuffix
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -110,8 +106,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        matName = self.physics_material_name
-
         for i, obj in enumerate(context.selected_objects.copy()):
             # skip if invalid object
             if obj is None:
@@ -122,10 +116,17 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
+            type_suffix = prefs.convexColSuffix
             new_name = super().collider_name(context, type_suffix, i+1)
 
-            newCollider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
-            self.primitive_postprocessing(context, newCollider, matName)
+            if obj.mode == "OBJECT":
+                new_collider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
+                self.new_colliders_list.append(new_collider)
+                self.custom_set_parent(context, obj, new_collider)
+                self.primitive_postprocessing(context, new_collider, self.physics_material_name)
 
-        return {'FINISHED'}
+        # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
+        super().reset_to_initial_state(context)
+
+        return {'RUNNING_MODAL'}
+

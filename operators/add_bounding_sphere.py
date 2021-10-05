@@ -106,7 +106,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     bm.from_object(obj, depsgraph)
                     bm.verts.ensure_lookup_table()
 
-                vertices = self.get_vertices(bm, preselect_all=False)
+                vertices = self.get_vertices(bm, me, preselect_all=False)
+
+                if vertices == None: # Skip object if there is no Mesh data to create the collider
+                    continue
 
             else:  # mode == "OBJECT":
                 context.view_layer.objects.active = obj
@@ -126,8 +129,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     bm.from_object(obj, depsgraph)
                     bm.verts.ensure_lookup_table()
 
-                vertices = self.get_vertices(bm, preselect_all=True)
+                vertices = self.get_vertices(bm, me, preselect_all=True)
 
+                if vertices == None: # Skip object if there is no Mesh data to create the collider
+                    continue
 
             # Get vertices wit min and may values
             # First pass

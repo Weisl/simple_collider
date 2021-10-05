@@ -65,6 +65,13 @@ def draw_viewport_overlay(self, context):
         blf.draw(font_id, "Use Modifier Stack (P) : " + str(scene.my_use_modifier_stack))
         i += 1
 
+    if self.use_cylinder_axis:
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis))
+        i += 1
+
+
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
     bgl.glEnable(bgl.GL_BLEND)
@@ -101,11 +108,17 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
-    def get_vertices(self, bm, preselect_all=False):
-        if preselect_all == True:
-            for v in bm.verts: v.select = True
+    def get_vertices(self, bm, me, preselect_all=False):
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        used_vertices = [v for v in bm.verts if v.select]
+        if preselect_all == True:
+            used_vertices = bm.verts
+        else:
+            used_vertices = [v for v in bm.verts if v.select]
+
+        if len(used_vertices) == 0:
+            return None
 
         return used_vertices
 
@@ -241,6 +254,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_vertex_count = False
         self.use_modifier_stack = False
         self.use_space = False
+        self.use_cylinder_axis = 'Z'
 
     @classmethod
     def poll(cls, context):
