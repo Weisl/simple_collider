@@ -101,11 +101,17 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
-    def get_vertices(self, bm, preselect_all=False):
-        if preselect_all == True:
-            for v in bm.verts: v.select = True
+    def get_vertices(self, bm, me, preselect_all=False):
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        used_vertices = [v for v in bm.verts if v.select]
+        if preselect_all == True:
+            used_vertices = bm.verts
+        else:
+            used_vertices = [v for v in bm.verts if v.select]
+
+        if len(used_vertices) == 0:
+            return None
 
         return used_vertices
 

@@ -160,6 +160,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            # if len(obj.data.vertices) == 0:
+            #     continue
+
             context.view_layer.objects.active = obj
             initial_mod_state = {}
 
@@ -178,7 +181,10 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     bm.from_object(obj, depsgraph)
                     bm.verts.ensure_lookup_table()
 
-                used_vertices = self.get_vertices(bm, preselect_all=False)
+                used_vertices = self.get_vertices(bm, me, preselect_all=False)
+
+                if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+                    continue
 
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
@@ -217,7 +223,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                         bm.from_object(obj, depsgraph)
                         bm.verts.ensure_lookup_table()
 
-                    used_vertices = self.get_vertices(bm, preselect_all=True)
+                    used_vertices = self.get_vertices(bm, me, preselect_all=True)
+
+                    if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+                        continue
+
                     positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                     verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
                     new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces)
