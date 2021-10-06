@@ -61,7 +61,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
-        self.vertex_count = 12
         self.use_vertex_count = True
         self.use_space = True
         self.use_modifier_stack = True

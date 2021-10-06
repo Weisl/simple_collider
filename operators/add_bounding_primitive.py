@@ -88,10 +88,6 @@ class OBJECT_OT_add_bounding_object():
     """Abstract parent class to contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
-    # The offset used in a displacement modifier on the bounding object to
-    # either push the bounding object inwards or outwards
-    displace_my_offset: bpy.props.FloatProperty()
-
     def remove_objects(self, list):
         # Remove previously created collisions
         if len(list) > 0:
@@ -413,7 +409,6 @@ class OBJECT_OT_add_bounding_object():
                     # Store displacement strenght to use when regenerating the colliders
                     self.decimate_amount = mod.ratio
 
-
             if self.opacity_active:
                 delta = self.first_mouse_x - event.mouse_x
                 color_alpha = 0.5 + delta * 0.005
@@ -425,8 +420,19 @@ class OBJECT_OT_add_bounding_object():
 
             if self.vertex_count_active:
                 delta = self.first_mouse_x - event.mouse_x
-                vertex_count = (12 + delta * 1)
-                self.vertex_count = vertex_count
+
+                if event.ctrl:
+                    vertex_count = (12 + delta * 0.15)
+                elif event.shift:
+                    vertex_count = (12 + delta * 0.002)
+                else:
+                    vertex_count = (12 + delta * 0.02)
+
+                # check if value changed to avoid regenerating collisions for the same value
+                if int(round(vertex_count)) != int(round(self.vertex_count)):
+                    self.vertex_count = int(vertex_count)
+                    self.execute(context)
+
 
         # passthrough specific events to blenders default behavior
         elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
