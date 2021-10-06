@@ -102,6 +102,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        scene = context.scene
         # CLEANUP
         super().execute(context)
 
@@ -114,15 +115,30 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.convexColSuffix
-            new_name = super().collider_name(context, type_suffix, i+1)
+            initial_mod_state = {}
 
             if obj.mode == "OBJECT":
+                if scene.my_use_modifier_stack == False:
+                    for mod in obj.modifiers:
+                        initial_mod_state[mod.name] = mod.show_viewport
+                        mod.show_viewport = False
+                    context.view_layer.update()
+
+                prefs = context.preferences.addons["CollisionHelpers"].preferences
+                type_suffix = prefs.convexColSuffix
+                new_name = super().collider_name(context, type_suffix, i + 1)
+
                 new_collider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)
                 self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+
+                # Reset modifiers of target mesh to initial state
+                if scene.my_use_modifier_stack == False:
+                    for mod_name, value in initial_mod_state.items():
+                        print("key %s and value %s" % (mod_name, value))
+                        obj.modifiers[mod_name].show_viewport = value
+
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

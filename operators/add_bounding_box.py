@@ -235,7 +235,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 # Reset modifiers of target mesh to initial state
                 if scene.my_use_modifier_stack == False:
                     for mod_name, value in initial_mod_state.items():
-                        print("key %s and value %s" % (mod_name, value))
                         obj.modifiers[mod_name].show_viewport = value
 
             # Name generation
