@@ -7,7 +7,7 @@ from mathutils import Vector
 from CollisionHelpers.operators.object_functions import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-tmp_name = 'tmp_name'
+tmp_name = 'box_collider'
 
 def add_box_object(context, vertices):
     """Generate a new object from the given vertices"""

@@ -9,16 +9,19 @@ from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
+tmp_name = 'cylindrical_collider'
+
 def calc_hypothenuse(a, b):
     """calculate the hypothenuse"""
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
 
-def generate_cylinder_Collider_Objectmode(self, context, base_object, new_name):
+def generate_cylinder_Collider_Objectmode(self, context, base_object):
     """Create cylindrical collider for every selected object in object mode
     base_object contains a blender object
     name_suffix gets added to the newly created object name
     """
+    global tmp_name
 
     if self.cylinder_axis == 'X':
         radius = calc_hypothenuse(base_object.dimensions[1], base_object.dimensions[2])
@@ -38,7 +41,7 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, new_name):
                                         depth=depth)
 
     newCollider = context.object
-    newCollider.name = new_name
+    newCollider.name = tmp_name
 
     # align newly created object to base mesh
     centreBase = sum((Vector(b) for b in base_object.bound_box), Vector()) / 8.0
@@ -54,6 +57,8 @@ def generate_cylinder_Collider_Objectmode(self, context, base_object, new_name):
     return newCollider
 
 
+
+
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create a Cylindrical bounding object"""
     bl_idname = "mesh.add_bounding_cylinder"
@@ -66,6 +71,28 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.use_cylinder_axis = True
+
+    def generate_bounding_box(self, positionsX, positionsY, positionsZ):
+        # get the min and max coordinates for the bounding box
+        verts = [
+            (max(positionsX), max(positionsY), min(positionsZ)),
+            (max(positionsX), min(positionsY), min(positionsZ)),
+            (min(positionsX), min(positionsY), min(positionsZ)),
+            (min(positionsX), max(positionsY), min(positionsZ)),
+            (max(positionsX), max(positionsY), max(positionsZ)),
+            (max(positionsX), min(positionsY), max(positionsZ)),
+            (min(positionsX), min(positionsY), max(positionsZ)),
+            (min(positionsX), max(positionsY), max(positionsZ)),
+        ]
+        return verts
+
+    def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
+        dimensions = []
+        dimensions.append(abs(max(positionsX) - min(positionsX)))
+        dimensions.append(max(positionsY) - min(positionsY))
+        dimensions.append(abs(max(positionsZ) - min(positionsZ)))
+
+        return dimensions
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -124,14 +151,44 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                         mod.show_viewport = False
                     context.view_layer.update()
 
-                prefs = context.preferences.addons["CollisionHelpers"].preferences
-                type_suffix = prefs.convexColSuffix
-                new_name = super().collider_name(context, type_suffix, i + 1)
+                if scene.my_space == 'LOCAL':
+                    new_collider = generate_cylinder_Collider_Objectmode(self, context, obj)
 
-                new_collider = generate_cylinder_Collider_Objectmode(self, context, obj, new_name)
-                self.new_colliders_list.append(new_collider)
-                self.custom_set_parent(context, obj, new_collider)
-                self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+                else:  # Space == 'GLOBAL'
+                    # WS_vertives = [obj.matrix_world @ v.co for v in obj.data.vertices]
+
+                    positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', obj.data.vertices)
+                    dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
+                    bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+
+                    if self.cylinder_axis == 'X':
+                        radius = calc_hypothenuse(dimensions[1], dimensions[2])
+                        depth = dimensions[0]
+
+                    elif self.cylinder_axis == 'Y':
+                        radius = calc_hypothenuse(dimensions[0], dimensions[2])
+                        depth = dimensions[1]
+
+                    else:
+                        radius = calc_hypothenuse(dimensions[0], dimensions[1])
+                        depth = dimensions[2]
+
+                    # add new cylindrical mesh
+                    bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
+                                                        radius=radius,
+                                                        depth=depth)
+                    new_collider = context.object
+
+                    # align newly created object to base mesh
+                    centreBase = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+                    global_bbox_center = centreBase
+                    new_collider.location = global_bbox_center
+
+                    if self.cylinder_axis == 'X':
+                        new_collider.rotation_euler.rotate_axis("Y", radians(90))
+                    elif self.cylinder_axis == 'Y':
+                        new_collider.rotation_euler.rotate_axis("X", radians(90))
+
 
                 # Reset modifiers of target mesh to initial state
                 if scene.my_use_modifier_stack == False:
@@ -139,6 +196,14 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                         print("key %s and value %s" % (mod_name, value))
                         obj.modifiers[mod_name].show_viewport = value
 
+
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.convexColSuffix
+            new_collider.name = super().collider_name(context, type_suffix, i + 1)
+
+            self.new_colliders_list.append(new_collider)
+            self.custom_set_parent(context, obj, new_collider)
+            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
