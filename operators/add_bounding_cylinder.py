@@ -1,6 +1,6 @@
 from math import sqrt, radians
 
-import bpy
+import bpy, bmesh
 from bpy.props import (
     IntProperty,
 )
@@ -157,7 +157,18 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 else:  # Space == 'GLOBAL'
                     # WS_vertives = [obj.matrix_world @ v.co for v in obj.data.vertices]
 
-                    positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', obj.data.vertices)
+                    if scene.my_use_modifier_stack == False:
+                        vertices = obj.data.vertices
+
+                    if scene.my_use_modifier_stack == True:
+                        # Get mesh information with the modifiers applied
+                        depsgraph = bpy.context.evaluated_depsgraph_get()
+                        bm = bmesh.new()
+                        bm.from_object(obj, depsgraph)
+                        bm.verts.ensure_lookup_table()
+                        vertices = bm.verts
+
+                    positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', vertices)
                     dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
                     bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
 
