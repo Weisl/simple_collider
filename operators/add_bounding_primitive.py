@@ -294,7 +294,8 @@ class OBJECT_OT_add_bounding_object():
         self.new_colliders_list = []
 
         # Set up scene
-        context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
+        if context.space_data.shading.type == 'SOLID':
+            context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
 
         # the arguments we pass the the callback
         args = (self, context)
