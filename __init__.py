@@ -1,5 +1,5 @@
 bl_info = {
-    "name": "CollisionTool",
+    "name": "CollisionHelpers",
     "description": "",
     "author": "Matthias Patscheider",
     "version": (0, 5, 0),
