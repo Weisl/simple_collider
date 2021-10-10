@@ -37,5 +37,21 @@ class VIEW3D_MT_PIE_template(Menu):
 
         #SouthWest
         col = pie.column(align=True)
-        col.operator("object.hide_collisions", icon='HIDE_ON', text='Collision').hide = True
-        col.operator("object.hide_collisions", icon='HIDE_OFF', text='Collision').hide = False
+        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='All')
+        op.hide = True
+        op.mode = 'ALL'
+        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='All')
+        op.hide = False
+        op.mode = 'ALL'
+        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='Simple')
+        op.hide = True
+        op.mode = 'SIMPLE'
+        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='Simple')
+        op.hide = False
+        op.mode = 'SIMPLE'
+        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='Complex')
+        op.hide = True
+        op.mode = 'COMPLEX'
+        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='Complex')
+        op.hide = False
+        op.mode = 'COMPLEX'

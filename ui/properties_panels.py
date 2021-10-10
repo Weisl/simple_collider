@@ -28,11 +28,36 @@ class CollissionPanel(bpy.types.Panel):
         row.prop(scene, "CollisionMaterials")
 
         row = layout.row(align=True)
-        row.operator("object.hide_collisions", icon='HIDE_ON', text='Collision').hide = True
-        row.operator("object.hide_collisions", icon='HIDE_OFF', text='Collision').hide = False
+        op = row.operator("object.hide_collisions", icon='HIDE_ON', text='All')
+        op.hide = True
+        op.mode = 'ALL'
+        op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='All')
+        op.hide = False
+        op.mode = 'ALL'
+        row = layout.row(align=True)
+        op = row.operator("object.hide_collisions", icon='HIDE_ON', text='Simple')
+        op.hide = True
+        op.mode = 'SIMPLE'
+        op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='Simple')
+        op.hide = False
+        op.mode = 'SIMPLE'
+        row = layout.row(align=True)
+        op = row.operator("object.hide_collisions", icon='HIDE_ON', text='Complex')
+        op.hide = True
+        op.mode = 'COMPLEX'
+        op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='Complex')
+        op.hide = False
+        op.mode = 'COMPLEX'
+
+        row = layout.row(align=True)
+        row.prop(scene,'my_color')
+        row = layout.row(align=True)
+        row.prop(scene,'my_color_simple')
+        row = layout.row(align=True)
+        row.prop(scene,'my_color_complex')
+
 
         view = context.space_data
-
         shading = view.shading
 
         # row = layout.row(align=True)

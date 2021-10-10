@@ -59,6 +59,18 @@ def register():
         subtype='COLOR', size=4
     )
 
+    # The object color for the bounding object
+    scene.my_color_simple = bpy.props.FloatVectorProperty(
+        name="Bounding Object Color", description="", default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0,
+        subtype='COLOR', size=4
+    )
+
+    # The object color for the bounding object
+    scene.my_color_complex = bpy.props.FloatVectorProperty(
+        name="Bounding Object Color", description="", default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
+        subtype='COLOR', size=4
+    )
+
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)

@@ -44,6 +44,11 @@ def draw_viewport_overlay(self, context):
 
     blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
+    blf.draw(font_id, "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx]))
+    i += 1
+
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
+    blf.size(font_id, 20, 72)
     blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
     i += 1
 
@@ -174,13 +179,20 @@ class OBJECT_OT_add_bounding_object():
         self.set_physics_material(context, bounding_object, physics_material_name)
 
         bounding_object['isCollider'] = True
+        bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
-        scene = context.scene
-
         bounding_object.display_type = 'SOLID'
-        bounding_object.color = scene.my_color
+        self.set_object_color(context, bounding_object)
+
+    def set_object_color(self, context, obj):
+        if self.collision_type[self.collision_type_idx] == 'ALL':
+            obj.color = context.scene.my_color
+        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
+            obj.color = context.scene.my_color_simple
+        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
+            obj.color = context.scene.my_color_complex
 
     def add_to_collections(self, obj, collections):
         old_collection = obj.users_collection
@@ -310,6 +322,8 @@ class OBJECT_OT_add_bounding_object():
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        self.collision_type_idx = 0
+        self.collision_type = ['ALL','SIMPLE', 'COMPLEX']
         #sphere
         self.sphere_segments = 16
 
@@ -419,6 +433,13 @@ class OBJECT_OT_add_bounding_object():
             #toggle through display modes
             self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
             context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
+
+        elif event.type == 'T' and event.value == 'RELEASE':
+            #toggle through display modes
+            self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
+            for obj in self.new_colliders_list:
+                self.set_object_color(context,obj)
+                # print('collision type = %s' % (str(self.collision_type[(self.collision_type_idx)])))
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
