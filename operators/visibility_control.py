@@ -26,5 +26,4 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
                 # hide throws errors :(
                 # ob.hide_set = False
 
-
         return {'FINISHED'}

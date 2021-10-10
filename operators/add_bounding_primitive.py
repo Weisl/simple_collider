@@ -71,6 +71,11 @@ def draw_viewport_overlay(self, context):
         blf.draw(font_id, "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis))
         i += 1
 
+    if self.use_sphere_segments:
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Sphere Segments (W): " + str(self.sphere_segments))
+        i += 1
 
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
@@ -266,6 +271,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_space = False
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
+        self.use_sphere_segments = False
 
     @classmethod
     def poll(cls, context):
@@ -300,13 +306,19 @@ class OBJECT_OT_add_bounding_object():
         self.opacity_active = False
         self.cylinder_axis = 'Z'
         self.vertex_count_active = False
+        self.sphere_segments_active = False
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        #sphere
+        self.sphere_segments = 16
+
         # store mouse position
         self.first_mouse_x = event.mouse_x
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
+
+
 
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
@@ -323,6 +335,8 @@ class OBJECT_OT_add_bounding_object():
 
     def modal(self, context, event):
         scene = context.scene
+
+        delta = self.first_mouse_x - event.mouse_x
 
         # User Input
         # aboard operator
@@ -378,24 +392,28 @@ class OBJECT_OT_add_bounding_object():
             self.opacity_active = False
             self.decimate_active = False
             self.vertex_count_active = False
+            self.sphere_segments_active = False
 
         elif event.type == 'D' and event.value == 'RELEASE':
             self.decimate_active = not self.decimate_active
             self.opacity_active = False
             self.displace_active = False
             self.vertex_count_active = False
+            self.sphere_segments_active = False
 
         elif event.type == 'A' and event.value == 'RELEASE':
             self.opacity_active = not self.opacity_active
             self.displace_active = False
             self.decimate_active = False
             self.vertex_count_active = False
+            self.sphere_segments_active = False
 
         elif event.type == 'E' and event.value == 'RELEASE':
             self.vertex_count_active = not self.vertex_count_active
             self.displace_active = False
             self.decimate_active = False
             self.opacity_active = False
+            self.sphere_segments_active = False
 
         elif event.type == 'V' and event.value == 'RELEASE':
             #toggle through display modes
@@ -404,7 +422,6 @@ class OBJECT_OT_add_bounding_object():
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
-                delta = self.first_mouse_x - event.mouse_x
                 for mod in self.displace_modifiers:
                     strenght = 1.0 - delta * 0.01
                     mod.strength = strenght
@@ -415,7 +432,6 @@ class OBJECT_OT_add_bounding_object():
                     self.displace_my_offset = mod.strength
 
             if self.decimate_active:
-                delta = self.first_mouse_x - event.mouse_x
                 for mod in self.decimate_modifiers:
                     dec_amount = 1.0 - delta * 0.005
                     mod.ratio = dec_amount
@@ -426,7 +442,6 @@ class OBJECT_OT_add_bounding_object():
                     self.decimate_amount = mod.ratio
 
             if self.opacity_active:
-                delta = self.first_mouse_x - event.mouse_x
                 color_alpha = 0.5 + delta * 0.005
 
                 for obj in self.new_colliders_list:
@@ -435,20 +450,30 @@ class OBJECT_OT_add_bounding_object():
                 scene.my_color[3] = color_alpha
 
             if self.vertex_count_active:
-                delta = self.first_mouse_x - event.mouse_x
-
                 if event.ctrl:
-                    vertex_count = (12 + delta * 0.15)
+                    vertex_count = abs(int(round((12 + delta * 0.15))))
                 elif event.shift:
-                    vertex_count = (12 + delta * 0.002)
+                    vertex_count = abs(int(round((12 + delta * 0.002))))
                 else:
-                    vertex_count = (12 + delta * 0.02)
+                    vertex_count = abs(int(round((12 + delta * 0.02))))
 
                 # check if value changed to avoid regenerating collisions for the same value
-                if int(round(vertex_count)) != int(round(self.vertex_count)):
-                    self.vertex_count = int(vertex_count)
+                if vertex_count != int(round(self.vertex_count)):
+                    self.vertex_count = vertex_count
                     self.execute(context)
 
+            if self.sphere_segments_active:
+                if event.ctrl:
+                    segments = int(abs(round((16 + delta * 0.15))))
+                elif event.shift:
+                    segments = int(abs(round((16 + delta * 0.002))))
+                else:
+                    segments = int(abs(round((16 + delta * 0.02))))
+
+                    # check if value changed to avoid regenerating collisions for the same value
+                if segments != int(round(self.sphere_segments)):
+                    self.sphere_segments = segments
+                    self.execute(context)
 
         # passthrough specific events to blenders default behavior
         elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:

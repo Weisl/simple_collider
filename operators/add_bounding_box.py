@@ -66,27 +66,25 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
 
     # create new object from mesh and link it to collection
     # print("active_ob.name = " + active_ob.name)
-    newCollider = bpy.data.objects.new(tmp_name, mesh)
-    root_collection.objects.link(newCollider)
+    new_collider = bpy.data.objects.new(tmp_name, mesh)
+    root_collection.objects.link(new_collider)
 
     scene = context.scene
 
     if scene.my_space == 'LOCAL':
-        newCollider.parent = active_ob
-        alignObjects(newCollider, active_ob)
+        new_collider.parent = active_ob
+        alignObjects(new_collider, active_ob)
 
     #TODO: Remove the object mode switch that is called for every object to make this operation faster.
     else:
         bpy.ops.object.mode_set(mode='OBJECT')
-        matrix= newCollider.matrix_world
-        newCollider.parent = active_ob
-        newCollider.matrix_world = matrix
+        matrix= new_collider.matrix_world
+        new_collider.parent = active_ob
+        new_collider.matrix_world = matrix
 
         bpy.ops.object.mode_set(mode='EDIT')
 
-    return newCollider
-
-
+    return new_collider
 
 class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""

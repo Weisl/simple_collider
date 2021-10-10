@@ -14,7 +14,7 @@ def midpoint(p1, p2):
     return (p1 + p2) * 0.5
 
 
-def create_sphere(pos, diameter, name):
+def create_sphere(pos, diameter, name, segments):
     # Create an empty mesh and the object.
     mesh = bpy.data.meshes.new(name)
     basic_sphere = bpy.data.objects.new(name, mesh)
@@ -29,7 +29,7 @@ def create_sphere(pos, diameter, name):
 
     # Construct the bmesh sphere and assign it to the blender mesh.
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, diameter=diameter)
+    bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, diameter=diameter)
     bm.to_mesh(mesh)
     mesh.update()
     bm.clear()
@@ -47,6 +47,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     def __init__(self):
         super().__init__()
         self.use_modifier_stack = True
+        self.use_sphere_segments = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -65,6 +66,11 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
 
         scene = context.scene
+
+        # change bounding object settings
+        if event.type == 'W' and event.value == 'RELEASE':
+            self.sphere_segments_active  = not self.sphere_segments_active
+            self.execute(context)
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
@@ -202,7 +208,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             type_suffix = prefs.boxColSuffix
             new_name = super().collider_name(context, type_suffix, i+1)
 
-            new_collider = create_sphere(mid_point, radius, new_name + "_" + str(i))
+            new_collider = create_sphere(mid_point, radius, new_name + "_" + str(i), self.sphere_segments)
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
@@ -210,5 +216,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, self.physics_material_name)
             collections = obj.users_collection
             self.add_to_collections(new_collider, collections)
+
+            # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
+            super().reset_to_initial_state(context)
 
         return {'RUNNING_MODAL'}

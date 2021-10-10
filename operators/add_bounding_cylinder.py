@@ -24,10 +24,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
-        self.use_vertex_count = True
         self.use_space = True
         self.use_modifier_stack = True
         self.use_global_local_switches = True
+        #cylinder specific
+        self.use_vertex_count = True
         self.use_cylinder_axis = True
 
 
