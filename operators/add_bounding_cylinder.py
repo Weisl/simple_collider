@@ -16,48 +16,6 @@ def calc_hypothenuse(a, b):
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
 
-def generate_cylinder_Collider_Objectmode(self, context, base_object):
-    """Create cylindrical collider for every selected object in object mode
-    base_object contains a blender object
-    name_suffix gets added to the newly created object name
-    """
-    global tmp_name
-
-    if self.cylinder_axis == 'X':
-        radius = calc_hypothenuse(base_object.dimensions[1], base_object.dimensions[2])
-        depth = base_object.dimensions[0]
-
-    elif self.cylinder_axis == 'Y':
-        radius = calc_hypothenuse(base_object.dimensions[0], base_object.dimensions[2])
-        depth = base_object.dimensions[1]
-
-    else:
-        radius = calc_hypothenuse(base_object.dimensions[0], base_object.dimensions[1])
-        depth = base_object.dimensions[2]
-
-    # add new cylindrical mesh
-    bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
-                                        radius=radius,
-                                        depth=depth)
-
-    newCollider = context.object
-    newCollider.name = tmp_name
-
-    # align newly created object to base mesh
-    centreBase = sum((Vector(b) for b in base_object.bound_box), Vector()) / 8.0
-    global_bbox_center = base_object.matrix_world @ centreBase
-    newCollider.location = global_bbox_center
-    newCollider.rotation_euler = base_object.rotation_euler
-
-    if self.cylinder_axis == 'X':
-        newCollider.rotation_euler.rotate_axis("Y", radians(90))
-    elif self.cylinder_axis == 'Y':
-        newCollider.rotation_euler.rotate_axis("X", radians(90))
-
-    return newCollider
-
-
-
 
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create a Cylindrical bounding object"""
@@ -72,19 +30,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_global_local_switches = True
         self.use_cylinder_axis = True
 
-    def generate_bounding_box(self, positionsX, positionsY, positionsZ):
-        # get the min and max coordinates for the bounding box
-        verts = [
-            (max(positionsX), max(positionsY), min(positionsZ)),
-            (max(positionsX), min(positionsY), min(positionsZ)),
-            (min(positionsX), min(positionsY), min(positionsZ)),
-            (min(positionsX), max(positionsY), min(positionsZ)),
-            (max(positionsX), max(positionsY), max(positionsZ)),
-            (max(positionsX), min(positionsY), max(positionsZ)),
-            (min(positionsX), min(positionsY), max(positionsZ)),
-            (min(positionsX), max(positionsY), max(positionsZ)),
-        ]
-        return verts
 
     def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
         dimensions = []
@@ -93,6 +38,47 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         dimensions.append(abs(max(positionsZ) - min(positionsZ)))
 
         return dimensions
+
+    def generate_radius_depth(self, dimensions):
+        if self.cylinder_axis == 'X':
+            radius = calc_hypothenuse(dimensions[1], dimensions[2])
+            depth = dimensions[0]
+
+        elif self.cylinder_axis == 'Y':
+            radius = calc_hypothenuse(dimensions[0], dimensions[2])
+            depth = dimensions[1]
+
+        else:
+            radius = calc_hypothenuse(dimensions[0], dimensions[1])
+            depth = dimensions[2]
+
+        return radius, depth
+
+    def generate_cylinder_object(self, context, radius, depth, location, rotation_euler = False):
+        """Create cylindrical collider for every selected object in object mode
+        base_object contains a blender object
+        name_suffix gets added to the newly created object name
+        """
+        global tmp_name
+
+        # add new cylindrical mesh
+        bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
+                                            radius=radius,
+                                            depth=depth)
+
+        new_collider = context.object
+        new_collider.name = tmp_name
+
+        new_collider.location = location
+        if rotation_euler:
+            new_collider.rotation_euler = rotation_euler
+
+        if self.cylinder_axis == 'X':
+            new_collider.rotation_euler.rotate_axis("Y", radians(90))
+        elif self.cylinder_axis == 'Y':
+            new_collider.rotation_euler.rotate_axis("X", radians(90))
+
+        return new_collider
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -136,6 +122,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         target_object_mode = []
         target_edit_mode = []
 
+        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        type_suffix = prefs.convexColSuffix
+
         if self.obj_mode == 'EDIT':
             for i, obj in enumerate(context.selected_objects.copy()):
 
@@ -172,17 +161,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
                 bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
 
-                if self.cylinder_axis == 'X':
-                    radius = calc_hypothenuse(dimensions[1], dimensions[2])
-                    depth = dimensions[0]
-
-                elif self.cylinder_axis == 'Y':
-                    radius = calc_hypothenuse(dimensions[0], dimensions[2])
-                    depth = dimensions[1]
-
-                else:
-                    radius = calc_hypothenuse(dimensions[0], dimensions[1])
-                    depth = dimensions[2]
+                radius, depth = self.generate_radius_depth(dimensions)
 
                 bounding_cylinder_data['parent'] = obj
                 bounding_cylinder_data['radius'] = radius
@@ -210,7 +189,13 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     context.view_layer.update()
 
                 if scene.my_space == 'LOCAL':
-                    new_collider = generate_cylinder_Collider_Objectmode(self, context, obj)
+                    radius, depth = self.generate_radius_depth(obj.dimensions)
+
+                    # align newly created object to base mesh
+                    centreBase = sum((Vector(b) for b in obj.bound_box), Vector()) / 8.0
+                    global_bbox_center = obj.matrix_world @ centreBase
+
+                    new_collider = self.generate_cylinder_object(context, radius, depth,global_bbox_center, rotation_euler= obj.rotation_euler)
 
                 else:  # Space == 'GLOBAL'
                     # WS_vertives = [obj.matrix_world @ v.co for v in obj.data.vertices]
@@ -230,33 +215,14 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
                     bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
 
-                    if self.cylinder_axis == 'X':
-                        radius = calc_hypothenuse(dimensions[1], dimensions[2])
-                        depth = dimensions[0]
-
-                    elif self.cylinder_axis == 'Y':
-                        radius = calc_hypothenuse(dimensions[0], dimensions[2])
-                        depth = dimensions[1]
-
-                    else:
-                        radius = calc_hypothenuse(dimensions[0], dimensions[1])
-                        depth = dimensions[2]
-
-                    # add new cylindrical mesh
-                    bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
-                                                        radius=radius,
-                                                        depth=depth)
-                    new_collider = context.object
+                    radius, depth = self.generate_radius_depth(dimensions)
 
                     # align newly created object to base mesh
                     centreBase = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
                     global_bbox_center = centreBase
-                    new_collider.location = global_bbox_center
 
-                    if self.cylinder_axis == 'X':
-                        new_collider.rotation_euler.rotate_axis("Y", radians(90))
-                    elif self.cylinder_axis == 'Y':
-                        new_collider.rotation_euler.rotate_axis("X", radians(90))
+                    new_collider = self.generate_cylinder_object(context, radius, depth, global_bbox_center)
+
 
                 # Reset modifiers of target mesh to initial state
                 if scene.my_use_modifier_stack == False:
@@ -278,28 +244,15 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 depth = bounding_cylinder_data['depth']
                 bbox = bounding_cylinder_data['bbox']
 
-                # add new cylindrical mesh
-                bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
-                                                    radius=radius,
-                                                    depth=depth)
-
-                new_collider = context.object
-                new_collider.name = tmp_name
-
                 # align newly created object to base mesh
                 centreBase = sum((Vector(b) for b in bbox), Vector()) / 8.0
-                new_collider.location = centreBase
 
                 if scene.my_space == 'LOCAL':
-                    new_collider.rotation_euler = parent.rotation_euler
+                    new_collider = self.generate_cylinder_object(context, radius, depth, centreBase,
+                                                        rotation_euler=parent.rotation_euler)
+                else:
+                    new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
 
-                if self.cylinder_axis == 'X':
-                    new_collider.rotation_euler.rotate_axis("Y", radians(90))
-                elif self.cylinder_axis == 'Y':
-                    new_collider.rotation_euler.rotate_axis("X", radians(90))
-
-                prefs = context.preferences.addons["CollisionHelpers"].preferences
-                type_suffix = prefs.convexColSuffix
                 new_collider.name = super().collider_name(context, type_suffix, i + 1)
 
                 self.new_colliders_list.append(new_collider)
@@ -311,8 +264,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             for new_collider in target_object_mode:
 
-                prefs = context.preferences.addons["CollisionHelpers"].preferences
-                type_suffix = prefs.convexColSuffix
                 new_collider.name = super().collider_name(context, type_suffix, i + 1)
 
                 self.new_colliders_list.append(new_collider)

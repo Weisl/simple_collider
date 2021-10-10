@@ -9,6 +9,16 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'box_collider'
 
+# vertex indizes defining the faces of the cube
+face_order = [
+    (0, 1, 2, 3),
+    (4, 7, 6, 5),
+    (0, 4, 5, 1),
+    (1, 5, 6, 2),
+    (2, 6, 7, 3),
+    (4, 0, 3, 7),
+]
+
 def add_box_object(context, vertices):
     """Generate a new object from the given vertices"""
 
@@ -27,31 +37,6 @@ def add_box_object(context, vertices):
 
     return newObj
 
-
-def generate_box(positionsX, positionsY, positionsZ):
-    # get the min and max coordinates for the bounding box
-    verts = [
-        (max(positionsX), max(positionsY), min(positionsZ)),
-        (max(positionsX), min(positionsY), min(positionsZ)),
-        (min(positionsX), min(positionsY), min(positionsZ)),
-        (min(positionsX), max(positionsY), min(positionsZ)),
-        (max(positionsX), max(positionsY), max(positionsZ)),
-        (max(positionsX), min(positionsY), max(positionsZ)),
-        (min(positionsX), min(positionsY), max(positionsZ)),
-        (min(positionsX), max(positionsY), max(positionsZ)),
-    ]
-
-    #vertex indizes defining the faces of the cube
-    faces = [
-        (0, 1, 2, 3),
-        (4, 7, 6, 5),
-        (0, 4, 5, 1),
-        (1, 5, 6, 2),
-        (2, 6, 7, 3),
-        (4, 0, 3, 7),
-    ]
-
-    return verts, faces
 
 
 def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
@@ -112,6 +97,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_space = True
         self.use_modifier_stack = True
+        self.use_global_local_switches = True
 
 
     def invoke(self, context, event):
@@ -144,6 +130,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
+        global face_order
+
         scene = context.scene
 
         # CLEANUP and INIT
@@ -187,8 +175,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     continue
 
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
-                verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
-                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces)
+                verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+                new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
 
             else:  # mode == "OBJECT":
                 if scene.my_use_modifier_stack == False:
@@ -229,8 +217,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                         continue
 
                     positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
-                    verts_loc, faces = generate_box(positionsX, positionsY, positionsZ)
-                    new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, faces)
+                    verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+                    new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
 
                 # Reset modifiers of target mesh to initial state
                 if scene.my_use_modifier_stack == False:

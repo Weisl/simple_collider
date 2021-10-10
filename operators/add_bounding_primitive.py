@@ -104,6 +104,20 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
+    def generate_bounding_box(self, positionsX, positionsY, positionsZ):
+        # get the min and max coordinates for the bounding box
+        verts = [
+            (max(positionsX), max(positionsY), min(positionsZ)),
+            (max(positionsX), min(positionsY), min(positionsZ)),
+            (min(positionsX), min(positionsY), min(positionsZ)),
+            (min(positionsX), max(positionsY), min(positionsZ)),
+            (max(positionsX), max(positionsY), max(positionsZ)),
+            (max(positionsX), min(positionsY), max(positionsZ)),
+            (min(positionsX), min(positionsY), max(positionsZ)),
+            (min(positionsX), max(positionsY), max(positionsZ)),
+        ]
+        return verts
+
     def get_vertices(self, bm, me, preselect_all=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
@@ -250,7 +264,8 @@ class OBJECT_OT_add_bounding_object():
         self.use_vertex_count = False
         self.use_modifier_stack = False
         self.use_space = False
-        self.use_cylinder_axis = 'Z'
+        self.use_cylinder_axis = False
+        self.use_global_local_switches = False
 
     @classmethod
     def poll(cls, context):
@@ -283,7 +298,7 @@ class OBJECT_OT_add_bounding_object():
         self.decimate_modifiers = []
         self.decimate_amount = 1.0
         self.opacity_active = False
-        self.cylinder_axis = False
+        self.cylinder_axis = 'Z'
         self.vertex_count_active = False
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
