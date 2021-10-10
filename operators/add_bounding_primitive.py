@@ -344,7 +344,7 @@ class OBJECT_OT_add_bounding_object():
             return {'CANCELLED'}
 
         # apply operator
-        elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER'}:
+        elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
             # self.execute(context)
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
