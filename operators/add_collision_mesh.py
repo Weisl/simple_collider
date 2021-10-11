@@ -30,9 +30,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     def invoke(self, context, event):
         super().invoke(context, event)
         self.face_count = 0
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
         # collider type specific
-        self.type_suffix = prefs.meshColSuffix
+        self.type_suffix = self.prefs.meshColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):

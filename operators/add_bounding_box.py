@@ -224,8 +224,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                         obj.modifiers[mod_name].show_viewport = value
 
             # Name generation
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
+            type_suffix = self.prefs.boxColSuffix
             new_collider.name = super().collider_name(context, type_suffix, i)
 
             # save collision objects to delete when canceling the operation

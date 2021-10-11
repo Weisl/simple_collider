@@ -85,8 +85,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             context.view_layer.objects.active = obj
 
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
+            type_suffix = self.prefs.boxColSuffix
 
             new_name = super().collider_name(context, type_suffix, i+1)
 

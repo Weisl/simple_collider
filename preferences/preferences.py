@@ -5,6 +5,7 @@ import rna_keymap_ui
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
 
+
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
@@ -12,7 +13,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # Has to be named like the main addon folder
     bl_idname = "CollisionHelpers"  ### __package__ works on multifile and __name__ not
 
-    prefs_tabs: bpy.props.EnumProperty(items=(('NAMING', "Naming", "NAMING"), ('KEYMAP', "Keymap", "Keymap"), ('VHACD',"Vhacd","VHACD")), default='NAMING')
+    prefs_tabs: bpy.props.EnumProperty(
+        items=(('NAMING', "Naming", "NAMING"), ('KEYMAP', "Keymap", "Keymap"), ('VHACD', "Vhacd", "VHACD")),
+        default='NAMING')
 
     colPreSuffix: bpy.props.StringProperty(name="Collision ", default="_COL")
 
@@ -22,12 +25,27 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="_MESH")
     optionalSuffix: bpy.props.StringProperty(name="Optional Suffix", default="_LOW_HIGH")
     colSuffix: bpy.props.StringProperty(name="Non Collision", default="_BOUNDING")
+    colAll: bpy.props.StringProperty(name="All Collisions", default="_ALL")
+    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="_SIMPLE")
+    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="_COMPLEX")
 
     executable_path: bpy.props.StringProperty(name='VHACD exe',
                                               description='Path to VHACD executable',
                                               default='',
                                               subtype='FILE_PATH'
                                               )
+
+    my_color_all: bpy.props.FloatVectorProperty(name="All Collider", description="",
+                                                default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
+                                                subtype='COLOR', size=4)
+
+    my_color_simple: bpy.props.FloatVectorProperty(name="Simple Collider", description="",
+                                                   default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0,
+                                                   subtype='COLOR', size=4)
+
+    my_color_complex: bpy.props.FloatVectorProperty(name="Complex Collider", description="",
+                                                    default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
 
     data_path: bpy.props.StringProperty(
         name='Data Path',
@@ -51,6 +69,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colPreSuffix",
         "sphereColSuffix",
         "colSuffix",
+        "colAll",
+        "colSimple",
+        "colComplex",
     ]
     vhacd_props = [
         "executable_path",
@@ -72,10 +93,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
 
             for propName in self.props:
-                raw = layout.row()
-                raw.prop(self, propName)
+                row = layout.row()
+                row.prop(self, propName)
 
             layout.separator()
+            row = layout.row()
+            row.prop(self, 'my_color_all')
+            row = layout.row()
+            row.prop(self, 'my_color_simple')
+            row = layout.row()
+            row.prop(self, 'my_color_complex')
 
 
 
@@ -90,7 +117,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             km = kc.keymaps['3D View']
 
             kmis = []
-
 
             from .keymap import get_hotkey_entry_item
             # Menus and Pies

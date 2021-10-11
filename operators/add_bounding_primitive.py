@@ -188,11 +188,11 @@ class OBJECT_OT_add_bounding_object():
 
     def set_object_color(self, context, obj):
         if self.collision_type[self.collision_type_idx] == 'ALL':
-            obj.color = context.scene.my_color
+            obj.color = self.prefs.my_color_all
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
-            obj.color = context.scene.my_color_simple
+            obj.color = self.prefs.my_color_simple
         elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            obj.color = context.scene.my_color_complex
+            obj.color = self.prefs.my_color_complex
 
     def add_to_collections(self, obj, collections):
         old_collection = obj.users_collection
@@ -216,10 +216,8 @@ class OBJECT_OT_add_bounding_object():
         return new_name
 
     def collider_name(self,context, type_suffix, count):
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-
         basename = 'Basename'
-        name_suffix = prefs.colPreSuffix + type_suffix + prefs.optionalSuffix
+        name_suffix = self.prefs.colPreSuffix + type_suffix + self.prefs.optionalSuffix
         new_name = basename + name_suffix
         return self.unique_name(new_name,count)
 
@@ -295,7 +293,7 @@ class OBJECT_OT_add_bounding_object():
             return {'CANCELLED'}
 
         # get collision suffix from preferences
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        self.prefs = context.preferences.addons["CollisionHelpers"].preferences
         scene = context.scene
 
         # Active object

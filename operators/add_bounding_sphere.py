@@ -204,8 +204,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
 
             # create collision meshes
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
+            type_suffix = self.prefs.boxColSuffix
             new_name = super().collider_name(context, type_suffix, i+1)
 
             new_collider = create_sphere(mid_point, radius, new_name + "_" + str(i), self.sphere_segments)

@@ -123,8 +123,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         target_object_mode = []
         target_edit_mode = []
 
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-        type_suffix = prefs.convexColSuffix
+        type_suffix = self.prefs.convexColSuffix
 
         if self.obj_mode == 'EDIT':
             for i, obj in enumerate(context.selected_objects.copy()):
