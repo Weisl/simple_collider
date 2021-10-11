@@ -3,6 +3,29 @@ from bpy.types import Menu
 
 # spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
 
+class VIEW3D_MT_collision(Menu):
+    bl_label = 'Collision Visibility'
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='All')
+        op.hide = True
+        op.mode = 'ALL'
+        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='All')
+        op.hide = False
+        op.mode = 'ALL'
+        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='Simple')
+        op.hide = True
+        op.mode = 'SIMPLE'
+        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='Simple')
+        op.hide = False
+        op.mode = 'SIMPLE'
+        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='Complex')
+        op.hide = True
+        op.mode = 'COMPLEX'
+        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='Complex')
+        op.hide = False
+        op.mode = 'COMPLEX'
+
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
     bl_label = "Collision Pie"
@@ -36,22 +59,12 @@ class VIEW3D_MT_PIE_template(Menu):
             pie.operator("wm.url_open", text="Convex decomposition: Requires V-HACD").url = "https://github.com/kmammou/v-hacd"
 
         #SouthWest
-        col = pie.column(align=True)
-        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='All')
-        op.hide = True
-        op.mode = 'ALL'
-        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='All')
-        op.hide = False
-        op.mode = 'ALL'
-        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='Simple')
-        op.hide = True
-        op.mode = 'SIMPLE'
-        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='Simple')
-        op.hide = False
-        op.mode = 'SIMPLE'
-        op = col.operator("object.hide_collisions", icon='HIDE_ON', text='Complex')
-        op.hide = True
-        op.mode = 'COMPLEX'
-        op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='Complex')
-        op.hide = False
-        op.mode = 'COMPLEX'
+        other = pie.column()
+        gap = other.column()
+        gap.separator()
+        gap.scale_y = 7
+        other_menu = other.box().column()
+        other_menu.menu_contents("VIEW3D_MT_collision")
+
+
+
