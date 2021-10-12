@@ -74,7 +74,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
-            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
         return {'RUNNING_MODAL'}
@@ -100,11 +100,11 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if obj.mode == "EDIT":
                 me = obj.data
 
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     # Get a BMesh representation
                     bm = bmesh.from_edit_mesh(me)
 
-                else:  # scene.my_use_modifier_stack == True
+                else:  # self.my_use_modifier_stack == True
 
                     # Get mesh information with the modifiers applied
                     depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -123,11 +123,11 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 bpy.ops.object.mode_set(mode='EDIT')
                 me = obj.data
 
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     # Get a BMesh representation
                     bm = bmesh.from_edit_mesh(me)
 
-                else:  # scene.my_use_modifier_stack == True
+                else:  # self.my_use_modifier_stack == True
 
                     # Get mesh information with the modifiers applied
                     depsgraph = bpy.context.evaluated_depsgraph_get()

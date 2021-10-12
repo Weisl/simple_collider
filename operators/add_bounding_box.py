@@ -122,7 +122,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
-            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
         return {'RUNNING_MODAL'}
@@ -155,11 +155,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if obj.mode == "EDIT":
                 me = obj.data
 
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     # Get a BMesh representation
                     bm = bmesh.from_edit_mesh(me)
 
-                else:  # scene.my_use_modifier_stack == True
+                else:  # self.my_use_modifier_stack == True
 
                     # Get mesh information with the modifiers applied
                     depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -177,7 +177,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
 
             else:  # mode == "OBJECT":
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     for mod in obj.modifiers:
                         initial_mod_state[mod.name] = mod.show_viewport
                         mod.show_viewport = False
@@ -197,11 +197,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     bpy.ops.object.mode_set(mode='EDIT')
                     me = obj.data
 
-                    if scene.my_use_modifier_stack == False:
+                    if self.my_use_modifier_stack == False:
                         # Get a BMesh representation
                         bm = bmesh.from_edit_mesh(me)
 
-                    else: #scene.my_use_modifier_stack == True
+                    else: #self.my_use_modifier_stack == True
 
                         #Get mesh information with the modifiers applied
                         depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -219,7 +219,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
 
                 # Reset modifiers of target mesh to initial state
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     for mod_name, value in initial_mod_state.items():
                         obj.modifiers[mod_name].show_viewport = value
 

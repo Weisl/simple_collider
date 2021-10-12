@@ -67,7 +67,7 @@ def draw_viewport_overlay(self, context):
     if self.use_modifier_stack:
         blf.position(font_id, 30, i * vertical_px_offset, 0)
         blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Use Modifier Stack (P) : " + str(scene.my_use_modifier_stack))
+        blf.draw(font_id, "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack))
         i += 1
 
     if self.use_cylinder_axis:
@@ -307,6 +307,7 @@ class OBJECT_OT_add_bounding_object():
         self.obj_mode = context.object.mode
 
         # MODIFIERS
+        self.my_use_modifier_stack = False
         self.displace_active = False
         self.displace_modifiers = []
         self.displace_my_offset = 0.0

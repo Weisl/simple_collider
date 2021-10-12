@@ -40,13 +40,6 @@ def register():
         default="GLOBAL"
     )
 
-    # Tranformation space to be used for creating the bounding object.
-    scene.my_use_modifier_stack = bpy.props.BoolProperty(
-        name="Use Modifier",
-        default=False,
-    )
-
-
 
     scene.my_hide = bpy.props.BoolProperty(
         name="Hide Boungind Object After Creation",
