@@ -187,12 +187,26 @@ class OBJECT_OT_add_bounding_object():
         self.set_object_color(context, bounding_object)
 
     def set_object_color(self, context, obj):
-        if self.collision_type[self.collision_type_idx] == 'ALL':
+        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
             obj.color = self.prefs.my_color_all
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
             obj.color = self.prefs.my_color_simple
         elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
             obj.color = self.prefs.my_color_complex
+
+    def set_object_type(self, obj):
+        obj['collider_type'] = self.collision_type[self.collision_type_idx]
+
+    def get_complexity_suffix(self):
+
+        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
+            suffix = self.prefs.colAll
+        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
+            suffix = self.prefs.colSimple
+        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
+            suffix = self.prefs.colComplex
+
+        return suffix
 
     def add_to_collections(self, obj, collections):
         old_collection = obj.users_collection
@@ -217,7 +231,7 @@ class OBJECT_OT_add_bounding_object():
 
     def collider_name(self,context, type_suffix, count):
         basename = 'Basename'
-        name_suffix = self.prefs.colPreSuffix + type_suffix + self.prefs.optionalSuffix
+        name_suffix = self.prefs.colPreSuffix + self.get_complexity_suffix() + type_suffix + self.prefs.optionalSuffix
         new_name = basename + name_suffix
         return self.unique_name(new_name,count)
 
@@ -322,7 +336,7 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
         self.collision_type_idx = 0
-        self.collision_type = ['ALL','SIMPLE', 'COMPLEX']
+        self.collision_type = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
         #sphere
         self.sphere_segments = 16
 
@@ -438,6 +452,7 @@ class OBJECT_OT_add_bounding_object():
             self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
             for obj in self.new_colliders_list:
                 self.set_object_color(context,obj)
+                self.set_object_type(obj)
                 # print('collision type = %s' % (str(self.collision_type[(self.collision_type_idx)])))
 
         elif event.type == 'MOUSEMOVE':

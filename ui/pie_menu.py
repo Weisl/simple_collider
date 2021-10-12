@@ -6,6 +6,7 @@ from bpy.types import Menu
 visibility_operators = {'ALL': 'All',
 'SIMPLE': 'Simple',
 'COMPLEX': 'Complex',
+'SIMPLE_COMPLEX':'Simple and Complex',
 }
 
 class VIEW3D_MT_collision(Menu):

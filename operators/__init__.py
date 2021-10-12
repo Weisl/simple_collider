@@ -40,7 +40,6 @@ def register():
         default="GLOBAL"
     )
 
-
     scene.my_hide = bpy.props.BoolProperty(
         name="Hide Boungind Object After Creation",
         default=False

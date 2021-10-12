@@ -26,6 +26,10 @@ class COLLISION_preset(AddPresetBase, Operator):
         "prefs.colPreSuffix",
         "prefs.colSuffix",
         "prefs.sphereColSuffix",
+        "prefs.optionalSuffix",
+        "prefs.colAll",
+        "prefs.colSimple",
+        "prefs.colComplex",
     ]
 
     # where to store the preset

@@ -5,6 +5,7 @@ mode_items = [
     ("ALL", "all", "", 1),
     ("SIMPLE", "simple", "", 2),
     ("COMPLEX", "complex", "", 3),
+    ("SIMPLE_COMPLEX", "simple_and_complex", "",4),
 ]
 
 
@@ -28,14 +29,12 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
 
         # objects = [ob.hide_set(True) for ob in bpy.context.view_layer.objects if ob.get('isCollider')]
         for ob in bpy.context.view_layer.objects:
-            if ob.get('isCollider') == True:
-                if self.mode == 'ALL':
+            if self.mode == 'ALL':
+                if ob.get('isCollider') == True:
                     ob.hide_viewport = self.hide
-                elif self.mode == 'SIMPLE':
-                    if ob.get('simple') == True:
-                        ob.hide_viewport = self.hide
-                elif self.mode == 'COMPLEX':
-                    if ob.get('complex') == True:
-                        ob.hide_viewport = self.hide
+            else: #if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+                if ob.get('collider_type') == self.mode:
+                    ob.hide_viewport = self.hide
+
 
         return {'FINISHED'}

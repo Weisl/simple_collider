@@ -4,7 +4,6 @@ from . import preferences
 from . import naming_preset
 from .keymap import add_hotkey, remove_hotkey
 
-
 #keymap needs to be registered before the preferences UI
 classes = (
     naming_preset.COLLISION_preset,
@@ -13,7 +12,6 @@ classes = (
     keymap.COLLISION_OT_add_hotkey_renaming,
     preferences.CollisionAddonPrefs,
 )
-
 
 def register():
     from bpy.utils import register_class
