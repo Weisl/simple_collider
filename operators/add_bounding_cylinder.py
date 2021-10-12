@@ -126,7 +126,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         type_suffix = self.prefs.convexColSuffix
 
         if self.obj_mode == 'EDIT':
-            for i, obj in enumerate(context.selected_objects.copy()):
+            for obj in context.selected_objects.copy():
 
                 # skip if invalid object
                 if obj is None:
@@ -171,7 +171,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         else: #self.obj_mode == 'OBJECT':
 
-            for i, obj in enumerate(context.selected_objects.copy()):
+            for obj in context.selected_objects.copy():
                 # skip if invalid object
                 if obj is None:
                     continue
@@ -253,7 +253,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 else:
                     new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
 
-                new_collider.name = super().collider_name(context, type_suffix, i + 1)
+                new_collider.name = super().collider_name(context, type_suffix)
 
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)
@@ -264,7 +264,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             for new_collider in target_object_mode:
 
-                new_collider.name = super().collider_name(context, type_suffix, i + 1)
+                new_collider.name = super().collider_name(context, type_suffix)
 
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)

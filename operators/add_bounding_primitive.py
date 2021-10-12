@@ -221,19 +221,22 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def unique_name(self,name,count):
+    def unique_name(self,name):
         '''recursive function to find unique name'''
-        nr = str('_{num:{fill}{width}}'.format(num=(count), fill='0', width=3))
+        nr = str('_{num:{fill}{width}}'.format(num=(self.name_count), fill='0', width=3))
         new_name = name + nr
-        if new_name in bpy.data.objects:
-           new_name = self.unique_name(name, count+1)
-        return new_name
 
-    def collider_name(self,context, type_suffix, count):
+        if new_name in bpy.data.objects:
+           new_name = self.unique_name(name, self.name_count +1)
+        else:
+            self.name_count += 1
+            return new_name
+
+    def collider_name(self,context, type_suffix):
         basename = 'Basename'
         name_suffix = self.prefs.colPreSuffix + self.get_complexity_suffix() + type_suffix + self.prefs.optionalSuffix
         new_name = basename + name_suffix
-        return self.unique_name(new_name,count)
+        return self.unique_name(new_name)
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
@@ -345,6 +348,7 @@ class OBJECT_OT_add_bounding_object():
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
+        self.name_count = 1
 
 
         # Set up scene
@@ -515,6 +519,9 @@ class OBJECT_OT_add_bounding_object():
             return {'PASS_THROUGH'}
 
     def execute(self, context):
+        #reset naming count:
+        self.name_count = 1
+
         self.obj_mode = context.object.mode
 
         self.remove_objects(self.new_colliders_list)
@@ -525,3 +532,4 @@ class OBJECT_OT_add_bounding_object():
 
         # Create the bounding geometry, depending on edit or object mode.
         self.old_objs = set(context.scene.objects)
+

@@ -5,6 +5,8 @@ from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
+tmp_sphere_name = 'box_collider'
+
 def distance_vec(point1: Vector, point2: Vector):
     """Calculate distance between two points."""
     return (point2 - point1).length
@@ -14,10 +16,13 @@ def midpoint(p1, p2):
     return (p1 + p2) * 0.5
 
 
-def create_sphere(pos, diameter, name, segments):
+def create_sphere(pos, diameter, segments):
+
+    global tmp_sphere_name
+
     # Create an empty mesh and the object.
-    mesh = bpy.data.meshes.new(name)
-    basic_sphere = bpy.data.objects.new(name, mesh)
+    mesh = bpy.data.meshes.new(tmp_sphere_name)
+    basic_sphere = bpy.data.objects.new(tmp_sphere_name, mesh)
 
     # Add the object into the scene.
     bpy.context.collection.objects.link(basic_sphere)
@@ -51,11 +56,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-        # collider type specific
-        self.type_suffix = prefs.sphereColSuffix
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -84,7 +84,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         # Create the bounding geometry, depending on edit or object mode.
-        for i, obj in enumerate(self.selected_objects):
+        for obj in self.selected_objects:
 
             # skip if invalid object
             if obj is None:
@@ -203,11 +203,13 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     # calculate new_midpoint
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
 
-            # create collision meshes
-            type_suffix = self.prefs.boxColSuffix
-            new_name = super().collider_name(context, type_suffix, i+1)
+            new_collider = create_sphere(mid_point, radius, self.sphere_segments)
 
-            new_collider = create_sphere(mid_point, radius, new_name + "_" + str(i), self.sphere_segments)
+            # create collision meshes
+            type_suffix = self.prefs.sphereColSuffix
+            new_name = super().collider_name(context, type_suffix)
+            new_collider.name = new_name
+
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation

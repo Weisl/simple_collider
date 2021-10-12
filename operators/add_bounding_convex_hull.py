@@ -79,15 +79,15 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             obj.select_set(False)
             target_objects.append(new_collider)
 
-        for i, obj in enumerate(target_objects):
+        for obj in target_objects:
 
             obj.select_set(True)
 
             context.view_layer.objects.active = obj
 
-            type_suffix = self.prefs.boxColSuffix
+            type_suffix = self.prefs.convexColSuffix
 
-            new_name = super().collider_name(context, type_suffix, i+1)
+            new_name = super().collider_name(context, type_suffix)
 
             new_collider = obj
             new_collider.name = new_name

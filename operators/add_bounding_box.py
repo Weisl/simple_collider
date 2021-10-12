@@ -136,7 +136,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         # Create the bounding geometry, depending on edit or object mode.
-        for i, obj in enumerate(self.selected_objects):
+        for obj in self.selected_objects:
 
             # skip if invalid object
             if obj is None:
@@ -225,7 +225,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             # Name generation
             type_suffix = self.prefs.boxColSuffix
-            new_collider.name = super().collider_name(context, type_suffix, i)
+            new_collider.name = super().collider_name(context, type_suffix)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
