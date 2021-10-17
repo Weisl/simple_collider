@@ -44,6 +44,11 @@ def draw_viewport_overlay(self, context):
 
     blf.position(font_id, 30, i*vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
+    blf.draw(font_id, "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx]))
+    i += 1
+
+    blf.position(font_id, 30, i*vertical_px_offset, 0)
+    blf.size(font_id, 20, 72)
     blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
     i += 1
 
@@ -62,7 +67,7 @@ def draw_viewport_overlay(self, context):
     if self.use_modifier_stack:
         blf.position(font_id, 30, i * vertical_px_offset, 0)
         blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Use Modifier Stack (P) : " + str(scene.my_use_modifier_stack))
+        blf.draw(font_id, "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack))
         i += 1
 
     if self.use_cylinder_axis:
@@ -174,13 +179,34 @@ class OBJECT_OT_add_bounding_object():
         self.set_physics_material(context, bounding_object, physics_material_name)
 
         bounding_object['isCollider'] = True
+        bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
-        scene = context.scene
-
         bounding_object.display_type = 'SOLID'
-        bounding_object.color = scene.my_color
+        self.set_object_color(context, bounding_object)
+
+    def set_object_color(self, context, obj):
+        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
+            obj.color = self.prefs.my_color_all
+        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
+            obj.color = self.prefs.my_color_simple
+        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
+            obj.color = self.prefs.my_color_complex
+
+    def set_object_type(self, obj):
+        obj['collider_type'] = self.collision_type[self.collision_type_idx]
+
+    def get_complexity_suffix(self):
+
+        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
+            suffix = self.prefs.colAll
+        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
+            suffix = self.prefs.colSimple
+        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
+            suffix = self.prefs.colComplex
+
+        return suffix
 
     def add_to_collections(self, obj, collections):
         old_collection = obj.users_collection
@@ -195,21 +221,22 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def unique_name(self,name,count):
+    def unique_name(self,name):
         '''recursive function to find unique name'''
-        nr = str('_{num:{fill}{width}}'.format(num=(count), fill='0', width=3))
+        nr = str('_{num:{fill}{width}}'.format(num=(self.name_count), fill='0', width=3))
         new_name = name + nr
+
         if new_name in bpy.data.objects:
-           new_name = self.unique_name(name, count+1)
-        return new_name
+           new_name = self.unique_name(name, self.name_count +1)
+        else:
+            self.name_count += 1
+            return new_name
 
-    def collider_name(self,context, type_suffix, count):
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-
+    def collider_name(self,context, type_suffix):
         basename = 'Basename'
-        name_suffix = prefs.colPreSuffix + type_suffix + prefs.optionalSuffix
+        name_suffix = self.prefs.colPreSuffix + self.get_complexity_suffix() + type_suffix + self.prefs.optionalSuffix
         new_name = basename + name_suffix
-        return self.unique_name(new_name,count)
+        return self.unique_name(new_name)
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
@@ -283,7 +310,7 @@ class OBJECT_OT_add_bounding_object():
             return {'CANCELLED'}
 
         # get collision suffix from preferences
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        self.prefs = context.preferences.addons["CollisionHelpers"].preferences
         scene = context.scene
 
         # Active object
@@ -297,6 +324,7 @@ class OBJECT_OT_add_bounding_object():
         self.obj_mode = context.object.mode
 
         # MODIFIERS
+        self.my_use_modifier_stack = False
         self.displace_active = False
         self.displace_modifiers = []
         self.displace_my_offset = 0.0
@@ -310,6 +338,8 @@ class OBJECT_OT_add_bounding_object():
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        self.collision_type_idx = 0
+        self.collision_type = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
         #sphere
         self.sphere_segments = 16
 
@@ -318,6 +348,7 @@ class OBJECT_OT_add_bounding_object():
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
+        self.name_count = 1
 
 
         # Set up scene
@@ -420,6 +451,14 @@ class OBJECT_OT_add_bounding_object():
             self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
             context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
 
+        elif event.type == 'T' and event.value == 'RELEASE':
+            #toggle through display modes
+            self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
+            for obj in self.new_colliders_list:
+                self.set_object_color(context,obj)
+                self.set_object_type(obj)
+                # print('collision type = %s' % (str(self.collision_type[(self.collision_type_idx)])))
+
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
                 for mod in self.displace_modifiers:
@@ -480,6 +519,9 @@ class OBJECT_OT_add_bounding_object():
             return {'PASS_THROUGH'}
 
     def execute(self, context):
+        #reset naming count:
+        self.name_count = 1
+
         self.obj_mode = context.object.mode
 
         self.remove_objects(self.new_colliders_list)
@@ -490,3 +532,4 @@ class OBJECT_OT_add_bounding_object():
 
         # Create the bounding geometry, depending on edit or object mode.
         self.old_objs = set(context.scene.objects)
+

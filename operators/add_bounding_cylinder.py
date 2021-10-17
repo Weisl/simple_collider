@@ -110,7 +110,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
-            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
         return {'RUNNING_MODAL'}
@@ -123,11 +123,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         target_object_mode = []
         target_edit_mode = []
 
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-        type_suffix = prefs.convexColSuffix
+        type_suffix = self.prefs.convexColSuffix
 
         if self.obj_mode == 'EDIT':
-            for i, obj in enumerate(context.selected_objects.copy()):
+            for obj in context.selected_objects.copy():
 
                 # skip if invalid object
                 if obj is None:
@@ -140,13 +139,13 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 bounding_cylinder_data = {}
                 me = obj.data
 
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     # Get a BMesh representation
                     me.update()
                     bm = bmesh.from_edit_mesh(me)
                     vertices = [v for v in bm.verts if v.select == True]
 
-                else:  # scene.my_use_modifier_stack == True
+                else:  # self.my_use_modifier_stack == True
 
                     # Get mesh information with the modifiers applied
                     me.update()
@@ -172,7 +171,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         else: #self.obj_mode == 'OBJECT':
 
-            for i, obj in enumerate(context.selected_objects.copy()):
+            for obj in context.selected_objects.copy():
                 # skip if invalid object
                 if obj is None:
                     continue
@@ -183,7 +182,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
                 initial_mod_state = {}
 
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     for mod in obj.modifiers:
                         initial_mod_state[mod.name] = mod.show_viewport
                         mod.show_viewport = False
@@ -201,10 +200,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 else:  # Space == 'GLOBAL'
                     # WS_vertives = [obj.matrix_world @ v.co for v in obj.data.vertices]
 
-                    if scene.my_use_modifier_stack == False:
+                    if self.my_use_modifier_stack == False:
                         vertices = obj.data.vertices
 
-                    if scene.my_use_modifier_stack == True:
+                    if self.my_use_modifier_stack == True:
                         # Get mesh information with the modifiers applied
                         depsgraph = bpy.context.evaluated_depsgraph_get()
                         bm = bmesh.new()
@@ -226,7 +225,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
 
                 # Reset modifiers of target mesh to initial state
-                if scene.my_use_modifier_stack == False:
+                if self.my_use_modifier_stack == False:
                     for mod_name, value in initial_mod_state.items():
                         obj.modifiers[mod_name].show_viewport = value
 
@@ -254,7 +253,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 else:
                     new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
 
-                new_collider.name = super().collider_name(context, type_suffix, i + 1)
+                new_collider.name = super().collider_name(context, type_suffix)
 
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)
@@ -265,7 +264,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             for new_collider in target_object_mode:
 
-                new_collider.name = super().collider_name(context, type_suffix, i + 1)
+                new_collider.name = super().collider_name(context, type_suffix)
 
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)

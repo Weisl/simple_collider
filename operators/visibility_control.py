@@ -1,5 +1,13 @@
 import bpy
 
+# Enum property.
+mode_items = [
+    ("ALL", "all", "", 1),
+    ("SIMPLE", "simple", "", 2),
+    ("COMPLEX", "complex", "", 3),
+    ("SIMPLE_COMPLEX", "simple_and_complex", "",4),
+]
+
 
 class COLLISION_OT_Visibility(bpy.types.Operator):
     """Tooltip"""
@@ -11,19 +19,22 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
         default=True
     )
 
-    # @classmethod
-    # def poll(cls, context):
-    #     return context.active_object is not None
+    mode: bpy.props.EnumProperty(items=mode_items,
+                                 name='Hide Mode',
+                                 default='ALL'
+                                 )
 
     def execute(self, context):
         scene = context.scene
 
         # objects = [ob.hide_set(True) for ob in bpy.context.view_layer.objects if ob.get('isCollider')]
         for ob in bpy.context.view_layer.objects:
-            if ob.get('isCollider') == True:
-                ob.hide_viewport = self.hide
+            if self.mode == 'ALL':
+                if ob.get('isCollider') == True:
+                    ob.hide_viewport = self.hide
+            else: #if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+                if ob.get('collider_type') == self.mode:
+                    ob.hide_viewport = self.hide
 
-                # hide throws errors :(
-                # ob.hide_set = False
 
         return {'FINISHED'}

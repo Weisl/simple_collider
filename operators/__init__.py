@@ -40,14 +40,6 @@ def register():
         default="GLOBAL"
     )
 
-    # Tranformation space to be used for creating the bounding object.
-    scene.my_use_modifier_stack = bpy.props.BoolProperty(
-        name="Use Modifier",
-        default=False,
-    )
-
-
-
     scene.my_hide = bpy.props.BoolProperty(
         name="Hide Boungind Object After Creation",
         default=False
@@ -56,6 +48,18 @@ def register():
     # The object color for the bounding object
     scene.my_color = bpy.props.FloatVectorProperty(
         name="Bounding Object Color", description="", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
+        subtype='COLOR', size=4
+    )
+
+    # The object color for the bounding object
+    scene.my_color_simple = bpy.props.FloatVectorProperty(
+        name="Bounding Object Color", description="", default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0,
+        subtype='COLOR', size=4
+    )
+
+    # The object color for the bounding object
+    scene.my_color_complex = bpy.props.FloatVectorProperty(
+        name="Bounding Object Color", description="", default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
         subtype='COLOR', size=4
     )
 

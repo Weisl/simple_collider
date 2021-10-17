@@ -3,6 +3,29 @@ from bpy.types import Menu
 
 # spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
 
+visibility_operators = {'ALL': 'All',
+'SIMPLE': 'Simple',
+'COMPLEX': 'Complex',
+'SIMPLE_COMPLEX':'Simple and Complex',
+}
+
+class VIEW3D_MT_collision(Menu):
+    bl_label = 'Collision Visibility'
+
+    def draw(self, context):
+        global visibility_operators
+        col = self.layout.column_flow(columns=2)
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
+            op.hide = False
+            op.mode = key
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
+            op.hide = True
+            op.mode = key
+
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
     bl_label = "Collision Pie"
@@ -23,19 +46,26 @@ class VIEW3D_MT_PIE_template(Menu):
         #East
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
         #South
-        pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
+        other = pie.column()
+        # gap = other.column()
+        # gap.separator()
+        # gap.scale_y = 7
+        other_menu = other.box().column()
+        other_menu.scale_x= 2
+        other_menu.menu_contents("VIEW3D_MT_collision")
+
         #North
         pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
+
         #NorthWest
         pie.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
         #NorthEast
+        pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
+
+        #SouthWest
         if prefs.executable_path:
             pie.operator("collision.vhacd")
         else:
             pie.operator("wm.url_open", text="Convex decomposition: Requires V-HACD").url = "https://github.com/kmammou/v-hacd"
 
-        #SouthWest
-        col = pie.column(align=True)
-        col.operator("object.hide_collisions", icon='HIDE_ON', text='Collision').hide = True
-        col.operator("object.hide_collisions", icon='HIDE_OFF', text='Collision').hide = False

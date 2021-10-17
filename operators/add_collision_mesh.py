@@ -30,9 +30,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     def invoke(self, context, event):
         super().invoke(context, event)
         self.face_count = 0
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
         # collider type specific
-        self.type_suffix = prefs.meshColSuffix
+        self.type_suffix = self.prefs.meshColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -57,7 +56,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         old_objs = set(context.scene.objects)
 
-        for i, obj in enumerate(self.selected_objects):
+        for obj in self.selected_objects:
 
             # skip if invalid object
             if obj is None:
@@ -69,11 +68,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             context.view_layer.objects.active = obj
             collections = obj.users_collection
-
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
-            new_name = super().collider_name(context, type_suffix, i+1)
-
 
             if obj.mode == "EDIT":
                 bpy.ops.mesh.duplicate()
@@ -93,6 +87,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 bpy.ops.mesh.separate(type='SELECTED')
 
                 pass
+
+            prefs = context.preferences.addons["CollisionHelpers"].preferences
+            type_suffix = prefs.boxColSuffix
+            new_name = super().collider_name(context, type_suffix)
 
             bpy.ops.object.mode_set(mode='OBJECT')
             new_collider = context.scene.objects[-1]

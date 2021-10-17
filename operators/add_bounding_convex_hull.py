@@ -31,7 +31,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
-            scene.my_use_modifier_stack = not scene.my_use_modifier_stack
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
         return {'RUNNING_MODAL'}
@@ -73,22 +73,21 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 bpy.ops.object.mode_set(mode='OBJECT')
                 self.custom_set_parent(context, obj, new_collider)
 
-            if scene.my_use_modifier_stack:
+            if self.my_use_modifier_stack:
                 self.apply_all_modifiers(context, new_collider)
 
             obj.select_set(False)
             target_objects.append(new_collider)
 
-        for i, obj in enumerate(target_objects):
+        for obj in target_objects:
 
             obj.select_set(True)
 
             context.view_layer.objects.active = obj
 
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
+            type_suffix = self.prefs.convexColSuffix
 
-            new_name = super().collider_name(context, type_suffix, i+1)
+            new_name = super().collider_name(context, type_suffix)
 
             new_collider = obj
             new_collider.name = new_name
