@@ -229,9 +229,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
             collections = obj.users_collection
-            self.add_to_collections(new_collider, collections)
+            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

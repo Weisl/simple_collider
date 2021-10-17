@@ -4,33 +4,18 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-
-def add_modifierstack(self, obj):
-    modifier = obj.modifiers.new(name="Collider_displace", type='DISPLACE')
-    modifier.strength = 0.0
-
-    modifier = obj.modifiers.new(name="Collider_remesh", type='REMESH')
-    modifier.voxel_size = 0.2
-    modifier.use_smooth_shade = True
-
-    mod = obj.modifiers.new(name="Collider_decimate", type='DECIMATE')
-    mod.ratio = 0.1
-    self.face_count = mod.face_count
-
-
 class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_mesh_collision"
     bl_label = "Add Mesh Collision"
 
     def __init__(self):
-        # has to be in __init__ to get overwritten by children
+        super().__init__()
         self.use_decimation = True
+        self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.face_count = 0
-        # collider type specific
         self.type_suffix = self.prefs.meshColSuffix
         return {'RUNNING_MODAL'}
 
@@ -40,6 +25,13 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
+
+        scene = context.scene
+
+        # change bounding object settings
+        if event.type == 'P' and event.value == 'RELEASE':
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
+            self.execute(context)
 
         return {'RUNNING_MODAL'}
 
@@ -101,8 +93,9 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
-            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
-            self.add_to_collections(new_collider, collections)
+            collections = obj.users_collection
+
+            self.primitive_postprocessing(context, new_collider,collections, self.physics_material_name)
 
             # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
             # self.report({'INFO'}, infomessage)

@@ -64,8 +64,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             new_collider.data = obj.data.copy()
 
             context.scene.collection.objects.link(new_collider)
-            collections = obj.users_collection
-            self.add_to_collections(new_collider, collections)
 
             if self.obj_mode == "OBJECT":
                 self.custom_set_parent(context, obj, new_collider)
@@ -109,7 +107,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             self.remove_all_modifiers(context, new_collider)
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
-            self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+            collections = obj.users_collection
+            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
 
 

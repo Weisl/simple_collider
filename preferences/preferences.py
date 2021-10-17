@@ -62,6 +62,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         default='?_hull_#',
     )
 
+    use_col_collection: bpy.props.BoolProperty(
+        name = 'Use Col Collection',
+        description = 'Add all collisions to a Collision Collection',
+        default = True
+    )
+
+    col_collection_name: bpy.props.StringProperty(
+        name='Collection Name',
+        description='',
+        default='Col'
+    )
     props = [
         "meshColSuffix",
         "convexColSuffix",
@@ -73,7 +84,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colAll",
         "colSimple",
         "colComplex",
+        "use_col_collection",
+        "col_collection_name",
     ]
+
     vhacd_props = [
         "executable_path",
         "data_path",

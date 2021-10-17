@@ -257,7 +257,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)
-                self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+                collections = obj.users_collection
+                self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
 
         else: #   if obj.mode == 'OBJECT':
@@ -268,7 +269,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
                 self.new_colliders_list.append(new_collider)
                 self.custom_set_parent(context, obj, new_collider)
-                self.primitive_postprocessing(context, new_collider, self.physics_material_name)
+                collections = obj.users_collection
+                self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

@@ -168,10 +168,15 @@ class OBJECT_OT_add_bounding_object():
 
         return positionsX, positionsY, positionsZ
 
-    def primitive_postprocessing(self, context, bounding_object, physics_material_name):
+    def primitive_postprocessing(self, context, bounding_object, base_object_collections, physics_material_name):
 
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
+        self.set_collections(bounding_object, base_object_collections)
+
+        if self.prefs.use_col_collection:
+            collection_name = self.prefs.col_collection_name
+            self.add_to_collections(bounding_object, collection_name)
 
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
@@ -208,7 +213,15 @@ class OBJECT_OT_add_bounding_object():
 
         return suffix
 
-    def add_to_collections(self, obj, collections):
+    def add_to_collections(self, obj, collection_name):
+        if collection_name not in bpy.data.collections:
+            collection = bpy.data.collections.new(collection_name)
+            bpy.context.scene.collection.children.link(collection)
+
+        col = bpy.data.collections[collection_name]
+        col.objects.link(obj)
+
+    def set_collections(self, obj, collections):
         old_collection = obj.users_collection
 
         for col in collections:
