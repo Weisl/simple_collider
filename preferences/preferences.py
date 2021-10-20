@@ -6,6 +6,7 @@ from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
 
 
+
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
@@ -17,23 +18,36 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         items=(('NAMING', "Naming", "NAMING"), ('KEYMAP', "Keymap", "Keymap"), ('VHACD', "Vhacd", "VHACD")),
         default='NAMING')
 
-    colPreSuffix: bpy.props.StringProperty(name="Collision ", default="_COL")
+    naming_position: bpy.props.EnumProperty(
+        items=(('PREFIX', "Prefix", "Prefix"), ('SUFFIX', "Suffix", "Suffix")),
+        default='SUFFIX')
 
-    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="_BOX")
-    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="_CONVEX")
-    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="_SPHERE")
-    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="_MESH")
+    separator : bpy.props.StringProperty(name="Separator ", default="_")
+    colPreSuffix: bpy.props.StringProperty(name="Collision ", default="COL")
+    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="BOX")
+    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX")
+    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE")
+    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH")
     optionalSuffix: bpy.props.StringProperty(name="Additional Suffix (optional)", default="")
-    colSuffix: bpy.props.StringProperty(name="Non Collision", default="_BOUNDING")
-    colAll: bpy.props.StringProperty(name="All Collisions", default="_ALL")
-    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="_SIMPLE")
-    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="_COMPLEX")
+    colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING")
+
+
+
+    colAll: bpy.props.StringProperty(name="All Collisions", default="ALL")
+    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="SIMPLE")
+    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="COMPLEX")
 
     executable_path: bpy.props.StringProperty(name='VHACD exe',
                                               description='Path to VHACD executable',
                                               default='',
                                               subtype='FILE_PATH'
                                               )
+
+    use_col_Complexity: bpy.props.BoolProperty(
+        name = 'Use Complexity',
+        description = 'Use Complexity',
+        default = True
+    )
 
     my_color_all: bpy.props.FloatVectorProperty(name="All Collider", description="",
                                                 default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
@@ -68,12 +82,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         default = True
     )
 
+    use_parent_name: bpy.props.BoolProperty(
+        name = 'Name from parent',
+        description = 'Use Parent name for collider name',
+        default = True
+    )
+
     col_collection_name: bpy.props.StringProperty(
         name='Collection Name',
         description='',
         default='Col'
     )
     props = [
+        "use_parent_name",
         "meshColSuffix",
         "convexColSuffix",
         "boxColSuffix",
@@ -101,11 +122,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         row = layout.row(align=True)
         row.prop(self, "prefs_tabs", expand=True)
 
+
+
         if self.prefs_tabs == 'NAMING':
             row = layout.row(align=True)
             row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
+
+            row = layout.row(align=True)
+            row.prop(self, "use_col_Complexity")
+
+            row = layout.row()
+            row.prop(self, "naming_position", text='Collider Naming', expand=True)
 
             for propName in self.props:
                 row = layout.row()

@@ -6,6 +6,7 @@ from mathutils import Vector
 
 from CollisionHelpers.operators.object_functions import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from .add_bounding_primitive import collider_types
 
 tmp_name = 'box_collider'
 
@@ -146,9 +147,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            # if len(obj.data.vertices) == 0:
-            #     continue
-
+            parent_name = obj.name
             context.view_layer.objects.active = obj
             initial_mod_state = {}
 
@@ -225,7 +224,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             # Name generation
             type_suffix = self.prefs.boxColSuffix
-            new_collider.name = super().collider_name(context, type_suffix)
+            # TODO: causes issues on the second collider creation
+            new_collider.name = str(super().collider_name(context, type_suffix))
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

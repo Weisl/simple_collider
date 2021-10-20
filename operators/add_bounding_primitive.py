@@ -5,6 +5,7 @@ import gpu
 
 from ..pyshics_materials.material_functions import remove_materials, set_material
 
+collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
 def draw_viewport_overlay(self, context):
     scene = context.scene
@@ -234,21 +235,27 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def unique_name(self,name):
+    def unique_name(self, name):
         '''recursive function to find unique name'''
         nr = str('_{num:{fill}{width}}'.format(num=(self.name_count), fill='0', width=3))
         new_name = name + nr
 
         if new_name in bpy.data.objects:
-           new_name = self.unique_name(name, self.name_count +1)
+            self.name_count = self.name_count + 1
+            new_name = self.unique_name(name)
         else:
             self.name_count += 1
             return new_name
 
     def collider_name(self,context, type_suffix):
         basename = 'Basename'
-        name_suffix = self.prefs.colPreSuffix + self.get_complexity_suffix() + type_suffix + self.prefs.optionalSuffix
-        new_name = basename + name_suffix
+        separator = self.prefs.separator
+        name_pre_suffix = self.prefs.colPreSuffix + separator + self.get_complexity_suffix() + separator + type_suffix + separator + self.prefs.optionalSuffix
+
+        if self.prefs.naming_position == 'SUFFIX':
+            new_name = basename + separator + name_pre_suffix
+        else: #self.prefs.naming_position == 'PREFIX'
+            new_name = name_pre_suffix + separator + basename
         return self.unique_name(new_name)
 
     def reset_to_initial_state(self, context):
@@ -318,6 +325,9 @@ class OBJECT_OT_add_bounding_object():
         return len(context.selected_objects) > 0
 
     def invoke(self, context, event):
+
+        global collider_types
+
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
@@ -352,7 +362,7 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
         self.collision_type_idx = 0
-        self.collision_type = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
+        self.collision_type = collider_types
         #sphere
         self.sphere_segments = 16
 

@@ -1,5 +1,10 @@
 import bpy
 
+visibility_operators = {'ALL': 'All',
+'SIMPLE': 'Simple',
+'COMPLEX': 'Complex',
+'SIMPLE_COMPLEX':'Simple and Complex',
+}
 
 class CollissionPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
@@ -27,27 +32,18 @@ class CollissionPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(scene, "CollisionMaterials")
 
-        row = layout.row(align=True)
-        op = row.operator("object.hide_collisions", icon='HIDE_ON', text='All')
-        op.hide = True
-        op.mode = 'ALL'
-        op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='All')
-        op.hide = False
-        op.mode = 'ALL'
-        row = layout.row(align=True)
-        op = row.operator("object.hide_collisions", icon='HIDE_ON', text='Simple')
-        op.hide = True
-        op.mode = 'SIMPLE'
-        op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='Simple')
-        op.hide = False
-        op.mode = 'SIMPLE'
-        row = layout.row(align=True)
-        op = row.operator("object.hide_collisions", icon='HIDE_ON', text='Complex')
-        op.hide = True
-        op.mode = 'COMPLEX'
-        op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='Complex')
-        op.hide = False
-        op.mode = 'COMPLEX'
+        global visibility_operators
+        col = self.layout.column_flow(columns=2)
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
+            op.hide = False
+            op.mode = key
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
+            op.hide = True
+            op.mode = key
 
         row = layout.row(align=True)
         row.prop(scene,'my_color')
