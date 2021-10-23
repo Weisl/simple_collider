@@ -49,6 +49,71 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_sphere"
     bl_label = "Add Sphere Collision"
 
+    def calculate_bounding_sphere(self, obj, used_vertices):
+        # Get vertices wit min and may values
+        for i, vertex in enumerate(used_vertices):
+
+            # convert to global space
+            v = obj.matrix_world @ vertex.co
+
+            # ignore 1. point since it's already saved
+            if i == 0:
+                min_x = v
+                max_x = v
+                min_y = v
+                max_y = v
+                min_z = v
+                max_z = v
+
+            # compare points to previous min and max
+            # v.co returns mathutils.Vector
+            else:
+                min_x = v if v.x < min_x.x else min_x
+                max_x = v if v.x > max_x.x else max_x
+                min_y = v if v.y < min_y.y else min_y
+                max_y = v if v.y > max_y.y else max_y
+                min_z = v if v.z < min_z.z else min_z
+                max_z = v if v.z > max_z.z else max_z
+
+        # calculate distances between min and max of every axis
+        dx = distance_vec(min_x, max_x)
+        dy = distance_vec(min_y, max_y)
+        dz = distance_vec(min_z, max_z)
+
+        mid_point = None
+        radius = None
+
+        # Generate sphere for biggest distance
+        if dx >= dy and dx >= dz:
+            mid_point = midpoint(min_x, max_x)
+            radius = dx / 2
+
+        elif dy >= dz:
+            mid_point = midpoint(min_y, max_y)
+            radius = dy / 2
+
+        else:
+            mid_point = midpoint(min_z, max_z)
+            radius = dz / 2
+
+        # second pass
+        for i, vertex in enumerate(used_vertices):
+            # convert to global space
+            v = obj.matrix_world @ vertex.co
+
+            # calculate distance to center to find out if the point is in or outside the sphere
+            distance_center_to_v = distance_vec(mid_point, v)
+
+            # point is outside the collision sphere
+            if distance_center_to_v > radius:
+                radius = (radius + distance_center_to_v) / 2
+                old_to_new = distance_center_to_v - radius
+
+                # calculate new_midpoint
+                mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
+
+        return mid_point, radius
+
     def __init__(self):
         super().__init__()
 
@@ -111,69 +176,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-
-            # Get vertices wit min and may values
-            for i, vertex in enumerate(used_vertices):
-
-                # convert to global space
-                v = obj.matrix_world @ vertex.co
-
-                # ignore 1. point since it's already saved
-                if i == 0:
-                    min_x = v
-                    max_x = v
-                    min_y = v
-                    max_y = v
-                    min_z = v
-                    max_z = v
-
-                # compare points to previous min and max
-                # v.co returns mathutils.Vector
-                else:
-                    min_x = v if v.x < min_x.x else min_x
-                    max_x = v if v.x > max_x.x else max_x
-                    min_y = v if v.y < min_y.y else min_y
-                    max_y = v if v.y > max_y.y else max_y
-                    min_z = v if v.z < min_z.z else min_z
-                    max_z = v if v.z > max_z.z else max_z
-
-            # calculate distances between min and max of every axis
-            dx = distance_vec(min_x, max_x)
-            dy = distance_vec(min_y, max_y)
-            dz = distance_vec(min_z, max_z)
-
-            mid_point = None
-            radius = None
-
-            # Generate sphere for biggest distance
-            if dx >= dy and dx >= dz:
-                mid_point = midpoint(min_x, max_x)
-                radius = dx / 2
-
-            elif dy >= dz:
-                mid_point = midpoint(min_y, max_y)
-                radius = dy / 2
-
-            else:
-                mid_point = midpoint(min_z, max_z)
-                radius = dz / 2
-
-            # second pass
-            for i, vertex in enumerate(used_vertices):
-                # convert to global space
-                v = obj.matrix_world @ vertex.co
-
-                # calculate distance to center to find out if the point is in or outside the sphere
-                distance_center_to_v = distance_vec(mid_point, v)
-
-                # point is outside the collision sphere
-                if distance_center_to_v > radius:
-                    radius = (radius + distance_center_to_v) / 2
-                    old_to_new = distance_center_to_v - radius
-
-                    # calculate new_midpoint
-                    mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
-
+            mid_point, radius = self.calculate_bounding_sphere(obj, used_vertices)
 
             new_collider = create_sphere(mid_point, radius, self.sphere_segments)
             self.custom_set_parent(context, obj, new_collider)
