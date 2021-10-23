@@ -300,15 +300,19 @@ class OBJECT_OT_add_bounding_object():
         return new_name
 
     def collider_name(self, basename = 'Basename'):
-
         separator = self.prefs.separator
+
+        if self.prefs.use_parent_name:
+            name = basename
+        else:
+            name = 'geometry'
 
         name_pre_suffix = self.prefs.colPreSuffix + separator + self.get_complexity_suffix() + separator + self.type_suffix + separator + self.prefs.optionalSuffix
 
         if self.prefs.naming_position == 'SUFFIX':
-            new_name = basename + separator + name_pre_suffix
+            new_name = name + separator + name_pre_suffix
         else: #self.prefs.naming_position == 'PREFIX'
-            new_name = name_pre_suffix + separator + basename
+            new_name = name_pre_suffix + separator + name
         return self.unique_name(new_name)
 
     def update_name(self):
