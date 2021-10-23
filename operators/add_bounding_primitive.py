@@ -220,7 +220,11 @@ class OBJECT_OT_add_bounding_object():
             bpy.context.scene.collection.children.link(collection)
 
         col = bpy.data.collections[collection_name]
-        col.objects.link(obj)
+
+        try:
+            col.objects.link(obj)
+        except RuntimeError as err:
+            print("RuntimeError: {0}".format(err))
 
     def set_collections(self, obj, collections):
         old_collection = obj.users_collection
@@ -235,28 +239,38 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
+    def create_name_number(self, name, nr):
+        nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
+        return name + nr
+
     def unique_name(self, name):
         '''recursive function to find unique name'''
-        nr = str('_{num:{fill}{width}}'.format(num=(self.name_count), fill='0', width=3))
-        new_name = name + nr
+        new_name = self.create_name_number(name, self.name_count)
 
-        if new_name in bpy.data.objects:
+        while new_name in bpy.data.objects:
             self.name_count = self.name_count + 1
-            new_name = self.unique_name(name)
-        else:
-            self.name_count += 1
-            return new_name
+            new_name = self.create_name_number(name, self.name_count)
 
-    def collider_name(self,context, type_suffix):
-        basename = 'Basename'
+        self.name_count = self.name_count + 1
+        return new_name
+
+    def collider_name(self, basename = 'Basename'):
+
         separator = self.prefs.separator
-        name_pre_suffix = self.prefs.colPreSuffix + separator + self.get_complexity_suffix() + separator + type_suffix + separator + self.prefs.optionalSuffix
+
+        name_pre_suffix = self.prefs.colPreSuffix + separator + self.get_complexity_suffix() + separator + self.type_suffix + separator + self.prefs.optionalSuffix
 
         if self.prefs.naming_position == 'SUFFIX':
             new_name = basename + separator + name_pre_suffix
         else: #self.prefs.naming_position == 'PREFIX'
             new_name = name_pre_suffix + separator + basename
+
+        print("collider_name FUNCTION: " + str(new_name))
         return self.unique_name(new_name)
+
+    def update_name(self):
+        for obj in self.new_colliders_list:
+            obj.name = self.collider_name()
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
@@ -319,6 +333,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
+        self.type_suffix = ''
 
     @classmethod
     def poll(cls, context):
@@ -480,6 +495,7 @@ class OBJECT_OT_add_bounding_object():
             for obj in self.new_colliders_list:
                 self.set_object_color(context,obj)
                 self.set_object_type(obj)
+                self.update_name()
                 # print('collision type = %s' % (str(self.collision_type[(self.collision_type_idx)])))
 
         elif event.type == 'MOUSEMOVE':

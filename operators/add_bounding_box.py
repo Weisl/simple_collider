@@ -82,7 +82,6 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
         matrix= new_collider.matrix_world
         new_collider.parent = active_ob
         new_collider.matrix_world = matrix
-
         bpy.ops.object.mode_set(mode='EDIT')
 
     return new_collider
@@ -101,6 +100,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        self.type_suffix = self.prefs.boxColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -159,7 +159,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     bm = bmesh.from_edit_mesh(me)
 
                 else:  # self.my_use_modifier_stack == True
-
                     # Get mesh information with the modifiers applied
                     depsgraph = bpy.context.evaluated_depsgraph_get()
                     bm = bmesh.new()
@@ -222,15 +221,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     for mod_name, value in initial_mod_state.items():
                         obj.modifiers[mod_name].show_viewport = value
 
-            # Name generation
-            type_suffix = self.prefs.boxColSuffix
-            # TODO: causes issues on the second collider creation
-            new_collider.name = str(super().collider_name(context, type_suffix))
-
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
             collections = obj.users_collection
             self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+
+            # TODO: causes issues on the second collider creation
+            new_collider.name = super().collider_name(basename=obj.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

@@ -22,16 +22,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylinder Collision Ob"
 
-    def __init__(self):
-        super().__init__()
-        self.use_space = True
-        self.use_modifier_stack = True
-        self.use_global_local_switches = True
-        #cylinder specific
-        self.use_vertex_count = True
-        self.use_cylinder_axis = True
-
-
     def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
         dimensions = []
         dimensions.append(abs(max(positionsX) - min(positionsX)))
@@ -81,8 +71,19 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         return new_collider
 
+    def __init__(self):
+        super().__init__()
+        self.use_space = True
+        self.use_modifier_stack = True
+        self.use_global_local_switches = True
+
+        #cylinder specific
+        self.use_vertex_count = True
+        self.use_cylinder_axis = True
+
     def invoke(self, context, event):
         super().invoke(context, event)
+        self.type_suffix = self.prefs.convexColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -123,8 +124,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         target_object_mode = []
         target_edit_mode = []
 
-        type_suffix = self.prefs.convexColSuffix
-
         if self.obj_mode == 'EDIT':
             for obj in context.selected_objects.copy():
 
@@ -138,6 +137,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
                 bounding_cylinder_data = {}
                 me = obj.data
+
 
                 if self.my_use_modifier_stack == False:
                     # Get a BMesh representation
@@ -181,6 +181,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     continue
 
                 initial_mod_state = {}
+                bounding_cylinder_data = {}
 
                 if self.my_use_modifier_stack == False:
                     for mod in obj.modifiers:
@@ -229,15 +230,17 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     for mod_name, value in initial_mod_state.items():
                         obj.modifiers[mod_name].show_viewport = value
 
-                target_object_mode.append(new_collider)
+
+                bounding_cylinder_data['parent'] = obj
+                bounding_cylinder_data['collider'] = new_collider
+
+                target_object_mode.append(bounding_cylinder_data)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
         if self.obj_mode == 'EDIT':
             for bounding_cylinder_data in target_edit_mode:
                 global tmp_name
-
-                print(str(bounding_cylinder_data))
 
                 parent = bounding_cylinder_data['parent']
                 radius = bounding_cylinder_data['radius']
@@ -253,24 +256,27 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 else:
                     new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
 
-                new_collider.name = super().collider_name(context, type_suffix)
-
                 self.new_colliders_list.append(new_collider)
-                self.custom_set_parent(context, obj, new_collider)
-                collections = obj.users_collection
+                self.custom_set_parent(context, parent, new_collider)
+                collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+
+                new_collider.name = super().collider_name(basename=parent.name)
 
 
         else: #   if obj.mode == 'OBJECT':
 
-            for new_collider in target_object_mode:
+            for bounding_cylinder_data in target_object_mode:
 
-                new_collider.name = super().collider_name(context, type_suffix)
+                new_collider = bounding_cylinder_data['collider']
+                parent = bounding_cylinder_data['parent']
 
                 self.new_colliders_list.append(new_collider)
-                self.custom_set_parent(context, obj, new_collider)
-                collections = obj.users_collection
+                self.custom_set_parent(context, parent, new_collider)
+                collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+
+                new_collider.name = super().collider_name(basename=parent.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

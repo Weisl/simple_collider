@@ -18,6 +18,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        self.type_suffix = self.prefs.convexColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -38,16 +39,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     def execute(self, context):
         scene = context.scene
+
         # CLEANUP
         super().execute(context)
 
         target_objects = []
 
-        # TODO: Clean up the geometry update.
-        # Needed to update the mesh after moving, adding, deleting geometry in edit mode before creating a collision mesh. Otherwise the mesh will only generate correctly after switching mod on/off.
-        if self.obj_mode == "EDIT":
-            bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.object.mode_set(mode='EDIT')
 
         # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:
@@ -60,14 +57,17 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            # duplicate object
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
-
+            self.set_collections(new_collider, obj.users_collection)
             context.scene.collection.objects.link(new_collider)
+
 
             if self.obj_mode == "OBJECT":
                 self.custom_set_parent(context, obj, new_collider)
-            else:
+
+            else: #self.obj_mode == 'EDIT'
                 bpy.ops.object.mode_set(mode='OBJECT')
                 self.custom_set_parent(context, obj, new_collider)
 
@@ -83,13 +83,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             context.view_layer.objects.active = obj
 
-            type_suffix = self.prefs.convexColSuffix
-
-            new_name = super().collider_name(context, type_suffix)
-
             new_collider = obj
-            new_collider.name = new_name
-
             context.view_layer.objects.active = new_collider
 
             if self.obj_mode == "EDIT":
@@ -110,7 +104,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
             self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
-
+            new_collider.name = super().collider_name()
 
         self.new_colliders_list = set(context.scene.objects) - self.old_objs
 

@@ -51,11 +51,13 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
+
         self.use_modifier_stack = True
         self.use_sphere_segments = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        self.type_suffix = self.prefs.sphereColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -204,12 +206,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
 
             new_collider = create_sphere(mid_point, radius, self.sphere_segments)
-
-            # create collision meshes
-            type_suffix = self.prefs.sphereColSuffix
-            new_name = super().collider_name(context, type_suffix)
-            new_collider.name = new_name
-
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
@@ -217,7 +213,9 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
             self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
-            # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
-            super().reset_to_initial_state(context)
+            new_collider.name = super().collider_name(basename=obj.name)
+
+        # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
+        super().reset_to_initial_state(context)
 
         return {'RUNNING_MODAL'}
