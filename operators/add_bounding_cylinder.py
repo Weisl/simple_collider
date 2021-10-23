@@ -138,23 +138,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 bounding_cylinder_data = {}
                 me = obj.data
 
-
-                if self.my_use_modifier_stack == False:
-                    # Get a BMesh representation
-                    me.update()
-                    bm = bmesh.from_edit_mesh(me)
-                    vertices = [v for v in bm.verts if v.select == True]
-
-                else:  # self.my_use_modifier_stack == True
-
-                    # Get mesh information with the modifiers applied
-                    me.update()
-                    depsgraph = bpy.context.evaluated_depsgraph_get()
-                    bm = bmesh.new()
-                    bm.from_object(obj, depsgraph)
-                    bm.verts.ensure_lookup_table()
-                    vertices = [v for v in bm.verts if v.select == True]
-
+                vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, vertices)
 
@@ -199,7 +183,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     new_collider = self.generate_cylinder_object(context, radius, depth,global_bbox_center, rotation_euler= obj.rotation_euler)
 
                 else:  # Space == 'GLOBAL'
-                    # WS_vertives = [obj.matrix_world @ v.co for v in obj.data.vertices]
 
                     if self.my_use_modifier_stack == False:
                         vertices = obj.data.vertices
@@ -264,7 +247,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.name = super().collider_name(basename=parent.name)
 
 
-        else: #   if obj.mode == 'OBJECT':
+        else: #   if self.obj_mode == 'OBJECT':
 
             for bounding_cylinder_data in target_object_mode:
 

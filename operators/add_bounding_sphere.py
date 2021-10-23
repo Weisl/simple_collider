@@ -96,55 +96,24 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene
 
-            if obj.mode == "EDIT":
+            if self.obj_mode == "EDIT":
                 me = obj.data
 
-                if self.my_use_modifier_stack == False:
-                    # Get a BMesh representation
-                    bm = bmesh.from_edit_mesh(me)
-
-                else:  # self.my_use_modifier_stack == True
-
-                    # Get mesh information with the modifiers applied
-                    depsgraph = bpy.context.evaluated_depsgraph_get()
-                    bm = bmesh.new()
-                    bm.from_object(obj, depsgraph)
-                    bm.verts.ensure_lookup_table()
-
-                vertices = self.get_vertices(bm, me, preselect_all=False)
-
-                if vertices == None: # Skip object if there is no Mesh data to create the collider
-                    continue
+                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # mode == "OBJECT":
-                context.view_layer.objects.active = obj
+                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-                bpy.ops.object.mode_set(mode='EDIT')
-                me = obj.data
+            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+                continue
 
-                if self.my_use_modifier_stack == False:
-                    # Get a BMesh representation
-                    bm = bmesh.from_edit_mesh(me)
-
-                else:  # self.my_use_modifier_stack == True
-
-                    # Get mesh information with the modifiers applied
-                    depsgraph = bpy.context.evaluated_depsgraph_get()
-                    bm = bmesh.new()
-                    bm.from_object(obj, depsgraph)
-                    bm.verts.ensure_lookup_table()
-
-                vertices = self.get_vertices(bm, me, preselect_all=True)
-
-                if vertices == None: # Skip object if there is no Mesh data to create the collider
-                    continue
 
             # Get vertices wit min and may values
-            # First pass
-            for i, vertex in enumerate(vertices):
+            for i, vertex in enumerate(used_vertices):
 
                 # convert to global space
                 v = obj.matrix_world @ vertex.co
@@ -173,10 +142,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             dy = distance_vec(min_y, max_y)
             dz = distance_vec(min_z, max_z)
 
-            # Generate sphere for biggest distance
             mid_point = None
             radius = None
 
+            # Generate sphere for biggest distance
             if dx >= dy and dx >= dz:
                 mid_point = midpoint(min_x, max_x)
                 radius = dx / 2
@@ -190,7 +159,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 radius = dz / 2
 
             # second pass
-            for i, vertex in enumerate(vertices):
+            for i, vertex in enumerate(used_vertices):
                 # convert to global space
                 v = obj.matrix_world @ vertex.co
 
@@ -204,6 +173,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
                     # calculate new_midpoint
                     mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
+
 
             new_collider = create_sphere(mid_point, radius, self.sphere_segments)
             self.custom_set_parent(context, obj, new_collider)

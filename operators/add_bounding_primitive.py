@@ -2,6 +2,7 @@ import bgl
 import blf
 import bpy
 import gpu
+import bmesh
 
 from ..pyshics_materials.material_functions import remove_materials, set_material
 
@@ -99,6 +100,12 @@ class OBJECT_OT_add_bounding_object():
     """Abstract parent class to contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
+    bm = []
+
+    @classmethod
+    def bmesh(cls, bm):
+        cls.bm.append(bm)
+
     def remove_objects(self, list):
         # Remove previously created collisions
         if len(list) > 0:
@@ -129,14 +136,52 @@ class OBJECT_OT_add_bounding_object():
         ]
         return verts
 
-    def get_vertices(self, bm, me, preselect_all=False):
+    def get_vertices_Edit(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        me = obj.data
+        me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+        if use_modifiers:  # self.my_use_modifier_stack == True
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+            bm.verts.ensure_lookup_table()
+
+        else:  # use_modifiers == False
+            # Get a BMesh representation
+            bm = bmesh.from_edit_mesh(me)
+
+        used_vertices = [v for v in bm.verts if v.select]
+
+        if len(used_vertices) == 0:
+            return None
+
+        #This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
+        OBJECT_OT_add_bounding_object.bmesh(bm)
+        return used_vertices
+
+
+    def get_vertices_Object(self, obj, use_modifiers = False):
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        bpy.ops.object.mode_set(mode='EDIT')
+        me = obj.data
         me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        if preselect_all == True:
+        if use_modifiers:
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+            bm.verts.ensure_lookup_table()
             used_vertices = bm.verts
+
+            # This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
+            OBJECT_OT_add_bounding_object.bmesh(bm)
+
         else:
-            used_vertices = [v for v in bm.verts if v.select]
+            # Get a BMesh representation
+            used_vertices = me.vertices
 
         if len(used_vertices) == 0:
             return None
@@ -264,8 +309,6 @@ class OBJECT_OT_add_bounding_object():
             new_name = basename + separator + name_pre_suffix
         else: #self.prefs.naming_position == 'PREFIX'
             new_name = name_pre_suffix + separator + basename
-
-        print("collider_name FUNCTION: " + str(new_name))
         return self.unique_name(new_name)
 
     def update_name(self):
@@ -496,7 +539,6 @@ class OBJECT_OT_add_bounding_object():
                 self.set_object_color(context,obj)
                 self.set_object_type(obj)
                 self.update_name()
-                # print('collision type = %s' % (str(self.collision_type[(self.collision_type_idx)])))
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
@@ -560,7 +602,6 @@ class OBJECT_OT_add_bounding_object():
     def execute(self, context):
         #reset naming count:
         self.name_count = 1
-
         self.obj_mode = context.object.mode
 
         self.remove_objects(self.new_colliders_list)

@@ -4,7 +4,6 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_convex_hull"
@@ -42,13 +41,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
         # CLEANUP
         super().execute(context)
-
         target_objects = []
-
 
         # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:
-
             # skip if invalid object
             if obj is None:
                 continue
@@ -62,7 +58,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             new_collider.data = obj.data.copy()
             self.set_collections(new_collider, obj.users_collection)
             context.scene.collection.objects.link(new_collider)
-
 
             if self.obj_mode == "OBJECT":
                 self.custom_set_parent(context, obj, new_collider)
@@ -78,7 +73,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             target_objects.append(new_collider)
 
         for obj in target_objects:
-
             obj.select_set(True)
 
             context.view_layer.objects.active = obj
@@ -104,7 +98,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
             self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
-            new_collider.name = super().collider_name()
+            new_collider.name = super().collider_name(basename=new_collider.parent.name)
 
         self.new_colliders_list = set(context.scene.objects) - self.old_objs
 
