@@ -49,6 +49,71 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_sphere"
     bl_label = "Add Sphere Collision"
 
+    def calculate_bounding_sphere(self, obj, used_vertices):
+        # Get vertices wit min and may values
+        for i, vertex in enumerate(used_vertices):
+
+            # convert to global space
+            v = obj.matrix_world @ vertex.co
+
+            # ignore 1. point since it's already saved
+            if i == 0:
+                min_x = v
+                max_x = v
+                min_y = v
+                max_y = v
+                min_z = v
+                max_z = v
+
+            # compare points to previous min and max
+            # v.co returns mathutils.Vector
+            else:
+                min_x = v if v.x < min_x.x else min_x
+                max_x = v if v.x > max_x.x else max_x
+                min_y = v if v.y < min_y.y else min_y
+                max_y = v if v.y > max_y.y else max_y
+                min_z = v if v.z < min_z.z else min_z
+                max_z = v if v.z > max_z.z else max_z
+
+        # calculate distances between min and max of every axis
+        dx = distance_vec(min_x, max_x)
+        dy = distance_vec(min_y, max_y)
+        dz = distance_vec(min_z, max_z)
+
+        mid_point = None
+        radius = None
+
+        # Generate sphere for biggest distance
+        if dx >= dy and dx >= dz:
+            mid_point = midpoint(min_x, max_x)
+            radius = dx / 2
+
+        elif dy >= dz:
+            mid_point = midpoint(min_y, max_y)
+            radius = dy / 2
+
+        else:
+            mid_point = midpoint(min_z, max_z)
+            radius = dz / 2
+
+        # second pass
+        for i, vertex in enumerate(used_vertices):
+            # convert to global space
+            v = obj.matrix_world @ vertex.co
+
+            # calculate distance to center to find out if the point is in or outside the sphere
+            distance_center_to_v = distance_vec(mid_point, v)
+
+            # point is outside the collision sphere
+            if distance_center_to_v > radius:
+                radius = (radius + distance_center_to_v) / 2
+                old_to_new = distance_center_to_v - radius
+
+                # calculate new_midpoint
+                mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
+
+        return mid_point, radius
+
     def __init__(self):
         super().__init__()
         self.use_modifier_stack = True
@@ -83,6 +148,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
+        self.type_suffix = self.prefs.sphereColSuffix
+
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
 
@@ -94,122 +161,24 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene
 
-            if obj.mode == "EDIT":
+            if self.obj_mode == "EDIT":
                 me = obj.data
 
-                if self.my_use_modifier_stack == False:
-                    # Get a BMesh representation
-                    bm = bmesh.from_edit_mesh(me)
-
-                else:  # self.my_use_modifier_stack == True
-
-                    # Get mesh information with the modifiers applied
-                    depsgraph = bpy.context.evaluated_depsgraph_get()
-                    bm = bmesh.new()
-                    bm.from_object(obj, depsgraph)
-                    bm.verts.ensure_lookup_table()
-
-                vertices = self.get_vertices(bm, me, preselect_all=False)
-
-                if vertices == None: # Skip object if there is no Mesh data to create the collider
-                    continue
+                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # mode == "OBJECT":
-                context.view_layer.objects.active = obj
+                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-                bpy.ops.object.mode_set(mode='EDIT')
-                me = obj.data
+            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+                continue
 
-                if self.my_use_modifier_stack == False:
-                    # Get a BMesh representation
-                    bm = bmesh.from_edit_mesh(me)
-
-                else:  # self.my_use_modifier_stack == True
-
-                    # Get mesh information with the modifiers applied
-                    depsgraph = bpy.context.evaluated_depsgraph_get()
-                    bm = bmesh.new()
-                    bm.from_object(obj, depsgraph)
-                    bm.verts.ensure_lookup_table()
-
-                vertices = self.get_vertices(bm, me, preselect_all=True)
-
-                if vertices == None: # Skip object if there is no Mesh data to create the collider
-                    continue
-
-            # Get vertices wit min and may values
-            # First pass
-            for i, vertex in enumerate(vertices):
-
-                # convert to global space
-                v = obj.matrix_world @ vertex.co
-
-                # ignore 1. point since it's already saved
-                if i == 0:
-                    min_x = v
-                    max_x = v
-                    min_y = v
-                    max_y = v
-                    min_z = v
-                    max_z = v
-
-                # compare points to previous min and max
-                # v.co returns mathutils.Vector
-                else:
-                    min_x = v if v.x < min_x.x else min_x
-                    max_x = v if v.x > max_x.x else max_x
-                    min_y = v if v.y < min_y.y else min_y
-                    max_y = v if v.y > max_y.y else max_y
-                    min_z = v if v.z < min_z.z else min_z
-                    max_z = v if v.z > max_z.z else max_z
-
-            # calculate distances between min and max of every axis
-            dx = distance_vec(min_x, max_x)
-            dy = distance_vec(min_y, max_y)
-            dz = distance_vec(min_z, max_z)
-
-            # Generate sphere for biggest distance
-            mid_point = None
-            radius = None
-
-            if dx >= dy and dx >= dz:
-                mid_point = midpoint(min_x, max_x)
-                radius = dx / 2
-
-            elif dy >= dz:
-                mid_point = midpoint(min_y, max_y)
-                radius = dy / 2
-
-            else:
-                mid_point = midpoint(min_z, max_z)
-                radius = dz / 2
-
-            # second pass
-            for i, vertex in enumerate(vertices):
-                # convert to global space
-                v = obj.matrix_world @ vertex.co
-
-                # calculate distance to center to find out if the point is in or outside the sphere
-                distance_center_to_v = distance_vec(mid_point, v)
-
-                # point is outside the collision sphere
-                if distance_center_to_v > radius:
-                    radius = (radius + distance_center_to_v) / 2
-                    old_to_new = distance_center_to_v - radius
-
-                    # calculate new_midpoint
-                    mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
+            mid_point, radius = self.calculate_bounding_sphere(obj, used_vertices)
 
             new_collider = create_sphere(mid_point, radius, self.sphere_segments)
-
-            # create collision meshes
-            type_suffix = self.prefs.sphereColSuffix
-            new_name = super().collider_name(context, type_suffix)
-            new_collider.name = new_name
-
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
@@ -217,7 +186,9 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             collections = obj.users_collection
             self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
 
-            # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
-            super().reset_to_initial_state(context)
+            new_collider.name = super().collider_name(basename=obj.name)
+
+        # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
+        super().reset_to_initial_state(context)
 
         return {'RUNNING_MODAL'}

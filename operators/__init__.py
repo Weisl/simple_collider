@@ -17,9 +17,9 @@ classes = (
     add_collision_mesh.OBJECT_OT_add_mesh_collision
 )
 
-
 def register():
     scene = bpy.types.Scene
+    obj = bpy.types.Object
 
     # Display setting of the bounding object in the viewport
     scene.my_collision_shading_view = bpy.props.EnumProperty(
@@ -62,6 +62,32 @@ def register():
         name="Bounding Object Color", description="", default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
         subtype='COLOR', size=4
     )
+
+    obj.basename = bpy.props.StringProperty(default='', name='')
+
+    scene.my_space = bpy.props.EnumProperty(
+        name="Axis",
+        items=(
+            ('LOCAL', "LOCAL", "LOCAL"),
+            ('GLOBAL', "GLOBAL", "GLOBAL")),
+        default="GLOBAL"
+    )
+
+    obj.collider_type = bpy.props.EnumProperty(name="Shading",default='BOX', items=[
+        ('BOX', "Box", "Box"),
+        ('SHERE', "Sphere", "Sphere"),
+        ('MESH', "Mesh", "Mesh"),
+        ('CONVEX', "CONVEX", "CONVEX")])
+
+    obj.collider_complexity = bpy.props.EnumProperty(
+        name="collider complexity",
+        items=[
+            ('SIMPLE_COMPLEX', "SIMPLE_COMPLEX", "SIMPLE_COMPLEX"),
+            ('SIMPLE', "SIMPLE", "SIMPLE"),
+            ('COMPLEX', "COMPLEX", "COMPLEX")],
+        default="SIMPLE_COMPLEX")
+
+
 
     from bpy.utils import register_class
     for cls in classes:

@@ -2,9 +2,11 @@ import bgl
 import blf
 import bpy
 import gpu
+import bmesh
 
 from ..pyshics_materials.material_functions import remove_materials, set_material
 
+collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
 def draw_viewport_overlay(self, context):
     scene = context.scene
@@ -98,6 +100,12 @@ class OBJECT_OT_add_bounding_object():
     """Abstract parent class to contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
+    bm = []
+
+    @classmethod
+    def bmesh(cls, bm):
+        cls.bm.append(bm)
+
     def remove_objects(self, list):
         # Remove previously created collisions
         if len(list) > 0:
@@ -128,14 +136,52 @@ class OBJECT_OT_add_bounding_object():
         ]
         return verts
 
-    def get_vertices(self, bm, me, preselect_all=False):
+    def get_vertices_Edit(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        me = obj.data
+        me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+        if use_modifiers:  # self.my_use_modifier_stack == True
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+            bm.verts.ensure_lookup_table()
+
+        else:  # use_modifiers == False
+            # Get a BMesh representation
+            bm = bmesh.from_edit_mesh(me)
+
+        used_vertices = [v for v in bm.verts if v.select]
+
+        if len(used_vertices) == 0:
+            return None
+
+        #This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
+        OBJECT_OT_add_bounding_object.bmesh(bm)
+        return used_vertices
+
+
+    def get_vertices_Object(self, obj, use_modifiers = False):
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        bpy.ops.object.mode_set(mode='EDIT')
+        me = obj.data
         me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        if preselect_all == True:
+        if use_modifiers:
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+            bm.verts.ensure_lookup_table()
             used_vertices = bm.verts
+
+            # This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
+            OBJECT_OT_add_bounding_object.bmesh(bm)
+
         else:
-            used_vertices = [v for v in bm.verts if v.select]
+            # Get a BMesh representation
+            used_vertices = me.vertices
 
         if len(used_vertices) == 0:
             return None
@@ -219,7 +265,11 @@ class OBJECT_OT_add_bounding_object():
             bpy.context.scene.collection.children.link(collection)
 
         col = bpy.data.collections[collection_name]
-        col.objects.link(obj)
+
+        try:
+            col.objects.link(obj)
+        except RuntimeError as err:
+            print("RuntimeError: {0}".format(err))
 
     def set_collections(self, obj, collections):
         old_collection = obj.users_collection
@@ -234,22 +284,54 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def unique_name(self,name):
+    def create_name_number(self, name, nr):
+        nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
+        return name + nr
+
+    def unique_name(self, name):
         '''recursive function to find unique name'''
-        nr = str('_{num:{fill}{width}}'.format(num=(self.name_count), fill='0', width=3))
-        new_name = name + nr
+        new_name = self.create_name_number(name, self.name_count)
 
-        if new_name in bpy.data.objects:
-           new_name = self.unique_name(name, self.name_count +1)
+        while new_name in bpy.data.objects:
+            self.name_count = self.name_count + 1
+            new_name = self.create_name_number(name, self.name_count)
+
+        self.name_count = self.name_count + 1
+        return new_name
+
+    def collider_name(self, basename = 'Basename'):
+        separator = self.prefs.separator
+
+        if self.prefs.use_parent_name:
+            name = basename
         else:
-            self.name_count += 1
-            return new_name
+            name = 'geometry'
 
-    def collider_name(self,context, type_suffix):
-        basename = 'Basename'
-        name_suffix = self.prefs.colPreSuffix + self.get_complexity_suffix() + type_suffix + self.prefs.optionalSuffix
-        new_name = basename + name_suffix
+        pre_suffix_componetns = [
+            self.prefs.colPreSuffix,
+            self.get_complexity_suffix(),
+            self.type_suffix,
+            self.prefs.optionalSuffix
+        ]
+
+        name_pre_suffix = ''
+        if self.prefs.naming_position == 'SUFFIX':
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + separator + comp
+            new_name = name + name_pre_suffix
+
+        else: #self.prefs.naming_position == 'PREFIX'
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + comp + separator
+            new_name = name_pre_suffix + name
+
         return self.unique_name(new_name)
+
+    def update_name(self):
+        for obj in self.new_colliders_list:
+            obj.name = self.collider_name()
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
@@ -312,12 +394,16 @@ class OBJECT_OT_add_bounding_object():
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
+        self.type_suffix = ''
 
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
 
     def invoke(self, context, event):
+
+        global collider_types
+
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
@@ -352,7 +438,7 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
         self.collision_type_idx = 0
-        self.collision_type = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
+        self.collision_type = collider_types
         #sphere
         self.sphere_segments = 16
 
@@ -470,7 +556,7 @@ class OBJECT_OT_add_bounding_object():
             for obj in self.new_colliders_list:
                 self.set_object_color(context,obj)
                 self.set_object_type(obj)
-                # print('collision type = %s' % (str(self.collision_type[(self.collision_type_idx)])))
+                self.update_name()
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
@@ -534,7 +620,6 @@ class OBJECT_OT_add_bounding_object():
     def execute(self, context):
         #reset naming count:
         self.name_count = 1
-
         self.obj_mode = context.object.mode
 
         self.remove_objects(self.new_colliders_list)
