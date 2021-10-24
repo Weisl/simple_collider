@@ -97,7 +97,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.type_suffix = self.prefs.boxColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -127,10 +126,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
     def execute(self, context):
         global face_order
-        scene = context.scene
 
         # CLEANUP and INIT
         super().execute(context)
+
+        scene = context.scene
+        self.type_suffix = self.prefs.boxColSuffix
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:

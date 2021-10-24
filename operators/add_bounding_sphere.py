@@ -116,13 +116,11 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
-
         self.use_modifier_stack = True
         self.use_sphere_segments = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.type_suffix = self.prefs.sphereColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -149,6 +147,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
+
+        self.type_suffix = self.prefs.sphereColSuffix
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:

@@ -17,7 +17,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.type_suffix = self.prefs.convexColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -37,11 +36,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        scene = context.scene
-
         # CLEANUP
         super().execute(context)
+
         target_objects = []
+        self.type_suffix = self.prefs.convexColSuffix
 
         # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:

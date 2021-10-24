@@ -307,12 +307,26 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = 'geometry'
 
-        name_pre_suffix = self.prefs.colPreSuffix + separator + self.get_complexity_suffix() + separator + self.type_suffix + separator + self.prefs.optionalSuffix
+        pre_suffix_componetns = [
+            self.prefs.colPreSuffix,
+            self.get_complexity_suffix(),
+            self.type_suffix,
+            self.prefs.optionalSuffix
+        ]
 
+        name_pre_suffix = ''
         if self.prefs.naming_position == 'SUFFIX':
-            new_name = name + separator + name_pre_suffix
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + separator + comp
+            new_name = name + name_pre_suffix
+
         else: #self.prefs.naming_position == 'PREFIX'
-            new_name = name_pre_suffix + separator + name
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + comp + separator
+            new_name = name_pre_suffix + name
+
         return self.unique_name(new_name)
 
     def update_name(self):

@@ -83,7 +83,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.type_suffix = self.prefs.convexColSuffix
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -117,9 +116,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        scene = context.scene
         # CLEANUP
         super().execute(context)
+
+        scene = context.scene
+        self.type_suffix = self.prefs.convexColSuffix
 
         target_object_mode = []
         target_edit_mode = []
