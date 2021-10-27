@@ -46,6 +46,11 @@ class CollissionPanel(bpy.types.Panel):
             op.mode = key
 
         row = layout.row(align=True)
+        row.operator('object.convert_to_collider')
+        row = layout.row(align=True)
+        row.operator('object.convert_to_mesh')
+
+        row = layout.row(align=True)
         row.prop(scene,'my_color')
         row = layout.row(align=True)
         row.prop(scene,'my_color_simple')

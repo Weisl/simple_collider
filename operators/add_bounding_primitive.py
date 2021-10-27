@@ -235,9 +235,9 @@ class OBJECT_OT_add_bounding_object():
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
-        self.set_object_color(context, bounding_object)
+        self.set_object_color(bounding_object)
 
-    def set_object_color(self, context, obj):
+    def set_object_color(self, obj):
         if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
             obj.color = self.prefs.my_color_all
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
@@ -554,7 +554,7 @@ class OBJECT_OT_add_bounding_object():
             #toggle through display modes
             self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
             for obj in self.new_colliders_list:
-                self.set_object_color(context,obj)
+                self.set_object_color(obj)
                 self.set_object_type(obj)
                 self.update_name()
 

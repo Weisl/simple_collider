@@ -7,6 +7,7 @@ from . import add_bounding_cylinder
 from . import add_bounding_sphere
 from . import add_collision_mesh
 from . import visibility_control
+from . import conversion_operators
 
 classes = (
     add_bounding_box.OBJECT_OT_add_bounding_box,
@@ -14,7 +15,9 @@ classes = (
     add_bounding_sphere.OBJECT_OT_add_bounding_sphere,
     visibility_control.COLLISION_OT_Visibility,
     add_bounding_convex_hull.OBJECT_OT_add_convex_hull,
-    add_collision_mesh.OBJECT_OT_add_mesh_collision
+    add_collision_mesh.OBJECT_OT_add_mesh_collision,
+    conversion_operators.OBJECT_OT_convert_to_collider,
+    conversion_operators.OBJECT_OT_convert_to_mesh,
 )
 
 def register():
