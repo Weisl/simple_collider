@@ -33,16 +33,29 @@ class CollissionPanel(bpy.types.Panel):
         row.prop(scene, "CollisionMaterials")
 
         global visibility_operators
-        col = self.layout.column_flow(columns=2)
+        col = self.layout.column_flow(columns=5, align = True)
+
+        for value in visibility_operators:
+            col.label(text=value)
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
+            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
             op.hide = False
             op.mode = key
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
+            op = col.operator("object.hide_collisions", icon='HIDE_ON', text='')
             op.hide = True
+            op.mode = key
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            op.invert = False
+            op.mode = key
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            op.invert = True
             op.mode = key
 
         row = layout.row(align=True)
