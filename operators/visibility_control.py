@@ -37,3 +37,4 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
                     ob.hide_viewport = self.hide
 
         return {'FINISHED'}
+

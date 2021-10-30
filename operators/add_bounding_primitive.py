@@ -84,6 +84,12 @@ def draw_viewport_overlay(self, context):
         blf.draw(font_id, "Sphere Segments (W): " + str(self.sphere_segments))
         i += 1
 
+    if self.use_type_change:
+        blf.position(font_id, 30, i * vertical_px_offset, 0)
+        blf.size(font_id, 20, 72)
+        blf.draw(font_id, "Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx]))
+        i += 1
+
     # 50% alpha, 2 pixel width line
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
     bgl.glEnable(bgl.GL_BLEND)
@@ -329,7 +335,7 @@ class OBJECT_OT_add_bounding_object():
 
         return self.unique_name(new_name)
 
-    def update_name(self):
+    def update_names(self):
         for obj in self.new_colliders_list:
             obj.name = self.collider_name()
 
@@ -395,6 +401,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_global_local_switches = False
         self.use_sphere_segments = False
         self.type_suffix = ''
+        self.use_type_change = False
 
     @classmethod
     def poll(cls, context):
@@ -448,7 +455,6 @@ class OBJECT_OT_add_bounding_object():
         self.new_colliders_list = []
 
         self.name_count = 1
-
 
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
@@ -556,7 +562,7 @@ class OBJECT_OT_add_bounding_object():
             for obj in self.new_colliders_list:
                 self.set_object_color(obj)
                 self.set_object_type(obj)
-                self.update_name()
+                self.update_names()
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:
