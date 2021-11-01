@@ -7,7 +7,6 @@ classes = (
     pie_menu.VIEW3D_MT_PIE_template,
 )
 
-
 def register():
     from bpy.utils import register_class
 

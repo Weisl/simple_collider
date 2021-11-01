@@ -1,20 +1,15 @@
+from .properties_panels import visibility_operators
 from bpy.types import Menu
 
-
 # spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
-
-visibility_operators = {'ALL': 'All',
-'SIMPLE': 'Simple',
-'COMPLEX': 'Complex',
-'SIMPLE_COMPLEX':'Simple and Complex',
-}
-
 class VIEW3D_MT_collision(Menu):
     bl_label = 'Collision Visibility'
 
     def draw(self, context):
-        global visibility_operators
-        col = self.layout.column_flow(columns=2)
+        col = self.layout.column_flow(columns=5, align = True)
+
+        for value in visibility_operators:
+            col.label(text=value)
 
         for key, value in visibility_operators.items():
             op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
@@ -24,6 +19,16 @@ class VIEW3D_MT_collision(Menu):
         for key, value in visibility_operators.items():
             op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
             op.hide = True
+            op.mode = key
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            op.invert = False
+            op.mode = key
+
+        for key, value in visibility_operators.items():
+            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            op.invert = True
             op.mode = key
 
 class VIEW3D_MT_PIE_template(Menu):
@@ -51,7 +56,7 @@ class VIEW3D_MT_PIE_template(Menu):
         # gap.separator()
         # gap.scale_y = 7
         other_menu = other.box().column()
-        other_menu.scale_x= 2
+        # other_menu.scale_x= 2
         other_menu.menu_contents("VIEW3D_MT_collision")
 
         #North

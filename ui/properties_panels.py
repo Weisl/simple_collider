@@ -1,4 +1,4 @@
-import bpy
+from bpy.types import Panel
 
 visibility_operators = {'ALL': 'All',
 'SIMPLE': 'Simple',
@@ -6,7 +6,7 @@ visibility_operators = {'ALL': 'All',
 'SIMPLE_COMPLEX':'Simple and Complex',
 }
 
-class CollissionPanel(bpy.types.Panel):
+class CollissionPanel(Panel):
     """Creates a Panel in the Object properties window"""
     bl_label = "Collision Panel"
     bl_idname = "COLLISION_PT_Create"
@@ -32,7 +32,6 @@ class CollissionPanel(bpy.types.Panel):
         row = layout.row()
         row.prop(scene, "CollisionMaterials")
 
-        global visibility_operators
         col = self.layout.column_flow(columns=5, align = True)
 
         for value in visibility_operators:
@@ -59,22 +58,18 @@ class CollissionPanel(bpy.types.Panel):
             op.mode = key
 
         row = layout.row(align=True)
-        row.operator('object.convert_to_collider')
+        row.operator('object.convert_to_collider', icon='PHYSICS')
         row = layout.row(align=True)
-        row.operator('object.convert_to_mesh')
+        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
         row = layout.row(align=True)
-        row.prop(scene,'my_color')
+        row.prop(scene, 'my_color')
         row = layout.row(align=True)
-        row.prop(scene,'my_color_simple')
+        row.prop(scene, 'my_color_simple')
         row = layout.row(align=True)
-        row.prop(scene,'my_color_complex')
+        row.prop(scene, 'my_color_complex')
 
 
         view = context.space_data
         shading = view.shading
 
-        # row = layout.row(align=True)
-        # row.prop(shading, "type", text="", expand=True)
-        # row = layout.row(align=True)
-        # row.prop(shading, "color_type", text="", expand=True)
