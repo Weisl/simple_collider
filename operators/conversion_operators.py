@@ -82,7 +82,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             self.new_colliders_list.append(new_collider)
 
             collections = new_collider.users_collection
-            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=obj.name)
 
@@ -95,7 +95,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None
+        return len(context.selected_objects) > 0
 
     def execute(self, context):
         for obj in bpy.context.selected_objects:

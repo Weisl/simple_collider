@@ -95,7 +95,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
             collections = obj.users_collection
-            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=new_collider.parent.name)
 

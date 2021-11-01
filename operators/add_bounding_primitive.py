@@ -4,7 +4,7 @@ import bpy
 import gpu
 import bmesh
 
-from ..pyshics_materials.material_functions import remove_materials, set_material
+from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
@@ -220,7 +220,7 @@ class OBJECT_OT_add_bounding_object():
 
         return positionsX, positionsY, positionsZ
 
-    def primitive_postprocessing(self, context, bounding_object, base_object_collections, physics_material_name):
+    def primitive_postprocessing(self, context, bounding_object, base_object_collections):
 
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
@@ -233,7 +233,7 @@ class OBJECT_OT_add_bounding_object():
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
-        self.set_physics_material(context, bounding_object, physics_material_name)
+        self.set_physics_material(context, bounding_object)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
@@ -386,9 +386,14 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.modifiers.remove(mod)
 
     #Materials
-    def set_physics_material(self, context, bounding_object, physics_material_name):
+    def set_physics_material(self, context, bounding_object):
         remove_materials(bounding_object)
-        set_material(bounding_object, physics_material_name)
+        if self.physics_material_name:
+            set_material(bounding_object, self.physics_material_name)
+        else:
+            default_material = make_physics_material('COL_DEFAULT',(1, 0, 0, 1))
+            set_material(bounding_object, default_material)
+
 
     def __init__(self):
         # has to be in --init

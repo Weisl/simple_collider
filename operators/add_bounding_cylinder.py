@@ -20,7 +20,7 @@ def calc_hypothenuse(a, b):
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create a Cylindrical bounding object"""
     bl_idname = "mesh.add_bounding_cylinder"
-    bl_label = "Add Cylinder Collision Ob"
+    bl_label = "Add Cylindrical Collision"
 
     def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
         dimensions = []
@@ -178,7 +178,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.new_colliders_list.append(new_collider)
             self.custom_set_parent(context, parent, new_collider)
             collections = parent.users_collection
-            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=parent.name)
 
