@@ -312,11 +312,11 @@ class OBJECT_OT_add_bounding_object():
             name = basename
         else:
             name = self.prefs.basename
-            
+
         pre_suffix_componetns = [
             self.prefs.colPreSuffix,
-            self.get_complexity_suffix(),
             self.type_suffix,
+            self.get_complexity_suffix(),
             self.prefs.optionalSuffix
         ]
 
