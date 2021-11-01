@@ -92,5 +92,5 @@ class CollissionPanel(Panel):
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Convex Decomposition")
         else:
-            row.operator("wm.url_open", text="Convex decomposition: Requires V-HACD", icon='WARNING').url = "https://github.com/kmammou/v-hacd"
+            row.operator("wm.url_open", text="Convex decomposition: Requires V-HACD", icon='ERROR').url = "https://github.com/kmammou/v-hacd"
 

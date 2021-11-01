@@ -391,7 +391,9 @@ class OBJECT_OT_add_bounding_object():
         if self.physics_material_name:
             set_material(bounding_object, self.physics_material_name)
         else:
-            default_material = make_physics_material('COL_DEFAULT',(1, 0, 0, 1))
+            # default_material = make_physics_material('COL_DEFAULT',(0.75, 0.25, 0.25, 0.5))
+            default_material = make_physics_material('COL_DEFAULT',(1, 1, 1, 0.5))
+            bpy.context.scene.CollisionMaterials = default_material
             set_material(bounding_object, default_material)
 
 
