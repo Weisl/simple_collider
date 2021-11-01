@@ -5,6 +5,20 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
 
+
+def create_name_number(name, nr):
+    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
+    return name + nr
+
+def unique_name(name, i = 1):
+    '''recursive function to find unique name'''
+    new_name = create_name_number(name, i)
+    while new_name in bpy.data.objects:
+        i = i+1
+        new_name = create_name_number(name, i)
+    return new_name
+
+
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"
@@ -39,7 +53,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
 
-        elif event.type == 'L' and event.value == 'RELEASE':
+        elif event.type == 'C' and event.value == 'RELEASE':
             #toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
             self.set_name_suffix()
@@ -77,7 +91,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 class OBJECT_OT_convert_to_mesh(Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_mesh"
-    bl_label = "to Mesh"
+    bl_label = "Convert to Mesh"
 
     @classmethod
     def poll(cls, context):
@@ -88,6 +102,6 @@ class OBJECT_OT_convert_to_mesh(Operator):
             if obj.get('isCollider'):
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-
+                obj.name = unique_name('mesh')
         return {'FINISHED'}
 
