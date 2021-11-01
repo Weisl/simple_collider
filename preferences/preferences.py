@@ -34,6 +34,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     optionalSuffix: bpy.props.StringProperty(name="Additional Suffix (optional)", default="")
     colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING")
 
+    basename: bpy.props.StringProperty(name="Collider Base Name", default="geo")
+
     colAll: bpy.props.StringProperty(name="All Collisions", default="ALL")
     colSimple: bpy.props.StringProperty(name="Simple Collisions", default="SIMPLE")
     colComplex: bpy.props.StringProperty(name="Complex Collisions", default="COMPLEX")
@@ -102,6 +104,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     )
     props = [
         "use_parent_name",
+        "basename",
         "meshColSuffix",
         "convexColSuffix",
         "boxColSuffix",

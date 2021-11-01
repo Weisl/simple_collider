@@ -311,8 +311,8 @@ class OBJECT_OT_add_bounding_object():
         if self.prefs.use_parent_name:
             name = basename
         else:
-            name = 'geometry'
-
+            name = self.prefs.basename
+            
         pre_suffix_componetns = [
             self.prefs.colPreSuffix,
             self.get_complexity_suffix(),
