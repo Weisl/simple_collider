@@ -60,7 +60,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         new_collider = context.object
         new_collider.name = tmp_name
 
+        scene=context.scene
+        print(str(scene.my_space) + str(location))
+
         new_collider.location = location
+
         if rotation_euler:
             new_collider.rotation_euler = rotation_euler
 
@@ -166,13 +170,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             depth = bounding_cylinder_data['depth']
             bbox = bounding_cylinder_data['bbox']
 
-            # align newly created object to base mesh
-            centreBase = sum((Vector(b) for b in bbox), Vector()) / 8.0
-
             if scene.my_space == 'LOCAL':
-                new_collider = self.generate_cylinder_object(context, radius, depth, centreBase,
+                new_collider = self.generate_cylinder_object(context, radius, depth, parent.location,
                                                     rotation_euler=parent.rotation_euler)
-            else:
+            else: # scene.my_space == 'GLOBAL'
+                centreBase = sum((Vector(b) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
 
             self.new_colliders_list.append(new_collider)
