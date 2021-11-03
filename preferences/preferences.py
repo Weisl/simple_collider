@@ -70,6 +70,18 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
+    modal_font_color: bpy.props.FloatVectorProperty(name="Font Color", description="",
+                                                    default=(1, 1, 1, 1), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+    modal_font_color_02: bpy.props.FloatVectorProperty(name="Font Color", description="",
+                                                    default=(1, 1, 1, 1), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+    modal_font_color_03: bpy.props.FloatVectorProperty(name="Font Color", description="",
+                                                    default=(1, 1, 1, 1), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+
+    modal_font_size: bpy.props.IntProperty(name='Font Size', description="", default=72)
+
     data_path: bpy.props.StringProperty(
         name='Data Path',
         description='Data path to store V-HACD meshes and logs',
@@ -115,6 +127,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colAll",
         "colSimple",
         "colComplex",
+        "modal_font_color",
         "use_col_collection",
         "col_collection_name",
     ]

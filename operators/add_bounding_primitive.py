@@ -1,105 +1,78 @@
-import bgl
 import blf
 import bpy
-import gpu
 import bmesh
 
 from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
+def draw_modal_item(self, font_id,i,vertical_px_offset, text):
+    blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+    blf.position(font_id, 30, i * vertical_px_offset, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, text)
+    i += 1
+    return i
+
+
 def draw_viewport_overlay(self, context):
+
     scene = context.scene
+
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
     i = 1
 
+
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-        blf.position(font_id, 30, i *vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Global Orient (G): " + global_orient)
-        i += 1
+        text = "Global Orient (G): " + global_orient
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
         # draw some text
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-        blf.position(font_id, 30, i*vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Local Orient (L): " + local_orient)
-        i += 1
+        text= "Local Orient (L): " + local_orient
+        i = draw_modal_item(self,font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Shrink/Inflate (S): " + str(self.displace_my_offset))
-    i += 1
+    text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Opacity (A) : " + str(scene.my_color[3]))
-    i += 1
+    text = "Opacity (A) : " + str(scene.my_color[3])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Preview View (V) : " + self.shading_modes[self.shading_idx])
-    i += 1
+    text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx]))
-    i += 1
+    text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
-    i += 1
+    text = "Hide After Creation (H) : " + str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_decimation:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Decimate (D): " + str(self.decimate_amount))
-        i += 1
+        text = "Decimate (D): " + str(self.decimate_amount)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_vertex_count:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Segments (E): " + str(self.vertex_count))
-        i += 1
+        text = "Segments (E): " + str(self.vertex_count)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_modifier_stack:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack))
-        i += 1
+        text = "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_cylinder_axis:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis))
-        i += 1
+        text = "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_sphere_segments:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Sphere Segments (W): " + str(self.sphere_segments))
-        i += 1
+        text = "Sphere Segments (W): " + str(self.sphere_segments)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_type_change:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx]))
-        i += 1
-
-    # 50% alpha, 2 pixel width line
-    shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-    bgl.glEnable(bgl.GL_BLEND)
-    bgl.glLineWidth(2)
-    shader.bind()
-    shader.uniform_float("color", (1.0, 1.0, 1.0, 0.5))
-
-    # restore opengl defaults
-    bgl.glLineWidth(1)
-    bgl.glDisable(bgl.GL_BLEND)
+        text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
 
 class OBJECT_OT_add_bounding_object():

@@ -15,8 +15,6 @@ def calc_hypothenuse(a, b):
     """calculate the hypothenuse"""
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
-
-
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create a Cylindrical bounding object"""
     bl_idname = "mesh.add_bounding_cylinder"
