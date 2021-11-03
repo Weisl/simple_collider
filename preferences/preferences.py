@@ -71,13 +71,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     subtype='COLOR', size=4)
 
     modal_font_color: bpy.props.FloatVectorProperty(name="Font Color", description="",
-                                                    default=(1, 1, 1, 1), min=0.0, max=1.0,
+                                                    default=(0.75, 0.75, 0.75, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
-    modal_font_color_02: bpy.props.FloatVectorProperty(name="Font Color", description="",
-                                                    default=(1, 1, 1, 1), min=0.0, max=1.0,
-                                                    subtype='COLOR', size=4)
-    modal_font_color_03: bpy.props.FloatVectorProperty(name="Font Color", description="",
-                                                    default=(1, 1, 1, 1), min=0.0, max=1.0,
+    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Color", description="",
+                                                    default=(1, 1, 1, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="", default=72)
@@ -128,6 +125,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colSimple",
         "colComplex",
         "modal_font_color",
+        "modal_font_color_scene",
         "use_col_collection",
         "col_collection_name",
     ]

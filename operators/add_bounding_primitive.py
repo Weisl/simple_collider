@@ -6,8 +6,12 @@ from ..pyshics_materials.material_functions import remove_materials, set_materia
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
-def draw_modal_item(self, font_id,i,vertical_px_offset, text):
-    blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'operator'):
+    if color_type == 'operator':
+        blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+    else:
+        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1], self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
+
     blf.position(font_id, 30, i * vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, text)
@@ -28,18 +32,18 @@ def draw_viewport_overlay(self, context):
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
         text = "Global Orient (G): " + global_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
         # draw some text
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
         text= "Local Orient (L): " + local_orient
-        i = draw_modal_item(self,font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self,font_id, i, vertical_px_offset, text, color_type='scene')
 
     text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     text = "Opacity (A) : " + str(scene.my_color[3])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
 
     text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
@@ -48,7 +52,7 @@ def draw_viewport_overlay(self, context):
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     text = "Hide After Creation (H) : " + str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
     if self.use_decimation:
         text = "Decimate (D): " + str(self.decimate_amount)
