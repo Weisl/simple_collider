@@ -60,8 +60,7 @@ class VIEW3D_MT_PIE_template(Menu):
         other_menu.menu_contents("VIEW3D_MT_collision")
 
         #North
-        pass
-        # pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
+        pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
 
         #NorthWest
         pie.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
@@ -70,8 +69,9 @@ class VIEW3D_MT_PIE_template(Menu):
         pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
 
         #SouthWest
-        if prefs.executable_path:
-            pie.operator("collision.vhacd")
-        else:
-            pie.operator("wm.url_open", text="Convex decomposition: Requires V-HACD").url = "https://github.com/kmammou/v-hacd"
-
+        pass
+        # if prefs.executable_path:
+        #     pie.operator("collision.vhacd")
+        # else:
+        #     pie.operator("wm.url_open", text="Convex decomposition: Requires V-HACD").url = "https://github.com/kmammou/v-hacd"
+        #
