@@ -60,7 +60,8 @@ class VIEW3D_MT_PIE_template(Menu):
         other_menu.menu_contents("VIEW3D_MT_collision")
 
         #North
-        pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
+        pass
+        # pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
 
         #NorthWest
         pie.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
