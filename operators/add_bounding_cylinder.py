@@ -15,12 +15,10 @@ def calc_hypothenuse(a, b):
     """calculate the hypothenuse"""
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
-
-
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create a Cylindrical bounding object"""
     bl_idname = "mesh.add_bounding_cylinder"
-    bl_label = "Add Cylinder Collision Ob"
+    bl_label = "Add Cylindrical Collision"
 
     def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
         dimensions = []
@@ -60,7 +58,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         new_collider = context.object
         new_collider.name = tmp_name
 
+        scene=context.scene
+        print(str(scene.my_space) + str(location))
+
         new_collider.location = location
+
         if rotation_euler:
             new_collider.rotation_euler = rotation_euler
 
@@ -166,19 +168,17 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             depth = bounding_cylinder_data['depth']
             bbox = bounding_cylinder_data['bbox']
 
-            # align newly created object to base mesh
-            centreBase = sum((Vector(b) for b in bbox), Vector()) / 8.0
-
             if scene.my_space == 'LOCAL':
-                new_collider = self.generate_cylinder_object(context, radius, depth, centreBase,
+                new_collider = self.generate_cylinder_object(context, radius, depth, parent.location,
                                                     rotation_euler=parent.rotation_euler)
-            else:
+            else: # scene.my_space == 'GLOBAL'
+                centreBase = sum((Vector(b) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
 
             self.new_colliders_list.append(new_collider)
             self.custom_set_parent(context, parent, new_collider)
             collections = parent.users_collection
-            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=parent.name)
 

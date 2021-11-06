@@ -1,99 +1,82 @@
-import bgl
 import blf
 import bpy
-import gpu
 import bmesh
 
-from ..pyshics_materials.material_functions import remove_materials, set_material
+from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
+def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'operator'):
+    if color_type == 'operator':
+        blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+    else:
+        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1], self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
+
+    blf.position(font_id, 30, i * vertical_px_offset, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, text)
+    i += 1
+    return i
+
+
 def draw_viewport_overlay(self, context):
+
     scene = context.scene
+
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
     i = 1
 
+
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-        blf.position(font_id, 30, i *vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Global Orient (G): " + global_orient)
-        i += 1
+        text = "Global Orient (G): " + global_orient
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
         # draw some text
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-        blf.position(font_id, 30, i*vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Local Orient (L): " + local_orient)
-        i += 1
+        text= "Local Orient (L): " + local_orient
+        i = draw_modal_item(self,font_id, i, vertical_px_offset, text, color_type='scene')
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Shrink/Inflate (S): " + str(self.displace_my_offset))
-    i += 1
+    text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Opacity (A) : " + str(scene.my_color[3]))
-    i += 1
+    text = "Opacity (A) : " + str(scene.my_color[3])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Preview View (V) : " + self.shading_modes[self.shading_idx])
-    i += 1
+    text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx]))
-    i += 1
+    text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.position(font_id, 30, i*vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, "Hide After Creation (H) : " + str(scene.my_hide))
-    i += 1
+    text = "Hide After Creation (H) : " + str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
     if self.use_decimation:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Decimate (D): " + str(self.decimate_amount))
-        i += 1
+        text = "Decimate (D): " + str(self.decimate_amount)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_vertex_count:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Segments (E): " + str(self.vertex_count))
-        i += 1
+        text = "Segments (E): " + str(self.vertex_count)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_modifier_stack:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack))
-        i += 1
+        text = "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_cylinder_axis:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis))
-        i += 1
+        text = "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_sphere_segments:
-        blf.position(font_id, 30, i * vertical_px_offset, 0)
-        blf.size(font_id, 20, 72)
-        blf.draw(font_id, "Sphere Segments (W): " + str(self.sphere_segments))
-        i += 1
+        text = "Sphere Segments (W): " + str(self.sphere_segments)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    # 50% alpha, 2 pixel width line
-    shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-    bgl.glEnable(bgl.GL_BLEND)
-    bgl.glLineWidth(2)
-    shader.bind()
-    shader.uniform_float("color", (1.0, 1.0, 1.0, 0.5))
-
-    # restore opengl defaults
-    bgl.glLineWidth(1)
-    bgl.glDisable(bgl.GL_BLEND)
+    if self.use_type_change:
+        text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
 
 class OBJECT_OT_add_bounding_object():
@@ -214,7 +197,7 @@ class OBJECT_OT_add_bounding_object():
 
         return positionsX, positionsY, positionsZ
 
-    def primitive_postprocessing(self, context, bounding_object, base_object_collections, physics_material_name):
+    def primitive_postprocessing(self, context, bounding_object, base_object_collections):
 
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
@@ -227,7 +210,7 @@ class OBJECT_OT_add_bounding_object():
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
-        self.set_physics_material(context, bounding_object, physics_material_name)
+        self.set_physics_material(context, bounding_object)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
@@ -235,9 +218,9 @@ class OBJECT_OT_add_bounding_object():
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
-        self.set_object_color(context, bounding_object)
+        self.set_object_color(bounding_object)
 
-    def set_object_color(self, context, obj):
+    def set_object_color(self, obj):
         if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
             obj.color = self.prefs.my_color_all
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
@@ -305,12 +288,12 @@ class OBJECT_OT_add_bounding_object():
         if self.prefs.use_parent_name:
             name = basename
         else:
-            name = 'geometry'
+            name = self.prefs.basename
 
         pre_suffix_componetns = [
             self.prefs.colPreSuffix,
-            self.get_complexity_suffix(),
             self.type_suffix,
+            self.get_complexity_suffix(),
             self.prefs.optionalSuffix
         ]
 
@@ -329,7 +312,7 @@ class OBJECT_OT_add_bounding_object():
 
         return self.unique_name(new_name)
 
-    def update_name(self):
+    def update_names(self):
         for obj in self.new_colliders_list:
             obj.name = self.collider_name()
 
@@ -380,9 +363,16 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.modifiers.remove(mod)
 
     #Materials
-    def set_physics_material(self, context, bounding_object, physics_material_name):
+    def set_physics_material(self, context, bounding_object):
         remove_materials(bounding_object)
-        set_material(bounding_object, physics_material_name)
+        if self.physics_material_name:
+            set_material(bounding_object, self.physics_material_name)
+        else:
+            # default_material = make_physics_material('COL_DEFAULT',(0.75, 0.25, 0.25, 0.5))
+            default_material = make_physics_material('COL_DEFAULT',(1, 1, 1, 0.5))
+            bpy.context.scene.CollisionMaterials = default_material
+            set_material(bounding_object, default_material)
+
 
     def __init__(self):
         # has to be in --init
@@ -395,6 +385,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_global_local_switches = False
         self.use_sphere_segments = False
         self.type_suffix = ''
+        self.use_type_change = False
 
     @classmethod
     def poll(cls, context):
@@ -448,7 +439,6 @@ class OBJECT_OT_add_bounding_object():
         self.new_colliders_list = []
 
         self.name_count = 1
-
 
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
@@ -554,9 +544,9 @@ class OBJECT_OT_add_bounding_object():
             #toggle through display modes
             self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
             for obj in self.new_colliders_list:
-                self.set_object_color(context,obj)
+                self.set_object_color(obj)
                 self.set_object_type(obj)
-                self.update_name()
+                self.update_names()
 
         elif event.type == 'MOUSEMOVE':
             if self.displace_active:

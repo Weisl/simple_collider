@@ -95,7 +95,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             # self.previous_objects.append(new_collider)
             collections = obj.users_collection
 
-            self.primitive_postprocessing(context, new_collider,collections, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider,collections)
 
             # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
             # self.report({'INFO'}, infomessage)

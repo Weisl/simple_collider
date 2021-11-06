@@ -5,6 +5,13 @@ import rna_keymap_ui
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
 
+#
+# collider_shapes = {
+#     "boxColSuffix": {'shape': "BOX", 'label': 'Box Collider', 'default_naming': 'Box'},
+#     "sphereColSuffix": {'shape': "SPHERE", 'label': 'Sphere Collider', 'default_naming': 'Sphere'},
+#     "convexColSuffix": {'shape': "CONVEX", 'label': 'Convex Collider', 'default_naming': 'Convex'},
+#     "meshColSuffix": {'shape': "MESH", 'label': 'Triangle Mesh Collider', 'default_naming': 'Mesh'},
+# }
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -22,18 +29,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         items=(('PREFIX', "Prefix", "Prefix"), ('SUFFIX', "Suffix", "Suffix")),
         default='SUFFIX')
 
-    separator : bpy.props.StringProperty(name="Separator ", default="_")
+    separator: bpy.props.StringProperty(name="Separator ", default="_")
     colPreSuffix: bpy.props.StringProperty(name="Collision ", default="COL")
-    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="BOX")
-    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX")
-    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE")
-    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH")
     optionalSuffix: bpy.props.StringProperty(name="Additional Suffix (optional)", default="")
     colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING")
+
+    basename: bpy.props.StringProperty(name="Collider Base Name", default="geo")
 
     colAll: bpy.props.StringProperty(name="All Collisions", default="ALL")
     colSimple: bpy.props.StringProperty(name="Simple Collisions", default="SIMPLE")
     colComplex: bpy.props.StringProperty(name="Complex Collisions", default="COMPLEX")
+
+    # Collider Shapes
+    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="BOX")
+    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX")
+    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE")
+    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH")
 
     executable_path: bpy.props.StringProperty(name='VHACD exe',
                                               description='Path to VHACD executable',
@@ -58,6 +69,15 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     my_color_complex: bpy.props.FloatVectorProperty(name="Complex Collider", description="",
                                                     default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
+
+    modal_font_color: bpy.props.FloatVectorProperty(name="Font Color", description="",
+                                                    default=(0.75, 0.75, 0.75, 0.5), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Color", description="",
+                                                    default=(1, 1, 1, 0.5), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+
+    modal_font_size: bpy.props.IntProperty(name='Font Size', description="", default=72)
 
     data_path: bpy.props.StringProperty(
         name='Data Path',
@@ -93,16 +113,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     )
     props = [
         "use_parent_name",
+        "basename",
         "meshColSuffix",
         "convexColSuffix",
         "boxColSuffix",
-        "colPreSuffix",
         "sphereColSuffix",
+        "colPreSuffix",
         "colSuffix",
         "optionalSuffix",
         "colAll",
         "colSimple",
         "colComplex",
+        "modal_font_color",
+        "modal_font_color_scene",
         "use_col_collection",
         "col_collection_name",
     ]

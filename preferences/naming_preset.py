@@ -21,6 +21,7 @@ class COLLISION_preset(AddPresetBase, Operator):
     # properties to store in the preset
     preset_values = [
         "prefs.naming_position",
+        "prefs.basename",
         "prefs.use_col_Complexity",
         "prefs.separator",
         "prefs.meshColSuffix",

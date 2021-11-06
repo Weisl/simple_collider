@@ -4,7 +4,7 @@ from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
 
-from CollisionHelpers.operators.object_functions import alignObjects
+from CollisionHelpers.operators.object_pivot_and_ailgn import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from .add_bounding_primitive import collider_types
 
@@ -162,7 +162,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
             collections = obj.users_collection
-            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+            self.primitive_postprocessing(context, new_collider, collections)
 
             parent_name = obj.name
             new_collider.name = super().collider_name(basename=parent_name)

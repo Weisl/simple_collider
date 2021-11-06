@@ -52,10 +52,15 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            collider_data = {}
+
+            # update mesh when changing selection in edit mode etc.
+            obj.update_from_editmode()
+
             # duplicate object
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
-            self.set_collections(new_collider, obj.users_collection)
+
             context.scene.collection.objects.link(new_collider)
 
             if self.obj_mode == "OBJECT":
@@ -69,14 +74,18 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 self.apply_all_modifiers(context, new_collider)
 
             obj.select_set(False)
-            target_objects.append(new_collider)
 
-        for obj in target_objects:
-            obj.select_set(True)
+            collider_data['parent'] = obj
+            collider_data['convex_collider'] = new_collider
 
-            context.view_layer.objects.active = obj
+            target_objects.append(collider_data)
 
-            new_collider = obj
+        for collider_data in target_objects:
+
+            parent = collider_data['parent']
+            new_collider = collider_data['convex_collider']
+
+            new_collider.select_set(True)
             context.view_layer.objects.active = new_collider
 
             if self.obj_mode == "EDIT":
@@ -94,8 +103,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             self.remove_all_modifiers(context, new_collider)
             # save collision objects to delete when canceling the operation
             # self.previous_objects.append(new_collider)
-            collections = obj.users_collection
-            self.primitive_postprocessing(context, new_collider, collections, self.physics_material_name)
+            collections = parent.users_collection
+            self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=new_collider.parent.name)
 
