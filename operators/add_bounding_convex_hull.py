@@ -54,6 +54,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             collider_data = {}
 
+            # update mesh when changing selection in edit mode etc.
+            obj.update_from_editmode()
+
             # duplicate object
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
