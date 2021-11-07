@@ -144,7 +144,6 @@ class OBJECT_OT_add_bounding_object():
         OBJECT_OT_add_bounding_object.bmesh(bm)
         return used_vertices
 
-
     def get_vertices_Object(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         bpy.ops.object.mode_set(mode='EDIT')
@@ -165,6 +164,38 @@ class OBJECT_OT_add_bounding_object():
         else:
             # Get a BMesh representation
             used_vertices = me.vertices
+            used_edges = me.edges
+            used_faces = me.polygons
+
+        if len(used_vertices) == 0:
+            return None
+
+        return used_vertices
+
+
+    def mesh_from_selection(self, obj, use_modifiers = False):
+
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        bpy.ops.object.mode_set(mode='EDIT')
+        me = obj.data
+        me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+        if use_modifiers:
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+            bm.verts.ensure_lookup_table()
+            used_vertices = bm.verts
+
+            # This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
+            OBJECT_OT_add_bounding_object.bmesh(bm)
+
+        else:
+            # Get a BMesh representation
+            used_vertices = me.vertices
+            used_edges = me.edges
+            used_faces = me.polygons
 
         if len(used_vertices) == 0:
             return None

@@ -136,26 +136,38 @@ class VHACD_OT_convex_decomposition(bpy.types.Operator):
         precision=5
     )
 
-    def execute(self, context):
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-
+    def set_export_path(self, path):
         # Check executable path
-        vhacd_path = bpy.path.abspath(prefs.executable_path)
+        vhacd_path = bpy.path.abspath(path)
         if os_path.isdir(vhacd_path):
             vhacd_path = os_path.join(vhacd_path, 'testVHACD')
+            return vhacd_path
+
         elif not os_path.isfile(vhacd_path):
             self.report({'ERROR'}, 'Path to V-HACD executable required')
             return {'CANCELLED'}
+
         if not os_path.exists(vhacd_path):
             self.report({'ERROR'}, 'Cannot find V-HACD executable at specified path')
             return {'CANCELLED'}
 
+    def set_data_path(self, path):
         # Check data path
-        data_path = bpy.path.abspath(prefs.data_path)
+        data_path = bpy.path.abspath(path)
         if data_path.endswith('/') or data_path.endswith('\\'):
             data_path = os_path.dirname(data_path)
+            return data_path
         if not os_path.exists(data_path):
             self.report({'ERROR'}, 'Invalid data directory')
+            return {'CANCELLED'}
+
+    def execute(self, context):
+        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        executable_path = prefs.executable_path
+
+        vhacd_path = self.set_export_path(executable_path)
+        data_path = self.set_data_path(prefs.data_path)
+        if vhacd_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
             return {'CANCELLED'}
 
         selected = bpy.context.selected_objects
