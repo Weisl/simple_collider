@@ -64,6 +64,8 @@ class CollissionPanel(Panel):
 
         # Conversion
         layout.separator()
+        row = layout.row(align=True)
+        row.label(text='Conversion')
 
         row = layout.row(align=True)
         row.operator('object.convert_to_collider', icon='PHYSICS')
@@ -74,18 +76,23 @@ class CollissionPanel(Panel):
         layout.separator()
 
         row = layout.row(align=True)
+        row.label(text='Collision Shapes')
+        row = layout.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
         row = layout.row(align=True)
-        row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
-        row = layout.row(align=True)
         row.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
+        row = layout.row(align=True)
+        row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
         #special Collider Creation
         layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Complex Opertations')
 
         prefs = context.preferences.addons["CollisionHelpers"].preferences
         row = layout.row(align=True)

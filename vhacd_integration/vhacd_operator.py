@@ -176,15 +176,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         return data_path
 
-
     def __init__(self):
         super().__init__()
-
-    def invoke(self, context, event):
-        super().invoke(context, event)
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=400)
-        # return {'RUNNING_MODAL'}
+        self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -204,6 +198,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
             self.set_name_suffix()
             self.update_names()
+
+        # change bounding object settings
+        if event.type == 'P' and event.value == 'RELEASE':
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
+            self.execute(context)
+
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
@@ -216,29 +216,32 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
             return {'CANCELLED'}
 
-        selected = bpy.context.selected_objects.copy()
+        for obj in self.selected_objects:
+            obj.select_set(False)
 
-        if not selected:
-            self.report({'ERROR'}, 'Object(s) must be selected first')
-            return {'CANCELLED'}
+        convex_decomposition_data = []
 
-        for ob in selected:
-            ob.select_set(False)
-
-        for ob in selected:
-            if ob.type != 'MESH':
+        for obj in self.selected_objects:
+            # skip if invalid object
+            if obj is None:
                 continue
 
-            # Base filename is object name with invalid characters removed
-            filename = ''.join(c for c in ob.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
+            # skip non Mesh objects like lamps, curves etc.
+            if obj.type != "MESH":
+                continue
 
+            convex_collisions_data = {}
+
+            # Base filename is object name with invalid characters removed
+            filename = ''.join(c for c in obj.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
             off_filename = os_path.join(data_path, '{}.off'.format(filename))
             outFileName = os_path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os_path.join(data_path, '{}_log.txt'.format(filename))
 
-            mesh = ob.data.copy()
+            mesh = obj.data.copy()
+            mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-            translation, quaternion, scale = ob.matrix_world.decompose()
+            translation, quaternion, scale = obj.matrix_world.decompose()
             scale_matrix = Matrix(((scale.x, 0, 0, 0), (0, scale.y, 0, 0), (0, 0, scale.z, 0), (0, 0, 0, 1)))
             if self.apply_transforms in ['S', 'RS', 'LRS']:
                 pre_matrix = scale_matrix
@@ -256,9 +259,19 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 post_matrix = Matrix.Translation(translation) @ post_matrix
 
             mesh.transform(pre_matrix)
-
             bm = bmesh.new()
-            bm.from_mesh(mesh)
+
+            if self.my_use_modifier_stack:
+                # Get mesh information with the modifiers applied
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                bm = bmesh.new()
+                bm.from_object(obj, depsgraph)
+                bm.verts.ensure_lookup_table()
+                bm.edges.ensure_lookup_table()
+                bm.faces.ensure_lookup_table()
+            else: # self.my_use_modifier_stack == False:
+                bm.from_mesh(mesh)
+
             if self.remove_doubles:
                 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
@@ -266,7 +279,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             bm.to_mesh(mesh)
             bm.free()
 
-            print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
+            # print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
             off_export(mesh, off_filename)
             cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
                         '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
@@ -277,7 +290,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 self.alpha, self.beta, self.gamma, self.pca, self.mode == 'TETRAHEDRON',
                 self.maxNumVerticesPerCH, self.minVolumePerCH, outFileName, logFileName)
 
-            print('Running V-HACD...\n{}\n'.format(cmd_line))
+            # print('Running V-HACD...\n{}\n'.format(cmd_line))
 
             vhacd_process = Popen(cmd_line, bufsize=-1, close_fds=True, shell=True)
             bpy.data.meshes.remove(mesh)
@@ -288,24 +301,32 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             bpy.ops.import_scene.x3d(filepath=outFileName, axis_forward='Y', axis_up='Z')
             imported = bpy.context.selected_objects
-            self.new_colliders_list.extend(imported)
 
-            name_template = self.prefs.name_template
+            for ob in imported:
+                ob.select_set(False)
 
-            for index, hull in enumerate(imported):
-                hull.select_set(False)
-                hull.matrix_basis = post_matrix
-                name = name_template.replace('?', ob.name, 1)
-                name = name.replace('#', str(index + 1), 1)
-                if name == name_template:
-                    name += str(index + 1)
-                hull.name = name
-                hull.data.name = name
-                # Display
-                hull.display_type = 'SOLID'
-                hull.color[3] = 0.5
-                # hull.display.show_shadows = False
-                # hull.show_all_edges = True
+            convex_collisions_data['colliders'] = imported
+            convex_collisions_data['parent'] = obj
+            convex_collisions_data['post_matrix'] = post_matrix
+            convex_decomposition_data.append(convex_collisions_data)
+
+        for convex_collisions_data in convex_decomposition_data:
+            convex_collision = convex_collisions_data['colliders']
+            parent = convex_collisions_data['parent']
+            post_matrix = convex_collisions_data['post_matrix']
+
+            debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name), str(post_matrix))
+            print(debug_text)
+
+            for new_collider in convex_collision:
+                new_collider.name = super().collider_name(basename=parent.name)
+
+                self.custom_set_parent(context, parent, new_collider)
+                new_collider.matrix_basis = post_matrix
+
+                collections = parent.users_collection
+                self.primitive_postprocessing(context, new_collider, collections)
+                self.new_colliders_list.append(new_collider)
 
         if len(self.new_colliders_list) < 1:
             self.report({'WARNING'}, 'No meshes to process!')

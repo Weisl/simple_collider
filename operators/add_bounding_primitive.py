@@ -165,8 +165,6 @@ class OBJECT_OT_add_bounding_object():
         else:
             # Get a BMesh representation
             used_vertices = me.vertices
-            used_edges = me.edges
-            used_faces = me.polygons
 
         if len(used_vertices) == 0:
             return None
