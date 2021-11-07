@@ -7,7 +7,12 @@ from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty
 from mathutils import Matrix
 from .off_eport import off_export
 
-class VHACD_OT_convex_decomposition(bpy.types.Operator):
+from bpy.types import Operator
+from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
+collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
+
+class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
     bl_description = 'Split the object collision into multiple convex hulls using Hierarchical Approximate Convex Decomposition'
@@ -136,49 +141,89 @@ class VHACD_OT_convex_decomposition(bpy.types.Operator):
         precision=5
     )
 
-    def set_export_path(self, path):
-        # Check executable path
-        vhacd_path = bpy.path.abspath(path)
-        if os_path.isdir(vhacd_path):
-            vhacd_path = os_path.join(vhacd_path, 'testVHACD')
-            return vhacd_path
 
-        elif not os_path.isfile(vhacd_path):
+    def set_export_path(self, path):
+
+        self.type_suffix = self.prefs.convexColSuffix
+
+        # Check executable path
+        executable_path = bpy.path.abspath(path)
+        if os_path.isdir(executable_path):
+            executable_path = os_path.join(executable_path, 'testVHACD')
+            return executable_path
+
+        elif not os_path.isfile(executable_path):
             self.report({'ERROR'}, 'Path to V-HACD executable required')
             return {'CANCELLED'}
 
-        if not os_path.exists(vhacd_path):
+        if not os_path.exists(executable_path):
             self.report({'ERROR'}, 'Cannot find V-HACD executable at specified path')
             return {'CANCELLED'}
+
+        return executable_path
 
     def set_data_path(self, path):
         # Check data path
         data_path = bpy.path.abspath(path)
+
         if data_path.endswith('/') or data_path.endswith('\\'):
             data_path = os_path.dirname(data_path)
             return data_path
+
         if not os_path.exists(data_path):
             self.report({'ERROR'}, 'Invalid data directory')
             return {'CANCELLED'}
 
-    def execute(self, context):
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-        executable_path = prefs.executable_path
+        return data_path
 
-        vhacd_path = self.set_export_path(executable_path)
-        data_path = self.set_data_path(prefs.data_path)
-        if vhacd_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
+
+    def __init__(self):
+        super().__init__()
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=400)
+        # return {'RUNNING_MODAL'}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        self.collider_shapes_idx = 0
+        self.collider_shapes = collider_shapes
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        status = super().modal(context, event)
+        if status == {'FINISHED'}:
+            return {'FINISHED'}
+        if status == {'CANCELLED'}:
             return {'CANCELLED'}
 
-        selected = bpy.context.selected_objects
+        elif event.type == 'C' and event.value == 'RELEASE':
+            #toggle through display modes
+            self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
+            self.set_name_suffix()
+            self.update_names()
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        # CLEANUP
+        super().execute(context)
+
+        executable_path = self.set_export_path(self.prefs.executable_path)
+        data_path = self.set_data_path(self.prefs.data_path)
+
+        if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
+            return {'CANCELLED'}
+
+        selected = bpy.context.selected_objects.copy()
 
         if not selected:
             self.report({'ERROR'}, 'Object(s) must be selected first')
             return {'CANCELLED'}
+
         for ob in selected:
             ob.select_set(False)
-
-        new_objects = []
 
         for ob in selected:
             if ob.type != 'MESH':
@@ -216,6 +261,7 @@ class VHACD_OT_convex_decomposition(bpy.types.Operator):
             bm.from_mesh(mesh)
             if self.remove_doubles:
                 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+
             bmesh.ops.triangulate(bm, faces=bm.faces)
             bm.to_mesh(mesh)
             bm.free()
@@ -226,25 +272,26 @@ class VHACD_OT_convex_decomposition(bpy.types.Operator):
                         '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
                         '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
                         '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                vhacd_path, off_filename, self.resolution, self.depth,
+                executable_path, off_filename, self.resolution, self.depth,
                 self.concavity, self.planeDownsampling, self.convexhullDownsampling,
                 self.alpha, self.beta, self.gamma, self.pca, self.mode == 'TETRAHEDRON',
                 self.maxNumVerticesPerCH, self.minVolumePerCH, outFileName, logFileName)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
+
             vhacd_process = Popen(cmd_line, bufsize=-1, close_fds=True, shell=True)
-
             bpy.data.meshes.remove(mesh)
-
             vhacd_process.wait()
+
             if not os_path.exists(outFileName):
                 continue
 
             bpy.ops.import_scene.x3d(filepath=outFileName, axis_forward='Y', axis_up='Z')
             imported = bpy.context.selected_objects
-            new_objects.extend(imported)
+            self.new_colliders_list.extend(imported)
 
-            name_template = prefs.name_template
+            name_template = self.prefs.name_template
+
             for index, hull in enumerate(imported):
                 hull.select_set(False)
                 hull.matrix_basis = post_matrix
@@ -260,20 +307,13 @@ class VHACD_OT_convex_decomposition(bpy.types.Operator):
                 # hull.display.show_shadows = False
                 # hull.show_all_edges = True
 
-        if len(new_objects) < 1:
-            for ob in selected:
-                ob.select_set(True)
+        if len(self.new_colliders_list) < 1:
             self.report({'WARNING'}, 'No meshes to process!')
             return {'CANCELLED'}
 
-        for ob in new_objects:
-            ob.select_set(True)
+        super().reset_to_initial_state(context)
 
         return {'FINISHED'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=400)
 
     def draw(self, context):
         layout = self.layout

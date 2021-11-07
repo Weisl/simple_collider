@@ -79,8 +79,9 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
 
+
 class OBJECT_OT_add_bounding_object():
-    """Abstract parent class to contain common methods and properties for all add bounding object operators"""
+    """Abstract parent class for modal operators contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
     bm = []
