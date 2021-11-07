@@ -68,19 +68,11 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 new_collider = context.scene.objects[-1]
 
             else:  # mode == "OBJECT":
-                if self.use_modifier_stack:
-                    vertices, edges, faces = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack, return_mesh_data = True)
-                    new_mesh = bpy.data.meshes.new('new_mesh')
-                    new_mesh.from_pydata(vertices, edges, [])
-                    new_mesh.update()
-
-                    new_collider = obj.copy()
-                    new_collider.data = new_mesh
-                else:
-                    new_collider = obj.copy()
-                    new_collider.data = obj.data.copy()
-
-
+                new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+                new_collider = obj.copy()
+                new_collider.data = new_mesh
+                context.scene.collection.objects.link(new_collider)
+                self.remove_all_modifiers(context, new_collider)
 
             self.type_suffix = self.prefs.boxColSuffix
             new_name = super().collider_name()

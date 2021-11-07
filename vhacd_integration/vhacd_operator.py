@@ -148,6 +148,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 bm.verts.ensure_lookup_table()
                 bm.edges.ensure_lookup_table()
                 bm.faces.ensure_lookup_table()
+
             else: # self.my_use_modifier_stack == False:
                 bm.from_mesh(mesh)
 

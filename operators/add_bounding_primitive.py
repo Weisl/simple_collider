@@ -173,11 +173,10 @@ class OBJECT_OT_add_bounding_object():
 
 
     def mesh_from_selection(self, obj, use_modifiers = False):
+        mesh = obj.data.copy()
+        mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
-        bpy.ops.object.mode_set(mode='EDIT')
-        me = obj.data
-        me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+        bm = bmesh.new()
 
         if use_modifiers:
             # Get mesh information with the modifiers applied
@@ -185,21 +184,16 @@ class OBJECT_OT_add_bounding_object():
             bm = bmesh.new()
             bm.from_object(obj, depsgraph)
             bm.verts.ensure_lookup_table()
-            used_vertices = bm.verts
+            bm.edges.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
 
-            # This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
-            OBJECT_OT_add_bounding_object.bmesh(bm)
+        else:  # self.my_use_modifier_stack == False:
+            bm.from_mesh(mesh)
 
-        else:
-            # Get a BMesh representation
-            used_vertices = me.vertices
-            used_edges = me.edges
-            used_faces = me.polygons
+        bm.to_mesh(mesh)
+        bm.free()
 
-        if len(used_vertices) == 0:
-            return None
-
-        return used_vertices
+        return mesh
 
     def get_point_positions(self, obj, space, used_vertives):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
