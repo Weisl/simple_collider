@@ -93,6 +93,19 @@ class OBJECT_OT_convert_to_mesh(Operator):
     bl_idname = "object.convert_to_mesh"
     bl_label = "Convert to Mesh"
 
+    my_string: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        row = col.row()
+        col.prop(self, "my_string")
+
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
@@ -102,6 +115,6 @@ class OBJECT_OT_convert_to_mesh(Operator):
             if obj.get('isCollider'):
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = unique_name('mesh')
+                obj.name = unique_name(self.my_string)
         return {'FINISHED'}
 
