@@ -32,10 +32,11 @@ class CollissionPanel(Panel):
         row = layout.row()
         row.prop(scene, "CollisionMaterials")
 
-
-
         # Visibillity and Selection
         layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Visibillity and Selection')
 
         col = self.layout.column_flow(columns=5, align = True)
 
@@ -71,6 +72,8 @@ class CollissionPanel(Panel):
         row.operator('object.convert_to_collider', icon='PHYSICS')
         row = layout.row(align=True)
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+        row = layout.row()
+        row.prop(scene, "DefaultMeshMaterial")
 
         # Create Collider
         layout.separator()
