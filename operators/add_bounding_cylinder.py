@@ -169,14 +169,16 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bbox = bounding_cylinder_data['bbox']
 
             if scene.my_space == 'LOCAL':
-                new_collider = self.generate_cylinder_object(context, radius, depth, parent.location,
+                mat = parent.matrix_world
+                center = sum((Vector(mat @ Vector(b)) for b in bbox), Vector()) / 8.0
+                new_collider = self.generate_cylinder_object(context, radius, depth, center,
                                                     rotation_euler=parent.rotation_euler)
             else: # scene.my_space == 'GLOBAL'
-                centreBase = sum((Vector(b) for b in bbox), Vector()) / 8.0
-                new_collider = self.generate_cylinder_object(context, radius, depth, centreBase)
+                center = sum((Vector(b) for b in bbox), Vector()) / 8.0
+                new_collider = self.generate_cylinder_object(context, radius, depth, center)
 
             self.new_colliders_list.append(new_collider)
-            self.custom_set_parent(context, parent, new_collider)
+            # self.custom_set_parent(context, parent, new_collider)
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
