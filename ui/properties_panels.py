@@ -95,7 +95,12 @@ class CollissionPanel(Panel):
         layout.separator()
 
         row = layout.row(align=True)
-        row.label(text='Complex Opertations')
+        row.label(text='Convex Decomposition')
+
+        row = layout.row()
+        row.prop(scene, 'convex_decomp_depth', text="Collision Number")
+        row = layout.row()
+        row.prop(scene, 'maxNumVerticesPerCH', text="Collision Vertices")
 
         prefs = context.preferences.addons["CollisionHelpers"].preferences
         row = layout.row(align=True)

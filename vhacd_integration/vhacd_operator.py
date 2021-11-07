@@ -18,130 +18,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Split the object collision into multiple convex hulls using Hierarchical Approximate Convex Decomposition'
     bl_options = {'REGISTER', 'PRESET'}
 
-    # TODO Remove
-    # pre-process options
-    remove_doubles: BoolProperty(
-        name='Remove Doubles',
-        description='Collapse overlapping vertices in generated mesh',
-        default=True
-    )
-
-    # TODO Remove
-    apply_transforms: EnumProperty(
-        name='Apply',
-        description='Apply Transformations to generated mesh',
-        items=(
-            ('LRS', 'Location + Rotation + Scale', 'Apply location, rotation and scale'),
-            ('RS', 'Rotation + Scale', 'Apply rotation and scale'),
-            ('S', 'Scale', 'Apply scale only'),
-            ('NONE', 'None', 'Do not apply transformations'),
-        ),
-        default='NONE'
-    )
-
-    # VHACD parameters
-    resolution: IntProperty(
-        name='Voxel Resolution',
-        description='Maximum number of voxels generated during the voxelization stage',
-        default=100000,
-        min=10000,
-        max=64000000
-    )
-
-    depth: IntProperty(
-        name='Clipping Depth',
-        description='Split the object into square of this objects',
-        default=2,
-        min=1,
-        max=32
-    )
-
-    concavity: FloatProperty(
-        name='Maximum Concavity',
-        description='Maximum concavity',
-        default=0.0015,
-        min=0.0,
-        max=1.0,
-        precision=4
-    )
-
-    # Quality settings
-    planeDownsampling: IntProperty(
-        name='Plane Downsampling',
-        description='Granularity of the search for the "best" clipping plane',
-        default=4,
-        min=1,
-        max=16
-    )
-
-    # Quality settings
-    convexhullDownsampling: IntProperty(
-        name='Convex Hull Downsampling',
-        description='Precision of the convex-hull generation process during the clipping plane selection stage',
-        default=4,
-        min=1,
-        max=16
-    )
-
-    alpha: FloatProperty(
-        name='Alpha',
-        description='Bias toward clipping along symmetry planes',
-        default=0.05,
-        min=0.0,
-        max=1.0,
-        precision=4
-    )
-
-    beta: FloatProperty(
-        name='Beta',
-        description='Bias toward clipping along revolution axes',
-        default=0.05,
-        min=0.0,
-        max=1.0,
-        precision=4
-    )
-
-    gamma: FloatProperty(
-        name='Gamma',
-        description='Maximum allowed concavity during the merge stage',
-        default=0.00125,
-        min=0.0,
-        max=1.0,
-        precision=5
-    )
-
-    pca: BoolProperty(
-        name='PCA',
-        description='Enable/disable normalizing the mesh before applying the convex decomposition',
-        default=False
-    )
-
-    mode: EnumProperty(
-        name='ACD Mode',
-        description='Approximate convex decomposition mode',
-        items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
-               ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')),
-        default='VOXEL'
-    )
-
-    maxNumVerticesPerCH: IntProperty(
-        name='Maximum Vertices Per CH',
-        description='Maximum number of vertices per convex-hull',
-        default=32,
-        min=4,
-        max=1024
-    )
-
-    minVolumePerCH: FloatProperty(
-        name='Minimum Volume Per CH',
-        description='Minimum volume to add vertices to convex-hulls',
-        default=0.0001,
-        min=0.0,
-        max=0.01,
-        precision=5
-    )
-
-
     def set_export_path(self, path):
 
         self.type_suffix = self.prefs.convexColSuffix
@@ -213,7 +89,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         executable_path = self.set_export_path(self.prefs.executable_path)
         data_path = self.set_data_path(self.prefs.data_path)
 
+        scene = bpy.context.scene
+
         if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
+            self.report({'WARNING'}, 'No executable path found!')
             return {'CANCELLED'}
 
         for obj in self.selected_objects:
@@ -243,17 +122,17 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             translation, quaternion, scale = obj.matrix_world.decompose()
             scale_matrix = Matrix(((scale.x, 0, 0, 0), (0, scale.y, 0, 0), (0, 0, scale.z, 0), (0, 0, 0, 1)))
-            if self.apply_transforms in ['S', 'RS', 'LRS']:
+            if self.prefs.apply_transforms in ['S', 'RS', 'LRS']:
                 pre_matrix = scale_matrix
                 post_matrix = Matrix()
             else:
                 pre_matrix = Matrix()
                 post_matrix = scale_matrix
-            if self.apply_transforms in ['RS', 'LRS']:
+            if self.prefs.apply_transforms in ['RS', 'LRS']:
                 pre_matrix = quaternion.to_matrix().to_4x4() @ pre_matrix
             else:
                 post_matrix = quaternion.to_matrix().to_4x4() @ post_matrix
-            if self.apply_transforms == 'LRS':
+            if self.prefs.apply_transforms == 'LRS':
                 pre_matrix = Matrix.Translation(translation) @ pre_matrix
             else:
                 post_matrix = Matrix.Translation(translation) @ post_matrix
@@ -272,7 +151,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             else: # self.my_use_modifier_stack == False:
                 bm.from_mesh(mesh)
 
-            if self.remove_doubles:
+            if self.prefs.remove_doubles:
                 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
             bmesh.ops.triangulate(bm, faces=bm.faces)
@@ -285,10 +164,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                         '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
                         '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
                         '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                executable_path, off_filename, self.resolution, self.depth,
-                self.concavity, self.planeDownsampling, self.convexhullDownsampling,
-                self.alpha, self.beta, self.gamma, self.pca, self.mode == 'TETRAHEDRON',
-                self.maxNumVerticesPerCH, self.minVolumePerCH, outFileName, logFileName)
+                executable_path, off_filename, self.prefs.resolution, scene.convex_decomp_depth,
+                self.prefs.concavity, self.prefs.planeDownsampling, self.prefs.convexhullDownsampling,
+                self.prefs.alpha, self.prefs.beta, self.prefs.gamma, self.prefs.pca, self.prefs.mode == 'TETRAHEDRON',
+                scene.maxNumVerticesPerCH, self.prefs.minVolumePerCH, outFileName, logFileName)
 
             # print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -336,10 +215,4 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         return {'FINISHED'}
 
-    def draw(self, context):
-        layout = self.layout
 
-        row = layout.row()
-        row.prop(self, 'depth', text="Collision Number")
-        row = layout.row()
-        row.prop(self, 'maxNumVerticesPerCH', text="Collision Vertices")
