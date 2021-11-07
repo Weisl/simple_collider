@@ -32,10 +32,11 @@ class CollissionPanel(Panel):
         row = layout.row()
         row.prop(scene, "CollisionMaterials")
 
-
-
         # Visibillity and Selection
         layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Visibillity and Selection')
 
         col = self.layout.column_flow(columns=5, align = True)
 
@@ -64,15 +65,21 @@ class CollissionPanel(Panel):
 
         # Conversion
         layout.separator()
+        row = layout.row(align=True)
+        row.label(text='Conversion')
 
         row = layout.row(align=True)
         row.operator('object.convert_to_collider', icon='PHYSICS')
         row = layout.row(align=True)
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+        row = layout.row()
+        row.prop(scene, "DefaultMeshMaterial")
 
         # Create Collider
         layout.separator()
 
+        row = layout.row(align=True)
+        row.label(text='Collision Shapes')
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         row = layout.row(align=True)
@@ -80,12 +87,20 @@ class CollissionPanel(Panel):
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
         row = layout.row(align=True)
-        row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
-        row = layout.row(align=True)
         row.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
+        row = layout.row(align=True)
+        row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
         #special Collider Creation
         layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Convex Decomposition')
+
+        row = layout.row()
+        row.prop(scene, 'convex_decomp_depth', text="Collision Number")
+        row = layout.row()
+        row.prop(scene, 'maxNumVerticesPerCH', text="Collision Vertices")
 
         prefs = context.preferences.addons["CollisionHelpers"].preferences
         row = layout.row(align=True)

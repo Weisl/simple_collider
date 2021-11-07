@@ -61,33 +61,24 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
             collections = obj.users_collection
 
-            if obj.mode == "EDIT":
+            if self.obj_mode == "EDIT":
                 bpy.ops.mesh.duplicate()
                 bpy.ops.mesh.separate(type='SELECTED')
+                bpy.ops.object.mode_set(mode='OBJECT')
+                new_collider = context.scene.objects[-1]
 
             else:  # mode == "OBJECT":
-                bpy.ops.object.mode_set(mode='EDIT')
+                new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+                new_collider = obj.copy()
+                new_collider.data = new_mesh
+                context.scene.collection.objects.link(new_collider)
+                self.remove_all_modifiers(context, new_collider)
 
-                # Get a BMesh representation
-                me = obj.data
-                bm = bmesh.from_edit_mesh(me)
+            self.type_suffix = self.prefs.boxColSuffix
+            new_name = super().collider_name()
 
-                # select all vertices
-                self.get_vertices(bm, preselect_all=True)
-
-                bpy.ops.mesh.duplicate()
-                bpy.ops.mesh.separate(type='SELECTED')
-
-                pass
-
-            prefs = context.preferences.addons["CollisionHelpers"].preferences
-            type_suffix = prefs.boxColSuffix
-            new_name = super().collider_name(context, type_suffix)
-
-            bpy.ops.object.mode_set(mode='OBJECT')
-            new_collider = context.scene.objects[-1]
             new_collider.name = new_name
-            add_modifierstack(self, new_collider)
+            # add_modifierstack(self, new_collider)
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
 

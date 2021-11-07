@@ -79,8 +79,9 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
 
+
 class OBJECT_OT_add_bounding_object():
-    """Abstract parent class to contain common methods and properties for all add bounding object operators"""
+    """Abstract parent class for modal operators contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
 
     bm = []
@@ -144,7 +145,6 @@ class OBJECT_OT_add_bounding_object():
         OBJECT_OT_add_bounding_object.bmesh(bm)
         return used_vertices
 
-
     def get_vertices_Object(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         bpy.ops.object.mode_set(mode='EDIT')
@@ -170,6 +170,30 @@ class OBJECT_OT_add_bounding_object():
             return None
 
         return used_vertices
+
+
+    def mesh_from_selection(self, obj, use_modifiers = False):
+        mesh = obj.data.copy()
+        mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+        bm = bmesh.new()
+
+        if use_modifiers:
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
+
+        else:  # self.my_use_modifier_stack == False:
+            bm.from_mesh(mesh)
+
+        bm.to_mesh(mesh)
+        bm.free()
+
+        return mesh
 
     def get_point_positions(self, obj, space, used_vertives):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""

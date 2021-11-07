@@ -2,6 +2,7 @@ import bmesh
 import bpy
 from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..pyshics_materials.material_functions import set_material, make_physics_material, remove_materials
 
 collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
 
@@ -93,15 +94,40 @@ class OBJECT_OT_convert_to_mesh(Operator):
     bl_idname = "object.convert_to_mesh"
     bl_label = "Convert to Mesh"
 
+    my_string: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        row = col.row()
+        col.prop(self, "my_string")
+
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        for obj in bpy.context.selected_objects:
+        scene = context.scene
+
+        for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = unique_name('mesh')
+                obj.name = unique_name(self.my_string)
+
+                remove_materials(obj)
+
+                if scene.DefaultMeshMaterial:
+                    set_material(obj, scene.DefaultMeshMaterial)
+                else:
+                    default_material = make_physics_material('Material', (1, 1, 1, 1))
+                    bpy.context.scene.DefaultMeshMaterial = default_material
+                    set_material(obj, default_material)
+
         return {'FINISHED'}
 

@@ -22,7 +22,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     bl_idname = "CollisionHelpers"  ### __package__ works on multifile and __name__ not
 
     prefs_tabs: bpy.props.EnumProperty(
-        items=(('NAMING', "Naming", "NAMING"), ('KEYMAP', "Keymap", "Keymap"), ('VHACD', "Vhacd", "VHACD")),
+        items=(('NAMING', "Naming", "NAMING"), ('UI', "UI", "UI"), ('VHACD', "V-HACD", "VHACD")),
         default='NAMING')
 
     naming_position: bpy.props.EnumProperty(
@@ -70,47 +70,63 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
-    modal_font_color: bpy.props.FloatVectorProperty(name="Font Color", description="",
+    modal_font_color: bpy.props.FloatVectorProperty(name="Font Operator", description="",
                                                     default=(0.75, 0.75, 0.75, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
-    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Color", description="",
+    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Persistent", description="",
                                                     default=(1, 1, 1, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="", default=72)
-
-    data_path: bpy.props.StringProperty(
-        name='Data Path',
-        description='Data path to store V-HACD meshes and logs',
-        default=gettempdir(),
-        maxlen=1024,
-        subtype='DIR_PATH'
-    )
+    data_path: bpy.props.StringProperty(name='Data Path',description='Data path to store V-HACD meshes and logs',default=gettempdir(),maxlen=1024,subtype='DIR_PATH')
 
     # TODO: DELTE!
-    name_template: bpy.props.StringProperty(
-        name='Name Template',
-        description='Name template used for generated hulls.\n? = original mesh name\n# = hull id',
-        default='?_hull_#',
-    )
+    name_template: bpy.props.StringProperty(name='Name Template',
+                                            description='Name template used for generated hulls.\n? = original mesh name\n# = hull id',default='?_hull_#',)
+    use_col_collection: bpy.props.BoolProperty(name = 'Use Col Collection',
+                                               description = 'Add all collisions to a Collision Collection',default = True)
+    use_parent_name: bpy.props.BoolProperty(name = 'Name from parent',description = 'Use Parent name for collider name',default = True)
+    col_collection_name: bpy.props.StringProperty(name='Collection Name',description='',default='Col')
 
-    use_col_collection: bpy.props.BoolProperty(
-        name = 'Use Col Collection',
-        description = 'Add all collisions to a Collision Collection',
-        default = True
-    )
+    #### VHACD ####
 
-    use_parent_name: bpy.props.BoolProperty(
-        name = 'Name from parent',
-        description = 'Use Parent name for collider name',
-        default = True
-    )
+    # pre-process options
+    remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',description='Collapse overlapping vertices in generated mesh',default=True)
+    apply_transforms: bpy.props.EnumProperty(name='Apply',description='Apply Transformations to generated mesh',
+                                             items=(('LRS', 'Location + Rotation + Scale', 'Apply location, rotation and scale'),
+                                                    ('RS', 'Rotation + Scale', 'Apply rotation and scale'),
+                                                    ('S', 'Scale', 'Apply scale only'),
+                                                    ('NONE', 'None', 'Do not apply transformations'),
+                                                    ),default='NONE')
 
-    col_collection_name: bpy.props.StringProperty(
-        name='Collection Name',
-        description='',
-        default='Col'
-    )
+    # VHACD parameters
+    resolution: bpy.props.IntProperty(name='Voxel Resolution',
+                            description='Maximum number of voxels generated during the voxelization stage',
+                            default=100000, min=10000, max=64000000)
+    concavity: bpy.props.FloatProperty(name='Maximum Concavity',description='Maximum concavity',default=0.0015,min=0.0,max=1.0,precision=4)
+
+    # Quality settings
+    planeDownsampling: bpy.props.IntProperty(name='Plane Downsampling',description='Granularity of the search for the "best" clipping plane',default=4,min=1,max=16)
+
+    # Quality settings
+    convexhullDownsampling: bpy.props.IntProperty(name='Convex Hull Downsampling',description='Precision of the convex-hull generation process during the clipping plane selection stage',
+                                                  default=4,min=1,max=16)
+
+    alpha: bpy.props.FloatProperty(name='Alpha',description='Bias toward clipping along symmetry planes',
+                                   default=0.05,min=0.0,max=1.0,precision=4)
+
+    beta: bpy.props.FloatProperty(name='Beta',description='Bias toward clipping along revolution axes',default=0.05,min=0.0,max=1.0,precision=4)
+
+    gamma: bpy.props.FloatProperty(name='Gamma',description='Maximum allowed concavity during the merge stage',default=0.00125,min=0.0,max=1.0,precision=5)
+
+    pca: bpy.props.BoolProperty(name='PCA',description='Enable/disable normalizing the mesh before applying the convex decomposition',default=False)
+
+    mode: bpy.props.EnumProperty(name='ACD Mode',description='Approximate convex decomposition mode',
+                       items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')),default='VOXEL')
+
+    minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',description='Minimum volume to add vertices to convex-hulls',
+                                            default=0.0001, min=0.0, max=0.01, precision=5)
+
     props = [
         "use_parent_name",
         "basename",
@@ -124,16 +140,35 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colAll",
         "colSimple",
         "colComplex",
-        "modal_font_color",
-        "modal_font_color_scene",
         "use_col_collection",
         "col_collection_name",
+    ]
+
+    ui_props = [
+        "modal_font_color",
+        "modal_font_color_scene",
+        "modal_font_size",
     ]
 
     vhacd_props = [
         "executable_path",
         "data_path",
         "name_template",
+    ]
+
+    vhacd_props_config = [
+        "resolution",
+        "concavity",
+        "resolution",
+        "concavity",
+        "planeDownsampling",
+        "convexhullDownsampling",
+        "alpha",
+        "beta",
+        "gamma",
+        "pca",
+        "mode",
+        "minVolumePerCH",
     ]
 
     # here you specify how they are drawn
@@ -161,6 +196,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = layout.row()
                 row.prop(self, propName)
 
+
+        elif self.prefs_tabs == 'UI':
+
+            box = layout.box()
+            col = box.column()
+            col.label(text="keymap")
+
             layout.separator()
             row = layout.row()
             row.prop(self, 'my_color_all')
@@ -168,14 +210,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.prop(self, 'my_color_simple')
             row = layout.row()
             row.prop(self, 'my_color_complex')
-
-
-
-        elif self.prefs_tabs == 'KEYMAP':
-
-            box = layout.box()
-            col = box.column()
-            col.label(text="keymap")
 
             wm = context.window_manager
             kc = wm.keyconfigs.addon
@@ -196,11 +230,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     col.label(text="No hotkey entry found")
                     col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
 
+            for propName in self.ui_props:
+                row = layout.row()
+                row.prop(self, propName)
+
+
 
         elif self.prefs_tabs == 'VHACD':
             for propName in self.vhacd_props:
                 raw = layout.row()
                 raw.prop(self, propName)
-
             row = layout.row()
             row.operator("wm.url_open", text="Open Link").url = "https://github.com/kmammou/v-hacd"
+
+            layout.separator()
+
+            box = layout.box()
+            for propName in self.vhacd_props_config:
+                raw = box.row()
+                raw.prop(self, propName)

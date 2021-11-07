@@ -49,6 +49,10 @@ def register():
         name='Material Filter',
     )
 
+    scene.DefaultMeshMaterial = bpy.props.PointerProperty(
+        type=bpy.types.Material,
+    )
+
     # call the register function of the sub modules
     ui.register()
     operators.register()
