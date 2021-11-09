@@ -173,6 +173,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 center = sum((Vector(mat @ Vector(b)) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,
                                                     rotation_euler=parent.rotation_euler)
+                new_collider.scale = parent.scale
+
             else: # scene.my_space == 'GLOBAL'
                 center = sum((Vector(b) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center)
