@@ -145,12 +145,26 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 depsgraph = bpy.context.evaluated_depsgraph_get()
                 bm = bmesh.new()
                 bm.from_object(obj, depsgraph)
+
+                if self.obj_mode == 'EDIT':
+                    for v in bm.verts:
+                        if v.select == False:
+                            bm.verts.remove(v)
+
                 bm.verts.ensure_lookup_table()
                 bm.edges.ensure_lookup_table()
                 bm.faces.ensure_lookup_table()
 
             else: # self.my_use_modifier_stack == False:
                 bm.from_mesh(mesh)
+
+                if self.obj_mode == 'EDIT':
+                    for v in bm.verts:
+                        if v.select == False:
+                            bm.verts.remove(v)
+                    bm.verts.ensure_lookup_table()
+                    bm.edges.ensure_lookup_table()
+                    bm.faces.ensure_lookup_table()
 
             if self.prefs.remove_doubles:
                 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
@@ -191,6 +205,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             convex_decomposition_data.append(convex_collisions_data)
 
         for convex_collisions_data in convex_decomposition_data:
+            bpy.ops.object.mode_set(mode='OBJECT')
+
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
             post_matrix = convex_collisions_data['post_matrix']
