@@ -73,7 +73,6 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
         new_collider.parent = active_ob
         alignObjects(new_collider, active_ob)
 
-    #TODO: Remove the object mode switch that is called for every object to make this operation faster.
     else:
         bpy.ops.object.mode_set(mode='OBJECT')
         matrix= new_collider.matrix_world

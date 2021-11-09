@@ -26,8 +26,7 @@ def draw_viewport_overlay(self, context):
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
     i = 1
-
-
+    cd = [0.5,0.8,0.5,1]
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
@@ -39,20 +38,26 @@ def draw_viewport_overlay(self, context):
         text= "Local Orient (L): " + local_orient
         i = draw_modal_item(self,font_id, i, vertical_px_offset, text, color_type='scene')
 
-    text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    text = "Hide After Creation (H) : " + str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
     text = "Opacity (A) : " + str(scene.my_color[3])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
+
+    blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
+    blf.position(font_id, 30, i * vertical_px_offset, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, 'Persistent Settings')
+    i += 1
+
+    text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
-
-    text = "Hide After Creation (H) : " + str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
     if self.use_decimation:
         text = "Decimate (D): " + str(self.decimate_amount)
@@ -78,6 +83,11 @@ def draw_viewport_overlay(self, context):
         text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
         i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
+    blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
+    blf.position(font_id, 30, i * vertical_px_offset, 0)
+    blf.size(font_id, 20, 72)
+    blf.draw(font_id, 'Operator Settings')
+    i += 1
 
 
 class OBJECT_OT_add_bounding_object():
