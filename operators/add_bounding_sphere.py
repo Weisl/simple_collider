@@ -34,7 +34,11 @@ def create_sphere(pos, diameter, segments):
 
     # Construct the bmesh sphere and assign it to the blender mesh.
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, diameter=diameter)
+    if bpy.app.version >= (3, 0, 0):
+        bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, radius=diameter)
+    else:
+        bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, diameter=diameter)
+
     bm.to_mesh(mesh)
     mesh.update()
     bm.clear()
