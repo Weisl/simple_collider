@@ -124,9 +124,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         scene = context.scene
         self.type_suffix = self.prefs.convexColSuffix
 
-        target_object_mode = []
-        target_edit_mode = []
-
+        collider_data = []
 
         for obj in context.selected_objects.copy():
 
@@ -156,11 +154,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bounding_cylinder_data['radius'] = radius
             bounding_cylinder_data['depth'] = depth
             bounding_cylinder_data['bbox'] = bounding_box
-            target_edit_mode.append(bounding_cylinder_data)
+            collider_data.append(bounding_cylinder_data)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        for bounding_cylinder_data in target_edit_mode:
+        for bounding_cylinder_data in collider_data:
             global tmp_name
 
             parent = bounding_cylinder_data['parent']
@@ -169,8 +167,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bbox = bounding_cylinder_data['bbox']
 
             if scene.my_space == 'LOCAL':
-                mat = parent.matrix_world
-                center = sum((Vector(mat @ Vector(b)) for b in bbox), Vector()) / 8.0
+                matrix_WS = parent.matrix_world
+                center = sum((Vector(matrix_WS @ Vector(b)) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,
                                                     rotation_euler=parent.rotation_euler)
                 new_collider.scale = parent.scale

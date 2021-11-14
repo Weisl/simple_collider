@@ -157,7 +157,7 @@ class OBJECT_OT_add_bounding_object():
 
     def get_vertices_Object(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
-        bpy.ops.object.mode_set(mode='EDIT')
+        # bpy.ops.object.mode_set(mode='EDIT')
         me = obj.data
         me.update() # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 

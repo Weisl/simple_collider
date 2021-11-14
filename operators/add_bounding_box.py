@@ -67,19 +67,6 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
     new_collider = bpy.data.objects.new(tmp_name, mesh)
     root_collection.objects.link(new_collider)
 
-    scene = context.scene
-
-    if scene.my_space == 'LOCAL':
-        new_collider.parent = active_ob
-        alignObjects(new_collider, active_ob)
-
-    else:
-        bpy.ops.object.mode_set(mode='OBJECT')
-        matrix= new_collider.matrix_world
-        new_collider.parent = active_ob
-        new_collider.matrix_world = matrix
-        bpy.ops.object.mode_set(mode='EDIT')
-
     return new_collider
 
 class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
@@ -124,13 +111,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        global face_order
-
         # CLEANUP and INIT
         super().execute(context)
 
         scene = context.scene
         self.type_suffix = self.prefs.boxColSuffix
+
+        collider_data = []
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -144,6 +131,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             context.view_layer.objects.active = obj
+            bounding_box_data = {}
 
             if self.obj_mode == "EDIT":
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
@@ -156,14 +144,39 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
             verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+
+            bounding_box_data['parent'] = obj
+            bounding_box_data['verts_loc'] = verts_loc
+
+            collider_data.append(bounding_box_data)
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        for bounding_box_data in collider_data:
+
+            parent = bounding_box_data['parent']
+            verts_loc = bounding_box_data['verts_loc']
+
+            global face_order
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
+
+            scene = context.scene
+
+            if scene.my_space == 'LOCAL':
+                new_collider.parent = parent
+                alignObjects(new_collider, parent)
+
+            else:
+                matrix = new_collider.matrix_world
+                new_collider.parent = parent
+                new_collider.matrix_world = matrix
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-            collections = obj.users_collection
+            collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            parent_name = obj.name
+            parent_name = parent.name
             new_collider.name = super().collider_name(basename=parent_name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
