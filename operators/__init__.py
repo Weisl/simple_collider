@@ -41,7 +41,7 @@ def register():
         items=(
             ('LOCAL', "LOCAL", "LOCAL"),
             ('GLOBAL', "GLOBAL", "GLOBAL")),
-        default="GLOBAL"
+        default="LOCAL"
     )
 
     scene.my_hide = bpy.props.BoolProperty(
@@ -77,18 +77,13 @@ def register():
 
     obj.basename = bpy.props.StringProperty(default='', name='')
 
-    obj.collider_type = bpy.props.EnumProperty(name="Shading",default='BOX', items=[
-        ('BOX', "Box", "Box"),
-        ('SHERE', "Sphere", "Sphere"),
-        ('MESH', "Mesh", "Mesh"),
-        ('CONVEX', "CONVEX", "CONVEX")])
+    obj.collider_type = bpy.props.EnumProperty(name="Shading",
+                                               items=[('BOX', "Box", "Box"),('SHERE', "Sphere", "Sphere"),('MESH', "Mesh", "Mesh"),('CONVEX', "CONVEX", "CONVEX")],
+                                               default='BOX')
 
     obj.collider_complexity = bpy.props.EnumProperty(
         name="collider complexity",
-        items=[
-            ('SIMPLE_COMPLEX', "SIMPLE_COMPLEX", "SIMPLE_COMPLEX"),
-            ('SIMPLE', "SIMPLE", "SIMPLE"),
-            ('COMPLEX', "COMPLEX", "COMPLEX")],
+        items=[('SIMPLE_COMPLEX', "SIMPLE_COMPLEX", "SIMPLE_COMPLEX"),('SIMPLE', "SIMPLE", "SIMPLE"),('COMPLEX', "COMPLEX", "COMPLEX")],
         default="SIMPLE_COMPLEX")
 
 
