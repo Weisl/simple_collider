@@ -7,6 +7,7 @@ from ..pyshics_materials.material_functions import remove_materials, set_materia
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
 def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'operator'):
+    """Draw text in the 3D Viewport"""
     if color_type == 'operator':
         blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
     else:
@@ -20,7 +21,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'oper
 
 
 def draw_viewport_overlay(self, context):
-
+    """Draw 3D viewport overlay for the modal operator"""
     scene = context.scene
 
     font_id = 0  # XXX, need to find out how best to get this.
@@ -41,7 +42,10 @@ def draw_viewport_overlay(self, context):
     text = "Hide After Creation (H) : " + str(scene.my_hide)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
-    text = "Opacity (A) : " + str(scene.my_color[3])
+    text = "Display Wireframe (W) : " + str(scene.my_wireframe)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+
+    text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
 
     blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
@@ -93,22 +97,27 @@ def draw_viewport_overlay(self, context):
 class OBJECT_OT_add_bounding_object():
     """Abstract parent class for modal operators contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
-
     bm = []
 
     @classmethod
     def bmesh(cls, bm):
+        #append bmesh to class for it not to be deleted
         cls.bm.append(bm)
 
+    def object_set_wire_preview(self, show_wire):
+        for obj in self.new_colliders_list:
+            obj.show_wire = show_wire
+
+
     def remove_objects(self, list):
-        # Remove previously created collisions
+        '''Remove previously created collisions'''
         if len(list) > 0:
             for ob in list:
                 objs = bpy.data.objects
                 objs.remove(ob, do_unlink=True)
 
     def custom_set_parent(self, context, parent, child):
-        # set parent
+        '''Custom set parent'''
         bpy.ops.object.select_all(action='DESELECT')
         context.view_layer.objects.active = parent
         parent.select_set(True)
@@ -117,7 +126,7 @@ class OBJECT_OT_add_bounding_object():
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
     def generate_bounding_box(self, positionsX, positionsY, positionsZ):
-        # get the min and max coordinates for the bounding box
+        '''get the min and max coordinates for the bounding box'''
         verts = [
             (max(positionsX), max(positionsY), min(positionsZ)),
             (max(positionsX), min(positionsY), min(positionsZ)),
@@ -249,6 +258,9 @@ class OBJECT_OT_add_bounding_object():
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
 
+        scene = context.scene
+        bounding_object.show_wire = scene.my_wireframe
+
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
@@ -256,7 +268,7 @@ class OBJECT_OT_add_bounding_object():
 
     def set_object_color(self, obj):
         if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            obj.color = self.prefs.my_color_all
+            obj.color = self.prefs.my_color_simple_complex
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
             obj.color = self.prefs.my_color_simple
         elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
@@ -268,7 +280,7 @@ class OBJECT_OT_add_bounding_object():
     def get_complexity_suffix(self):
 
         if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            suffix = self.prefs.colAll
+            suffix = self.prefs.colSimpleComplex
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
             suffix = self.prefs.colSimple
         elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
@@ -518,12 +530,15 @@ class OBJECT_OT_add_bounding_object():
                 context.space_data.shading.color_type = self.color_type
 
             for obj in self.new_colliders_list:
+                # remove modifiers if they have the default value
                 if self.displace_my_offset == 0.0:
                     self.del_displace_modifier(context,obj)
                 if self.decimate_amount == 1.0:
                     self.del_decimate_modifier(context,obj)
 
+                # set the display settings for the collider objects
                 obj.display_type = scene.my_collision_shading_view
+                obj.show_wire = scene.my_wireframe
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
 
@@ -539,7 +554,12 @@ class OBJECT_OT_add_bounding_object():
         # hide after creation
         elif event.type == 'H' and event.value == 'RELEASE':
             scene.my_hide = not scene.my_hide
-            self.execute(context)
+            #Another function needs to be called for the modal UI to update :(
+            self.object_set_wire_preview(scene.my_wireframe)
+
+        elif event.type == 'W' and event.value == 'RELEASE':
+            scene.my_wireframe = not scene.my_wireframe
+            self.object_set_wire_preview(scene.my_wireframe)
 
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active
@@ -609,7 +629,7 @@ class OBJECT_OT_add_bounding_object():
                 for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
-                scene.my_color[3] = color_alpha
+                self.prefs.my_color_simple_complex[3] = color_alpha
 
             if self.vertex_count_active:
                 if event.ctrl:

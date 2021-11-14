@@ -2,10 +2,10 @@ import bpy
 
 # Enum property.
 mode_items = [
-    ("ALL", "all", "", 1),
-    ("SIMPLE", "simple", "", 2),
-    ("COMPLEX", "complex", "", 3),
-    ("SIMPLE_COMPLEX", "simple_and_complex", "", 4),
+    ("ALL", "all", "Show/Hide all collisions", 1),
+    ("SIMPLE_COMPLEX", "simple_and_complex", "Show/Hide all simple-complex collisions", 2),
+    ("SIMPLE", "simple", "Show/Hide all simple collisions", 4),
+    ("COMPLEX", "complex", "Show/Hide all complex collisions", 8),
 ]
 
 
@@ -13,6 +13,7 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.hide_collisions"
     bl_label = "Hide Collision Meshes"
+    bl_description = 'Hide/Show collision objects'
 
     hide: bpy.props.BoolProperty(
         name='Hide/Unhide',
@@ -42,6 +43,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.select_collisions"
     bl_label = "Select Collision Meshes"
+    bl_description = 'Select/Deselect collision objects'
 
     invert: bpy.props.BoolProperty(
         name='Hide/Unhide',

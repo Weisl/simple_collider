@@ -5,10 +5,10 @@ from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
-    """Create a new bounding box object"""
+    """Create convex bounding collisions based on the selection"""
     bl_idname = "mesh.add_bounding_convex_hull"
     bl_label = "Add Convex Hull"
-
+    bl_description = 'Create convex bounding collisions based on the selection'
 
     def __init__(self):
         super().__init__()

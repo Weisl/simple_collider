@@ -22,35 +22,36 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     bl_idname = "CollisionHelpers"  ### __package__ works on multifile and __name__ not
 
     prefs_tabs: bpy.props.EnumProperty(
+        name='Collision Settings',
         items=(('NAMING', "Naming", "NAMING"), ('UI', "UI", "UI"), ('VHACD', "V-HACD", "VHACD")),
-        default='NAMING')
+        default='NAMING',
+        description='Tabs to toggle different addon settings')
 
     naming_position: bpy.props.EnumProperty(
+        name='Collider Naming',
         items=(('PREFIX', "Prefix", "Prefix"), ('SUFFIX', "Suffix", "Suffix")),
-        default='SUFFIX')
+        default='SUFFIX',
+        description='Add custom naming as prefix or suffix'
+    )
 
-    separator: bpy.props.StringProperty(name="Separator ", default="_")
-    colPreSuffix: bpy.props.StringProperty(name="Collision ", default="COL")
-    optionalSuffix: bpy.props.StringProperty(name="Additional Suffix (optional)", default="")
-    colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING")
+    separator: bpy.props.StringProperty(name="Separator ", default="_", description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
+    colPreSuffix: bpy.props.StringProperty(name="Collision ", default="COL",  description='Simple string (text) added to the name of the collider')
+    optionalSuffix: bpy.props.StringProperty(name="Additional Suffix (optional)", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
+    basename: bpy.props.StringProperty(name="Collider Base Name", default="geo",  description='')
 
-    basename: bpy.props.StringProperty(name="Collider Base Name", default="geo")
+    # Collider Complexity
+    colSimpleComplex: bpy.props.StringProperty(name="SIMPLE-COMPLEX Collisions", default="SIMPLE_COMPLEX", description='Naming used for simple-complex collisions')
+    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="SIMPLE", description='Naming used for simple collisions')
+    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="COMPLEX", description='Naming used for complex collisions')
 
-    colAll: bpy.props.StringProperty(name="All Collisions", default="ALL")
-    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="SIMPLE")
-    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="COMPLEX")
+    # Non collider
+    colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING",  description='Simple string (text) added to the name when not creating a collider')
 
     # Collider Shapes
-    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="BOX")
-    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX")
-    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE")
-    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH")
-
-    executable_path: bpy.props.StringProperty(name='VHACD exe',
-                                              description='Path to VHACD executable',
-                                              default='',
-                                              subtype='FILE_PATH'
-                                              )
+    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="BOX", description='Naming used to define box collisions')
+    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX", description='Naming used to define convex collisions')
+    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE", description='Naming used to define sphere collisions')
+    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH", description='Naming used to define triangle mesh collisions')
 
     use_col_Complexity: bpy.props.BoolProperty(
         name = 'Use Complexity',
@@ -58,38 +59,41 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         default = True
     )
 
-    my_color_all: bpy.props.FloatVectorProperty(name="All Collider", description="",
-                                                default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
-                                                subtype='COLOR', size=4)
+    # The object color for the bounding object
+    my_color_simple_complex : bpy.props.FloatVectorProperty(name="Simple Complex Color", description="Object color and alpha for simple-complex collisions", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
 
-    my_color_simple: bpy.props.FloatVectorProperty(name="Simple Collider", description="",
-                                                   default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0,
-                                                   subtype='COLOR', size=4)
+    # The object color for the bounding object
+    my_color_simple : bpy.props.FloatVectorProperty(name="Simple Color", description="Object color and alpha for simple collisions", default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
 
-    my_color_complex: bpy.props.FloatVectorProperty(name="Complex Collider", description="",
-                                                    default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0,
-                                                    subtype='COLOR', size=4)
+    # The object color for the bounding object
+    my_color_complex : bpy.props.FloatVectorProperty(name="Complex Color", description="Object color and alpha for complex collisions", default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
 
-    modal_font_color: bpy.props.FloatVectorProperty(name="Font Operator", description="",
+    #Modal Fonts
+    modal_font_color: bpy.props.FloatVectorProperty(name="Font Operator", description="Font Color in the 3D Viewport for settings that are reset every time the collision operator is called",
                                                     default=(0.75, 0.75, 0.75, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
-    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Persistent", description="",
+    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Persistent", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
                                                     default=(1, 1, 1, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
-    modal_font_size: bpy.props.IntProperty(name='Font Size', description="", default=72)
-    data_path: bpy.props.StringProperty(name='Data Path',description='Data path to store V-HACD meshes and logs',default=gettempdir(),maxlen=1024,subtype='DIR_PATH')
+    modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
 
-    # TODO: DELTE!
-    name_template: bpy.props.StringProperty(name='Name Template',
-                                            description='Name template used for generated hulls.\n? = original mesh name\n# = hull id',default='?_hull_#',)
-    use_col_collection: bpy.props.BoolProperty(name = 'Use Col Collection',
-                                               description = 'Add all collisions to a Collision Collection',default = True)
-    use_parent_name: bpy.props.BoolProperty(name = 'Name from parent',description = 'Use Parent name for collider name',default = True)
-    col_collection_name: bpy.props.StringProperty(name='Collection Name',description='',default='Col')
+    use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
+                                               description='Link all collision objects to a specific Collection for collisions',default = True)
+    use_parent_name: bpy.props.BoolProperty(name='Keep Name', description='Keep the name of the original object for the newly created collision object',default = True)
+    col_collection_name: bpy.props.StringProperty(name='Collection Name',description='Name of the collection newly created collisions get added to',default='Col')
 
     #### VHACD ####
 
+    executable_path: bpy.props.StringProperty(name='VHACD exe',
+                                              description='Path to VHACD executable',
+                                              default='',
+                                              subtype='FILE_PATH'
+                                              )
+
+    data_path: bpy.props.StringProperty(name='Data Path',description='Data path to store V-HACD meshes and logs',default=gettempdir(),maxlen=1024,subtype='DIR_PATH')
+    name_template: bpy.props.StringProperty(name='Name Template',
+                                            description='Name template used for generated hulls.\n? = original mesh name\n# = hull id',default='?_hull_#',)
     # pre-process options
     remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',description='Collapse overlapping vertices in generated mesh',default=True)
     apply_transforms: bpy.props.EnumProperty(name='Apply',description='Apply Transformations to generated mesh',
@@ -190,7 +194,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.prop(self, "use_col_Complexity")
 
             row = layout.row()
-            row.prop(self, "naming_position", text='Collider Naming', expand=True)
+            row.prop(self, "naming_position", expand=True)
 
             for propName in self.props:
                 row = layout.row()

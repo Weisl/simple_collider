@@ -12,12 +12,14 @@ class VIEW3D_MT_collision(Menu):
             col.label(text=value)
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
+            # op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
+            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
             op.hide = False
             op.mode = key
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
+            # op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
+            op = col.operator("object.hide_collisions", icon='HIDE_ON', text='')
             op.hide = True
             op.mode = key
 

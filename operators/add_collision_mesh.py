@@ -8,6 +8,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_mesh_collision"
     bl_label = "Add Mesh Collision"
+    bl_description = 'Create triangle mesh collisions based on the selection'
 
     def __init__(self):
         super().__init__()

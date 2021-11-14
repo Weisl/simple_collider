@@ -16,11 +16,13 @@ def calc_hypothenuse(a, b):
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
-    """Create a Cylindrical bounding object"""
+    """Create cylindrical bounding collisions based on the selection"""
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylindrical Collision"
+    bl_description = 'Create cylindrical bounding collisions based on the selection'
 
     def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
+        """Generate the dimenstions based on the 3 lists of positions (X,Y,Z)"""
         dimensions = []
         dimensions.append(abs(max(positionsX) - min(positionsX)))
         dimensions.append(max(positionsY) - min(positionsY))
@@ -29,6 +31,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         return dimensions
 
     def generate_radius_depth(self, dimensions):
+        """Calculate a radiuse based on dimensions and orientations."""
+
         if self.cylinder_axis == 'X':
             radius = calc_hypothenuse(dimensions[1], dimensions[2])
             depth = dimensions[0]
