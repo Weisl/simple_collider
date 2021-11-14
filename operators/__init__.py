@@ -67,8 +67,6 @@ def register():
         subtype='COLOR', size=4
     )
 
-    obj.basename = bpy.props.StringProperty(default='', name='')
-
     scene.my_space = bpy.props.EnumProperty(
         name="Axis",
         items=(
@@ -76,6 +74,8 @@ def register():
             ('GLOBAL', "GLOBAL", "GLOBAL")),
         default="GLOBAL"
     )
+
+    obj.basename = bpy.props.StringProperty(default='', name='')
 
     obj.collider_type = bpy.props.EnumProperty(name="Shading",default='BOX', items=[
         ('BOX', "Box", "Box"),
@@ -105,7 +105,16 @@ def unregister():
         unregister_class(cls)
 
     scene = bpy.types.Scene
+    obj = bpy.types.Object
+
     del scene.my_collision_shading_view
-    del scene.my_color
     del scene.my_space
-    del scene.displace_my_offset
+    del scene.my_hide
+    del scene.my_color
+    del scene.my_color_simple
+    del scene.my_color_complex
+    del scene.my_space
+
+    del obj.basename
+    del obj.collider_type
+    del obj.collider_complexity

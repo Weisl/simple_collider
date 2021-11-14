@@ -116,18 +116,33 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
         for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
+                #Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
                 obj.name = unique_name(self.my_string)
 
+                # replace collision material
                 remove_materials(obj)
-
                 if scene.DefaultMeshMaterial:
                     set_material(obj, scene.DefaultMeshMaterial)
                 else:
                     default_material = make_physics_material('Material', (1, 1, 1, 1))
                     bpy.context.scene.DefaultMeshMaterial = default_material
                     set_material(obj, default_material)
+
+                # remove from collision collection
+                prefs = context.preferences.addons["CollisionHelpers"].preferences
+                collection_name = prefs.col_collection_name
+
+                # remove from collision collection
+                for collection in bpy.data.collections:
+                    if collection.name == collection_name:
+                        if obj.name in collection.objects:
+                            collection.objects.unlink(obj)
+
+                            # add to default scene collection if the object is not part of any collection anymore
+                            if len(obj.users_collection) == 0:
+                                bpy.context.scene.collection.objects.link(obj)
 
         return {'FINISHED'}
 
