@@ -9,9 +9,14 @@ collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'operator'):
     """Draw text in the 3D Viewport"""
     if color_type == 'operator':
-        blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+        blf.color(font_id, self.prefs.modal_font_color[0], self.prefs.modal_font_color[1],
+                  self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+    elif color_type == 'title':
+        blf.color(font_id, self.prefs.modal_font_color_title[0], self.prefs.modal_font_color_title[1],
+                  self.prefs.modal_font_color_title[2], self.prefs.modal_font_color_title[3])
     else:
-        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1], self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
+        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1],
+                  self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
 
     blf.position(font_id, 30, i * vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
@@ -27,7 +32,7 @@ def draw_viewport_overlay(self, context):
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
     i = 1
-    cd = [0.5,0.8,0.5,1]
+
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
@@ -39,20 +44,17 @@ def draw_viewport_overlay(self, context):
         text= "Local Orient (L): " + local_orient
         i = draw_modal_item(self,font_id, i, vertical_px_offset, text, color_type='scene')
 
-    text = "Hide After Creation (H) : " + str(scene.my_hide)
+    text = "Auto Hide After Creation (H) : " + str(scene.my_hide)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
-    text = "Display Wireframe (W) : " + str(scene.my_wireframe)
+    text = "Display Wireframe (W) : " + str(self.wireframe_mode[self.wireframe_idx])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
 
     text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
 
-    blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
-    blf.position(font_id, 30, i * vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, 'Persistent Settings')
-    i += 1
+    text = 'Persistent Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='title')
 
     text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
@@ -80,18 +82,15 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_sphere_segments:
-        text = "Sphere Segments (W): " + str(self.sphere_segments)
+        text = "Sphere Segments (R): " + str(self.sphere_segments)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
     if self.use_type_change:
         text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
         i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
 
-    blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
-    blf.position(font_id, 30, i * vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, 'Operator Settings')
-    i += 1
+    text = 'Operator Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='title')
 
 
 class OBJECT_OT_add_bounding_object():
@@ -104,7 +103,7 @@ class OBJECT_OT_add_bounding_object():
         #append bmesh to class for it not to be deleted
         cls.bm.append(bm)
 
-    def object_set_wire_preview(self, show_wire):
+    def set_collisions_wire_preview(self, show_wire):
         for obj in self.new_colliders_list:
             obj.show_wire = show_wire
 
@@ -258,8 +257,10 @@ class OBJECT_OT_add_bounding_object():
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
 
-        scene = context.scene
-        bounding_object.show_wire = scene.my_wireframe
+        if self.wireframe_mode[self.wireframe_idx] in ['Preview', 'Always']:
+            bounding_object.show_wire = True
+        else:
+            bounding_object.show_wire = False
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
@@ -474,6 +475,8 @@ class OBJECT_OT_add_bounding_object():
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        self.wireframe_idx = 0
+        self.wireframe_mode = ['Off', 'Preview', 'Always']
         self.collision_type_idx = 0
         self.collision_type = collider_types
         #sphere
@@ -542,6 +545,11 @@ class OBJECT_OT_add_bounding_object():
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
 
+                if self.wireframe_mode[self.wireframe_idx] == 'Always':
+                    obj.show_wire = True
+                else:
+                    obj.show_wire = False
+
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
@@ -555,11 +563,15 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'H' and event.value == 'RELEASE':
             scene.my_hide = not scene.my_hide
             #Another function needs to be called for the modal UI to update :(
-            self.object_set_wire_preview(scene.my_wireframe)
+            self.set_collisions_wire_preview(scene.my_wireframe)
 
         elif event.type == 'W' and event.value == 'RELEASE':
-            scene.my_wireframe = not scene.my_wireframe
-            self.object_set_wire_preview(scene.my_wireframe)
+            self.wireframe_idx = (self.wireframe_idx + 1) % len(self.wireframe_mode)
+            if self.wireframe_mode[self.wireframe_idx] in ['Preview', 'Always']:
+                self.set_collisions_wire_preview(True)
+            else:
+                self.set_collisions_wire_preview(False)
+
 
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active

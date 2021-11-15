@@ -39,11 +39,12 @@ def create_sphere(pos, diameter, segments):
     else:
         bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, diameter=diameter)
 
+    for f in bm.faces: f.smooth = True
+
     bm.to_mesh(mesh)
     mesh.update()
     bm.clear()
 
-    bpy.ops.object.shade_smooth()
 
     return basic_sphere
 
@@ -138,8 +139,12 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         scene = context.scene
 
         # change bounding object settings
-        if event.type == 'W' and event.value == 'RELEASE':
+        if event.type == 'R' and event.value == 'RELEASE':
             self.sphere_segments_active  = not self.sphere_segments_active
+            self.displace_active = False
+            self.opacity_active = False
+            self.decimate_active = False
+            self.vertex_count_active = False
             self.execute(context)
 
         # change bounding object settings
