@@ -1,12 +1,13 @@
 import blf
 import bpy
 import bmesh
+import time
 
 from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
-def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'operator'):
+def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, text, color_type = 'operator'):
     """Draw text in the 3D Viewport"""
     if color_type == 'operator':
         blf.color(font_id, self.prefs.modal_font_color[0], self.prefs.modal_font_color[1],
@@ -18,7 +19,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'oper
         blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1],
                   self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
 
-    blf.position(font_id, 30, i * vertical_px_offset, 0)
+    blf.position(font_id, left_margin, i * vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, text)
     i += 1
@@ -31,66 +32,67 @@ def draw_viewport_overlay(self, context):
 
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
+    left_margin = self.prefs.modal_font_distance_x
     i = 1
 
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
         text = "Global Orient (G): " + global_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
         # draw some text
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
         text= "Local Orient (L): " + local_orient
-        i = draw_modal_item(self,font_id, i, vertical_px_offset, text, color_type='scene')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
     text = "Auto Hide After Creation (H) : " + str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
     text = "Display Wireframe (W) : " + str(self.wireframe_mode[self.wireframe_idx])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
     text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='scene')
 
     text = 'Persistent Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='title')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='title')
 
     text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_decimation:
         text = "Decimate (D): " + str(self.decimate_amount)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_vertex_count:
         text = "Segments (E): " + str(self.vertex_count)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_modifier_stack:
         text = "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_cylinder_axis:
         text = "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_sphere_segments:
         text = "Sphere Segments (R): " + str(self.sphere_segments)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_type_change:
         text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     text = 'Operator Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='title')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='title')
 
 
 class OBJECT_OT_add_bounding_object():
@@ -420,6 +422,9 @@ class OBJECT_OT_add_bounding_object():
             bpy.context.scene.CollisionMaterials = default_material
             set_material(bounding_object, default_material)
 
+    def get_time_elapsed(self):
+        t1 = time.time() - self.t0
+        return t1
 
     def __init__(self):
         # has to be in --init
@@ -675,6 +680,7 @@ class OBJECT_OT_add_bounding_object():
 
     def execute(self, context):
         #reset naming count:
+        self.t0= time.time()
         self.name_count = 1
         self.obj_mode = context.object.mode
 

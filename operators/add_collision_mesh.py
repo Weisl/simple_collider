@@ -94,4 +94,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         self.new_colliders_list = set(context.scene.objects) - old_objs
 
+        print("Time elapsed: ", str(self.get_time_elapsed()))
+
         return {'RUNNING_MODAL'}

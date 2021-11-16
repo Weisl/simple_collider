@@ -229,7 +229,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
 
         super().reset_to_initial_state(context)
-
+        print("Time elapsed: ", str(self.get_time_elapsed()))
         return {'FINISHED'}
 
 

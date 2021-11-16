@@ -73,6 +73,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
+    modal_font_distance_x: bpy.props.IntProperty(name='Font Distance', description=" Defines the offset of the modal operator font to the window side", default=40)
 
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
@@ -144,10 +145,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "col_collection_name",
     ]
 
+    ui_col_colors = [
+    'my_color_simple_complex',
+    'my_color_simple',
+    'my_color_complex',
+    ]
+
     ui_props = [
         "modal_font_color",
         "modal_font_color_scene",
         "modal_font_size",
+        "modal_font_distance_x",
     ]
 
     vhacd_props = [
@@ -201,14 +209,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             col = box.column()
             col.label(text="keymap")
 
-            layout.separator()
-            row = layout.row()
-            row.prop(self, 'my_color_all')
-            row = layout.row()
-            row.prop(self, 'my_color_simple')
-            row = layout.row()
-            row.prop(self, 'my_color_complex')
-
             wm = context.window_manager
             kc = wm.keyconfigs.addon
             km = kc.keymaps['3D View']
@@ -227,6 +227,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 else:
                     col.label(text="No hotkey entry found")
                     col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
+
+            layout.separator()
+            row.label(text="Complexity Colors")
+
+            for propName in self.ui_col_colors:
+                row = layout.row()
+                row.prop(self, propName)
+
+            row = layout.row()
+            row.label(text="UI Color")
 
             for propName in self.ui_props:
                 row = layout.row()
