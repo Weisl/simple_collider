@@ -32,7 +32,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def generate_radius_depth(self, dimensions):
         """Calculate a radiuse based on dimensions and orientations."""
-
         if self.cylinder_axis == 'X':
             radius = calc_hypothenuse(dimensions[1], dimensions[2])
             depth = dimensions[0]

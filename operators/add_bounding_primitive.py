@@ -2,6 +2,7 @@ import blf
 import bpy
 import bmesh
 import time
+import numpy
 
 from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
@@ -49,7 +50,7 @@ def draw_viewport_overlay(self, context):
     text = "Auto Hide After Creation (H) : " + str(scene.my_hide)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
-    text = "Display Wireframe (W) : " + str(self.wireframe_mode[self.wireframe_idx])
+    text = "Display Wireframe (W) : " + str(scene.wireframe_mode)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
     text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
@@ -105,9 +106,13 @@ class OBJECT_OT_add_bounding_object():
         #append bmesh to class for it not to be deleted
         cls.bm.append(bm)
 
-    def set_collisions_wire_preview(self, show_wire):
-        for obj in self.new_colliders_list:
-            obj.show_wire = show_wire
+    def set_collisions_wire_preview(self, mode):
+        if mode in ['PREVIEW', 'ALWAYS']:
+            for obj in self.new_colliders_list:
+                obj.show_wire = True
+        else:
+            for obj in self.new_colliders_list:
+                obj.show_wire = False
 
 
     def remove_objects(self, list):
@@ -259,7 +264,9 @@ class OBJECT_OT_add_bounding_object():
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
 
-        if self.wireframe_mode[self.wireframe_idx] in ['Preview', 'Always']:
+        scene = context.scene
+
+        if scene.wireframe_mode in ['PREVIEW', 'ALWAYS']:
             bounding_object.show_wire = True
         else:
             bounding_object.show_wire = False
@@ -471,6 +478,7 @@ class OBJECT_OT_add_bounding_object():
         self.displace_modifiers = []
         self.displace_my_offset = 0.0
         self.decimate_active = False
+        self.prev_decimate_time = time.time()
         self.decimate_modifiers = []
         self.decimate_amount = 1.0
         self.opacity_active = False
@@ -480,8 +488,8 @@ class OBJECT_OT_add_bounding_object():
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
-        self.wireframe_idx = 0
-        self.wireframe_mode = ['Off', 'Preview', 'Always']
+        self.wireframe_idx = 1
+        # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_type_idx = 0
         self.collision_type = collider_types
         #sphere
@@ -546,11 +554,10 @@ class OBJECT_OT_add_bounding_object():
 
                 # set the display settings for the collider objects
                 obj.display_type = scene.my_collision_shading_view
-                obj.show_wire = scene.my_wireframe
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
 
-                if self.wireframe_mode[self.wireframe_idx] == 'Always':
+                if scene.wireframe_mode == 'ALWAYS':
                     obj.show_wire = True
                 else:
                     obj.show_wire = False
@@ -568,15 +575,12 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'H' and event.value == 'RELEASE':
             scene.my_hide = not scene.my_hide
             #Another function needs to be called for the modal UI to update :(
-            self.set_collisions_wire_preview(scene.my_wireframe)
+            self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'W' and event.value == 'RELEASE':
-            self.wireframe_idx = (self.wireframe_idx + 1) % len(self.wireframe_mode)
-            if self.wireframe_mode[self.wireframe_idx] in ['Preview', 'Always']:
-                self.set_collisions_wire_preview(True)
-            else:
-                self.set_collisions_wire_preview(False)
-
+            self.wireframe_idx = (self.wireframe_idx + 1) % len(bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items)
+            scene.wireframe_mode = bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items[self.wireframe_idx].identifier
+            self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active
@@ -631,14 +635,16 @@ class OBJECT_OT_add_bounding_object():
                     self.displace_my_offset = mod.strength
 
             if self.decimate_active:
-                for mod in self.decimate_modifiers:
-                    dec_amount = 1.0 - delta * 0.005
-                    mod.ratio = dec_amount
-                    # mod.show_on_cage = True
-                    # mod.show_in_editmode = True
+                dec_amount = numpy.clip(round((1.0 - delta * 0.002), 1), 0.01, 1.0)
+                if self.decimate_amount != dec_amount:
+                    self.decimate_amount = dec_amount
+                    print(dec_amount)
 
-                    # Store displacement strenght to use when regenerating the colliders
-                    self.decimate_amount = mod.ratio
+                    # I had to iterate over all object because it crashed when just iterating over the modifiers.
+                    for obj in self.new_colliders_list:
+                        for mod in obj.modifiers:
+                            if mod in self.decimate_modifiers:
+                                mod.ratio = dec_amount
 
             if self.opacity_active:
                 color_alpha = 0.5 + delta * 0.005

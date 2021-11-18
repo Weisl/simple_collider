@@ -10,7 +10,7 @@ mode_items = [
 
 
 class COLLISION_OT_Visibility(bpy.types.Operator):
-    """Tooltip"""
+    """Hide/Show collision objects"""
     bl_idname = "object.hide_collisions"
     bl_label = "Hide Collision Meshes"
     bl_description = 'Hide/Show collision objects'
@@ -40,7 +40,7 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
         return {'FINISHED'}
 
 class COLLISION_OT_Selection(bpy.types.Operator):
-    """Tooltip"""
+    """Select/Deselect collision objects"""
     bl_idname = "object.select_collisions"
     bl_label = "Select Collision Meshes"
     bl_description = 'Select/Deselect collision objects'
