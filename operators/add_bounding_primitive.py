@@ -635,7 +635,7 @@ class OBJECT_OT_add_bounding_object():
                     self.displace_my_offset = mod.strength
 
             if self.decimate_active:
-                dec_amount = numpy.clip(round((1.0 - delta * 0.002), 1), 0.01, 1.0)
+                dec_amount = numpy.clip(round((1.0 - delta * 0.002), 2), 0.01, 1.0)
                 if self.decimate_amount != dec_amount:
                     self.decimate_amount = dec_amount
                     print(dec_amount)
