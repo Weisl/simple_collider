@@ -380,6 +380,9 @@ class OBJECT_OT_add_bounding_object():
         context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
+        # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
+        # self.report({'INFO'}, infomessage)
+
     #Modifiers
     def apply_all_modifiers(self,context, obj):
         context.view_layer.objects.active = obj
@@ -686,8 +689,9 @@ class OBJECT_OT_add_bounding_object():
 
     def execute(self, context):
         #reset naming count:
-        self.t0= time.time()
+        self.t0 = time.time()
         self.name_count = 1
+
         self.obj_mode = context.object.mode
 
         self.remove_objects(self.new_colliders_list)
