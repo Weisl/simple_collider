@@ -32,7 +32,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
     def generate_radius_depth(self, dimensions):
         """Calculate a radiuse based on dimensions and orientations."""
-
         if self.cylinder_axis == 'X':
             radius = calc_hypothenuse(dimensions[1], dimensions[2])
             depth = dimensions[0]
@@ -63,7 +62,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         new_collider.name = tmp_name
 
         scene=context.scene
-        print(str(scene.my_space) + str(location))
 
         new_collider.location = location
 
@@ -189,6 +187,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             new_collider.name = super().collider_name(basename=parent.name)
 
         super().reset_to_initial_state(context)
-
+        print("Time elapsed: ", str(self.get_time_elapsed()))
         return {'RUNNING_MODAL'}
 

@@ -88,6 +88,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider.name = super().collider_name(basename=obj.name)
 
+        print("Time elapsed: ", str(self.get_time_elapsed()))
         return {'RUNNING_MODAL'}
 
 class OBJECT_OT_convert_to_mesh(Operator):

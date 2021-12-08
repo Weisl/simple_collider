@@ -5,15 +5,6 @@ import rna_keymap_ui
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
 
-#
-# collider_shapes = {
-#     "boxColSuffix": {'shape': "BOX", 'label': 'Box Collider', 'default_naming': 'Box'},
-#     "sphereColSuffix": {'shape': "SPHERE", 'label': 'Sphere Collider', 'default_naming': 'Sphere'},
-#     "convexColSuffix": {'shape': "CONVEX", 'label': 'Convex Collider', 'default_naming': 'Convex'},
-#     "meshColSuffix": {'shape': "MESH", 'label': 'Triangle Mesh Collider', 'default_naming': 'Mesh'},
-# }
-
-
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
@@ -72,11 +63,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     modal_font_color: bpy.props.FloatVectorProperty(name="Font Operator", description="Font Color in the 3D Viewport for settings that are reset every time the collision operator is called",
                                                     default=(0.75, 0.75, 0.75, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
-    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Persistent", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Permanent", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
                                                     default=(1, 1, 1, 0.5), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
+    modal_font_color_title: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                    default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+
+
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
+    modal_font_distance_x: bpy.props.IntProperty(name='Font Distance', description=" Defines the offset of the modal operator font to the window side", default=40)
 
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
@@ -148,10 +145,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "col_collection_name",
     ]
 
+    ui_col_colors = [
+    'my_color_simple_complex',
+    'my_color_simple',
+    'my_color_complex',
+    ]
+
     ui_props = [
         "modal_font_color",
         "modal_font_color_scene",
         "modal_font_size",
+        "modal_font_distance_x",
     ]
 
     vhacd_props = [
@@ -182,8 +186,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         row = layout.row(align=True)
         row.prop(self, "prefs_tabs", expand=True)
 
-
-
         if self.prefs_tabs == 'NAMING':
             row = layout.row(align=True)
             row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
@@ -207,14 +209,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             col = box.column()
             col.label(text="keymap")
 
-            layout.separator()
-            row = layout.row()
-            row.prop(self, 'my_color_all')
-            row = layout.row()
-            row.prop(self, 'my_color_simple')
-            row = layout.row()
-            row.prop(self, 'my_color_complex')
-
             wm = context.window_manager
             kc = wm.keyconfigs.addon
             km = kc.keymaps['3D View']
@@ -233,6 +227,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 else:
                     col.label(text="No hotkey entry found")
                     col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
+
+            layout.separator()
+            row.label(text="Complexity Colors")
+
+            for propName in self.ui_col_colors:
+                row = layout.row()
+                row.prop(self, propName)
+
+            row = layout.row()
+            row.label(text="UI Color")
 
             for propName in self.ui_props:
                 row = layout.row()

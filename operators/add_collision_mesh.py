@@ -37,17 +37,12 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        self.remove_objects(self.new_colliders_list)
-        self.new_colliders_list = []
-
-        # reset previously stored displace modifiers when creating a new object
-        self.displace_modifiers = []
+        # CLEANUP and INIT
+        super().execute(context)
 
         # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
-
-        old_objs = set(context.scene.objects)
 
         for obj in self.selected_objects:
 
@@ -79,19 +74,19 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             new_name = super().collider_name()
 
             new_collider.name = new_name
-            # add_modifierstack(self, new_collider)
+
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation
-            # self.previous_objects.append(new_collider)
             collections = obj.users_collection
 
             self.primitive_postprocessing(context, new_collider,collections)
 
-            # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
-            # self.report({'INFO'}, infomessage)
+        self.new_colliders_list = set(context.scene.objects) - self.old_objs
 
-        self.new_colliders_list = set(context.scene.objects) - old_objs
+        # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
+        super().reset_to_initial_state(context)
+        print("Time elapsed: ", str(self.get_time_elapsed()))
 
         return {'RUNNING_MODAL'}

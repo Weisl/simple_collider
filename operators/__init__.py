@@ -36,8 +36,12 @@ def register():
 
     scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation", description="Hide Bounding Object After Creation.", default=False)
 
-    scene.my_wireframe = bpy.props.BoolProperty(name="Hide After Creation",
-                                           description="Hide Bounding Object After Creation.", default=False)
+    scene.wireframe_mode = bpy.props.EnumProperty(name="Wireframe Mode",
+                                                items=(('OFF', "Off","There is no wireframe preview on the collision mesh."),
+                                                       ('PREVIEW', "Preview","The wireframes are only visible during the generation."),
+                                                       ('ALWAYS', "Always","The wireframes remain visible afterwards.")),
+                                                description="Hide Bounding Object After Creation.", default='PREVIEW')
+
     obj.basename = bpy.props.StringProperty(default='geo', name='Basename', description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).')
 
     obj.collider_type = bpy.props.EnumProperty(name="Shading", items=[('BOX', "Box", "Used to descibe boxed shape collision shapes."),('SHERE', "Sphere", "Used to descibe spherical collision shapes."),('CONVEX', "CONVEX", "Used to descibe convex shaped collision shapes."),('MESH', "Triangle Mesh", "Used to descibe complex triangle mesh collisions.")], default='BOX')

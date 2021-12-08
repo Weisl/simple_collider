@@ -1,19 +1,26 @@
 import blf
 import bpy
 import bmesh
+import time
+import numpy
 
 from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
-def draw_modal_item(self, font_id,i,vertical_px_offset, text, color_type = 'operator'):
+def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, text, color_type = 'operator'):
     """Draw text in the 3D Viewport"""
     if color_type == 'operator':
-        blf.color(font_id, self.prefs.modal_font_color[0],self.prefs.modal_font_color[1], self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+        blf.color(font_id, self.prefs.modal_font_color[0], self.prefs.modal_font_color[1],
+                  self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+    elif color_type == 'title':
+        blf.color(font_id, self.prefs.modal_font_color_title[0], self.prefs.modal_font_color_title[1],
+                  self.prefs.modal_font_color_title[2], self.prefs.modal_font_color_title[3])
     else:
-        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1], self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
+        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1],
+                  self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
 
-    blf.position(font_id, 30, i * vertical_px_offset, 0)
+    blf.position(font_id, left_margin, i * vertical_px_offset, 0)
     blf.size(font_id, 20, 72)
     blf.draw(font_id, text)
     i += 1
@@ -26,72 +33,67 @@ def draw_viewport_overlay(self, context):
 
     font_id = 0  # XXX, need to find out how best to get this.
     vertical_px_offset = 30
+    left_margin = self.prefs.modal_font_distance_x
     i = 1
-    cd = [0.5,0.8,0.5,1]
+
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
         text = "Global Orient (G): " + global_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
         # draw some text
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
         text= "Local Orient (L): " + local_orient
-        i = draw_modal_item(self,font_id, i, vertical_px_offset, text, color_type='scene')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
-    text = "Hide After Creation (H) : " + str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+    text = "Auto Hide After Creation (H) : " + str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
-    text = "Display Wireframe (W) : " + str(scene.my_wireframe)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text, color_type='scene')
+    text = "Display Wireframe (W) : " + str(scene.wireframe_mode)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
     text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text,color_type='scene')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='scene')
 
-    blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
-    blf.position(font_id, 30, i * vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, 'Persistent Settings')
-    i += 1
+    text = 'Persistent Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='title')
 
     text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_decimation:
         text = "Decimate (D): " + str(self.decimate_amount)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_vertex_count:
         text = "Segments (E): " + str(self.vertex_count)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_modifier_stack:
         text = "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_cylinder_axis:
         text = "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_sphere_segments:
-        text = "Sphere Segments (W): " + str(self.sphere_segments)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        text = "Sphere Segments (R): " + str(self.sphere_segments)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
     if self.use_type_change:
         text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, text)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
 
-    blf.color(font_id,cd[0],cd[1],cd[2],cd[3])
-    blf.position(font_id, 30, i * vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, 'Operator Settings')
-    i += 1
+    text = 'Operator Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='title')
 
 
 class OBJECT_OT_add_bounding_object():
@@ -104,9 +106,13 @@ class OBJECT_OT_add_bounding_object():
         #append bmesh to class for it not to be deleted
         cls.bm.append(bm)
 
-    def object_set_wire_preview(self, show_wire):
-        for obj in self.new_colliders_list:
-            obj.show_wire = show_wire
+    def set_collisions_wire_preview(self, mode):
+        if mode in ['PREVIEW', 'ALWAYS']:
+            for obj in self.new_colliders_list:
+                obj.show_wire = True
+        else:
+            for obj in self.new_colliders_list:
+                obj.show_wire = False
 
 
     def remove_objects(self, list):
@@ -259,7 +265,11 @@ class OBJECT_OT_add_bounding_object():
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
 
         scene = context.scene
-        bounding_object.show_wire = scene.my_wireframe
+
+        if scene.wireframe_mode in ['PREVIEW', 'ALWAYS']:
+            bounding_object.show_wire = True
+        else:
+            bounding_object.show_wire = False
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
@@ -370,6 +380,9 @@ class OBJECT_OT_add_bounding_object():
         context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
+        # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
+        # self.report({'INFO'}, infomessage)
+
     #Modifiers
     def apply_all_modifiers(self,context, obj):
         context.view_layer.objects.active = obj
@@ -419,6 +432,9 @@ class OBJECT_OT_add_bounding_object():
             bpy.context.scene.CollisionMaterials = default_material
             set_material(bounding_object, default_material)
 
+    def get_time_elapsed(self):
+        t1 = time.time() - self.t0
+        return t1
 
     def __init__(self):
         # has to be in --init
@@ -465,6 +481,7 @@ class OBJECT_OT_add_bounding_object():
         self.displace_modifiers = []
         self.displace_my_offset = 0.0
         self.decimate_active = False
+        self.prev_decimate_time = time.time()
         self.decimate_modifiers = []
         self.decimate_amount = 1.0
         self.opacity_active = False
@@ -474,6 +491,8 @@ class OBJECT_OT_add_bounding_object():
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
+        self.wireframe_idx = 1
+        # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_type_idx = 0
         self.collision_type = collider_types
         #sphere
@@ -538,9 +557,13 @@ class OBJECT_OT_add_bounding_object():
 
                 # set the display settings for the collider objects
                 obj.display_type = scene.my_collision_shading_view
-                obj.show_wire = scene.my_wireframe
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
+
+                if scene.wireframe_mode == 'ALWAYS':
+                    obj.show_wire = True
+                else:
+                    obj.show_wire = False
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -555,11 +578,12 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'H' and event.value == 'RELEASE':
             scene.my_hide = not scene.my_hide
             #Another function needs to be called for the modal UI to update :(
-            self.object_set_wire_preview(scene.my_wireframe)
+            self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'W' and event.value == 'RELEASE':
-            scene.my_wireframe = not scene.my_wireframe
-            self.object_set_wire_preview(scene.my_wireframe)
+            self.wireframe_idx = (self.wireframe_idx + 1) % len(bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items)
+            scene.wireframe_mode = bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items[self.wireframe_idx].identifier
+            self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active
@@ -614,14 +638,16 @@ class OBJECT_OT_add_bounding_object():
                     self.displace_my_offset = mod.strength
 
             if self.decimate_active:
-                for mod in self.decimate_modifiers:
-                    dec_amount = 1.0 - delta * 0.005
-                    mod.ratio = dec_amount
-                    # mod.show_on_cage = True
-                    # mod.show_in_editmode = True
+                dec_amount = numpy.clip(round((1.0 - delta * 0.002), 2), 0.01, 1.0)
+                if self.decimate_amount != dec_amount:
+                    self.decimate_amount = dec_amount
+                    print(dec_amount)
 
-                    # Store displacement strenght to use when regenerating the colliders
-                    self.decimate_amount = mod.ratio
+                    # I had to iterate over all object because it crashed when just iterating over the modifiers.
+                    for obj in self.new_colliders_list:
+                        for mod in obj.modifiers:
+                            if mod in self.decimate_modifiers:
+                                mod.ratio = dec_amount
 
             if self.opacity_active:
                 color_alpha = 0.5 + delta * 0.005
@@ -663,7 +689,9 @@ class OBJECT_OT_add_bounding_object():
 
     def execute(self, context):
         #reset naming count:
+        self.t0 = time.time()
         self.name_count = 1
+
         self.obj_mode = context.object.mode
 
         self.remove_objects(self.new_colliders_list)
