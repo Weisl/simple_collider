@@ -42,8 +42,6 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
     """Create box collider for selected mesh area in edit mode"""
 
     global tmp_name
-
-    active_ob = context.object
     root_collection = context.scene.collection
 
     # add new mesh
@@ -81,13 +79,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_global_local_switches = True
 
-
     def invoke(self, context, event):
         super().invoke(context, event)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         status = super().modal(context, event)
+
         if status == {'FINISHED'}:
             return {'FINISHED'}
         if status == {'CANCELLED'}:
@@ -118,6 +116,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         scene = context.scene
         self.type_suffix = self.prefs.boxColSuffix
 
+        #List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
 
         # Create the bounding geometry, depending on edit or object mode.
@@ -146,6 +145,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
             verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
 
+            #store data needed to generate a bounding box in a dictionary
             bounding_box_data['parent'] = obj
             bounding_box_data['verts_loc'] = verts_loc
 
@@ -154,7 +154,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for bounding_box_data in collider_data:
-
+            # get data from dictionary
             parent = bounding_box_data['parent']
             verts_loc = bounding_box_data['verts_loc']
 

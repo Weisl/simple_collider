@@ -70,7 +70,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     modal_font_color_title: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
                                                     default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
-
+    modal_font_color_highlight: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                    default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
+    modal_font_color_modal: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                    default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
+                                                    subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
     modal_font_distance_x: bpy.props.IntProperty(name='Font Distance', description=" Defines the offset of the modal operator font to the window side", default=40)

@@ -8,21 +8,36 @@ from ..pyshics_materials.material_functions import remove_materials, set_materia
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
-def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, text, color_type = 'operator'):
-    """Draw text in the 3D Viewport"""
+def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, value = None, color_type = 'operator'):
+    """Draw label in the 3D Viewport"""
+
+    # get colors from preferences
+    col1 = self.prefs.modal_font_color
+    color_title = self.prefs.modal_font_color_title
+    color_scene = self.prefs.modal_font_color_scene
+    color_highlight = self.prefs.modal_font_color_highlight
+    color_modal = self.prefs.modal_font_color_modal
+
+    blf.size(font_id, 20, 72)
+
     if color_type == 'operator':
-        blf.color(font_id, self.prefs.modal_font_color[0], self.prefs.modal_font_color[1],
-                  self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
+        blf.color(font_id, col1[0], col1[1], col1[2], col1[3])
     elif color_type == 'title':
-        blf.color(font_id, self.prefs.modal_font_color_title[0], self.prefs.modal_font_color_title[1],
-                  self.prefs.modal_font_color_title[2], self.prefs.modal_font_color_title[3])
+        blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
+    elif color_type == 'color_highlight':
+        blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+    elif color_type == 'color_modal':
+        blf.color(font_id, color_modal[0], color_modal[1], color_modal[2], color_modal[3])
     else:
-        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1],
-                  self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
+        blf.color(font_id, color_scene[0], color_scene[1], color_scene[2], color_scene[3])
 
     blf.position(font_id, left_margin, i * vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, text)
+    blf.draw(font_id, label)
+
+    if value:
+        blf.position(font_id, left_margin + 240, i * vertical_px_offset, 0)
+        blf.draw(font_id, value)
+
     i += 1
     return i
 
@@ -39,61 +54,75 @@ def draw_viewport_overlay(self, context):
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-        text = "Global Orient (G): " + global_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+        label = "Global Orient (G): "
+        value = global_orient
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, color_type='scene')
 
-        # draw some text
+        # draw some label
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-        text= "Local Orient (L): " + local_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+        label = "Local Orient (L): "
+        value = local_orient
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, color_type='scene')
 
-    text = "Auto Hide After Creation (H) : " + str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+    label = "Hide After Creation (H): "
+    value = str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, color_type='scene')
 
-    text = "Display Wireframe (W) : " + str(scene.wireframe_mode)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+    label = "Display Wireframe (W) : "
+    value = str(scene.wireframe_mode)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, color_type='scene')
 
-    text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='scene')
+    label = "Opacity (A) : "
+    value = str(self.prefs.my_color_simple_complex[3])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, color_type='scene')
 
-    text = 'Persistent Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='title')
+    label = 'Persistent Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, color_type='title')
 
-    text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+    label = "Shrink/Inflate (S): "
+    value = str(self.displace_my_offset)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
-    text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+    label = "Preview View (V) : "
+    value = self.shading_modes[self.shading_idx]
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
-    text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+    label = "Collider Type (T) : "
+    value = str(self.collision_type[self.collision_type_idx])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
     if self.use_decimation:
-        text = "Decimate (D): " + str(self.decimate_amount)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label = "Decimate (D): "
+        value = str(self.decimate_amount)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
     if self.use_vertex_count:
-        text = "Segments (E): " + str(self.vertex_count)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label = "Segments (E): "
+        value = str(self.vertex_count)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
     if self.use_modifier_stack:
-        text = "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label = "Use Modifiers (P) : "
+        value = str(self.my_use_modifier_stack)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
     if self.use_cylinder_axis:
-        text = "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label = "Cylinder Axis (X/Y/Z) : "
+        value = str(self.cylinder_axis)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
     if self.use_sphere_segments:
-        text = "Sphere Segments (R): " + str(self.sphere_segments)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label = "Sphere Segments (R): "
+        value = str(self.sphere_segments)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
     if self.use_type_change:
-        text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label= "Collider Shape (C): "
+        value = str(self.collider_shapes[self.collider_shapes_idx])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value)
 
-    text = 'Operator Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='title')
+    label = 'Operator Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, color_type='title')
 
 
 class OBJECT_OT_add_bounding_object():
