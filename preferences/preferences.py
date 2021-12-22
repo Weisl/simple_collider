@@ -60,21 +60,28 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     my_color_complex : bpy.props.FloatVectorProperty(name="Complex Color", description="Object color and alpha for complex collisions", default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
 
     #Modal Fonts
-    modal_font_color: bpy.props.FloatVectorProperty(name="Font Operator", description="Font Color in the 3D Viewport for settings that are reset every time the collision operator is called",
-                                                    default=(0.75, 0.75, 0.75, 0.5), min=0.0, max=1.0,
-                                                    subtype='COLOR', size=4)
-    modal_font_color_scene: bpy.props.FloatVectorProperty(name="Font Permanent", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(1, 1, 1, 0.5), min=0.0, max=1.0,
-                                                    subtype='COLOR', size=4)
+    modal_color_default: bpy.props.FloatVectorProperty(name="Default", description="Font Color in the 3D Viewport for settings that are reset every time the collision operator is called",
+                                                       default=(1.0, 1.0, 1.0, 1), min=0.0, max=1.0,
+                                                       subtype='COLOR', size=4)
 
-    modal_font_color_title: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
-                                                    subtype='COLOR', size=4)
-    modal_font_color_highlight: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
-                                                    subtype='COLOR', size=4)
-    modal_font_color_modal: bpy.props.FloatVectorProperty(name="Title Font Color", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(0.5, 0.8, 0.5, 1), min=0.0, max=1.0,
+    modal_color_title: bpy.props.FloatVectorProperty(name="Title", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                     default=(0.99, 0.62, 0.31, 1), min=0.0, max=1.0,
+                                                     subtype='COLOR', size=4)
+    modal_color_highlight: bpy.props.FloatVectorProperty(name="Active Highlight", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                         default=(0.0, 1.0, 1.0, 1.0), min=0.0, max=1.0,
+                                                         subtype='COLOR', size=4)
+
+    modal_color_modal: bpy.props.FloatVectorProperty(name="Modal", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                     default=(0.93, 0.83, 0.51, 1.0), min=0.0, max=1.0,
+                                                     subtype='COLOR', size=4)
+
+    modal_color_bool: bpy.props.FloatVectorProperty(name="Bool", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                     default=(0.95, 0.95, 0.68, 1.0), min=0.0, max=1.0,
+                                                     subtype='COLOR', size=4)
+
+
+    modal_color_enum: bpy.props.FloatVectorProperty(name="Enum", description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
+                                                    default=(0.01, 0.0, 0.13, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
@@ -157,8 +164,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     ui_props = [
-        "modal_font_color",
-        "modal_font_color_scene",
+        "modal_color_title",
+        "modal_color_highlight",
+        "modal_color_modal",
+        "modal_color_bool",
+        "modal_color_default",
+        "modal_color_enum",
         "modal_font_size",
         "modal_font_distance_x",
     ]

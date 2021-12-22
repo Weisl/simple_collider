@@ -8,37 +8,62 @@ from ..pyshics_materials.material_functions import remove_materials, set_materia
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
-def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, value = None, type = 'operator'):
+def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, value = None, type = 'default', key = '', highlight = False):
     """Draw label in the 3D Viewport"""
 
     # get colors from preferences
-    col1 = self.prefs.modal_font_color
-    color_title = self.prefs.modal_font_color_title
-    color_scene = self.prefs.modal_font_color_scene
-    color_highlight = self.prefs.modal_font_color_highlight
-    color_modal = self.prefs.modal_font_color_modal
+    col_default = self.prefs.modal_color_default
+    color_title = self.prefs.modal_color_title
+
+    #operator colors
+    color_enum = self.prefs.modal_color_enum
+    color_modal = self.prefs.modal_color_modal
+    color_bool = self.prefs.modal_color_bool
+    color_highlight = self.prefs.modal_color_highlight
+
 
     blf.size(font_id, 20, 72)
 
     if type == 'title':
         blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
-    else:
-        blf.color(font_id, col1[0], col1[1], col1[2], col1[3])
+    else: #type == 'default'
+        if highlight:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        else:
+            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+
 
     blf.position(font_id, left_margin, i * vertical_px_offset, 0)
     blf.draw(font_id, label)
 
-    if value:
-        if type == 'bool':
+    if key:
+        if highlight:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        if type == 'bool':
+            blf.color(font_id, color_bool[0], color_bool[1], color_bool[2], color_bool[3])
         elif type == 'enum':
-            blf.color(font_id, color_scene[0], color_scene[1], color_scene[2], color_scene[3])
+            blf.color(font_id, color_enum[0], color_enum[1], color_enum[2], color_enum[3])
         elif type == 'modal':
             blf.color(font_id, color_modal[0], color_modal[1], color_modal[2], color_modal[3])
-        else:  # type == 'scene':
-            blf.color(font_id, color_scene[0], color_scene[1], color_scene[2], color_scene[3])
+        else:  # type == 'default':
+            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 240, i * vertical_px_offset, 0)
+        blf.position(font_id, left_margin + 220, i * vertical_px_offset, 0)
+        blf.draw(font_id, key)
+
+    if value:
+        if highlight:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        # elif type == 'bool':
+        #     blf.color(font_id, color_bool[0], color_bool[1], color_bool[2], color_bool[3])
+        # elif type == 'enum':
+        #     blf.color(font_id, color_enum[0], color_enum[1], color_enum[2], color_enum[3])
+        # elif type == 'modal':
+        #     blf.color(font_id, color_modal[0], color_modal[1], color_modal[2], color_modal[3])
+        else:  # type == 'default':
+            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+
+        blf.position(font_id, left_margin + 260, i * vertical_px_offset, 0)
         blf.draw(font_id, value)
 
     i += 1
@@ -57,72 +82,73 @@ def draw_viewport_overlay(self, context):
     if self.use_space:
         # draw some text
         global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-        label = "Global Orient (G): "
+        label = "Global Orient "
         value = global_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(G/L)', type='enum')
 
         # draw some label
         local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-        label = "Local Orient (L): "
+        label = "Local Orient "
         value = local_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(G/L)', type='enum')
 
-    label = "Hide After Creation (H): "
-    value = str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='bool')
-
-    label = "Display Wireframe (W) : "
+    label = "Display Wireframe "
     value = str(scene.wireframe_mode)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(W)', type='enum')
 
-    label = "Opacity (A) : "
+    label = "Hide After Creation "
+    value = str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(H)', type='bool')
+
+    label = "Opacity"
     value = str(self.prefs.my_color_simple_complex[3])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='modal')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(A)', type='modal', highlight = self.opacity_active )
 
     label = 'Persistent Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    label = "Shrink/Inflate (S): "
-    value = str(self.displace_my_offset)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='modal')
-
-    label = "Preview View (V) : "
+    label = "Preview View "
     value = self.shading_modes[self.shading_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(A)', type='enum')
 
-    label = "Collider Type (T) : "
+    label = "Collider Type"
     value = str(self.collision_type[self.collision_type_idx])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(T)', type='enum')
 
-    if self.use_decimation:
-        label = "Decimate (D): "
-        value = str(self.decimate_amount)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='modal')
-
-    if self.use_vertex_count:
-        label = "Segments (E): "
-        value = str(self.vertex_count)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='modal')
-
-    if self.use_modifier_stack:
-        label = "Use Modifiers (P) : "
-        value = str(self.my_use_modifier_stack)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='bool')
+    if self.use_type_change:
+        label= "Collider Shape"
+        value = str(self.collider_shapes[self.collider_shapes_idx])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(C)', type='enum')
 
     if self.use_cylinder_axis:
         label = "Cylinder Axis (X/Y/Z) : "
         value = str(self.cylinder_axis)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(X/Y/Z)', type='enum')
+
+    if self.use_modifier_stack:
+        label = "Use Modifiers "
+        value = str(self.my_use_modifier_stack)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(P)', type='bool')
+
+    label = "Shrink/Inflate"
+    value = str(self.displace_my_offset)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(S)', type='modal', highlight=self.displace_active)
 
     if self.use_sphere_segments:
-        label = "Sphere Segments (R): "
+        label = "Sphere Segments "
         value = str(self.sphere_segments)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='modal')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(R)', type='modal', highlight=self.sphere_segments_active)
 
-    if self.use_type_change:
-        label= "Collider Shape (C): "
-        value = str(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, type='enum')
+    if self.use_decimation:
+        label = "Decimate"
+        value = str(self.decimate_amount)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value,  key='(D)', type='modal', highlight=self.decimate_active)
+
+    if self.use_vertex_count:
+        label = "Segments"
+        value = str(self.vertex_count)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(E)', type='modal', highlight=self.vertex_count_active)
+
 
     label = 'Operator Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
