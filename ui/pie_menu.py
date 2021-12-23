@@ -24,12 +24,14 @@ class VIEW3D_MT_collision(Menu):
             op.mode = key
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            # op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            op = col.operator("object.select_collisions", text='Select')
             op.invert = False
             op.mode = key
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            # op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            op = col.operator("object.select_collisions", text='Unselect')
             op.invert = True
             op.mode = key
 
