@@ -801,8 +801,8 @@ class OBJECT_OT_add_bounding_object():
                 self.current_settings_dic['alpha'] = color_alpha
 
             if self.vertex_count_active:
-                delta = abs(self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10))
-                vertex_count = int(abs(self.ref_settings_dic['cylinder_segments'] + delta))
+                delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
+                vertex_count = int(abs(self.ref_settings_dic['cylinder_segments'] - delta))
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if vertex_count != int(round(self.vertex_count)):
@@ -811,8 +811,8 @@ class OBJECT_OT_add_bounding_object():
                     self.execute(context)
 
             if self.sphere_segments_active:
-                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10)
-                segments = int(abs(self.ref_settings_dic['sphere_segments'] + delta))
+                delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
+                segments = int(abs(self.ref_settings_dic['sphere_segments'] - delta))
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if segments != int(round(self.current_settings_dic['sphere_segments'])):
