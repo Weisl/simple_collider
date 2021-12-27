@@ -25,7 +25,10 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
 
     blf.size(font_id, 20, 72)
 
-    if self.ignore_input:
+    if type == 'key_title':
+        if self.ignore_input:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+    elif self.ignore_input:
         blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
     elif type == 'title':
         blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
@@ -150,6 +153,9 @@ def draw_viewport_overlay(self, context):
     label = 'Operator Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
+    if self.ignore_input:
+        label = 'IGNORE INPUT (ALT)'
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
 
 class OBJECT_OT_add_bounding_object():
@@ -173,6 +179,8 @@ class OBJECT_OT_add_bounding_object():
         return dict
 
     def force_redraw(self):
+        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
+        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
         pass
 
     def set_collisions_wire_preview(self, mode):
@@ -630,7 +638,6 @@ class OBJECT_OT_add_bounding_object():
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
-
             # Remove previously created collisions
             if self.new_colliders_list != None:
                 for obj in self.new_colliders_list:
@@ -695,8 +702,10 @@ class OBJECT_OT_add_bounding_object():
 
             # update ref mouse position to current
             self.mouse_initial_x = event.mouse_x
+
             #Alt is not pressed anymore after release
             self.ignore_input = False
+            self.force_redraw()
             return {'RUNNING_MODAL'}
 
         # hide after creation
@@ -791,7 +800,7 @@ class OBJECT_OT_add_bounding_object():
 
             if self.opacity_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
-                color_alpha = self.ref_settings_dic['alpha'] + delta
+                color_alpha = self.ref_settings_dic['alpha'] - delta
                 color_alpha = numpy.clip(color_alpha, 0.00, 1.0)
 
                 for obj in self.new_colliders_list:
