@@ -45,8 +45,8 @@ class COLLISION_OT_Selection(bpy.types.Operator):
     bl_label = "Select Collision Meshes"
     bl_description = 'Select/Deselect collision objects'
 
-    invert: bpy.props.BoolProperty(
-        name='Hide/Unhide',
+    select: bpy.props.BoolProperty(
+        name='Select/Un-Select',
         default=True
     )
 
@@ -58,21 +58,27 @@ class COLLISION_OT_Selection(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
 
-        select = True
-        if self.invert:
-            select = False
+        if self.select:
+            for ob in bpy.context.view_layer.objects:
+                if self.mode == 'ALL':
+                    if ob.get('isCollider') == True:
+                        ob.select_set(self.select)
+                    else:
+                        ob.select_set(not self.select)
 
-        for ob in bpy.context.view_layer.objects:
-            if self.mode == 'ALL':
-                if ob.get('isCollider') == True:
-                    ob.select_set(select)
-                else:
-                    ob.select_set(not select)
+                else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+                    if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                        ob.select_set(self.select)
+                    else:
+                        ob.select_set(not self.select)
 
-            else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
-                if ob.get('isCollider') and ob.get('collider_type') == self.mode:
-                    ob.select_set(select)
-                else:
-                    ob.select_set(not select)
+        else: # self.select = False
+            for ob in bpy.context.view_layer.objects:
+                if self.mode == 'ALL':
+                    if ob.get('isCollider') == True:
+                        ob.select_set(self.select)
+                else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+                    if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                        ob.select_set(self.select)
 
         return {'FINISHED'}

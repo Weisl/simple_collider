@@ -55,12 +55,12 @@ class CollissionPanel(Panel):
 
         for key, value in visibility_operators.items():
             op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
-            op.invert = False
+            op.select = True
             op.mode = key
 
         for key, value in visibility_operators.items():
             op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
-            op.invert = True
+            op.select = False
             op.mode = key
 
         # Conversion
