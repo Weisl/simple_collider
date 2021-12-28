@@ -1,10 +1,36 @@
 from bpy.types import Panel
+import textwrap
+import bpy
 
 visibility_operators = {'ALL': 'All',
 'SIMPLE': 'Simple',
 'COMPLEX': 'Complex',
 'SIMPLE_COMPLEX':'Simple and Complex',
 }
+
+def label_multiline(context, text, parent):
+    chars = int(context.region.width / 7)   # 7 pix on 1 character
+    wrapper = textwrap.TextWrapper(width=chars)
+    text_lines = wrapper.wrap(text=text)
+    for text_line in text_lines:
+        parent.label(text=text_line)
+
+class PREFERENCES_OT_open_addon(bpy.types.Operator):
+    """Tooltip"""
+    bl_idname = "preferences.addon_search"
+    bl_label = "Open Addon Preferences"
+
+    addon_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        bpy.ops.screen.userpref_show()
+        bpy.context.preferences.active_section = 'ADDONS'
+        bpy.data.window_managers["WinMan"].addon_search = self.addon_name
+        prefs = context.preferences.addons[self.addon_name].preferences
+        prefs.prefs_tabs = 'VHACD'
+        # bpy.ops.preferences.addon_expand(module=self.addon_name)
+        return {'FINISHED'}
+
 
 class CollissionPanel(Panel):
     """Creates a Panel in the Object properties window"""
@@ -105,7 +131,7 @@ class CollissionPanel(Panel):
         prefs = context.preferences.addons["CollisionHelpers"].preferences
         row = layout.row(align=True)
         if prefs.executable_path:
-            row.operator("collision.vhacd", text="Convex Decomposition")
+            row.operator("collision.vhacd", text="Convex Decomposition", icon='MESH_ICOSPHERE')
         else:
-            row.operator("wm.url_open", text="Convex decomposition: Requires V-HACD", icon='ERROR').url = "https://github.com/kmammou/v-hacd"
+            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = "CollisionHelpers"
 

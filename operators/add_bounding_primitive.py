@@ -23,7 +23,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     color_highlight = self.prefs.modal_color_highlight
 
 
-    blf.size(font_id, 20, 72)
+    blf.size(font_id, 20, self.prefs.modal_font_size)
 
     if type == 'key_title':
         if self.ignore_input:

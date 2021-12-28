@@ -70,7 +70,7 @@ def unregister():
     del scene.my_collision_shading_view
     del scene.my_space
     del scene.my_hide
-    del scene.my_wireframe
+    del scene.wireframe_mode
 
     del obj.basename
     del obj.collider_type

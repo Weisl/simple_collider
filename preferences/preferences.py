@@ -1,9 +1,12 @@
-from tempfile import gettempdir
-
 import bpy
 import rna_keymap_ui
+import textwrap
+
+from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
+from ..ui.properties_panels import label_multiline
+
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -14,8 +17,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('NAMING', "Naming", "NAMING"), ('UI', "UI", "UI"), ('VHACD', "V-HACD", "VHACD")),
-        default='NAMING',
+        items=(('SETTINGS', "Settings", "settings"), ('KEYMAP', "Keymap", "keymap"), ('THEME', "Theme", "theme"), ('VHACD', "Auto Convex", "auto_convex")),
+        default='SETTINGS',
         description='Tabs to toggle different addon settings')
 
     naming_position: bpy.props.EnumProperty(
@@ -43,12 +46,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX", description='Naming used to define convex collisions')
     sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE", description='Naming used to define sphere collisions')
     meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH", description='Naming used to define triangle mesh collisions')
-
-    use_col_Complexity: bpy.props.BoolProperty(
-        name = 'Use Complexity',
-        description = 'Use Complexity',
-        default = True
-    )
 
     # The object color for the bounding object
     my_color_simple_complex : bpy.props.FloatVectorProperty(name="Simple Complex Color", description="Object color and alpha for simple-complex collisions", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
@@ -85,11 +82,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
-    # modal_font_distance_x: bpy.props.IntProperty(name='Font Distance', description=" Defines the offset of the modal operator font to the window side", default=40)
-
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
-    use_parent_name: bpy.props.BoolProperty(name='Keep Name', description='Keep the name of the original object for the newly created collision object',default = True)
+    use_parent_name: bpy.props.BoolProperty(name='Keep Parent Name', description='Keep the name of the original object for the newly created collision object',default = True)
     col_collection_name: bpy.props.StringProperty(name='Collection Name',description='Name of the collection newly created collisions get added to',default='Col')
 
     #### VHACD ####
@@ -101,8 +96,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                               )
 
     data_path: bpy.props.StringProperty(name='Data Path',description='Data path to store V-HACD meshes and logs',default=gettempdir(),maxlen=1024,subtype='DIR_PATH')
-    name_template: bpy.props.StringProperty(name='Name Template',
-                                            description='Name template used for generated hulls.\n? = original mesh name\n# = hull id',default='?_hull_#',)
+
     # pre-process options
     remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',description='Collapse overlapping vertices in generated mesh',default=True)
     apply_transforms: bpy.props.EnumProperty(name='Apply',description='Apply Transformations to generated mesh',
@@ -150,9 +144,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "colPreSuffix",
         "colSuffix",
         "optionalSuffix",
-        "colAll",
         "colSimple",
         "colComplex",
+    ]
+    col_props = [
         "use_col_collection",
         "col_collection_name",
     ]
@@ -164,20 +159,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     ui_props = [
+        "modal_font_size",
         "modal_color_title",
         "modal_color_highlight",
         "modal_color_modal",
         "modal_color_bool",
         "modal_color_default",
         "modal_color_enum",
-        "modal_font_size",
-        "modal_font_distance_x",
     ]
 
     vhacd_props = [
-        "executable_path",
         "data_path",
-        "name_template",
     ]
 
     vhacd_props_config = [
@@ -202,25 +194,35 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         row = layout.row(align=True)
         row.prop(self, "prefs_tabs", expand=True)
 
-        if self.prefs_tabs == 'NAMING':
-            row = layout.row(align=True)
-            row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
-            row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
-            row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
-
-            row = layout.row(align=True)
-            row.prop(self, "use_col_Complexity")
-
+        if self.prefs_tabs == 'SETTINGS':
             row = layout.row()
-            row.prop(self, "naming_position", expand=True)
+            row.label(text='Collection Settings')
 
-            for propName in self.props:
+            for propName in self.col_props:
                 row = layout.row()
                 row.prop(self, propName)
 
 
-        elif self.prefs_tabs == 'UI':
+            row = layout.row(align=True)
 
+            box = layout.box()
+
+            row = box.row(align=True)
+            row.label(text="Naming Settings")
+
+            row = box.row(align=True)
+            row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+            row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
+            row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
+
+            row = box.row()
+            row.prop(self, "naming_position", expand=True)
+
+            for propName in self.props:
+                row = box.row()
+                row.prop(self, propName)
+
+        elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()
             col = box.column()
             col.label(text="keymap")
@@ -244,32 +246,70 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     col.label(text="No hotkey entry found")
                     col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
 
+        elif self.prefs_tabs == 'THEME':
             layout.separator()
-            row.label(text="Complexity Colors")
+            row = layout.row()
+            row.label(text="3D Viewport Colors")
 
             for propName in self.ui_col_colors:
                 row = layout.row()
                 row.prop(self, propName)
 
             row = layout.row()
-            row.label(text="UI Color")
+            row.label(text="UI Settings")
 
             for propName in self.ui_props:
                 row = layout.row()
                 row.prop(self, propName)
 
 
-
         elif self.prefs_tabs == 'VHACD':
-            for propName in self.vhacd_props:
-                raw = layout.row()
-                raw.prop(self, propName)
-            row = layout.row()
-            row.operator("wm.url_open", text="Open Link").url = "https://github.com/kmammou/v-hacd"
-
-            layout.separator()
-
+            text="The auto convex collision generation requires the V-HACD library to work."
             box = layout.box()
-            for propName in self.vhacd_props_config:
-                raw = box.row()
-                raw.prop(self, propName)
+            label_multiline(
+                context=context,
+                text=text,
+                parent=box
+            )
+
+            if self.executable_path:
+                row = layout.row()
+                row.prop(self, 'executable_path')
+
+            else:
+                row = layout.row()
+                row.prop(self, 'executable_path', icon="ERROR")
+
+            row = layout.row(align = True)
+            row.label(text="Download V-HACD")
+            row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/win64/testVHACD.exe"
+            row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
+
+            row = layout.row()
+            row.label(text="V-Hacd Github")
+            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+
+
+            if self.executable_path:
+
+                for propName in self.vhacd_props:
+                    row = layout.row()
+                    row.prop(self, propName)
+
+                layout.separator()
+
+                box = layout.box()
+                row = box.row()
+                row.label(text="Generation Settings")
+                row = box.row()
+                row.label(text="Parameter Information")
+
+                if self.executable_path:
+                    row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                    for propName in self.vhacd_props_config:
+                        row = box.row()
+                        row.prop(self, propName)
+                else:
+                    row = box.row()
+                    row.label(text="Install V-HACD", icon="ERROR")
+
