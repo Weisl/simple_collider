@@ -81,7 +81,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     default=(0.36, 0.75, 0.92, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
-    modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=72)
+    modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=56)
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
     use_parent_name: bpy.props.BoolProperty(name='Keep Parent Name', description='Keep the name of the original object for the newly created collision object',default = True)
