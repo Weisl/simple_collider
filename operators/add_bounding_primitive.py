@@ -74,6 +74,10 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     i += 1
     return i
 
+def create_name_number(name, nr):
+    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
+    return name + nr
+
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
     scene = context.scene
@@ -413,17 +417,15 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def create_name_number(self, name, nr):
-        nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
-        return name + nr
+
 
     def unique_name(self, name):
         '''recursive function to find unique name'''
-        new_name = self.create_name_number(name, self.name_count)
+        new_name = create_name_number(name, self.name_count)
 
         while new_name in bpy.data.objects:
             self.name_count = self.name_count + 1
-            new_name = self.create_name_number(name, self.name_count)
+            new_name = create_name_number(name, self.name_count)
 
         self.name_count = self.name_count + 1
         return new_name
@@ -431,10 +433,10 @@ class OBJECT_OT_add_bounding_object():
     def collider_name(self, basename = 'Basename'):
         separator = self.prefs.separator
 
-        if self.prefs.use_parent_name:
-            name = basename
-        else:
+        if self.prefs.replace_name:
             name = self.prefs.basename
+        else:
+            name = basename
 
         pre_suffix_componetns = [
             self.prefs.colPreSuffix,
@@ -609,7 +611,7 @@ class OBJECT_OT_add_bounding_object():
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
-        self.name_count = 1
+        self.name_count = 0
 
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
@@ -840,7 +842,7 @@ class OBJECT_OT_add_bounding_object():
         # get current time to calculate time elapsed
         self.t0 = time.time()
         # reset naming count:
-        self.name_count = 1
+        self.name_count = 0
 
         self.obj_mode = context.object.mode
 

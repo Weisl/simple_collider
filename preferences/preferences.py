@@ -6,7 +6,7 @@ from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
 from ..ui.properties_panels import label_multiline
-
+from ..operators.add_bounding_primitive import create_name_number
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -24,28 +24,28 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     naming_position: bpy.props.EnumProperty(
         name='Collider Naming',
         items=(('PREFIX', "Prefix", "Prefix"), ('SUFFIX', "Suffix", "Suffix")),
-        default='SUFFIX',
+        default='PREFIX',
         description='Add custom naming as prefix or suffix'
     )
 
-    separator: bpy.props.StringProperty(name="Separator ", default="_", description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
-    colPreSuffix: bpy.props.StringProperty(name="Collision ", default="COL",  description='Simple string (text) added to the name of the collider')
-    optionalSuffix: bpy.props.StringProperty(name="Additional Suffix (optional)", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
-    basename: bpy.props.StringProperty(name="Collider Base Name", default="geo",  description='')
+    separator: bpy.props.StringProperty(name="Separator", default="_", description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
+    colPreSuffix: bpy.props.StringProperty(name="Collision", default="",  description='Simple string (text) added to the name of the collider')
+    optionalSuffix: bpy.props.StringProperty(name="Suffix (optional)", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
+    basename: bpy.props.StringProperty(name="Basename", default="geo",  description='')
 
     # Collider Complexity
-    colSimpleComplex: bpy.props.StringProperty(name="SIMPLE-COMPLEX Collisions", default="SIMPLE_COMPLEX", description='Naming used for simple-complex collisions')
-    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="SIMPLE", description='Naming used for simple collisions')
-    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="COMPLEX", description='Naming used for complex collisions')
+    colSimpleComplex: bpy.props.StringProperty(name="Simple Complex Collisions", default="", description='Naming used for simple-complex collisions')
+    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="", description='Naming used for simple collisions')
+    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="Complex", description='Naming used for complex collisions')
 
     # Non collider
-    colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING",  description='Simple string (text) added to the name when not creating a collider')
+    # colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING",  description='Simple string (text) added to the name when not creating a collider')
 
     # Collider Shapes
-    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="BOX", description='Naming used to define box collisions')
-    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="CONVEX", description='Naming used to define convex collisions')
-    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="SPHERE", description='Naming used to define sphere collisions')
-    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="MESH", description='Naming used to define triangle mesh collisions')
+    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="UBX", description='Naming used to define box collisions')
+    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="UCX", description='Naming used to define convex collisions')
+    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="USP", description='Naming used to define sphere collisions')
+    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="UMH", description='Naming used to define triangle mesh collisions')
 
     # The object color for the bounding object
     my_color_simple_complex : bpy.props.FloatVectorProperty(name="Simple Complex Color", description="Object color and alpha for simple-complex collisions", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
@@ -84,8 +84,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=56)
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
-    use_parent_name: bpy.props.BoolProperty(name='Keep Parent Name', description='Keep the name of the original object for the newly created collision object',default = True)
-    col_collection_name: bpy.props.StringProperty(name='Collection Name',description='Name of the collection newly created collisions get added to',default='Col')
+    replace_name: bpy.props.BoolProperty(name='Replace Name', description='Replace the name with a new one or use the name of the original object for the newly created collision name', default = True)
+    col_collection_name: bpy.props.StringProperty(name='Collection Name',description='Name of the collection newly created collisions get added to',default='Collisions')
 
     #### VHACD ####
 
@@ -135,27 +135,33 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                             default=0.0001, min=0.0, max=0.01, precision=5)
 
     props = [
-        "use_parent_name",
-        "basename",
+        "separator",
+        "colPreSuffix",
+        "optionalSuffix",
+    ]
+
+    props_shapes = [
         "meshColSuffix",
         "convexColSuffix",
         "boxColSuffix",
         "sphereColSuffix",
-        "colPreSuffix",
-        "colSuffix",
-        "optionalSuffix",
+    ]
+
+    props_complexity = [
         "colSimple",
         "colComplex",
+        "colSimpleComplex",
     ]
+
     col_props = [
         "use_col_collection",
         "col_collection_name",
     ]
 
     ui_col_colors = [
-    'my_color_simple_complex',
-    'my_color_simple',
-    'my_color_complex',
+        'my_color_simple_complex',
+        'my_color_simple',
+        'my_color_complex',
     ]
 
     ui_props = [
@@ -187,6 +193,36 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "minVolumePerCH",
     ]
 
+    def collider_name(self, basename = 'Basename'):
+        separator = self.separator
+
+        if self.replace_name:
+            name = self.basename
+        else:
+            name = basename
+
+        pre_suffix_componetns = [
+            self.colPreSuffix,
+            self.boxColSuffix,
+            self.colSimpleComplex,
+            self.optionalSuffix,
+        ]
+
+        name_pre_suffix = ''
+        if self.naming_position == 'SUFFIX':
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + separator + comp
+            new_name = name + name_pre_suffix
+
+        else: #self.naming_position == 'PREFIX'
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + comp + separator
+            new_name = name_pre_suffix + name
+
+        return create_name_number(new_name, nr=1)
+
     # here you specify how they are drawn
     def draw(self, context):
         layout = self.layout
@@ -197,6 +233,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         if self.prefs_tabs == 'SETTINGS':
             row = layout.row()
             row.label(text='Collection Settings')
+
 
             for propName in self.col_props:
                 row = layout.row()
@@ -218,8 +255,40 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row = box.row()
             row.prop(self, "naming_position", expand=True)
 
+
+            boxname = box.box()
+            row = boxname.row()
+            if self.naming_position == 'PREFIX':
+                row.label(text="Name = Collision + Shape + Complexity + Optional + Basename")
+            else:
+                row.label(text="Name = Basename + Collision + Shape + Complexity + Optional")
+
+            row = boxname.row()
+            row.label(text="E.g. " + self.collider_name(basename='Suzanne'))
+
+            row = box.row()
+            row.prop(self, "replace_name")
+
+            row = box.row()
+            if self.replace_name:
+                row.prop(self, "basename")
+            else:
+                row.label(text="Basename: Enable Replace Name for this option to be active", icon="ERROR")
+
             for propName in self.props:
                 row = box.row()
+                row.prop(self, propName)
+
+            box2 = layout.box()
+            box2.label(text="Shape")
+            for propName in self.props_shapes:
+                row = box2.row()
+                row.prop(self, propName)
+
+            box3 = layout.box()
+            box3.label(text="Complexity")
+            for propName in self.props_complexity:
+                row = box3.row()
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'KEYMAP':
