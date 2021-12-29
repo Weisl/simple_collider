@@ -29,14 +29,15 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     )
 
     separator: bpy.props.StringProperty(name="Separator", default="_", description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
-    colPreSuffix: bpy.props.StringProperty(name="Collision", default="",  description='Simple string (text) added to the name of the collider')
-    optionalSuffix: bpy.props.StringProperty(name="Suffix (optional)", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
+    colPreSuffix: bpy.props.StringProperty(name="Collision Pre", default="",  description='Simple string (text) added to the name of the collider')
+    optionalSuffix: bpy.props.StringProperty(name="Collision Post", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
+
     basename: bpy.props.StringProperty(name="Basename", default="geo",  description='')
 
     # Collider Complexity
-    colSimpleComplex: bpy.props.StringProperty(name="Simple Complex Collisions", default="", description='Naming used for simple-complex collisions')
-    colSimple: bpy.props.StringProperty(name="Simple Collisions", default="", description='Naming used for simple collisions')
-    colComplex: bpy.props.StringProperty(name="Complex Collisions", default="Complex", description='Naming used for complex collisions')
+    colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="", description='Naming used for simple-complex collisions')
+    colSimple: bpy.props.StringProperty(name="Simple", default="", description='Naming used for simple collisions')
+    colComplex: bpy.props.StringProperty(name="Complex", default="Complex", description='Naming used for complex collisions')
 
     # Non collider
     # colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING",  description='Simple string (text) added to the name when not creating a collider')

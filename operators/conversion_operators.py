@@ -4,7 +4,7 @@ from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_material, make_physics_material, remove_materials
 
-collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
+collider_shapes = ['meshColSuffix', 'boxColSuffix','sphereColSuffix', 'convexColSuffix']
 
 
 def create_name_number(name, nr):
@@ -15,7 +15,7 @@ def unique_name(name, i = 1):
     '''recursive function to find unique name'''
     new_name = create_name_number(name, i)
     while new_name in bpy.data.objects:
-        i = i+1
+        i=i+1
         new_name = create_name_number(name, i)
     return new_name
 
@@ -41,6 +41,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     def __init__(self):
         super().__init__()
         self.use_type_change = True
+        self.use_decimation = True
 
     def invoke(self, context, event):
         super().invoke(context, event)

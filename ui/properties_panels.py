@@ -50,10 +50,10 @@ class CollissionPanel(Panel):
         layout.separator()
 
         row = layout.row()
-        row.label(text='Physics Materials')
+        row.label(text='Materials')
 
         row = layout.row()
-        row.prop(scene, "PhysicsIdentifier", text='Material Filter')
+        row.prop(scene, "PhysicsIdentifier", text='Filter')
 
         row = layout.row()
         row.prop(scene, "CollisionMaterials")

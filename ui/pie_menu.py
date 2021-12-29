@@ -36,6 +36,12 @@ class VIEW3D_MT_collision(Menu):
             op.select = False
             op.mode = key
 
+        self.layout.separator()
+
+        row = self.layout.row(align=True)
+        row.operator('object.convert_to_collider', icon='PHYSICS')
+        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
     bl_label = "Collision Pie"

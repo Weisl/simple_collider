@@ -121,7 +121,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_type_change:
         label= "Collider Shape"
-        value = str(self.collider_shapes[self.collider_shapes_idx])
+        value = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(C)', type='enum')
 
     if self.use_cylinder_axis:
@@ -183,6 +183,16 @@ class OBJECT_OT_add_bounding_object():
         dict['cylinder_segments'] = cylinder_segments
 
         return dict
+
+    def get_shape_name(self, identifier):
+        if identifier == 'boxColSuffix':
+            return 'BOX'
+        elif identifier == 'sphereColSuffix':
+            return 'SPHERE'
+        elif identifier == 'convexColSuffix':
+            return 'CONVEX'
+        else: # identifier == 'meshColSuffix':
+            return 'MESH'
 
     def force_redraw(self):
         bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
