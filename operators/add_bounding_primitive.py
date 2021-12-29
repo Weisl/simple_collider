@@ -111,13 +111,14 @@ def draw_viewport_overlay(self, context):
     label = 'Persistent Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    label = "Preview View "
-    value = self.shading_modes[self.shading_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(V)', type='enum')
-
-    label = "Collider Type"
+    label = "Collider Complexity"
     value = str(self.collision_type[self.collision_type_idx])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(T)', type='enum')
+
+    if context.space_data.shading.type == 'SOLID':
+        label = "Preview View "
+        value = self.shading_modes[self.shading_idx]
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(V)', type='enum')
 
     if self.use_type_change:
         label= "Collider Shape"
