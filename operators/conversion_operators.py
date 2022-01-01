@@ -96,7 +96,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_mesh"
     bl_label = "Convert to Mesh"
-    bl_description = 'Convert selected collider to mesh'
+    bl_description = 'Convert selected colliders to meshes'
 
     my_string: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
 

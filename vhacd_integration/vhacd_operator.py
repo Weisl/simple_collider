@@ -93,6 +93,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
             self.report({'WARNING'}, 'No executable path found!')
+            context.space_data.shading.color_type = self.color_type
+            try:
+                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            except ValueError:
+                pass
+
             return {'CANCELLED'}
 
         for obj in self.selected_objects:

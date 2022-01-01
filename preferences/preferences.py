@@ -342,14 +342,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 parent=box
             )
 
-            if self.executable_path:
-                row = layout.row()
-                row.prop(self, 'executable_path')
-
-            else:
-                row = layout.row()
-                row.prop(self, 'executable_path', icon="ERROR")
-
             row = layout.row(align = True)
             row.label(text="Download V-HACD")
             row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/win64/testVHACD.exe"
@@ -359,12 +351,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.label(text="V-Hacd Github")
             row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
 
+            if self.executable_path:
+                row = layout.row()
+                row.prop(self, 'executable_path')
+
+            else:
+                row = layout.row()
+                row.prop(self, 'executable_path', icon="ERROR")
+
+            for propName in self.vhacd_props:
+                row = layout.row()
+                row.prop(self, propName)
 
             if self.executable_path:
-
-                for propName in self.vhacd_props:
-                    row = layout.row()
-                    row.prop(self, propName)
 
                 layout.separator()
 
