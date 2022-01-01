@@ -6,32 +6,41 @@ class VIEW3D_MT_collision(Menu):
     bl_label = 'Collision Visibility'
 
     def draw(self, context):
-        col = self.layout.column_flow(columns=5, align = True)
 
-        for value in visibility_operators:
-            col.label(text=value)
+        split_left = self.layout.split(factor=0.35)
+        col_01 = split_left.column()
+        col_02 = split_left.column()
 
         for key, value in visibility_operators.items():
+            row1 = col_02.row(align=True)
+
+            col_01.label(text=value)
+
             # op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
-            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
+            op = row1.operator("object.hide_collisions", icon='HIDE_OFF', text='')
             op.hide = False
             op.mode = key
 
-        for key, value in visibility_operators.items():
             # op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
-            op = col.operator("object.hide_collisions", icon='HIDE_ON', text='')
+            op = row1.operator("object.hide_collisions", icon='HIDE_ON', text='')
             op.hide = True
             op.mode = key
 
-        for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
-            op.invert = False
+            # op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            op = row1.operator("object.select_collisions", text='Select')
+            op.select = True
             op.mode = key
 
-        for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
-            op.invert = True
+            # op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            op = row1.operator("object.select_collisions", text='Unselect')
+            op.select = False
             op.mode = key
+
+        self.layout.separator()
+
+        row = self.layout.row(align=True)
+        row.operator('object.convert_to_collider', icon='PHYSICS')
+        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
@@ -54,9 +63,6 @@ class VIEW3D_MT_PIE_template(Menu):
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
         #South
         other = pie.column()
-        # gap = other.column()
-        # gap.separator()
-        # gap.scale_y = 7
         other_menu = other.box().column()
         # other_menu.scale_x= 2
         other_menu.menu_contents("VIEW3D_MT_collision")

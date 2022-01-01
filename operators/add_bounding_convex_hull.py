@@ -101,8 +101,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bpy.ops.object.mode_set(mode='OBJECT')
 
             self.remove_all_modifiers(context, new_collider)
+
             # save collision objects to delete when canceling the operation
-            # self.previous_objects.append(new_collider)
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 

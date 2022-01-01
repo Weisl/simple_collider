@@ -188,7 +188,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             mid_point, radius = self.calculate_bounding_sphere(obj, used_vertices)
 
-            new_collider = create_sphere(mid_point, radius, self.sphere_segments)
+            new_collider = create_sphere(mid_point, radius, self.current_settings_dic['sphere_segments'])
             self.custom_set_parent(context, obj, new_collider)
 
             # save collision objects to delete when canceling the operation

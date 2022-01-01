@@ -8,92 +8,161 @@ from ..pyshics_materials.material_functions import remove_materials, set_materia
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
-def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, text, color_type = 'operator'):
-    """Draw text in the 3D Viewport"""
-    if color_type == 'operator':
-        blf.color(font_id, self.prefs.modal_font_color[0], self.prefs.modal_font_color[1],
-                  self.prefs.modal_font_color[2], self.prefs.modal_font_color[3])
-    elif color_type == 'title':
-        blf.color(font_id, self.prefs.modal_font_color_title[0], self.prefs.modal_font_color_title[1],
-                  self.prefs.modal_font_color_title[2], self.prefs.modal_font_color_title[3])
-    else:
-        blf.color(font_id, self.prefs.modal_font_color_scene[0],self.prefs.modal_font_color_scene[1],
-                  self.prefs.modal_font_color_scene[2], self.prefs.modal_font_color_scene[3])
+def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, value = None, type = 'default', key = '', highlight = False):
+    """Draw label in the 3D Viewport"""
+
+    # get colors from preferences
+    col_default = self.prefs.modal_color_default
+    color_title = self.prefs.modal_color_title
+    color_ignore_input = [0.5, 0.5, 0.5, 0.5]
+
+    #operator colors
+    color_enum = self.prefs.modal_color_enum
+    color_modal = self.prefs.modal_color_modal
+    color_bool = self.prefs.modal_color_bool
+    color_highlight = self.prefs.modal_color_highlight
+
+    font_size = self.prefs.modal_font_size
+
+    blf.size(font_id, 20, font_size)
+
+    if type == 'key_title':
+        if self.ignore_input:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+    elif self.ignore_input:
+        blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
+    elif type == 'title':
+        blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
+    else: #type == 'default'
+        if highlight:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        else:
+            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
     blf.position(font_id, left_margin, i * vertical_px_offset, 0)
-    blf.size(font_id, 20, 72)
-    blf.draw(font_id, text)
+    blf.draw(font_id, label)
+
+    if key:
+        if self.ignore_input:
+            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
+        elif highlight:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        elif type == 'bool':
+            blf.color(font_id, color_bool[0], color_bool[1], color_bool[2], color_bool[3])
+        elif type == 'enum':
+            blf.color(font_id, color_enum[0], color_enum[1], color_enum[2], color_enum[3])
+        elif type == 'modal':
+            blf.color(font_id, color_modal[0], color_modal[1], color_modal[2], color_modal[3])
+        else:  # type == 'default':
+            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+
+        blf.position(font_id, left_margin + 220/72 * font_size, i * vertical_px_offset, 0)
+        blf.draw(font_id, key)
+
+    if value:
+
+        if self.ignore_input:
+            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
+        elif highlight:
+            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        else:  # type == 'default':
+            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+
+        blf.position(font_id, left_margin + 290/72 * font_size, i * vertical_px_offset, 0)
+        blf.draw(font_id, value)
+
     i += 1
     return i
 
+def create_name_number(name, nr):
+    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
+    return name + nr
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
     scene = context.scene
 
     font_id = 0  # XXX, need to find out how best to get this.
-    vertical_px_offset = 30
-    left_margin = self.prefs.modal_font_distance_x
+    font_size = self.prefs.modal_font_size
+    vertical_px_offset = 30/72 * font_size
+    left_margin = bpy.context.area.width / 2 - 190/72 * font_size
     i = 1
 
     if self.use_space:
         # draw some text
-        global_orient = "ON" if scene.my_space == 'GLOBAL' else "OFF"
-        text = "Global Orient (G): " + global_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
 
-        # draw some text
-        local_orient = "ON" if scene.my_space == 'LOCAL' else "OFF"
-        text= "Local Orient (L): " + local_orient
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+        label = "Global/Local"
+        value = "GLOBAL" if scene.my_space == 'GLOBAL' else "LOCAL"
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(G/L)', type='enum')
 
-    text = "Auto Hide After Creation (H) : " + str(scene.my_hide)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+    label = "Display Wireframe "
+    value = str(scene.wireframe_mode)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(W)', type='enum')
 
-    text = "Display Wireframe (W) : " + str(scene.wireframe_mode)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='scene')
+    label = "Hide After Creation "
+    value = str(scene.my_hide)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(H)', type='bool')
 
-    text = "Opacity (A) : " + str(self.prefs.my_color_simple_complex[3])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='scene')
+    label = "Opacity"
+    value = self.current_settings_dic['alpha']
+    value = '{initial_value:.3f}'.format(initial_value=value)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(A)', type='modal', highlight = self.opacity_active )
 
-    text = 'Persistent Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text,color_type='title')
+    label = 'Persistent Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    text = "Shrink/Inflate (S): " + str(self.displace_my_offset)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+    label = "Collider Complexity"
+    value = str(self.collision_type[self.collision_type_idx])
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(T)', type='enum')
 
-    text = "Preview View (V) : " + self.shading_modes[self.shading_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
-
-    text = "Collider Type (T) : " + str(self.collision_type[self.collision_type_idx])
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
-
-    if self.use_decimation:
-        text = "Decimate (D): " + str(self.decimate_amount)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
-
-    if self.use_vertex_count:
-        text = "Segments (E): " + str(self.vertex_count)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
-
-    if self.use_modifier_stack:
-        text = "Use Modifier Stack (P) : " + str(self.my_use_modifier_stack)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
-
-    if self.use_cylinder_axis:
-        text = "Cylinder Axis Alignement (X/Y/Z) : " + str(self.cylinder_axis)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
-
-    if self.use_sphere_segments:
-        text = "Sphere Segments (R): " + str(self.sphere_segments)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+    if context.space_data.shading.type == 'SOLID':
+        label = "Preview View "
+        value = self.shading_modes[self.shading_idx]
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(V)', type='enum')
 
     if self.use_type_change:
-        text="Collider Shape (C): " + str(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text)
+        label= "Collider Shape"
+        value = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(C)', type='enum')
 
-    text = 'Operator Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, text, color_type='title')
+    if self.use_cylinder_axis:
+        label = "Cylinder Axis (X/Y/Z) : "
+        value = str(self.cylinder_axis)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(X/Y/Z)', type='enum')
+
+    if self.use_modifier_stack:
+        label = "Use Modifiers "
+        value = str(self.my_use_modifier_stack)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(P)', type='bool')
+
+    label = "Shrink/Inflate"
+    value = self.current_settings_dic['discplace_offset']
+    value = '{initial_value:.3f}'.format(initial_value=value)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(S)', type='modal', highlight=self.displace_active)
+
+    if self.use_sphere_segments:
+        label = "Sphere Segments "
+        value = str(self.current_settings_dic['sphere_segments'])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(R)', type='modal', highlight=self.sphere_segments_active)
+
+    if self.use_decimation:
+        label = "Decimate Ratio"
+        value = self.current_settings_dic['decimate']
+        value = '{initial_value:.3f}'.format(initial_value=value)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value,  key='(D)', type='modal', highlight=self.decimate_active)
+
+    if self.use_vertex_count:
+        label = "Segments"
+        value = str(self.current_settings_dic['cylinder_segments'])
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(E)', type='modal', highlight=self.vertex_count_active)
+
+
+    label = 'Operator Settings'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
+
+    if self.ignore_input:
+        label = 'IGNORE INPUT (ALT)'
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
 
 class OBJECT_OT_add_bounding_object():
@@ -105,6 +174,31 @@ class OBJECT_OT_add_bounding_object():
     def bmesh(cls, bm):
         #append bmesh to class for it not to be deleted
         cls.bm.append(bm)
+
+    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
+        dict = {}
+        dict['alpha'] = alpha
+        dict['discplace_offset'] = offset
+        dict['decimate'] = decimate
+        dict['sphere_segments'] = sphere_segments
+        dict['cylinder_segments'] = cylinder_segments
+
+        return dict
+
+    def get_shape_name(self, identifier):
+        if identifier == 'boxColSuffix':
+            return 'BOX'
+        elif identifier == 'sphereColSuffix':
+            return 'SPHERE'
+        elif identifier == 'convexColSuffix':
+            return 'CONVEX'
+        else: # identifier == 'meshColSuffix':
+            return 'MESH'
+
+    def force_redraw(self):
+        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
+        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
+        pass
 
     def set_collisions_wire_preview(self, mode):
         if mode in ['PREVIEW', 'ALWAYS']:
@@ -169,6 +263,17 @@ class OBJECT_OT_add_bounding_object():
         #This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
         OBJECT_OT_add_bounding_object.bmesh(bm)
         return used_vertices
+
+    def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
+
+        delta = delta * sensibility
+
+        if event.ctrl:  # snap
+            delta = round(delta, round_precission)
+        if event.shift:  # tweak
+            delta /= tweak_amount
+
+        return delta
 
     def get_vertices_Object(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
@@ -323,17 +428,15 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def create_name_number(self, name, nr):
-        nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
-        return name + nr
+
 
     def unique_name(self, name):
         '''recursive function to find unique name'''
-        new_name = self.create_name_number(name, self.name_count)
+        new_name = create_name_number(name, self.name_count)
 
         while new_name in bpy.data.objects:
             self.name_count = self.name_count + 1
-            new_name = self.create_name_number(name, self.name_count)
+            new_name = create_name_number(name, self.name_count)
 
         self.name_count = self.name_count + 1
         return new_name
@@ -341,10 +444,10 @@ class OBJECT_OT_add_bounding_object():
     def collider_name(self, basename = 'Basename'):
         separator = self.prefs.separator
 
-        if self.prefs.use_parent_name:
-            name = basename
-        else:
+        if self.prefs.replace_name:
             name = self.prefs.basename
+        else:
+            name = basename
 
         pre_suffix_componetns = [
             self.prefs.colPreSuffix,
@@ -400,7 +503,8 @@ class OBJECT_OT_add_bounding_object():
 
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_displace", type='DISPLACE')
-        modifier.strength = self.displace_my_offset
+        modifier.strength = self.current_settings_dic['discplace_offset']
+
         self.displace_modifiers.append(modifier)
 
     def del_displace_modifier(self,context,bounding_object):
@@ -413,7 +517,7 @@ class OBJECT_OT_add_bounding_object():
 
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
-        modifier.ratio = self.decimate_amount
+        modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
     def del_decimate_modifier(self,context,bounding_object):
@@ -438,10 +542,12 @@ class OBJECT_OT_add_bounding_object():
 
     def __init__(self):
         # has to be in --init
-        self.vertex_count = 8
         self.use_decimation = False
+
         self.use_vertex_count = False
+        self.vertex_count = 8
         self.use_modifier_stack = False
+
         self.use_space = False
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
@@ -449,12 +555,14 @@ class OBJECT_OT_add_bounding_object():
         self.type_suffix = ''
         self.use_type_change = False
 
+        #UI/UX
+        self.ignore_input = False
+
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
 
     def invoke(self, context, event):
-
         global collider_types
 
         if context.space_data.type != 'VIEW_3D':
@@ -474,20 +582,34 @@ class OBJECT_OT_add_bounding_object():
         self.selected_objects = context.selected_objects.copy()
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
+        self.prev_decimate_time = time.time()
 
-        # MODIFIERS
+        # Mouse
+        self.mouse_initial_x = event.mouse_x
+
+        #Modal Settings
         self.my_use_modifier_stack = False
+
+        # Modal MODIFIERS
+        #Displace
         self.displace_active = False
         self.displace_modifiers = []
-        self.displace_my_offset = 0.0
+
+        # Decimate
         self.decimate_active = False
-        self.prev_decimate_time = time.time()
         self.decimate_modifiers = []
-        self.decimate_amount = 1.0
+
+        #Opacity
         self.opacity_active = False
+        self.opacity_ref = 0.5
+
         self.cylinder_axis = 'Z'
+
         self.vertex_count_active = False
+
         self.sphere_segments_active = False
+        segments = 16
+
         self.color_type = context.space_data.shading.color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
@@ -495,19 +617,20 @@ class OBJECT_OT_add_bounding_object():
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_type_idx = 0
         self.collision_type = collider_types
-        #sphere
-        self.sphere_segments = 16
 
-        # store mouse position
-        self.first_mouse_x = event.mouse_x
+        # Physics Materials
         self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
-        self.name_count = 1
+        self.name_count = 0
 
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
             context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
+
+        dict = self.collision_dictionary(0.5, 0, 1.0, segments, self.vertex_count)
+        self.current_settings_dic = dict.copy()
+        self.ref_settings_dic = dict.copy()
 
         # the arguments we pass the the callback
         args = (self, context)
@@ -521,12 +644,15 @@ class OBJECT_OT_add_bounding_object():
     def modal(self, context, event):
         scene = context.scene
 
-        delta = self.first_mouse_x - event.mouse_x
+        # Ignore if Alt is pressed
+        if event.alt:
+            self.ignore_input = True
+            self.force_redraw()
+            return {'RUNNING_MODAL'}
 
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
-
             # Remove previously created collisions
             if self.new_colliders_list != None:
                 for obj in self.new_colliders_list:
@@ -550,9 +676,9 @@ class OBJECT_OT_add_bounding_object():
 
             for obj in self.new_colliders_list:
                 # remove modifiers if they have the default value
-                if self.displace_my_offset == 0.0:
+                if self.current_settings_dic['discplace_offset'] == 0.0:
                     self.del_displace_modifier(context,obj)
-                if self.decimate_amount == 1.0:
+                if self.current_settings_dic['decimate'] == 1.0:
                     self.del_decimate_modifier(context,obj)
 
                 # set the display settings for the collider objects
@@ -574,6 +700,29 @@ class OBJECT_OT_add_bounding_object():
 
             return {'FINISHED'}
 
+        # Set ref values when switching mode to avoid jumping of field of view.
+        elif event.type in ['LEFT_SHIFT','LEFT_CTRL'] and event.value in ['PRESS', 'RELEASE']:
+            self.ref_settings_dic = self.current_settings_dic.copy()
+
+            # update ref mouse position to current
+            self.mouse_initial_x = event.mouse_x
+            #Alt is not pressed anymore after release
+            self.ignore_input = False
+
+            return {'RUNNING_MODAL'}
+
+        # Ignore Mouse Movement. The Operator will behave as starting it newly
+        elif event.type == 'LEFT_ALT' and event.value == 'RELEASE':
+            self.ref_settings_dic = self.current_settings_dic.copy()
+
+            # update ref mouse position to current
+            self.mouse_initial_x = event.mouse_x
+
+            #Alt is not pressed anymore after release
+            self.ignore_input = False
+            self.force_redraw()
+            return {'RUNNING_MODAL'}
+
         # hide after creation
         elif event.type == 'H' and event.value == 'RELEASE':
             scene.my_hide = not scene.my_hide
@@ -591,6 +740,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.vertex_count_active = False
             self.sphere_segments_active = False
+            self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'D' and event.value == 'RELEASE':
             self.decimate_active = not self.decimate_active
@@ -598,6 +748,7 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = False
             self.vertex_count_active = False
             self.sphere_segments_active = False
+            self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'A' and event.value == 'RELEASE':
             self.opacity_active = not self.opacity_active
@@ -605,6 +756,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.vertex_count_active = False
             self.sphere_segments_active = False
+            self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'E' and event.value == 'RELEASE':
             self.vertex_count_active = not self.vertex_count_active
@@ -612,6 +764,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.opacity_active = False
             self.sphere_segments_active = False
+            self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'V' and event.value == 'RELEASE':
             #toggle through display modes
@@ -627,21 +780,32 @@ class OBJECT_OT_add_bounding_object():
                 self.update_names()
 
         elif event.type == 'MOUSEMOVE':
+            # calculate mouse movement and offset camera
+            delta = int(self.mouse_initial_x - event.mouse_x)
+
+            # Ignore if Alt is pressed
+            if event.alt:
+                self.ignore_input = True
+                return {'RUNNING_MODAL'}
+
             if self.displace_active:
+                offset = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                strenght = self.ref_settings_dic['discplace_offset'] - offset
+
                 for mod in self.displace_modifiers:
-                    strenght = 1.0 - delta * 0.01
                     mod.strength = strenght
                     mod.show_on_cage = True
                     mod.show_in_editmode = True
 
-                    # Store displacement strenght to use when regenerating the colliders
-                    self.displace_my_offset = mod.strength
+                self.current_settings_dic['discplace_offset'] = strenght
 
             if self.decimate_active:
-                dec_amount = numpy.clip(round((1.0 - delta * 0.002), 2), 0.01, 1.0)
-                if self.decimate_amount != dec_amount:
-                    self.decimate_amount = dec_amount
-                    print(dec_amount)
+                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                dec_amount = (self.ref_settings_dic['decimate'] + delta)
+                dec_amount = numpy.clip(dec_amount, 0.01, 1.0)
+
+                if self.current_settings_dic['decimate'] != dec_amount:
+                    self.current_settings_dic['decimate'] = dec_amount
 
                     # I had to iterate over all object because it crashed when just iterating over the modifiers.
                     for obj in self.new_colliders_list:
@@ -650,50 +814,50 @@ class OBJECT_OT_add_bounding_object():
                                 mod.ratio = dec_amount
 
             if self.opacity_active:
-                color_alpha = 0.5 + delta * 0.005
+                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                color_alpha = self.ref_settings_dic['alpha'] - delta
+                color_alpha = numpy.clip(color_alpha, 0.00, 1.0)
 
                 for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
                 self.prefs.my_color_simple_complex[3] = color_alpha
+                self.current_settings_dic['alpha'] = color_alpha
 
             if self.vertex_count_active:
-                if event.ctrl:
-                    vertex_count = abs(int(round((12 + delta * 0.15))))
-                elif event.shift:
-                    vertex_count = abs(int(round((12 + delta * 0.002))))
-                else:
-                    vertex_count = abs(int(round((12 + delta * 0.02))))
+                delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
+                vertex_count = int(abs(self.ref_settings_dic['cylinder_segments'] - delta))
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if vertex_count != int(round(self.vertex_count)):
                     self.vertex_count = vertex_count
+                    self.current_settings_dic['cylinder_segments'] = vertex_count
                     self.execute(context)
 
             if self.sphere_segments_active:
-                if event.ctrl:
-                    segments = int(abs(round((16 + delta * 0.15))))
-                elif event.shift:
-                    segments = int(abs(round((16 + delta * 0.002))))
-                else:
-                    segments = int(abs(round((16 + delta * 0.02))))
+                delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
+                segments = int(abs(self.ref_settings_dic['sphere_segments'] - delta))
 
-                    # check if value changed to avoid regenerating collisions for the same value
-                if segments != int(round(self.sphere_segments)):
-                    self.sphere_segments = segments
+                # check if value changed to avoid regenerating collisions for the same value
+                if segments != int(round(self.current_settings_dic['sphere_segments'])):
+                    self.current_settings_dic['sphere_segments'] = segments
                     self.execute(context)
 
         # passthrough specific events to blenders default behavior
         elif event.type in {'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
 
+        return {'RUNNING_MODAL'}
+
     def execute(self, context):
-        #reset naming count:
+        # get current time to calculate time elapsed
         self.t0 = time.time()
-        self.name_count = 1
+        # reset naming count:
+        self.name_count = 0
 
         self.obj_mode = context.object.mode
 
+        #Remove objects from previous generation
         self.remove_objects(self.new_colliders_list)
         self.new_colliders_list = []
 

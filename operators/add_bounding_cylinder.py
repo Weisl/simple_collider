@@ -54,7 +54,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         global tmp_name
 
         # add new cylindrical mesh
-        bpy.ops.mesh.primitive_cylinder_add(vertices=self.vertex_count,
+        bpy.ops.mesh.primitive_cylinder_add(vertices=self.current_settings_dic['cylinder_segments'],
                                             radius=radius,
                                             depth=depth)
 
