@@ -20,12 +20,20 @@ class COLLISION_preset(AddPresetBase, Operator):
 
     # properties to store in the preset
     preset_values = [
+        "prefs.naming_position",
+        "prefs.basename",
+        "prefs.use_col_Complexity",
+        "prefs.separator",
         "prefs.meshColSuffix",
         "prefs.convexColSuffix",
         "prefs.boxColSuffix",
         "prefs.colPreSuffix",
         "prefs.colSuffix",
         "prefs.sphereColSuffix",
+        "prefs.optionalSuffix",
+        "prefs.colAll",
+        "prefs.colSimple",
+        "prefs.colComplex",
     ]
 
     # where to store the preset

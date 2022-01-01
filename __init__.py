@@ -1,12 +1,11 @@
 bl_info = {
-    "name": "CollisionTool",
+    "name": "CollisionHelpers",
     "description": "",
     "author": "Matthias Patscheider",
-    "version": (0, 5, 0),
-    "blender": (2, 93, 0),
+    "version": (1, 0, 0),
+    "blender": (3, 0, 0),
     "location": "View3D",
-    "warning": "This addon is still in development.",
-    "wiki_url": "https://github.com/Weisl/CollisionHelpers",
+    "wiki_url": "https://weisl.github.io/CollisionHelper_Overview/",
     "tracker_url": "https://github.com/Weisl/CollisionHelpers/issues",
     "category": "Object"}
 
@@ -16,14 +15,12 @@ if "bpy" in locals():
 
     importlib.reload(ui)
     importlib.reload(operators)
-    # importlib.reload(physics_materials)
     importlib.reload(vhacd_integration)
     importlib.reload(preferences)
 
 else:
     from . import ui
     from . import operators
-    # from . import physics_materials
     from . import vhacd_integration
     from . import preferences
 
@@ -41,12 +38,21 @@ def register():
 
     scene.CollisionMaterials = bpy.props.PointerProperty(
         type=bpy.types.Material,
-        poll=scene_my_collision_material_poll
+        poll=scene_my_collision_material_poll,
+        name='Physics Material',
+        description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material.'
     )
 
     scene.PhysicsIdentifier = bpy.props.StringProperty(
         default="",
-        name='Material Filter',
+        description="Filter physics materials out based on their naming.",
+        name='Physics Material Filter',
+    )
+
+    scene.DefaultMeshMaterial = bpy.props.PointerProperty(
+        type=bpy.types.Material,
+        name = 'Default Mesh Material',
+        description='The default mesh material will be assigned to any mesh that is converted from a collider to a mesh object'
     )
 
     # call the register function of the sub modules
@@ -64,6 +70,7 @@ def unregister():
     # delete variables saved in the scenes file
     del scene.CollisionMaterials
     del scene.PhysicsIdentifier
+    del scene.DefaultMeshMaterial
 
     # call unregister function of the sub-modules
     preferences.unregister()
