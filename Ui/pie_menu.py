@@ -54,9 +54,6 @@ class VIEW3D_MT_PIE_template(Menu):
         # operator_enum will just spread all available options
         # for the type enum of the operator on the pie
 
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
-
-
         #West
         pie.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         #East
@@ -75,11 +72,3 @@ class VIEW3D_MT_PIE_template(Menu):
 
         #NorthEast
         pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
-
-        #SouthWest
-        pass
-        # if prefs.executable_path:
-        #     pie.operator("collision.vhacd")
-        # else:
-        #     pie.operator("wm.url_open", text="Convex decomposition: Requires V-HACD").url = "https://github.com/kmammou/v-hacd"
-        #

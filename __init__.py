@@ -1,33 +1,33 @@
 bl_info = {
-    "name": "CollisionHelpers",
+    "name": "Collider Tools",
     "description": "",
     "author": "Matthias Patscheider",
     "version": (1, 0, 0),
     "blender": (3, 0, 0),
     "location": "View3D",
-    "wiki_url": "https://weisl.github.io/CollisionHelper_Overview/",
-    "tracker_url": "https://github.com/Weisl/CollisionHelpers/issues",
+    "wiki_url": "https://weisl.github.io/collider-tools_overview/",
+    "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
     "category": "Object"}
 
 # support reloading sub-modules
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(ui)
-    importlib.reload(operators)
-    importlib.reload(vhacd_integration)
-    importlib.reload(preferences)
+    importlib.reload(Ui)
+    importlib.reload(Operators)
+    importlib.reload(Auto_Convex)
+    importlib.reload(Preferences)
 
 else:
-    from . import ui
-    from . import operators
-    from . import vhacd_integration
-    from . import preferences
+    from . import Ui
+    from . import Operators
+    from . import Auto_Convex
+    from . import Preferences
 
 import bpy
 
 def scene_my_collision_material_poll(self, material):
-    ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
+    ''' Returns material only if the name contains the physics material identifier specified in the Preferences '''
     if bpy.context.scene.PhysicsIdentifier in material.name:
         return material.name
 
@@ -56,12 +56,12 @@ def register():
     )
 
     # call the register function of the sub modules
-    ui.register()
-    operators.register()
-    vhacd_integration.register()
+    Ui.register()
+    Operators.register()
+    Auto_Convex.register()
 
-    # keymap and preferences should be last
-    preferences.register()
+    # keymap and Preferences should be last
+    Preferences.register()
 
 
 def unregister():
@@ -73,7 +73,7 @@ def unregister():
     del scene.DefaultMeshMaterial
 
     # call unregister function of the sub-modules
-    preferences.unregister()
-    vhacd_integration.unregister()
-    operators.unregister()
-    ui.unregister()
+    Preferences.unregister()
+    Auto_Convex.unregister()
+    Operators.unregister()
+    Ui.unregister()

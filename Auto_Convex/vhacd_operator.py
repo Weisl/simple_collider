@@ -8,7 +8,7 @@ from mathutils import Matrix
 from .off_eport import off_export
 
 from bpy.types import Operator
-from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..Operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
 

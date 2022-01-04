@@ -28,7 +28,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         bpy.data.window_managers["WinMan"].addon_search = self.addon_name
         prefs = context.preferences.addons[self.addon_name].preferences
         prefs.prefs_tabs = 'VHACD'
-        # bpy.ops.preferences.addon_expand(module=self.addon_name)
+        # bpy.ops.Preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
 
@@ -128,10 +128,10 @@ class CollissionPanel(Panel):
         row = layout.row()
         row.prop(scene, 'maxNumVerticesPerCH', text="Collision Vertices")
 
-        prefs = context.preferences.addons["CollisionHelpers"].preferences
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         row = layout.row(align=True)
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Convex Decomposition", icon='MESH_ICOSPHERE')
         else:
-            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = "CollisionHelpers"
+            row.operator("Preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = __package__.split('.')[0]
 
