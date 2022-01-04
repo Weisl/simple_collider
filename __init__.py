@@ -19,15 +19,15 @@ if "bpy" in locals():
     importlib.reload(Preferences)
 
 else:
-    from . import Ui
-    from . import Operators
-    from . import Auto_Convex
-    from . import Preferences
+    from . import ui
+    from . import operators
+    from . import auto_Convex
+    from . import preferences
 
 import bpy
 
 def scene_my_collision_material_poll(self, material):
-    ''' Returns material only if the name contains the physics material identifier specified in the Preferences '''
+    ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
     if bpy.context.scene.PhysicsIdentifier in material.name:
         return material.name
 
@@ -56,12 +56,12 @@ def register():
     )
 
     # call the register function of the sub modules
-    Ui.register()
-    Operators.register()
-    Auto_Convex.register()
+    ui.register()
+    operators.register()
+    auto_Convex.register()
 
-    # keymap and Preferences should be last
-    Preferences.register()
+    # keymap and preferences should be last
+    preferences.register()
 
 
 def unregister():
@@ -73,7 +73,7 @@ def unregister():
     del scene.DefaultMeshMaterial
 
     # call unregister function of the sub-modules
-    Preferences.unregister()
-    Auto_Convex.unregister()
-    Operators.unregister()
-    Ui.unregister()
+    preferences.unregister()
+    auto_Convex.unregister()
+    operators.unregister()
+    ui.unregister()

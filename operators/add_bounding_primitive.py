@@ -4,14 +4,14 @@ import bmesh
 import time
 import numpy
 
-from ..Pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
+from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
 def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, value = None, type = 'default', key = '', highlight = False):
     """Draw label in the 3D Viewport"""
 
-    # get colors from Preferences
+    # get colors from preferences
     col_default = self.prefs.modal_color_default
     color_title = self.prefs.modal_color_title
     color_ignore_input = [0.5, 0.5, 0.5, 0.5]
@@ -166,7 +166,7 @@ def draw_viewport_overlay(self, context):
 
 
 class OBJECT_OT_add_bounding_object():
-    """Abstract parent class for modal Operators contain common methods and properties for all add bounding object Operators"""
+    """Abstract parent class for modal operators contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
     bm = []
 
@@ -569,7 +569,7 @@ class OBJECT_OT_add_bounding_object():
             self.report({'WARNING'}, "Active space must be a View3d")
             return {'CANCELLED'}
 
-        # get collision suffix from Preferences
+        # get collision suffix from preferences
         self.prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         scene = context.scene
 

@@ -2,7 +2,7 @@ import bmesh
 import bpy
 from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..Pyshics_materials.material_functions import set_material, make_physics_material, remove_materials
+from ..pyshics_materials.material_functions import set_material, make_physics_material, remove_materials
 
 collider_shapes = ['meshColSuffix', 'boxColSuffix','sphereColSuffix', 'convexColSuffix']
 

@@ -18,7 +18,7 @@ def label_multiline(context, text, parent):
 class PREFERENCES_OT_open_addon(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "preferences.addon_search"
-    bl_label = "Open Addon Preferences"
+    bl_label = "Open Addon preferences"
 
     addon_name: bpy.props.StringProperty()
 
@@ -28,7 +28,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         bpy.data.window_managers["WinMan"].addon_search = self.addon_name
         prefs = context.preferences.addons[self.addon_name].preferences
         prefs.prefs_tabs = 'VHACD'
-        # bpy.ops.Preferences.addon_expand(module=self.addon_name)
+        # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
 
@@ -133,5 +133,5 @@ class CollissionPanel(Panel):
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Convex Decomposition", icon='MESH_ICOSPHERE')
         else:
-            row.operator("Preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = __package__.split('.')[0]
+            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = __package__.split('.')[0]
 

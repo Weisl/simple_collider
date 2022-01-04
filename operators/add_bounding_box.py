@@ -4,7 +4,7 @@ from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
 from mathutils import Vector
 
-from ..Operators.object_pivot_and_ailgn import alignObjects
+from ..operators.object_pivot_and_ailgn import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from .add_bounding_primitive import collider_types
 

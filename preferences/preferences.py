@@ -4,11 +4,11 @@ import rna_keymap_ui
 from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
-from ..Ui.properties_panels import label_multiline
-from ..Operators.add_bounding_primitive import create_name_number
+from ..ui.properties_panels import label_multiline
+from ..operators.add_bounding_primitive import create_name_number
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
-    """Contains the blender addon Preferences"""
+    """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
@@ -81,7 +81,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     default=(0.36, 0.75, 0.92, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
-    modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal Operators to create different collision shapes", default=56)
+    modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=56)
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
     replace_name: bpy.props.BoolProperty(name='Replace Name', description='Replace the name with a new one or use the name of the original object for the newly created collision name', default = True)
