@@ -71,12 +71,11 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 self.remove_all_modifiers(context, new_collider)
 
             self.type_suffix = self.prefs.boxColSuffix
-            new_name = super().collider_name()
-
-            new_collider.name = new_name
 
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
+
+            new_collider.name = super().collider_name(basename=obj.name)
 
             # save collision objects to delete when canceling the operation
             collections = obj.users_collection
