@@ -31,7 +31,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     colPreSuffix: bpy.props.StringProperty(name="Collision Pre", default="",  description='Simple string (text) added to the name of the collider')
     optionalSuffix: bpy.props.StringProperty(name="Collision Post", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
 
-    basename: bpy.props.StringProperty(name="Basename", default="geo",  description='')
+    basename: bpy.props.StringProperty(name="Replace Basename", default="geo",  description='')
 
     # Collider Complexity
     colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="", description='Naming used for simple-complex collisions')
@@ -84,7 +84,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=56)
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
-    replace_name: bpy.props.BoolProperty(name='Replace Name', description='Replace the name with a new one or use the name of the original object for the newly created collision name', default = True)
+    replace_name: bpy.props.BoolProperty(name='Use Replace Name', description='Replace the name with a new one or use the name of the original object for the newly created collision name', default = False)
     col_collection_name: bpy.props.StringProperty(name='Collection Name',description='Name of the collection newly created collisions get added to',default='Collisions')
 
     #### VHACD ####
@@ -273,7 +273,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             if self.replace_name:
                 row.prop(self, "basename")
             else:
-                row.label(text="Basename: Enable Replace Name for this option to be active", icon="ERROR")
+                row.prop(self, "basename", icon="ERROR")
 
             for propName in self.props:
                 row = box.row()
