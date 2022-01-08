@@ -37,4 +37,4 @@ class COLLISION_preset(AddPresetBase, Operator):
     ]
 
     # where to store the preset
-    preset_subdir = "scene\\collision_preset"
+    preset_subdir = "collider_tools"
