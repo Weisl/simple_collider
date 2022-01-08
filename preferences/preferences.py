@@ -20,18 +20,21 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
 
+    #Naming
     naming_position: bpy.props.EnumProperty(
         name='Collider Naming',
         items=(('PREFIX', "Prefix", "Prefix"), ('SUFFIX', "Suffix", "Suffix")),
         default='PREFIX',
         description='Add custom naming as prefix or suffix'
     )
-
     separator: bpy.props.StringProperty(name="Separator", default="_", description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
+
+    basename: bpy.props.StringProperty(name="Replace Basename", default="geo",  description='')
+    replace_name: bpy.props.BoolProperty(name='Use Replace Name', description='Replace the name with a new one or use the name of the original object for the newly created collision name', default = False)
+
     colPreSuffix: bpy.props.StringProperty(name="Collision Pre", default="",  description='Simple string (text) added to the name of the collider')
     optionalSuffix: bpy.props.StringProperty(name="Collision Post", default="",  description='Additional string (text) added to the name of the collider for custom purpose')
 
-    basename: bpy.props.StringProperty(name="Replace Basename", default="geo",  description='')
 
     # Collider Complexity
     IgnoreShapeForComplex:  bpy.props.BoolProperty(name='UE: Complex Naming', description='Ignore Shape names for Complex Collisions to work for the Unreal Engine', default=False)
@@ -46,6 +49,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="USP", description='Naming used to define sphere collisions')
     meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="Mesh", description='Naming used to define triangle mesh collisions')
 
+    #COLORS
     # The object color for the bounding object
     my_color_simple_complex : bpy.props.FloatVectorProperty(name="Simple Complex Color", description="Object color and alpha for simple-complex collisions", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
 
@@ -81,9 +85,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=56)
+
+    ## Collections
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
-    replace_name: bpy.props.BoolProperty(name='Use Replace Name', description='Replace the name with a new one or use the name of the original object for the newly created collision name', default = False)
     col_collection_name: bpy.props.StringProperty(name='Collection Name',description='Name of the collection newly created collisions get added to',default='Collisions')
 
     #### VHACD ####
