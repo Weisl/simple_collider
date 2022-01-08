@@ -451,16 +451,17 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        if not self.IgnoreShapeForComplex:
+        if self.prefs.IgnoreShapeForComplex and self.collision_type[self.collision_type_idx] == 'COMPLEX':
             pre_suffix_componetns = [
                 self.prefs.colPreSuffix,
-                self.type_suffix,
                 self.get_complexity_suffix(),
                 self.prefs.optionalSuffix
             ]
+            
         else:
             pre_suffix_componetns = [
                 self.prefs.colPreSuffix,
+                self.type_suffix,
                 self.get_complexity_suffix(),
                 self.prefs.optionalSuffix
             ]
