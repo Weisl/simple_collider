@@ -70,7 +70,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 context.scene.collection.objects.link(new_collider)
                 self.remove_all_modifiers(context, new_collider)
 
-            self.type_suffix = self.prefs.boxColSuffix
+            self.type_suffix = self.prefs.meshColSuffix
 
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
