@@ -553,6 +553,7 @@ class OBJECT_OT_add_bounding_object():
 
     def __init__(self):
         # has to be in --init
+        self.is_mesh_to_collider = False
         self.use_decimation = False
 
         self.use_vertex_count = False
@@ -568,6 +569,7 @@ class OBJECT_OT_add_bounding_object():
 
         #UI/UX
         self.ignore_input = False
+
 
     @classmethod
     def poll(cls, context):
@@ -664,13 +666,33 @@ class OBJECT_OT_add_bounding_object():
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
-            # Remove previously created collisions
-            if self.new_colliders_list != None:
-                for obj in self.new_colliders_list:
-                    objs = bpy.data.objects
-                    objs.remove(obj, do_unlink=True)
+
+            if not self.is_mesh_to_collider:
+                # Remove previously created collisions
+                if self.new_colliders_list != None:
+                    for obj in self.new_colliders_list:
+                        objs = bpy.data.objects
+                        objs.remove(obj, do_unlink=True)
+
+            # Reset Convert Mesh to Collider
+            else:
+                if self.new_colliders_list != None:
+                    for obj, data in zip(self.new_colliders_list, self.original_obj_data):
+
+                        obj.color = data['color']
+                        obj.show_wire = data['show_wire']
+                        obj.name = data['name']
+
+                        remove_materials(obj)
+                        for mat in data['material_slots']:
+                            # print(mat.name)
+                            set_material(obj,bpy.data.materials[mat])
+
+                        self.del_displace_modifier(context, obj)
+                        self.del_decimate_modifier(context, obj)
 
             context.space_data.shading.color_type = self.color_type
+
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')

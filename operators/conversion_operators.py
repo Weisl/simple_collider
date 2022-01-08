@@ -42,6 +42,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_type_change = True
         self.use_decimation = True
+        self.is_mesh_to_collider = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -64,10 +65,23 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
         return {'RUNNING_MODAL'}
 
+    def store_initial_obj_state(self, obj):
+        dic = {}
+        dic['name'] = obj.name
+        dic['material_slots'] = []
+
+        for mat in obj.material_slots:
+            dic['material_slots'].append(mat.name)
+
+        dic['color'] = obj.color
+        dic['show_wire'] = obj.show_wire
+        return dic
+
     def execute(self, context):
         # CLEANUP and INIT
         super().execute(context)
 
+        self.original_obj_data = []
         self.type_suffix = self.prefs.meshColSuffix
 
         # Create the bounding geometry, depending on edit or object mode.
@@ -83,6 +97,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             new_collider = obj
 
             self.new_colliders_list.append(new_collider)
+            self.original_obj_data.append(self.store_initial_obj_state(obj))
 
             collections = new_collider.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
