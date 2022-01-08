@@ -2,11 +2,9 @@ import bmesh
 import bpy
 from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
-from mathutils import Vector
 
 from ..operators.object_pivot_and_ailgn import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .add_bounding_primitive import collider_types
 
 tmp_name = 'box_collider'
 
@@ -182,5 +180,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        super().print_generation_time("Box Collider")
+
         return {'RUNNING_MODAL'}

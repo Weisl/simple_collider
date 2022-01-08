@@ -428,7 +428,9 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-
+    def print_generation_time(self, shape):
+        print(shape)
+        print("Time elapsed: ", str(self.get_time_elapsed()))
 
     def unique_name(self, name):
         '''recursive function to find unique name'''
