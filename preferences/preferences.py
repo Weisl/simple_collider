@@ -34,18 +34,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     basename: bpy.props.StringProperty(name="Replace Basename", default="geo",  description='')
 
     # Collider Complexity
+    IgnoreShapeForComplex:  bpy.props.BoolProperty(name='UE: Complex Naming', description='Ignore Shape names for Complex Collisions to work for the Unreal Engine', default=False)
+
     colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="", description='Naming used for simple-complex collisions')
     colSimple: bpy.props.StringProperty(name="Simple", default="", description='Naming used for simple collisions')
     colComplex: bpy.props.StringProperty(name="Complex", default="Complex", description='Naming used for complex collisions')
-
-    # Non collider
-    # colSuffix: bpy.props.StringProperty(name="Non Collision", default="BOUNDING",  description='Simple string (text) added to the name when not creating a collider')
 
     # Collider Shapes
     boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="UBX", description='Naming used to define box collisions')
     convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="UCX", description='Naming used to define convex collisions')
     sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="USP", description='Naming used to define sphere collisions')
-    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="UMH", description='Naming used to define triangle mesh collisions')
+    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="Mesh", description='Naming used to define triangle mesh collisions')
 
     # The object color for the bounding object
     my_color_simple_complex : bpy.props.FloatVectorProperty(name="Simple Complex Color", description="Object color and alpha for simple-complex collisions", default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0, subtype='COLOR', size=4)
@@ -148,6 +147,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     props_complexity = [
+        "IgnoreShapeForComplex",
         "colSimple",
         "colComplex",
         "colSimpleComplex",
@@ -259,9 +259,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             boxname = box.box()
             row = boxname.row()
             if self.naming_position == 'PREFIX':
-                row.label(text="Name = Collision + Shape + Complexity + Optional + Basename")
+                row.label(text="Name = Collision Pre + Shape + Complexity + Optional + Collision Post + Numbering")
             else:
-                row.label(text="Name = Basename + Collision + Shape + Complexity + Optional")
+                row.label(text="Name = Basename + Collision Pre + Shape + Complexity + Collision Post + Numbering")
 
             row = boxname.row()
             row.label(text="E.g. " + self.collider_name(basename='Suzanne'))
