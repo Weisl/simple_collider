@@ -678,6 +678,10 @@ class OBJECT_OT_add_bounding_object():
             else:
                 if self.new_colliders_list != None:
                     for obj, data in zip(self.new_colliders_list, self.original_obj_data):
+                        if self.prefs.col_collection_name in bpy.data.collections:
+                            col = bpy.data.collections[self.prefs.col_collection_name]
+                            if obj.name in col.objects:
+                                col.objects.unlink(obj)
 
                         obj.color = data['color']
                         obj.show_wire = data['show_wire']
