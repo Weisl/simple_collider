@@ -451,14 +451,22 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        pre_suffix_componetns = [
-            self.prefs.colPreSuffix,
-            self.type_suffix,
-            self.get_complexity_suffix(),
-            self.prefs.optionalSuffix
-        ]
+        if not self.IgnoreShapeForComplex:
+            pre_suffix_componetns = [
+                self.prefs.colPreSuffix,
+                self.type_suffix,
+                self.get_complexity_suffix(),
+                self.prefs.optionalSuffix
+            ]
+        else:
+            pre_suffix_componetns = [
+                self.prefs.colPreSuffix,
+                self.get_complexity_suffix(),
+                self.prefs.optionalSuffix
+            ]
 
         name_pre_suffix = ''
+
         if self.prefs.naming_position == 'SUFFIX':
             for comp in pre_suffix_componetns:
                 if comp:
