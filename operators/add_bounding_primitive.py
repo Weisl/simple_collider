@@ -428,7 +428,9 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-
+    def print_generation_time(self, shape):
+        print(shape)
+        print("Time elapsed: ", str(self.get_time_elapsed()))
 
     def unique_name(self, name):
         '''recursive function to find unique name'''
@@ -449,14 +451,23 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        pre_suffix_componetns = [
-            self.prefs.colPreSuffix,
-            self.type_suffix,
-            self.get_complexity_suffix(),
-            self.prefs.optionalSuffix
-        ]
+        if self.prefs.IgnoreShapeForComplex and self.collision_type[self.collision_type_idx] == 'COMPLEX':
+            pre_suffix_componetns = [
+                self.prefs.colPreSuffix,
+                self.get_complexity_suffix(),
+                self.prefs.optionalSuffix
+            ]
+
+        else:
+            pre_suffix_componetns = [
+                self.prefs.colPreSuffix,
+                self.type_suffix,
+                self.get_complexity_suffix(),
+                self.prefs.optionalSuffix
+            ]
 
         name_pre_suffix = ''
+
         if self.prefs.naming_position == 'SUFFIX':
             for comp in pre_suffix_componetns:
                 if comp:
@@ -542,6 +553,7 @@ class OBJECT_OT_add_bounding_object():
 
     def __init__(self):
         # has to be in --init
+        self.is_mesh_to_collider = False
         self.use_decimation = False
 
         self.use_vertex_count = False
@@ -558,6 +570,7 @@ class OBJECT_OT_add_bounding_object():
         #UI/UX
         self.ignore_input = False
 
+
     @classmethod
     def poll(cls, context):
         return len(context.selected_objects) > 0
@@ -570,7 +583,7 @@ class OBJECT_OT_add_bounding_object():
             return {'CANCELLED'}
 
         # get collision suffix from preferences
-        self.prefs = context.preferences.addons["CollisionHelpers"].preferences
+        self.prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         scene = context.scene
 
         # Active object
@@ -653,13 +666,37 @@ class OBJECT_OT_add_bounding_object():
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
-            # Remove previously created collisions
-            if self.new_colliders_list != None:
-                for obj in self.new_colliders_list:
-                    objs = bpy.data.objects
-                    objs.remove(obj, do_unlink=True)
+
+            if not self.is_mesh_to_collider:
+                # Remove previously created collisions
+                if self.new_colliders_list != None:
+                    for obj in self.new_colliders_list:
+                        objs = bpy.data.objects
+                        objs.remove(obj, do_unlink=True)
+
+            # Reset Convert Mesh to Collider
+            else:
+                if self.new_colliders_list != None:
+                    for obj, data in zip(self.new_colliders_list, self.original_obj_data):
+                        if self.prefs.col_collection_name in bpy.data.collections:
+                            col = bpy.data.collections[self.prefs.col_collection_name]
+                            if obj.name in col.objects:
+                                col.objects.unlink(obj)
+
+                        obj.color = data['color']
+                        obj.show_wire = data['show_wire']
+                        obj.name = data['name']
+
+                        remove_materials(obj)
+                        for mat in data['material_slots']:
+                            # print(mat.name)
+                            set_material(obj,bpy.data.materials[mat])
+
+                        self.del_displace_modifier(context, obj)
+                        self.del_decimate_modifier(context, obj)
 
             context.space_data.shading.color_type = self.color_type
+
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')

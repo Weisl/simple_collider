@@ -3,7 +3,7 @@ from bpy.types import Operator, Menu
 
 class OBJECT_MT_collision_presets(Menu):
     bl_label = "Naming Preset"
-    preset_subdir = "scene/collision_preset"
+    preset_subdir = "collider_tools"
     preset_operator = "script.execute_preset"
     draw = Menu.draw_preset
 
@@ -15,26 +15,26 @@ class COLLISION_preset(AddPresetBase, Operator):
 
     # variable used for all preset values
     preset_defines = [
-        "prefs = bpy.context.preferences.addons['CollisionHelpers'].preferences"
+        "prefs = bpy.context.preferences.addons['collider_tools'].preferences"
     ]
 
     # properties to store in the preset
     preset_values = [
         "prefs.naming_position",
-        "prefs.basename",
-        "prefs.use_col_Complexity",
         "prefs.separator",
-        "prefs.meshColSuffix",
-        "prefs.convexColSuffix",
-        "prefs.boxColSuffix",
+        "prefs.basename",
+        "prefs.replace_name",
         "prefs.colPreSuffix",
-        "prefs.colSuffix",
-        "prefs.sphereColSuffix",
         "prefs.optionalSuffix",
-        "prefs.colAll",
+        "prefs.IgnoreShapeForComplex",
+        "prefs.colSimpleComplex",
         "prefs.colSimple",
         "prefs.colComplex",
+        "prefs.boxColSuffix",
+        "prefs.convexColSuffix",
+        "prefs.sphereColSuffix",
+        "prefs.meshColSuffix",
     ]
 
     # where to store the preset
-    preset_subdir = "scene/collision_preset"
+    preset_subdir = "collider_tools"

@@ -70,13 +70,12 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 context.scene.collection.objects.link(new_collider)
                 self.remove_all_modifiers(context, new_collider)
 
-            self.type_suffix = self.prefs.boxColSuffix
-            new_name = super().collider_name()
-
-            new_collider.name = new_name
+            self.type_suffix = self.prefs.meshColSuffix
 
             # create collision meshes
             self.custom_set_parent(context, obj, new_collider)
+
+            new_collider.name = super().collider_name(basename=obj.name)
 
             # save collision objects to delete when canceling the operation
             collections = obj.users_collection
@@ -87,6 +86,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        super().print_generation_time("Mesh Collider")
 
         return {'RUNNING_MODAL'}

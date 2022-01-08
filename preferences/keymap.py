@@ -53,7 +53,7 @@ def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
 class COLLISION_OT_add_hotkey_renaming(bpy.types.Operator):
     ''' Add hotkey entry '''
     bl_idname = "collision_tool.add_hotkey"
-    bl_label = "Addon Preferences Example"
+    bl_label = "Addon preferences Example"
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):

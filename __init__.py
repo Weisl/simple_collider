@@ -1,27 +1,27 @@
 bl_info = {
-    "name": "CollisionHelpers",
+    "name": "Collider Tools",
     "description": "",
     "author": "Matthias Patscheider",
     "version": (1, 0, 0),
     "blender": (3, 0, 0),
     "location": "View3D",
-    "wiki_url": "https://weisl.github.io/CollisionHelper_Overview/",
-    "tracker_url": "https://github.com/Weisl/CollisionHelpers/issues",
+    "doc_url": "https://weisl.github.io/collider-tools_overview/",
+    "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
     "category": "Object"}
 
 # support reloading sub-modules
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(ui)
-    importlib.reload(operators)
-    importlib.reload(vhacd_integration)
-    importlib.reload(preferences)
+    importlib.reload(Ui)
+    importlib.reload(Operators)
+    importlib.reload(Auto_Convex)
+    importlib.reload(Preferences)
 
 else:
     from . import ui
     from . import operators
-    from . import vhacd_integration
+    from . import auto_Convex
     from . import preferences
 
 import bpy
@@ -58,7 +58,7 @@ def register():
     # call the register function of the sub modules
     ui.register()
     operators.register()
-    vhacd_integration.register()
+    auto_Convex.register()
 
     # keymap and preferences should be last
     preferences.register()
@@ -74,6 +74,6 @@ def unregister():
 
     # call unregister function of the sub-modules
     preferences.unregister()
-    vhacd_integration.unregister()
+    auto_Convex.unregister()
     operators.unregister()
     ui.unregister()

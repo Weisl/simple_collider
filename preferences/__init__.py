@@ -1,4 +1,3 @@
-import bpy
 from . import keymap
 from . import preferences
 from . import naming_preset

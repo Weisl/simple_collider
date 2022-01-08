@@ -56,7 +56,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         # add new cylindrical mesh
         bpy.ops.mesh.primitive_cylinder_add(vertices=self.current_settings_dic['cylinder_segments'],
                                             radius=radius,
-                                            depth=depth)
+                                            depth=depth,
+                                            end_fill_type='TRIFAN',
+                                            calc_uvs= True,)
 
         new_collider = context.object
         new_collider.name = tmp_name
@@ -185,8 +187,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=parent.name)
+            self.custom_set_parent(context, parent, new_collider)
 
         super().reset_to_initial_state(context)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        super().print_generation_time("Convex Cylindrical Collider")
         return {'RUNNING_MODAL'}
 

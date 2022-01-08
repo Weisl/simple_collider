@@ -23,7 +23,7 @@ def unique_name(name, i = 1):
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"
-    bl_label = "Convert to Collider"
+    bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
 
     def set_name_suffix(self):
@@ -42,6 +42,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_type_change = True
         self.use_decimation = True
+        self.is_mesh_to_collider = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -64,10 +65,23 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
         return {'RUNNING_MODAL'}
 
+    def store_initial_obj_state(self, obj):
+        dic = {}
+        dic['name'] = obj.name
+        dic['material_slots'] = []
+
+        for mat in obj.material_slots:
+            dic['material_slots'].append(mat.name)
+
+        dic['color'] = [obj.color[0],obj.color[1],obj.color[2],obj.color[3]]
+        dic['show_wire'] = obj.show_wire
+        return dic
+
     def execute(self, context):
         # CLEANUP and INIT
         super().execute(context)
 
+        self.original_obj_data = []
         self.type_suffix = self.prefs.meshColSuffix
 
         # Create the bounding geometry, depending on edit or object mode.
@@ -83,19 +97,22 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             new_collider = obj
 
             self.new_colliders_list.append(new_collider)
+            self.original_obj_data.append(self.store_initial_obj_state(obj))
 
             collections = new_collider.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=obj.name)
 
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        # shape = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
+        label = "Mesh To Collider"
+        super().print_generation_time(label)
         return {'RUNNING_MODAL'}
 
 class OBJECT_OT_convert_to_mesh(Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_mesh"
-    bl_label = "Convert to Mesh"
+    bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
 
     my_string: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
@@ -136,7 +153,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                     set_material(obj, default_material)
 
                 # remove from collision collection
-                prefs = context.preferences.addons["CollisionHelpers"].preferences
+                prefs = context.preferences.addons[__package__.split('.')[0]].preferences
                 collection_name = prefs.col_collection_name
 
                 # remove from collision collection
