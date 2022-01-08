@@ -185,7 +185,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
 
             new_collider.name = super().collider_name(basename=parent.name)
-            self.custom_set_parent(context, obj, new_collider)
+            self.custom_set_parent(context, parent, new_collider)
 
         super().reset_to_initial_state(context)
         super().print_generation_time("Convex Cylindrical Collider")

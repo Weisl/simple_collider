@@ -457,7 +457,7 @@ class OBJECT_OT_add_bounding_object():
                 self.get_complexity_suffix(),
                 self.prefs.optionalSuffix
             ]
-            
+
         else:
             pre_suffix_componetns = [
                 self.prefs.colPreSuffix,
