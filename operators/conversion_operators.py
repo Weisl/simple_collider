@@ -73,7 +73,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         for mat in obj.material_slots:
             dic['material_slots'].append(mat.name)
 
-        dic['color'] = obj.color
+        dic['color'] = [obj.color[0],obj.color[1],obj.color[2],obj.color[3]]
         dic['show_wire'] = obj.show_wire
         return dic
 
