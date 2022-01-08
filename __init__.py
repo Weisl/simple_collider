@@ -5,7 +5,7 @@ bl_info = {
     "version": (1, 0, 0),
     "blender": (3, 0, 0),
     "location": "View3D",
-    "wiki_url": "https://weisl.github.io/collider-tools_overview/",
+    "doc_url": "https://weisl.github.io/collider-tools_overview/",
     "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
     "category": "Object"}
 
