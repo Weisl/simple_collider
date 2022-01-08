@@ -36,7 +36,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 
 class CollissionPanel(Panel):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Collision Panel"
+    bl_label = "Collider Tools"
     bl_idname = "COLLISION_PT_Create"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -48,28 +48,16 @@ class CollissionPanel(Panel):
         obj = context.object
         scene = context.scene
 
-        # Physics Materials
-        layout.separator()
-
-        row = layout.row()
-        row.label(text='Materials')
-
-        row = layout.row()
-        row.prop(scene, "PhysicsIdentifier", text='Filter')
-
-        row = layout.row()
-        row.prop(scene, "CollisionMaterials")
-
         # Visibillity and Selection
         layout.separator()
 
         row = layout.row(align=True)
-        row.label(text='Visibillity and Selection')
+        row.label(text='Visibility and Selection')
 
-        col = self.layout.column_flow(columns=5, align = True)
+        col = self.layout.column_flow(columns=4, align=True)
 
-        for value in visibility_operators:
-            col.label(text=value)
+        # for value in visibility_operators:
+        #     col.label(text=value)
 
         for key, value in visibility_operators.items():
             op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
@@ -91,23 +79,23 @@ class CollissionPanel(Panel):
             op.select = False
             op.mode = key
 
-        # Conversion
+        # Physics Materials
         layout.separator()
-        row = layout.row(align=True)
-        row.label(text='Conversion')
 
-        row = layout.row(align=True)
-        row.operator('object.convert_to_collider', icon='PHYSICS')
-        row = layout.row(align=True)
-        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
         row = layout.row()
-        row.prop(scene, "DefaultMeshMaterial")
+        row.label(text='Physics Material')
+
+        row = layout.row()
+        row.prop(scene, "PhysicsIdentifier", text='Filter')
+
+        row = layout.row()
+        row.prop(scene, "CollisionMaterials", text="")
 
         # Create Collider
         layout.separator()
 
         row = layout.row(align=True)
-        row.label(text='Collision Shapes')
+        row.label(text='Add Collider')
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         row = layout.row(align=True)
@@ -123,18 +111,31 @@ class CollissionPanel(Panel):
         layout.separator()
 
         row = layout.row(align=True)
-        row.label(text='Convex Decomposition')
+        row.label(text='Auto Convex')
 
         row = layout.row()
-        row.prop(scene, 'convex_decomp_depth', text="Collision Number")
+        row.prop(scene, 'convex_decomp_depth')
         row = layout.row()
-        row.prop(scene, 'maxNumVerticesPerCH', text="Collision Vertices")
+        row.prop(scene, 'maxNumVerticesPerCH')
 
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         row = layout.row(align=True)
         if prefs.executable_path:
-            row.operator("collision.vhacd", text="Convex Decomposition", icon='MESH_ICOSPHERE')
+            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
             from .. import bl_info
             row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
+
+        # Conversion
+        layout.separator()
+        row = layout.row(align=True)
+        row.label(text='Convert')
+
+        row = layout.row(align=True)
+        row.operator('object.convert_to_collider', icon='PHYSICS')
+        row = layout.row(align=True)
+        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+        row = layout.row()
+        row.prop(scene, "DefaultMeshMaterial", text='Material')
+
 

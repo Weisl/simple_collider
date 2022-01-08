@@ -23,7 +23,7 @@ def unique_name(name, i = 1):
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"
-    bl_label = "Convert to Collider"
+    bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
 
     def set_name_suffix(self):
@@ -95,7 +95,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 class OBJECT_OT_convert_to_mesh(Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_mesh"
-    bl_label = "Convert to Mesh"
+    bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
 
     my_string: bpy.props.StringProperty(name="Mesh Name", default='Mesh')

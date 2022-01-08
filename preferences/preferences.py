@@ -259,7 +259,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             boxname = box.box()
             row = boxname.row()
             if self.naming_position == 'PREFIX':
-                row.label(text="Name = Collision Pre + Shape + Complexity + Optional + Collision Post + Numbering")
+                row.label(text="Name = Collision Pre + Shape + Complexity + Collision Post + Basename + Numbering")
             else:
                 row.label(text="Name = Basename + Collision Pre + Shape + Complexity + Collision Post + Numbering")
 
