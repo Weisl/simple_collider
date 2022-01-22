@@ -663,6 +663,10 @@ class OBJECT_OT_add_bounding_object():
             self.force_redraw()
             return {'RUNNING_MODAL'}
 
+        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            # allow navigation
+            return {'PASS_THROUGH'}
+
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:

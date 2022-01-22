@@ -338,22 +338,26 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
-            text="The auto convex collision generation requires the V-HACD library to work."
+            texts=[]
+            if not self.executable_path:
+                texts.append("The auto convex collision generation requires the V-hacd library to work.")
+                texts.append("1. Download the V-hacd executable from the link below (Download V-hacd)")
+                texts.append("(optional) Copy the downloaded executable to another directory on your hard drive")
+                texts.append("2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
+
+
             box = layout.box()
-            label_multiline(
-                context=context,
-                text=text,
-                parent=box
-            )
+            for text in texts:
+                label_multiline(
+                    context=context,
+                    text=text,
+                    parent=box
+                )
 
             row = layout.row(align = True)
-            row.label(text="Download V-HACD")
+            row.label(text="1. Download V-HACD")
             row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/win64/testVHACD.exe"
             row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
-
-            row = layout.row()
-            row.label(text="V-Hacd Github")
-            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
 
             if self.executable_path:
                 row = layout.row()
@@ -361,7 +365,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             else:
                 row = layout.row()
-                row.prop(self, 'executable_path', icon="ERROR")
+                row.prop(self, 'executable_path', text='2. V-hacd .exe', icon="ERROR")
+
+            row = layout.row()
+            row.label(text="Information about the executable: V-Hacd Github")
+            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
 
             for propName in self.vhacd_props:
                 row = layout.row()

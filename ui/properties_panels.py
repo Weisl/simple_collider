@@ -54,10 +54,13 @@ class CollissionPanel(Panel):
         row = layout.row(align=True)
         row.label(text='Visibility and Selection')
 
-        col = self.layout.column_flow(columns=4, align=True)
+        col = self.layout.column_flow(columns=5, align=True)
 
         # for value in visibility_operators:
         #     col.label(text=value)
+
+        for key, value in visibility_operators.items():
+            label = col.label(text=key)
 
         for key, value in visibility_operators.items():
             op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
@@ -118,8 +121,11 @@ class CollissionPanel(Panel):
         row = layout.row()
         row.prop(scene, 'maxNumVerticesPerCH')
 
+
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         row = layout.row(align=True)
+
+
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:

@@ -25,6 +25,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
 
         scene = context.scene
 
