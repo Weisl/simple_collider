@@ -40,7 +40,7 @@ class CollissionPanel(Panel):
     bl_idname = "COLLISION_PT_Create"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Pipeline"
+    bl_category = "Collider Tools"
 
     def draw(self, context):
         layout = self.layout
