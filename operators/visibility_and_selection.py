@@ -6,6 +6,7 @@ mode_items = [
     ("SIMPLE_COMPLEX", "simple_and_complex", "Show/Hide all simple-complex collisions", 2),
     ("SIMPLE", "simple", "Show/Hide all simple collisions", 4),
     ("COMPLEX", "complex", "Show/Hide all complex collisions", 8),
+    ("OBJECTS", "objects", "Show/Hide all complex collisions", 16),
 ]
 
 
@@ -33,6 +34,11 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
             if self.mode == 'ALL':
                 if ob.get('isCollider') == True:
                     ob.hide_viewport = self.hide
+
+            elif self.mode == 'OBJECTS':
+                if not ob.get('isCollider'):
+                    ob.hide_viewport = self.hide
+
             else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
                 if ob.get('isCollider') and ob.get('collider_type') == self.mode:
                     ob.hide_viewport = self.hide
@@ -66,6 +72,12 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                     else:
                         ob.select_set(not self.select)
 
+                elif self.mode == 'OBJECTS':
+                    if not ob.get('isCollider'):
+                        ob.select_set(self.select)
+                    else:
+                        ob.select_set(not self.select)
+
                 else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
                     if ob.get('isCollider') and ob.get('collider_type') == self.mode:
                         ob.select_set(self.select)
@@ -76,6 +88,9 @@ class COLLISION_OT_Selection(bpy.types.Operator):
             for ob in bpy.context.view_layer.objects:
                 if self.mode == 'ALL':
                     if ob.get('isCollider') == True:
+                        ob.select_set(self.select)
+                elif self.mode == 'OBJECTS':
+                    if not ob.get('isCollider'):
                         ob.select_set(self.select)
                 else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
                     if ob.get('isCollider') and ob.get('collider_type') == self.mode:

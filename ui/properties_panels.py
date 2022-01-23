@@ -8,6 +8,7 @@ visibility_operators = {'ALL': 'All',
 'SIMPLE': 'Simple',
 'COMPLEX': 'Complex',
 'SIMPLE_COMPLEX':'Simple and Complex',
+'OBJECTS': "Objects",
 }
 
 def label_multiline(context, text, parent):
