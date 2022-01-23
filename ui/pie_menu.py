@@ -45,14 +45,12 @@ class VIEW3D_MT_collision(Menu):
         self.layout.separator()
         scene = context.scene
 
-        row = self.layout.row(align=True)
-        row.label(text='Auto Convex')
-
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
         row = self.layout.row(align=True)
 
         if prefs.executable_path:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.prop(scene, 'convex_decomp_depth')
             row.prop(scene, 'maxNumVerticesPerCH')
 
