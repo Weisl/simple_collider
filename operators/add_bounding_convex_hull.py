@@ -28,8 +28,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
 
-        scene = context.scene
-
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack

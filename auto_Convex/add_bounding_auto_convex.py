@@ -10,8 +10,6 @@ from .off_eport import off_export
 from bpy.types import Operator
 from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
-
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
@@ -59,8 +57,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.collider_shapes_idx = 0
-        self.collider_shapes = collider_shapes
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -72,12 +68,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
-
-        elif event.type == 'C' and event.value == 'RELEASE':
-            #toggle through display modes
-            self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.set_name_suffix()
-            self.update_names()
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
