@@ -27,9 +27,9 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     blf.size(font_id, 20, font_size)
 
     if type == 'key_title':
-        if self.ignore_input:
+        if self.ignore_input or self.navigation:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
-    elif self.ignore_input:
+    elif self.ignore_input or self.navigation:
         blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
     elif type == 'title':
         blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
@@ -43,7 +43,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     blf.draw(font_id, label)
 
     if key:
-        if self.ignore_input:
+        if self.ignore_input or self.navigation:
             blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
         elif highlight:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
@@ -61,7 +61,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
 
     if value:
 
-        if self.ignore_input:
+        if self.ignore_input or self.navigation:
             blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
         elif highlight:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
@@ -160,7 +160,11 @@ def draw_viewport_overlay(self, context):
     label = 'Operator Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    if self.ignore_input:
+    if self.navigation:
+        label = 'Navigation'
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
+
+    elif self.ignore_input:
         label = 'IGNORE INPUT (ALT)'
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
@@ -656,6 +660,7 @@ class OBJECT_OT_add_bounding_object():
 
     def modal(self, context, event):
         scene = context.scene
+        self.navigation = False
 
         # Ignore if Alt is pressed
         if event.alt:
@@ -665,6 +670,14 @@ class OBJECT_OT_add_bounding_object():
 
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             # allow navigation
+            self.navigation = True
+
+            self.opacity_active = False
+            self.displace_active = False
+            self.decimate_active = False
+            self.vertex_count_active = False
+            self.sphere_segments_active = False
+            
             return {'PASS_THROUGH'}
 
         # User Input
