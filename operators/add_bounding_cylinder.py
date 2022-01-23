@@ -63,8 +63,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         new_collider = context.object
         new_collider.name = tmp_name
 
-        scene=context.scene
-
         new_collider.location = location
 
         if rotation_euler:
@@ -142,7 +140,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             bounding_cylinder_data = {}
-            me = obj.data
 
             if self.obj_mode == 'EDIT':
                 vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
@@ -183,7 +180,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 new_collider = self.generate_cylinder_object(context, radius, depth, center)
 
             self.new_colliders_list.append(new_collider)
-            # self.custom_set_parent(context, parent, new_collider)
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 

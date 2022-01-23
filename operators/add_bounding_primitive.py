@@ -89,8 +89,6 @@ def draw_viewport_overlay(self, context):
     i = 1
 
     if self.use_space:
-        # draw some text
-
         label = "Global/Local"
         value = "GLOBAL" if scene.my_space == 'GLOBAL' else "LOCAL"
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(G/L)', type='enum')
@@ -733,7 +731,6 @@ class OBJECT_OT_add_bounding_object():
 
                         remove_materials(obj)
                         for mat in data['material_slots']:
-                            # print(mat.name)
                             set_material(obj,bpy.data.materials[mat])
 
                         self.del_displace_modifier(context, obj)
