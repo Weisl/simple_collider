@@ -135,7 +135,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
-
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
         scene = context.scene
 
         # change bounding object settings
@@ -176,8 +177,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             scene = context.scene
 
             if self.obj_mode == "EDIT":
-                me = obj.data
-
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # mode == "OBJECT":

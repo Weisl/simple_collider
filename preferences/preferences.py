@@ -1,11 +1,29 @@
 import bpy
 import rna_keymap_ui
+import bpy
 
 from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
+from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import label_multiline
 from ..operators.add_bounding_primitive import create_name_number
+
+
+
+def update_panel_category(self, context):
+    is_panel = hasattr(bpy.types, 'VIEW3D_PT_collission_panel')
+
+    if is_panel:
+        try:
+            bpy.utils.unregister_class(VIEW3D_PT_collission_panel)
+        except:
+            pass
+
+    VIEW3D_PT_collission_panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
+    bpy.utils.register_class(VIEW3D_PT_collission_panel)
+    return
+
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -19,6 +37,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         items=(('SETTINGS', "Settings", "settings"), ('KEYMAP', "Keymap", "keymap"), ('THEME', "Theme", "theme"), ('VHACD', "Auto Convex", "auto_convex")),
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
+
+
+    collider_category: bpy.props.StringProperty(name="Category Name",
+                                      description="Category name used to organize the addon in the properties panel for all the addons.",
+                                      default='Collider Tools', update=update_panel_category)  # update = update_panel_position,
 
     #Naming
     naming_position: bpy.props.EnumProperty(
@@ -179,10 +202,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "modal_color_enum",
     ]
 
-    vhacd_props = [
-        "data_path",
-    ]
-
     vhacd_props_config = [
         "resolution",
         "concavity",
@@ -236,9 +255,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         row.prop(self, "prefs_tabs", expand=True)
 
         if self.prefs_tabs == 'SETTINGS':
+
+            row = layout.row()
+            row.prop(self, "collider_category", expand=True)
+
             row = layout.row()
             row.label(text='Collection Settings')
-
 
             for propName in self.col_props:
                 row = layout.row()
@@ -338,34 +360,51 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
-            text="The auto convex collision generation requires the V-HACD library to work."
-            box = layout.box()
+
+            text = "The auto convex collision generation requires the V-hacd library to work."
             label_multiline(
                 context=context,
                 text=text,
-                parent=box
+                parent=layout
             )
 
+            texts=[]
+            if not self.executable_path:
+                texts.append("1. Download the V-hacd executable from the link below (Download V-hacd). (optional) Copy the downloaded executable to another directory on your hard drive.")
+                texts.append("2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
+                texts.append("3. (optional) Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
+
+
+                box = layout.box()
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=box
+                    )
+
             row = layout.row(align = True)
-            row.label(text="Download V-HACD")
+            row.label(text="1. Download V-HACD")
             row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/win64/testVHACD.exe"
             row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
 
-            row = layout.row()
-            row.label(text="V-Hacd Github")
-            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
-
             if self.executable_path:
                 row = layout.row()
-                row.prop(self, 'executable_path')
+                row.prop(self, 'executable_path', text='2. V-hacd .exe path')
 
             else:
                 row = layout.row()
-                row.prop(self, 'executable_path', icon="ERROR")
+                row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
 
-            for propName in self.vhacd_props:
-                row = layout.row()
-                row.prop(self, propName)
+
+            row = layout.row()
+            row.prop(self, "data_path", text = "3. Temporary Data Path")
+
+            box = layout.box()
+            row = box.row()
+            row.label(text="Information about the executable: V-Hacd Github")
+            row = box.row()
+            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
 
             if self.executable_path:
 
