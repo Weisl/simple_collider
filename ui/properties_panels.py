@@ -119,7 +119,6 @@ class VIEW3D_PT_collission_panel(Panel):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         row = layout.row(align=True)
 
-
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:

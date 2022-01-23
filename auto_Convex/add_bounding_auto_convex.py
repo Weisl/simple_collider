@@ -80,6 +80,17 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
+        import addon_utils
+        addon_name = 'io_scene_x3d'
+        addon_utils.check(addon_name)
+
+        success = addon_utils.enable(addon_name)
+        if not success:
+            print(addon_name, "is not found")
+            return {'CANCELLED'}
+
+        print("enabled", success.bl_info['name'])
+
         executable_path = self.set_export_path(self.prefs.executable_path)
         data_path = self.set_data_path(self.prefs.data_path)
 
@@ -212,7 +223,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             post_matrix = convex_collisions_data['post_matrix']
 
             debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name), str(post_matrix))
-            print(debug_text)
+            # print(debug_text)
 
             for new_collider in convex_collision:
                 new_collider.name = super().collider_name(basename=parent.name)
