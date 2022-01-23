@@ -1,13 +1,12 @@
+import bpy
+from bpy.types import Operator
+
 from os import path as os_path
 from subprocess import Popen
-
-import bmesh
-import bpy
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, IntProperty
 from mathutils import Matrix
-from .off_eport import off_export
 
-from bpy.types import Operator
+from .off_eport import off_export
+from ..operators.object_pivot_and_ailgn import alignObjects
 from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
@@ -17,7 +16,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_options = {'REGISTER', 'PRESET'}
 
     def set_export_path(self, path):
-
         self.type_suffix = self.prefs.convexColSuffix
 
         # Check executable path
@@ -60,7 +58,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-
         status = super().modal(context, event)
         if status == {'FINISHED'}:
             return {'FINISHED'}
@@ -109,7 +106,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for obj in self.selected_objects:
             obj.select_set(False)
 
-        convex_decomposition_data = []
+        basemeshes = []
 
         for obj in self.selected_objects:
             # skip if invalid object
@@ -120,72 +117,49 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            convex_collisions_data = {}
+
+            translation, quaternion, scale = obj.matrix_world.decompose()
+            scale_matrix = Matrix(((scale.x, 0, 0, 0), (0, scale.y, 0, 0), (0, 0, scale.z, 0), (0, 0, 0, 1)))
+
+            post_matrix = scale_matrix
+            post_matrix = quaternion.to_matrix().to_4x4() @ post_matrix
+            post_matrix = Matrix.Translation(translation) @ post_matrix
+
+            context.view_layer.objects.active = obj
+
+
+            if self.obj_mode == "EDIT":
+                new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
+            else:  # mode == "OBJECT":
+                new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+
+            if new_mesh == None:
+                continue
+
+            mesh = new_mesh
+            mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+            base_data = {}
+            base_data['parent'] = obj
+            base_data['mesh'] = mesh
+            basemeshes.append(base_data)
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        convex_decomposition_data = []
+
+        for base_data in basemeshes:
+            parent = base_data['parent']
+            mesh = base_data['mesh']
 
             # Base filename is object name with invalid characters removed
-            filename = ''.join(c for c in obj.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
+            filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
             off_filename = os_path.join(data_path, '{}.off'.format(filename))
             outFileName = os_path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os_path.join(data_path, '{}_log.txt'.format(filename))
 
-            mesh = obj.data.copy()
-            mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
-
-            translation, quaternion, scale = obj.matrix_world.decompose()
-            scale_matrix = Matrix(((scale.x, 0, 0, 0), (0, scale.y, 0, 0), (0, 0, scale.z, 0), (0, 0, 0, 1)))
-            if self.prefs.apply_transforms in ['S', 'RS', 'LRS']:
-                pre_matrix = scale_matrix
-                post_matrix = Matrix()
-            else:
-                pre_matrix = Matrix()
-                post_matrix = scale_matrix
-            if self.prefs.apply_transforms in ['RS', 'LRS']:
-                pre_matrix = quaternion.to_matrix().to_4x4() @ pre_matrix
-            else:
-                post_matrix = quaternion.to_matrix().to_4x4() @ post_matrix
-            if self.prefs.apply_transforms == 'LRS':
-                pre_matrix = Matrix.Translation(translation) @ pre_matrix
-            else:
-                post_matrix = Matrix.Translation(translation) @ post_matrix
-
-            mesh.transform(pre_matrix)
-            bm = bmesh.new()
-
-            if self.my_use_modifier_stack:
-                # Get mesh information with the modifiers applied
-                depsgraph = bpy.context.evaluated_depsgraph_get()
-                bm = bmesh.new()
-                bm.from_object(obj, depsgraph)
-
-                if self.obj_mode == 'EDIT':
-                    for v in bm.verts:
-                        if v.select == False:
-                            bm.verts.remove(v)
-
-                bm.verts.ensure_lookup_table()
-                bm.edges.ensure_lookup_table()
-                bm.faces.ensure_lookup_table()
-
-            else: # self.my_use_modifier_stack == False:
-                bm.from_mesh(mesh)
-
-                if self.obj_mode == 'EDIT':
-                    for v in bm.verts:
-                        if v.select == False:
-                            bm.verts.remove(v)
-                    bm.verts.ensure_lookup_table()
-                    bm.edges.ensure_lookup_table()
-                    bm.faces.ensure_lookup_table()
-
-            if self.prefs.remove_doubles:
-                bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
-
-            bmesh.ops.triangulate(bm, faces=bm.faces)
-            bm.to_mesh(mesh)
-            bm.free()
-
             # print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
             off_export(mesh, off_filename)
+
             cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
                         '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
                         '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
@@ -210,14 +184,15 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             for ob in imported:
                 ob.select_set(False)
 
+            convex_collisions_data = {}
             convex_collisions_data['colliders'] = imported
-            convex_collisions_data['parent'] = obj
+            convex_collisions_data['parent'] = parent
             convex_collisions_data['post_matrix'] = post_matrix
             convex_decomposition_data.append(convex_collisions_data)
 
-        for convex_collisions_data in convex_decomposition_data:
-            bpy.ops.object.mode_set(mode='OBJECT')
+        context.view_layer.objects.active = self.active_obj
 
+        for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
             post_matrix = convex_collisions_data['post_matrix']
@@ -230,6 +205,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
                 self.custom_set_parent(context, parent, new_collider)
                 new_collider.matrix_basis = post_matrix
+                alignObjects(new_collider, parent)
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections)

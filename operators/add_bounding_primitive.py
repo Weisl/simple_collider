@@ -124,7 +124,7 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(C)', type='enum')
 
     if self.use_cylinder_axis:
-        label = "Cylinder Axis (X/Y/Z) : "
+        label = "Cylinder Axis"
         value = str(self.cylinder_axis)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(X/Y/Z)', type='enum')
 
@@ -276,6 +276,9 @@ class OBJECT_OT_add_bounding_object():
         bm.verts.ensure_lookup_table()
         bm.to_mesh(new_mesh)
 
+        if len(bm.faces) < 1:
+            return None
+        
         return new_mesh
 
     def get_vertices_Edit(self, obj, use_modifiers=False):

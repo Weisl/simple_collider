@@ -60,13 +60,16 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             mesh_collider_data = {}
 
             if self.obj_mode == "EDIT":
-                me = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
-                new_collider = bpy.data.objects.new("", me)
+                new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
+                new_collider = bpy.data.objects.new("", new_mesh)
 
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = obj.copy()
                 new_collider.data = new_mesh
+
+            if new_mesh == None:
+                continue
 
             mesh_collider_data['parent'] = obj
             mesh_collider_data['new_collider'] = new_collider
@@ -93,7 +96,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             # save collision objects to delete when canceling the operation
             collections = parent.users_collection
 
-            self.primitive_postprocessing(context, new_collider,collections)
+            self.primitive_postprocessing(context, new_collider, collections)
             self.new_colliders_list.append(new_collider)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
