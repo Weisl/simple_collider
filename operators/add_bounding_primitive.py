@@ -89,8 +89,6 @@ def draw_viewport_overlay(self, context):
     i = 1
 
     if self.use_space:
-        # draw some text
-
         label = "Global/Local"
         value = "GLOBAL" if scene.my_space == 'GLOBAL' else "LOCAL"
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(G/L)', type='enum')
@@ -243,7 +241,44 @@ class OBJECT_OT_add_bounding_object():
         ]
         return verts
 
-    def get_vertices_Edit(self, obj, use_modifiers = False):
+    def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
+
+        delta = delta * sensibility
+
+        if event.ctrl:  # snap
+            delta = round(delta, round_precission)
+        if event.shift:  # tweak
+            delta /= tweak_amount
+
+        return delta
+
+    def get_mesh_Edit(self, obj, use_modifiers=False):
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        me = obj.data
+        me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+        new_mesh = bpy.data.meshes.new('')
+
+        if use_modifiers:  # self.my_use_modifier_stack == True
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+
+        else:  # use_modifiers == False
+            # Get a BMesh representation
+            bm_orig = bmesh.from_edit_mesh(me)
+            bm = bm_orig.copy()
+
+        vertices_select = [v for v in bm.verts if not v.select]
+        bmesh.ops.delete(bm, geom=vertices_select)
+
+        bm.verts.ensure_lookup_table()
+        bm.to_mesh(new_mesh)
+
+        return new_mesh
+
+    def get_vertices_Edit(self, obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
@@ -267,17 +302,6 @@ class OBJECT_OT_add_bounding_object():
         #This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
         OBJECT_OT_add_bounding_object.bmesh(bm)
         return used_vertices
-
-    def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
-
-        delta = delta * sensibility
-
-        if event.ctrl:  # snap
-            delta = round(delta, round_precission)
-        if event.shift:  # tweak
-            delta /= tweak_amount
-
-        return delta
 
     def get_vertices_Object(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
@@ -707,7 +731,6 @@ class OBJECT_OT_add_bounding_object():
 
                         remove_materials(obj)
                         for mat in data['material_slots']:
-                            # print(mat.name)
                             set_material(obj,bpy.data.materials[mat])
 
                         self.del_displace_modifier(context, obj)
