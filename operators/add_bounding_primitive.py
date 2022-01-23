@@ -237,6 +237,17 @@ class OBJECT_OT_add_bounding_object():
         ]
         return verts
 
+    def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
+
+        delta = delta * sensibility
+
+        if event.ctrl:  # snap
+            delta = round(delta, round_precission)
+        if event.shift:  # tweak
+            delta /= tweak_amount
+
+        return delta
+    
     def get_vertices_Edit(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
@@ -261,17 +272,6 @@ class OBJECT_OT_add_bounding_object():
         #This is needed for the bmesh not bo be destroyed, even if the variable isn't used later.
         OBJECT_OT_add_bounding_object.bmesh(bm)
         return used_vertices
-
-    def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
-
-        delta = delta * sensibility
-
-        if event.ctrl:  # snap
-            delta = round(delta, round_precission)
-        if event.shift:  # tweak
-            delta /= tweak_amount
-
-        return delta
 
     def get_vertices_Object(self, obj, use_modifiers = False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
