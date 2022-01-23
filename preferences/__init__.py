@@ -1,7 +1,9 @@
+import bpy
 from . import keymap
 from . import preferences
 from . import naming_preset
 from .keymap import add_hotkey, remove_hotkey
+from .preferences import update_panel_category
 
 #keymap needs to be registered before the preferences UI
 classes = (
@@ -19,7 +21,7 @@ def register():
         register_class(cls)
 
     add_hotkey()
-
+    update_panel_category(None, bpy.context)
 
 def unregister():
     from bpy.utils import unregister_class

@@ -36,10 +36,10 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class CollissionPanel(Panel):
+class VIEW3D_PT_collission_panel(Panel):
     """Creates a Panel in the Object properties window"""
+
     bl_label = "Collider Tools"
-    bl_idname = "COLLISION_PT_Create"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Collider Tools"

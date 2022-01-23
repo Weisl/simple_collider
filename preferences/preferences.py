@@ -1,11 +1,29 @@
 import bpy
 import rna_keymap_ui
+import bpy
 
 from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
+from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import label_multiline
 from ..operators.add_bounding_primitive import create_name_number
+
+
+
+def update_panel_category(self, context):
+    is_panel = hasattr(bpy.types, 'VIEW3D_PT_collission_panel')
+
+    if is_panel:
+        try:
+            bpy.utils.unregister_class(VIEW3D_PT_collission_panel)
+        except:
+            pass
+
+    VIEW3D_PT_collission_panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
+    bpy.utils.register_class(VIEW3D_PT_collission_panel)
+    return
+
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -19,6 +37,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         items=(('SETTINGS', "Settings", "settings"), ('KEYMAP', "Keymap", "keymap"), ('THEME', "Theme", "theme"), ('VHACD', "Auto Convex", "auto_convex")),
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
+
+
+    collider_category: bpy.props.StringProperty(name="Category",
+                                      description="Defines in which category of the tools panel the Collider Tools panel is listed",
+                                      default='Collider Tools', update=update_panel_category)  # update = update_panel_position,
 
     #Naming
     naming_position: bpy.props.EnumProperty(
@@ -239,6 +262,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row = layout.row()
             row.label(text='Collection Settings')
 
+            row = layout.row()
+            row.prop(self, "collider_category", expand=True)
 
             for propName in self.col_props:
                 row = layout.row()
