@@ -54,6 +54,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
+        self.use_decimation = True
         self.use_modifier_stack = True
 
     def invoke(self, context, event):
@@ -63,11 +64,14 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+
         status = super().modal(context, event)
         if status == {'FINISHED'}:
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
 
         elif event.type == 'C' and event.value == 'RELEASE':
             #toggle through display modes

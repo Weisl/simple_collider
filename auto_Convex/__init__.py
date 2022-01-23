@@ -1,8 +1,8 @@
 import bpy
-from . import vhacd_operator
+from . import add_bounding_auto_convex
 
 classes = (
-    vhacd_operator.VHACD_OT_convex_decomposition,
+    add_bounding_auto_convex.VHACD_OT_convex_decomposition,
 )
 
 
