@@ -596,6 +596,7 @@ class OBJECT_OT_add_bounding_object():
         context.object.select_set(True)
 
         # INITIAL STATE
+        self.navigation = False
         self.selected_objects = context.selected_objects.copy()
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
