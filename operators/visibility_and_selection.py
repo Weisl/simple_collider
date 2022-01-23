@@ -2,7 +2,7 @@ import bpy
 
 # Enum property.
 mode_items = [
-    ("ALL", "all", "Show/Hide all collisions", 1),
+    ("ALL_COLLIDER", "all", "Show/Hide all collisions", 1),
     ("SIMPLE_COMPLEX", "simple_and_complex", "Show/Hide all simple-complex collisions", 2),
     ("SIMPLE", "simple", "Show/Hide all simple collisions", 4),
     ("COMPLEX", "complex", "Show/Hide all complex collisions", 8),
@@ -23,7 +23,7 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
 
     mode: bpy.props.EnumProperty(items=mode_items,
                                  name='Hide Mode',
-                                 default='ALL'
+                                 default='ALL_COLLIDER'
                                  )
 
     def execute(self, context):
@@ -31,7 +31,7 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
 
         # objects = [ob.hide_set(True) for ob in bpy.context.view_layer.objects if ob.get('isCollider')]
         for ob in bpy.context.view_layer.objects:
-            if self.mode == 'ALL':
+            if self.mode == 'ALL_COLLIDER':
                 if ob.get('isCollider') == True:
                     ob.hide_viewport = self.hide
 
@@ -58,7 +58,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
 
     mode: bpy.props.EnumProperty(items=mode_items,
                                  name='Hide Mode',
-                                 default='ALL'
+                                 default='ALL_COLLIDER'
                                  )
 
     def execute(self, context):
@@ -66,7 +66,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
 
         if self.select:
             for ob in bpy.context.view_layer.objects:
-                if self.mode == 'ALL':
+                if self.mode == 'ALL_COLLIDER':
                     if ob.get('isCollider') == True:
                         ob.select_set(self.select)
                     else:
@@ -86,7 +86,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
 
         else: # self.select = False
             for ob in bpy.context.view_layer.objects:
-                if self.mode == 'ALL':
+                if self.mode == 'ALL_COLLIDER':
                     if ob.get('isCollider') == True:
                         ob.select_set(self.select)
                 elif self.mode == 'OBJECTS':

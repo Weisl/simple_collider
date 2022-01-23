@@ -4,11 +4,12 @@ import bpy
 
 
 
-visibility_operators = {'ALL': 'All',
-'SIMPLE': 'Simple',
-'COMPLEX': 'Complex',
-'SIMPLE_COMPLEX':'Simple and Complex',
-'OBJECTS': "Objects",
+visibility_operators = {
+    'ALL_COLLIDER': 'All Collider',
+    'SIMPLE': 'Simple',
+    'COMPLEX': 'Complex',
+    'SIMPLE_COMPLEX':'Simple and Complex',
+    'OBJECTS': "Objects",
 }
 
 def label_multiline(context, text, parent):
@@ -55,31 +56,23 @@ class CollissionPanel(Panel):
         row = layout.row(align=True)
         row.label(text='Visibility and Selection')
 
-        col = self.layout.column_flow(columns=5, align=True)
 
         # for value in visibility_operators:
         #     col.label(text=value)
 
         for key, value in visibility_operators.items():
-            label = col.label(text=key)
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
+            row = layout.row(align=True)
+            label = row.label(text=key)
+            op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='')
             op.hide = False
             op.mode = key
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_ON', text='')
+            op = row.operator("object.hide_collisions", icon='HIDE_ON', text='')
             op.hide = True
             op.mode = key
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            op = row.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
             op.select = True
             op.mode = key
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            op = row.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
             op.select = False
             op.mode = key
 
