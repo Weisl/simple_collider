@@ -56,7 +56,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             context.view_layer.objects.active = obj
-            collections = obj.users_collection
 
             if self.obj_mode == "EDIT":
                 bpy.ops.mesh.duplicate()
