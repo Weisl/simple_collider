@@ -161,7 +161,7 @@ def draw_viewport_overlay(self, context):
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
     if self.navigation:
-        label = 'Navigation'
+        label = 'VIEWPORT NAVIGATION'
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
     elif self.ignore_input:
