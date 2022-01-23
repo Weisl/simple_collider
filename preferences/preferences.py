@@ -39,8 +39,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         description='Tabs to toggle different addon settings')
 
 
-    collider_category: bpy.props.StringProperty(name="Category",
-                                      description="Defines in which category of the tools panel the Collider Tools panel is listed",
+    collider_category: bpy.props.StringProperty(name="Category Name",
+                                      description="Category name used to organize the addon in the properties panel for all the addons.",
                                       default='Collider Tools', update=update_panel_category)  # update = update_panel_position,
 
     #Naming
@@ -202,10 +202,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "modal_color_enum",
     ]
 
-    vhacd_props = [
-        "data_path",
-    ]
-
     vhacd_props_config = [
         "resolution",
         "concavity",
@@ -259,11 +255,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         row.prop(self, "prefs_tabs", expand=True)
 
         if self.prefs_tabs == 'SETTINGS':
-            row = layout.row()
-            row.label(text='Collection Settings')
 
             row = layout.row()
             row.prop(self, "collider_category", expand=True)
+
+            row = layout.row()
+            row.label(text='Collection Settings')
 
             for propName in self.col_props:
                 row = layout.row()
@@ -363,21 +360,28 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
+
+            text = "The auto convex collision generation requires the V-hacd library to work."
+            label_multiline(
+                context=context,
+                text=text,
+                parent=layout
+            )
+
             texts=[]
             if not self.executable_path:
-                texts.append("The auto convex collision generation requires the V-hacd library to work.")
-                texts.append("1. Download the V-hacd executable from the link below (Download V-hacd)")
-                texts.append("(optional) Copy the downloaded executable to another directory on your hard drive")
+                texts.append("1. Download the V-hacd executable from the link below (Download V-hacd). (optional) Copy the downloaded executable to another directory on your hard drive.")
                 texts.append("2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
+                texts.append("3. (optional) Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
 
 
-            box = layout.box()
-            for text in texts:
-                label_multiline(
-                    context=context,
-                    text=text,
-                    parent=box
-                )
+                box = layout.box()
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=box
+                    )
 
             row = layout.row(align = True)
             row.label(text="1. Download V-HACD")
@@ -386,19 +390,21 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             if self.executable_path:
                 row = layout.row()
-                row.prop(self, 'executable_path')
+                row.prop(self, 'executable_path', text='2. V-hacd .exe path')
 
             else:
                 row = layout.row()
-                row.prop(self, 'executable_path', text='2. V-hacd .exe', icon="ERROR")
+                row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
+
 
             row = layout.row()
-            row.label(text="Information about the executable: V-Hacd Github")
-            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+            row.prop(self, "data_path", text = "3. Temporary Data Path")
 
-            for propName in self.vhacd_props:
-                row = layout.row()
-                row.prop(self, propName)
+            box = layout.box()
+            row = box.row()
+            row.label(text="Information about the executable: V-Hacd Github")
+            row = box.row()
+            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
 
             if self.executable_path:
 
