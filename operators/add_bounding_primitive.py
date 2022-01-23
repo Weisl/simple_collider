@@ -276,6 +276,9 @@ class OBJECT_OT_add_bounding_object():
         bm.verts.ensure_lookup_table()
         bm.to_mesh(new_mesh)
 
+        if len(bm.faces) < 1:
+            return None
+        
         return new_mesh
 
     def get_vertices_Edit(self, obj, use_modifiers=False):

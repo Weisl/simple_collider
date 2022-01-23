@@ -130,9 +130,11 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             if self.obj_mode == "EDIT":
                 new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
-
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+
+            if new_mesh == None:
+                continue
 
             mesh = new_mesh
             mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
