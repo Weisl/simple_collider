@@ -42,6 +42,24 @@ class VIEW3D_MT_collision(Menu):
         row.operator('object.convert_to_collider', icon='PHYSICS')
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
+        self.layout.separator()
+        scene = context.scene
+
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
+        row = self.layout.row(align=True)
+
+        if prefs.executable_path:
+            row = self.layout.row(align=True)
+            row.prop(scene, 'convex_decomp_depth')
+            row.prop(scene, 'maxNumVerticesPerCH')
+
+            row = self.layout.row()
+            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+        else:
+            from .. import bl_info
+            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
+
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
     bl_label = "Collision Pie"

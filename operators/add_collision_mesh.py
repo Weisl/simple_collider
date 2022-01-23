@@ -26,7 +26,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
-
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
         scene = context.scene
 
         # change bounding object settings
@@ -44,6 +45,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
 
+        collider_data = []
+
         for obj in self.selected_objects:
 
             # skip if invalid object
@@ -54,34 +57,44 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            context.view_layer.objects.active = obj
+            mesh_collider_data = {}
 
             if self.obj_mode == "EDIT":
-                bpy.ops.mesh.duplicate()
-                bpy.ops.mesh.separate(type='SELECTED')
-                bpy.ops.object.mode_set(mode='OBJECT')
-                new_collider = context.scene.objects[-1]
+                me = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
+                new_collider = bpy.data.objects.new("", me)
 
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = obj.copy()
                 new_collider.data = new_mesh
-                context.scene.collection.objects.link(new_collider)
-                self.remove_all_modifiers(context, new_collider)
 
+            mesh_collider_data['parent'] = obj
+            mesh_collider_data['new_collider'] = new_collider
+            collider_data.append(mesh_collider_data)
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        for mesh_collider_data in collider_data:
+            parent = mesh_collider_data['parent']
+            new_collider = mesh_collider_data['new_collider']
+
+            context.scene.collection.objects.link(new_collider)
             self.type_suffix = self.prefs.meshColSuffix
 
             # create collision meshes
-            self.custom_set_parent(context, obj, new_collider)
+            self.custom_set_parent(context, parent, new_collider)
+            self.remove_all_modifiers(context, new_collider)
 
-            new_collider.name = super().collider_name(basename=obj.name)
+            from ..operators.object_pivot_and_ailgn import alignObjects
+            alignObjects(new_collider, parent)
+
+            new_collider.name = super().collider_name(basename=parent.name)
 
             # save collision objects to delete when canceling the operation
-            collections = obj.users_collection
+            collections = parent.users_collection
 
             self.primitive_postprocessing(context, new_collider,collections)
-
-        self.new_colliders_list = set(context.scene.objects) - self.old_objs
+            self.new_colliders_list.append(new_collider)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

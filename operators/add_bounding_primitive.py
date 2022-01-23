@@ -27,9 +27,9 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     blf.size(font_id, 20, font_size)
 
     if type == 'key_title':
-        if self.ignore_input:
+        if self.ignore_input or self.navigation:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
-    elif self.ignore_input:
+    elif self.ignore_input or self.navigation:
         blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
     elif type == 'title':
         blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
@@ -43,7 +43,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     blf.draw(font_id, label)
 
     if key:
-        if self.ignore_input:
+        if self.ignore_input or self.navigation:
             blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
         elif highlight:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
@@ -61,7 +61,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
 
     if value:
 
-        if self.ignore_input:
+        if self.ignore_input or self.navigation:
             blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
         elif highlight:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
@@ -158,7 +158,11 @@ def draw_viewport_overlay(self, context):
     label = 'Operator Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    if self.ignore_input:
+    if self.navigation:
+        label = 'VIEWPORT NAVIGATION'
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
+
+    elif self.ignore_input:
         label = 'IGNORE INPUT (ALT)'
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
@@ -247,8 +251,34 @@ class OBJECT_OT_add_bounding_object():
             delta /= tweak_amount
 
         return delta
-    
-    def get_vertices_Edit(self, obj, use_modifiers = False):
+
+    def get_mesh_Edit(self, obj, use_modifiers=False):
+        ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
+        me = obj.data
+        me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
+        new_mesh = bpy.data.meshes.new('')
+
+        if use_modifiers:  # self.my_use_modifier_stack == True
+            # Get mesh information with the modifiers applied
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            bm = bmesh.new()
+            bm.from_object(obj, depsgraph)
+
+        else:  # use_modifiers == False
+            # Get a BMesh representation
+            bm_orig = bmesh.from_edit_mesh(me)
+            bm = bm_orig.copy()
+
+        vertices_select = [v for v in bm.verts if not v.select]
+        bmesh.ops.delete(bm, geom=vertices_select)
+
+        bm.verts.ensure_lookup_table()
+        bm.to_mesh(new_mesh)
+
+        return new_mesh
+
+    def get_vertices_Edit(self, obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
@@ -590,6 +620,7 @@ class OBJECT_OT_add_bounding_object():
         context.object.select_set(True)
 
         # INITIAL STATE
+        self.navigation = False
         self.selected_objects = context.selected_objects.copy()
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
@@ -654,12 +685,25 @@ class OBJECT_OT_add_bounding_object():
 
     def modal(self, context, event):
         scene = context.scene
+        self.navigation = False
 
         # Ignore if Alt is pressed
         if event.alt:
             self.ignore_input = True
             self.force_redraw()
             return {'RUNNING_MODAL'}
+
+        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            # allow navigation
+            self.navigation = True
+
+            self.opacity_active = False
+            self.displace_active = False
+            self.decimate_active = False
+            self.vertex_count_active = False
+            self.sphere_segments_active = False
+            
+            return {'PASS_THROUGH'}
 
         # User Input
         # aboard operator

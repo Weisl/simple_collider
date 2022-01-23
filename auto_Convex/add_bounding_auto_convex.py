@@ -10,8 +10,6 @@ from .off_eport import off_export
 from bpy.types import Operator
 from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-collider_shapes = ['boxColSuffix','sphereColSuffix', 'convexColSuffix', 'meshColSuffix']
-
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
@@ -54,26 +52,22 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
+        self.use_decimation = True
         self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.collider_shapes_idx = 0
-        self.collider_shapes = collider_shapes
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+
         status = super().modal(context, event)
         if status == {'FINISHED'}:
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
-
-        elif event.type == 'C' and event.value == 'RELEASE':
-            #toggle through display modes
-            self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.set_name_suffix()
-            self.update_names()
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
@@ -85,6 +79,17 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
+
+        import addon_utils
+        addon_name = 'io_scene_x3d'
+        addon_utils.check(addon_name)
+
+        success = addon_utils.enable(addon_name)
+        if not success:
+            print(addon_name, "is not found")
+            return {'CANCELLED'}
+
+        print("enabled", success.bl_info['name'])
 
         executable_path = self.set_export_path(self.prefs.executable_path)
         data_path = self.set_data_path(self.prefs.data_path)
@@ -218,7 +223,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             post_matrix = convex_collisions_data['post_matrix']
 
             debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name), str(post_matrix))
-            print(debug_text)
+            # print(debug_text)
 
             for new_collider in convex_collision:
                 new_collider.name = super().collider_name(basename=parent.name)

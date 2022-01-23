@@ -4,10 +4,12 @@ import bpy
 
 
 
-visibility_operators = {'ALL': 'All',
-'SIMPLE': 'Simple',
-'COMPLEX': 'Complex',
-'SIMPLE_COMPLEX':'Simple and Complex',
+visibility_operators = {
+    'ALL_COLLIDER': 'All Collider',
+    'SIMPLE': 'Simple',
+    'COMPLEX': 'Complex',
+    'SIMPLE_COMPLEX':'Simple and Complex',
+    'OBJECTS': "Objects",
 }
 
 def label_multiline(context, text, parent):
@@ -34,13 +36,13 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class CollissionPanel(Panel):
+class VIEW3D_PT_collission_panel(Panel):
     """Creates a Panel in the Object properties window"""
+
     bl_label = "Collider Tools"
-    bl_idname = "COLLISION_PT_Create"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Pipeline"
+    bl_category = "Collider Tools"
 
     def draw(self, context):
         layout = self.layout
@@ -54,28 +56,23 @@ class CollissionPanel(Panel):
         row = layout.row(align=True)
         row.label(text='Visibility and Selection')
 
-        col = self.layout.column_flow(columns=4, align=True)
 
         # for value in visibility_operators:
         #     col.label(text=value)
 
         for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_OFF', text='')
+            row = layout.row(align=True)
+            label = row.label(text=key)
+            op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='')
             op.hide = False
             op.mode = key
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.hide_collisions", icon='HIDE_ON', text='')
+            op = row.operator("object.hide_collisions", icon='HIDE_ON', text='')
             op.hide = True
             op.mode = key
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            op = row.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
             op.select = True
             op.mode = key
-
-        for key, value in visibility_operators.items():
-            op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            op = row.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
             op.select = False
             op.mode = key
 
@@ -118,8 +115,10 @@ class CollissionPanel(Panel):
         row = layout.row()
         row.prop(scene, 'maxNumVerticesPerCH')
 
+
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         row = layout.row(align=True)
+
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
