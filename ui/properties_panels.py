@@ -5,7 +5,7 @@ import bpy
 
 
 visibility_operators = {
-    'ALL_COLLIDER': 'All Collider',
+    'ALL_COLLIDER': 'All Colliders',
     'SIMPLE': 'Simple',
     'COMPLEX': 'Complex',
     'SIMPLE_COMPLEX':'Simple and Complex',
@@ -62,7 +62,8 @@ class VIEW3D_PT_collission_panel(Panel):
 
         for key, value in visibility_operators.items():
             row = layout.row(align=True)
-            label = row.label(text=key)
+            row.label(text=visibility_operators[key])
+
             op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='')
             op.hide = False
             op.mode = key
