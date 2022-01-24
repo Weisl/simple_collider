@@ -109,6 +109,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     modal_font_size: bpy.props.IntProperty(name='Font Size', description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes", default=56)
 
+    padding_bottom: bpy.props.IntProperty(name='Padding Bottom', description="The text padding in px. The padding defines the distance between the viewport bottom and the start of the modal operator text.", default=100)
+
     ## Collections
     use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
                                                description='Link all collision objects to a specific Collection for collisions',default = True)
@@ -194,6 +196,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     ui_props = [
         "modal_font_size",
+        # "padding_bottom",
         "modal_color_title",
         "modal_color_highlight",
         "modal_color_modal",
