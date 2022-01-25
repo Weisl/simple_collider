@@ -40,12 +40,12 @@ def register():
         type=bpy.types.Material,
         poll=scene_my_collision_material_poll,
         name='Physics Material',
-        description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material.'
+        description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.'
     )
 
     scene.PhysicsIdentifier = bpy.props.StringProperty(
         default="",
-        description="Filter physics materials out based on their naming.",
+        description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.',
         name='Physics Material Filter',
     )
 
