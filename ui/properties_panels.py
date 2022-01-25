@@ -35,6 +35,104 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
+def draw_visibility_selection_menu(layout):
+    split_left = layout.split(factor=0.35)
+    col_01 = split_left.column()
+    col_02 = split_left.column()
+
+    layout = layout
+    show_icon = 'HIDE_OFF'
+    hide_icon = 'HIDE_ON'
+    show_text = ''
+    hide_text = ''
+
+    select_icon = 'NONE'
+    deselect_icon = 'NONE'
+    select_text = 'Select'
+    deselect_text = 'Deselect'
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['ALL_COLLIDER'])
+
+    row = col_02.row(align=True)
+    op = row.operator("object.all_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'ALL_COLLIDER'
+    op = row.operator("object.all_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'ALL_COLLIDER'
+    op = row.operator("object.all_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'ALL_COLLIDER'
+    op = row.operator("object.all_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'ALL_COLLIDER'
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['SIMPLE'])
+
+    row = col_02.row(align=True)
+    op = row.operator("object.simple_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'SIMPLE'
+    op = row.operator("object.simple_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'SIMPLE'
+    op = row.operator("object.simple_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'SIMPLE'
+    op = row.operator("object.simple_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'SIMPLE'
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['COMPLEX'])
+    row = col_02.row(align=True)
+    op = row.operator("object.complex_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'COMPLEX'
+    op = row.operator("object.complex_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'COMPLEX'
+    op = row.operator("object.complex_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'COMPLEX'
+    op = row.operator("object.complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'COMPLEX'
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['SIMPLE_COMPLEX'])
+    row = col_02.row(align=True)
+    op = row.operator("object.simple_complex_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'SIMPLE_COMPLEX'
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['OBJECTS'])
+    row = col_02.row(align=True)
+    op = row.operator("object.non_collider_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'OBJECTS'
+
 
 class VIEW3D_PT_collission_panel(Panel):
     """Creates a Panel in the Object properties window"""
@@ -56,28 +154,7 @@ class VIEW3D_PT_collission_panel(Panel):
         row = layout.row(align=True)
         row.label(text='Visibility and Selection')
 
-
-        # for value in visibility_operators:
-        #     col.label(text=value)
-
-        for key, value in visibility_operators.items():
-            row = layout.row(align=True)
-            row.label(text=visibility_operators[key])
-
-            op = row.operator("object.hide_collisions", icon='HIDE_OFF', text='')
-            op.hide = False
-            op.mode = key
-            op = row.operator("object.hide_collisions", icon='HIDE_ON', text='')
-            op.hide = True
-            op.mode = key
-            # op = row.operator("object.select_collisions", icon='CHECKBOX_HLT', text='')
-            op = row.operator("object.select_collisions", text='Select')
-            op.select = True
-            op.mode = key
-            # op = row.operator("object.select_collisions", icon='CHECKBOX_DEHLT', text='')
-            op = row.operator("object.select_collisions", text='Deselect')
-            op.select = False
-            op.mode = key
+        draw_visibility_selection_menu(layout)
 
         # Physics Materials
         layout.separator()

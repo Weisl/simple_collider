@@ -1,4 +1,4 @@
-from .properties_panels import visibility_operators
+from .properties_panels import visibility_operators, draw_visibility_selection_menu
 from bpy.types import Menu
 
 # spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
@@ -6,35 +6,7 @@ class VIEW3D_MT_collision(Menu):
     bl_label = 'Collision Visibility'
 
     def draw(self, context):
-
-        split_left = self.layout.split(factor=0.35)
-        col_01 = split_left.column()
-        col_02 = split_left.column()
-
-        for key, value in visibility_operators.items():
-            row1 = col_02.row(align=True)
-
-            col_01.label(text=value)
-
-            # op = col.operator("object.hide_collisions", icon='HIDE_OFF', text=value)
-            op = row1.operator("object.hide_collisions", icon='HIDE_OFF', text='')
-            op.hide = False
-            op.mode = key
-
-            # op = col.operator("object.hide_collisions", icon='HIDE_ON', text=value)
-            op = row1.operator("object.hide_collisions", icon='HIDE_ON', text='')
-            op.hide = True
-            op.mode = key
-
-            # op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
-            op = row1.operator("object.select_collisions", text='Select')
-            op.select = True
-            op.mode = key
-
-            # op = col.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
-            op = row1.operator("object.select_collisions", text='Unselect')
-            op.select = False
-            op.mode = key
+        draw_visibility_selection_menu(self.layout)
 
         self.layout.separator()
 
