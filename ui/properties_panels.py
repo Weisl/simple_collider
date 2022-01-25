@@ -70,10 +70,12 @@ class VIEW3D_PT_collission_panel(Panel):
             op = row.operator("object.hide_collisions", icon='HIDE_ON', text='')
             op.hide = True
             op.mode = key
-            op = row.operator("object.select_collisions", icon='RESTRICT_SELECT_OFF', text='')
+            # op = row.operator("object.select_collisions", icon='CHECKBOX_HLT', text='')
+            op = row.operator("object.select_collisions", text='Select')
             op.select = True
             op.mode = key
-            op = row.operator("object.select_collisions", icon='RESTRICT_SELECT_ON', text='')
+            # op = row.operator("object.select_collisions", icon='CHECKBOX_DEHLT', text='')
+            op = row.operator("object.select_collisions", text='Deselect')
             op.select = False
             op.mode = key
 
