@@ -375,7 +375,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             if not self.executable_path:
                 texts.append("1. Download the V-hacd executable from the link below (Download V-hacd). (optional) Copy the downloaded executable to another directory on your hard drive.")
                 texts.append("2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
-                texts.append("3. (optional) Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
+                texts.append("3. (optional) The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
 
 
                 box = layout.box()
