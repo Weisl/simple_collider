@@ -4,7 +4,7 @@ bl_info = {
     "author": "Matthias Patscheider",
     "version": (1, 0, 0),
     "blender": (3, 0, 0),
-    "location": "View3D",
+    "location": "View3D > Collider Tools",
     "doc_url": "https://weisl.github.io/collider-tools_overview/",
     "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
     "category": "Object"}
