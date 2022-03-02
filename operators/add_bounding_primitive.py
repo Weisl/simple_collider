@@ -22,7 +22,10 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
     color_bool = self.prefs.modal_color_bool
     color_highlight = self.prefs.modal_color_highlight
 
+    #padding bottom
     font_size = self.prefs.modal_font_size
+    # padding_bottom = self.prefs.padding_bottom
+    padding_bottom = 0
 
     blf.size(font_id, 20, font_size)
 
@@ -39,7 +42,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
         else:
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-    blf.position(font_id, left_margin, i * vertical_px_offset, 0)
+    blf.position(font_id, left_margin, padding_bottom + (i * vertical_px_offset), 0)
     blf.draw(font_id, label)
 
     if key:
@@ -56,7 +59,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 220/72 * font_size, i * vertical_px_offset, 0)
+        blf.position(font_id, left_margin + 220/72 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, key)
 
     if value:
@@ -68,7 +71,7 @@ def draw_modal_item(self, font_id,i,vertical_px_offset, left_margin, label, valu
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 290/72 * font_size, i * vertical_px_offset, 0)
+        blf.position(font_id, left_margin + 290/72 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, value)
 
     i += 1

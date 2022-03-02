@@ -19,7 +19,28 @@ classes = (
     visibility_and_selection.COLLISION_OT_Selection,
     conversion_operators.OBJECT_OT_convert_to_collider,
     conversion_operators.OBJECT_OT_convert_to_mesh,
+    visibility_and_selection.COLLISION_OT_simple_select,
+    visibility_and_selection.COLLISION_OT_simple_deselect,
+    visibility_and_selection.COLLISION_OT_complex_select,
+    visibility_and_selection.COLLISION_OT_complex_deselect,
+    visibility_and_selection.COLLISION_OT_simple_complex_select,
+    visibility_and_selection.COLLISION_OT_simple_complex_deselect,
+    visibility_and_selection.COLLISION_OT_all_select,
+    visibility_and_selection.COLLISION_OT_all_deselect,
+    visibility_and_selection.COLLISION_OT_non_collider_select,
+    visibility_and_selection.COLLISION_OT_non_collider_deselect,
+    visibility_and_selection.COLLISION_OT_simple_show,
+    visibility_and_selection.COLLISION_OT_simple_hide,
+    visibility_and_selection.COLLISION_OT_complex_show,
+    visibility_and_selection.COLLISION_OT_complex_hide,
+    visibility_and_selection.COLLISION_OT_simple_complex_show,
+    visibility_and_selection.COLLISION_OT_simple_complex_hide,
+    visibility_and_selection.COLLISION_OT_all_show,
+    visibility_and_selection.COLLISION_OT_all_hide,
+    visibility_and_selection.COLLISION_OT_non_collider_show,
+    visibility_and_selection.COLLISION_OT_non_collider_hide,
 )
+
 
 def register():
     scene = bpy.types.Scene
