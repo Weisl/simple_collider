@@ -372,10 +372,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             )
 
             texts=[]
-            if not self.executable_path:
+            if not self.executable_path or not self.data_path:
                 texts.append("1. Download the V-hacd executable from the link below (Download V-hacd). (optional) Copy the downloaded executable to another directory on your hard drive.")
                 texts.append("2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
-                texts.append("3. (optional) The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
+                texts.append("3. The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
 
 
                 box = layout.box()
@@ -391,17 +391,18 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/win64/testVHACD.exe"
             # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
 
+            row = layout.row()
             if self.executable_path:
-                row = layout.row()
                 row.prop(self, 'executable_path', text='2. V-hacd .exe path')
-
             else:
-                row = layout.row()
                 row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
 
-
             row = layout.row()
-            row.prop(self, "data_path", text = "3. Temporary Data Path")
+            if self.data_path:
+                row.prop(self, "data_path", text = "3. Temporary Data Path")
+            else:
+                row.prop(self, "data_path", text="3. Temporary Data Path", icon="ERROR")
+
 
             box = layout.box()
             row = box.row()
