@@ -447,7 +447,8 @@ class OBJECT_OT_add_bounding_object():
         try:
             col.objects.link(obj)
         except RuntimeError as err:
-            print("RuntimeError: {0}".format(err))
+            pass
+            # print("RuntimeError: {0}".format(err))
 
     def set_collections(self, obj, collections):
         old_collection = obj.users_collection
