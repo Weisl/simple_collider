@@ -282,6 +282,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
 
+            row.label(text="Download Presets")
+
+            row.operator("wm.url_open",
+                         text="UE Preset").url = "https://weisl.github.io//files//UE.py"
+            row.operator("wm.url_open",
+                         text="Unity Preset").url = "https://weisl.github.io//files//default.py"
+
+
+
+
             row = box.row()
             row.prop(self, "naming_position", expand=True)
 
