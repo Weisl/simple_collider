@@ -388,7 +388,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = layout.row(align = True)
             row.label(text="1. Download V-HACD")
-            row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/win64/testVHACD.exe"
+            row.operator("wm.url_open", text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/app/TestVHACD.exe"
             # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
 
             row = layout.row()
