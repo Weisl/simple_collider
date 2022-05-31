@@ -282,11 +282,30 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
 
-            row = box.row()
-            row.prop(self, "naming_position", expand=True)
+
+
+
+            row = box.row(align=True)
+            row.label(text="Download game engine naming presets")
+
+            row = box.row(align=True)
+            row.label(text="Download Presets:")
+            row.operator("wm.url_open",
+                         text="UE").url = "https://weisl.github.io//files//UE.py"
+
+            row.operator("wm.url_open",
+                         text="Unity").url = "https://weisl.github.io//files//default.py"
+
+            row = box.row(align=True)
+            row.label(text="How to install Presets")
+            row.operator("wm.url_open",
+                         text="Documentation").url = "https://weisl.github.io/collider-tools_import_engines/"
 
 
             boxname = box.box()
+            row = box.row()
+            row.prop(self, "naming_position", expand=True)
+
             row = boxname.row()
             if self.naming_position == 'PREFIX':
                 row.label(text="Name = Collision Pre + Shape + Complexity + Collision Post + Basename + Numbering")
