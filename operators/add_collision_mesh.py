@@ -71,6 +71,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh == None:
                 continue
 
+            scene = context.scene
             mesh_collider_data['parent'] = obj
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
@@ -98,6 +99,19 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             self.primitive_postprocessing(context, new_collider, collections)
             self.new_colliders_list.append(new_collider)
+
+
+        if scene.creation_mode == 'SELECTION':
+            bpy.ops.object.select_all(action='DESELECT')
+            new_collider = None
+
+            for obj in self.new_colliders_list:
+                obj.select_set(True)
+                context.view_layer.objects.active = obj
+                new_collider = obj
+
+            bpy.ops.object.join()
+            self.new_colliders_list = [new_collider]
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
