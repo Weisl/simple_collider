@@ -118,10 +118,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         #List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
+        vert_positions_x = []
+        vert_positions_y = []
+        vert_positions_z = []
+
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
-
             # skip if invalid object
             if obj is None:
                 continue
@@ -143,15 +146,31 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
-            verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+            vert_positions_x = vert_positions_x + positionsX
+            vert_positions_y = vert_positions_y + positionsY
+            vert_positions_z = vert_positions_z + positionsZ
 
-            #store data needed to generate a bounding box in a dictionary
+            if scene.creation_mode == 'INDIVIDUAL':
+                verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+
+                #store data needed to generate a bounding box in a dictionary
+                bounding_box_data['parent'] = obj
+                bounding_box_data['verts_loc'] = verts_loc
+
+                collider_data.append(bounding_box_data)
+
+        if scene.creation_mode == 'SELECTION':
+            print(str(vert_positions_x))
+            verts_loc = self.generate_bounding_box(vert_positions_x,vert_positions_y,vert_positions_z)
+
+            bounding_box_data = {}
             bounding_box_data['parent'] = obj
             bounding_box_data['verts_loc'] = verts_loc
-
             collider_data.append(bounding_box_data)
 
+
         bpy.ops.object.mode_set(mode='OBJECT')
+
 
         for bounding_box_data in collider_data:
             # get data from dictionary
@@ -160,7 +179,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             global face_order
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
-
             scene = context.scene
 
             if scene.my_space == 'LOCAL':
@@ -179,6 +197,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             new_collider.name = super().collider_name(basename=parent_name)
+
+
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
