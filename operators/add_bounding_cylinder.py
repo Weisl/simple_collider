@@ -128,6 +128,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.type_suffix = self.prefs.convexColSuffix
 
         collider_data = []
+        vert_positions_x = []
+        vert_positions_y = []
+        vert_positions_z = []
 
         for obj in context.selected_objects.copy():
 
@@ -146,17 +149,46 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             else:
                 vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, vertices)
-            dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
-            bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+            if scene.creation_mode == 'INDIVIDUAL':
+                positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, vertices)
+
+                dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
+                bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+
+                radius, depth = self.generate_radius_depth(dimensions)
+
+                bounding_cylinder_data['parent'] = obj
+                bounding_cylinder_data['radius'] = radius
+                bounding_cylinder_data['depth'] = depth
+                bounding_cylinder_data['bbox'] = bounding_box
+                collider_data.append(bounding_cylinder_data)
+
+            else: #if scene.creation_mode == 'SELECTION':
+                # used_vertices uses local space
+                # get list of all vertex coordinates X,Y,Z in global space
+                positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', vertices)
+
+                if scene.my_space == 'LOCAL':
+                    positionsX, positionsY, positionsZ = self.transform_vertex_positions(positionsX, positionsY, positionsZ, self.active_obj)
+
+                vert_positions_x = vert_positions_x + positionsX
+                vert_positions_y = vert_positions_y + positionsY
+                vert_positions_z = vert_positions_z + positionsZ
+
+        if scene.creation_mode == 'SELECTION':
+            bounding_box_data = {}
+
+            dimensions = self.generate_dimensions_WS(vert_positions_x, vert_positions_y, vert_positions_z)
+            bounding_box = self.generate_bounding_box(vert_positions_x, vert_positions_y, vert_positions_z)
 
             radius, depth = self.generate_radius_depth(dimensions)
 
-            bounding_cylinder_data['parent'] = obj
+            bounding_cylinder_data['parent'] = self.active_obj
             bounding_cylinder_data['radius'] = radius
             bounding_cylinder_data['depth'] = depth
             bounding_cylinder_data['bbox'] = bounding_box
             collider_data.append(bounding_cylinder_data)
+
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
