@@ -161,6 +161,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         self.type_suffix = self.prefs.sphereColSuffix
 
+        collider_data = []
+
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
 
@@ -172,7 +174,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            initial_mod_state = {}
+            bounding_sphere_data = {}
+
             context.view_layer.objects.active = obj
             scene = context.scene
 
@@ -185,7 +188,12 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            mid_point, radius = self.calculate_bounding_sphere(obj, used_vertices)
+            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj, used_vertices)
+            collider_data.append(bounding_sphere_data)
+
+        for bounding_sphere_data in collider_data:
+            mid_point = bounding_sphere_data['mid_point']
+            radius = bounding_sphere_data['radius']
 
             new_collider = create_sphere(mid_point, radius, self.current_settings_dic['sphere_segments'])
             self.custom_set_parent(context, obj, new_collider)
