@@ -4,6 +4,7 @@ import bmesh
 import time
 import numpy
 
+from mathutils import Vector
 from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
@@ -339,6 +340,21 @@ class OBJECT_OT_add_bounding_object():
 
         return used_vertices
 
+    def transform_vertex_positions(self, positionsX, positionsY, positionsZ, active_obj):
+        new_positionsX = []
+        new_positionsY = []
+        new_positionsZ = []
+
+        # iterate over vertex coordinates to transform the positions to the appropriate space
+        for i in range(len(positionsX)):
+            co = Vector((positionsX[i], positionsY[i], positionsZ[i], 1.0))
+            transformed_co = active_obj.matrix_world.inverted() @ co
+
+            new_positionsX.append(transformed_co[0])
+            new_positionsY.append(transformed_co[1])
+            new_positionsZ.append(transformed_co[2])
+
+        return new_positionsX, new_positionsY, new_positionsZ
 
     def mesh_from_selection(self, obj, use_modifiers = False):
         mesh = obj.data.copy()

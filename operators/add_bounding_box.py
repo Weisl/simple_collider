@@ -2,7 +2,7 @@ import bmesh
 import bpy
 
 from bpy.types import Operator
-from mathutils import Vector
+
 
 from bpy_extras.object_utils import object_data_add
 
@@ -165,23 +165,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 # get list of all vertex coordinates X,Y,Z in global space
                 positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
-                if scene.my_space == 'LOCAL':  #
-                    new_positionsX = []
-                    new_positionsY = []
-                    new_positionsZ = []
-
-                    #iterate over vertex coordinates to transform the positions to the appropriate space
-                    for i in range(len(positionsX)):
-                        co = Vector((positionsX[i], positionsY[i], positionsZ[i], 1.0))
-                        transformed_co = self.active_obj.matrix_world.inverted() @ co
-
-                        new_positionsX.append(transformed_co[0])
-                        new_positionsY.append(transformed_co[1])
-                        new_positionsZ.append(transformed_co[2])
-
-                    positionsX = new_positionsX
-                    positionsY = new_positionsY
-                    positionsZ = new_positionsZ
+                if scene.my_space == 'LOCAL':
+                    positionsX, positionsY, positionsZ = self.transform_vertex_positions(positionsX, positionsY, positionsZ, self.active_obj)
 
                 vert_positions_x = vert_positions_x + positionsX
                 vert_positions_y = vert_positions_y + positionsY
