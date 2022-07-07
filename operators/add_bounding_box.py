@@ -1,10 +1,14 @@
 import bmesh
 import bpy
+
 from bpy.types import Operator
+from mathutils import Vector
+
 from bpy_extras.object_utils import object_data_add
 
-from ..operators.object_pivot_and_ailgn import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..operators.object_pivot_and_ailgn import alignObjects
+
 
 tmp_name = 'box_collider'
 
@@ -145,12 +149,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
-            vert_positions_x = vert_positions_x + positionsX
-            vert_positions_y = vert_positions_y + positionsY
-            vert_positions_z = vert_positions_z + positionsZ
-
             if scene.creation_mode == 'INDIVIDUAL':
+                # used_vertices uses local space.
+                positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
 
                 #store data needed to generate a bounding box in a dictionary
@@ -159,12 +160,37 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
                 collider_data.append(bounding_box_data)
 
-        if scene.creation_mode == 'SELECTION':
-            print(str(vert_positions_x))
-            verts_loc = self.generate_bounding_box(vert_positions_x,vert_positions_y,vert_positions_z)
+            else: #if scene.creation_mode == 'SELECTION':
+                # used_vertices uses local space
+                # get list of all vertex coordinates X,Y,Z in global space
+                positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
+                if scene.my_space == 'LOCAL':  #
+                    new_positionsX = []
+                    new_positionsY = []
+                    new_positionsZ = []
+
+                    #iterate over vertex coordinates to transform the positions to the appropriate space
+                    for i in range(len(positionsX)):
+                        co = Vector((positionsX[i], positionsY[i], positionsZ[i], 1.0))
+                        transformed_co = self.active_obj.matrix_world.inverted() @ co
+
+                        new_positionsX.append(transformed_co[0])
+                        new_positionsY.append(transformed_co[1])
+                        new_positionsZ.append(transformed_co[2])
+
+                    positionsX = new_positionsX
+                    positionsY = new_positionsY
+                    positionsZ = new_positionsZ
+
+                vert_positions_x = vert_positions_x + positionsX
+                vert_positions_y = vert_positions_y + positionsY
+                vert_positions_z = vert_positions_z + positionsZ
+
+        if scene.creation_mode == 'SELECTION':
+            verts_loc = self.generate_bounding_box(vert_positions_x,vert_positions_y,vert_positions_z)
             bounding_box_data = {}
-            bounding_box_data['parent'] = obj
+            bounding_box_data['parent'] = self.active_obj
             bounding_box_data['verts_loc'] = verts_loc
             collider_data.append(bounding_box_data)
 
