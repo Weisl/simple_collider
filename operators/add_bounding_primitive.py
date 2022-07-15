@@ -136,6 +136,11 @@ def draw_viewport_overlay(self, context):
         value = str(self.my_use_modifier_stack)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(P)', type='bool')
 
+    label = "Toggle X Ray "
+    value = str(self.x_ray)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(C)', type='bool')
+
+
     label = "Shrink/Inflate"
     value = self.current_settings_dic['discplace_offset']
     value = '{initial_value:.3f}'.format(initial_value=value)
@@ -638,6 +643,7 @@ class OBJECT_OT_add_bounding_object():
 
         #Modal Settings
         self.my_use_modifier_stack = False
+        self.x_ray = context.space_data.shading.show_xray
 
         # Modal MODIFIERS
         #Displace
@@ -817,6 +823,13 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'W' and event.value == 'RELEASE':
             self.wireframe_idx = (self.wireframe_idx + 1) % len(bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items)
             scene.wireframe_mode = bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items[self.wireframe_idx].identifier
+            # Another function needs to be called for the modal UI to update :(
+            self.set_collisions_wire_preview(scene.wireframe_mode)
+
+        elif event.type == 'C' and event.value == 'RELEASE':
+            self.x_ray = not self.x_ray
+            context.space_data.shading.show_xray = self.x_ray
+            # Another function needs to be called for the modal UI to update :(
             self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'S' and event.value == 'RELEASE':
