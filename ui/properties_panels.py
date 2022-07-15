@@ -70,7 +70,7 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.all_deselect_collisions", icon=deselect_icon, text=deselect_text)
     op.select = False
     op.mode = 'ALL_COLLIDER'
-    op = row.operator("object.delete_collisions", icon=delete_icon, text=delete_text)
+    op = row.operator("object.all_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'ALL_COLLIDER'
 
     row = col_01.row(align=True)
@@ -89,7 +89,7 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.simple_deselect_collisions", icon=deselect_icon, text=deselect_text)
     op.select = False
     op.mode = 'SIMPLE'
-    op = row.operator("object.delete_collisions", icon=delete_icon, text=delete_text)
+    op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'SIMPLE'
 
     row = col_01.row(align=True)
@@ -107,7 +107,7 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
     op.select = False
     op.mode = 'COMPLEX'
-    op = row.operator("object.delete_collisions", icon=delete_icon, text=delete_text)
+    op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'COMPLEX'
 
     row = col_01.row(align=True)
@@ -125,7 +125,7 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
     op.select = False
     op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.delete_collisions", icon=delete_icon, text=delete_text)
+    op = row.operator("object.simple_complex_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'SIMPLE_COMPLEX'
 
 
@@ -144,7 +144,7 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.non_collider_deselect_collisions", icon=deselect_icon, text=deselect_text)
     op.select = False
     op.mode = 'OBJECTS'
-    op = row.operator("object.delete_collisions", icon=delete_icon, text=delete_text)
+    op = row.operator("object.non_collider_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'OBJECTS'
 
 
