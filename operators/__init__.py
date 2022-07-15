@@ -39,6 +39,7 @@ classes = (
     visibility_and_selection.COLLISION_OT_all_hide,
     visibility_and_selection.COLLISION_OT_non_collider_show,
     visibility_and_selection.COLLISION_OT_non_collider_hide,
+    visibility_and_selection.COLLISION_OT_Deletion,
 )
 
 
