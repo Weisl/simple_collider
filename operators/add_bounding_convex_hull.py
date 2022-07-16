@@ -106,7 +106,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_collider.name = super().collider_name(basename=new_collider.parent.name)
+            new_name = super().collider_name(basename=new_collider.parent.name)
+            new_collider.name = new_name
+            new_collider.data.name = new_name + self.data_suffix
+            new_collider.data.name = new_name + self.data_suffix
 
         self.new_colliders_list = set(context.scene.objects) - self.old_objs
 
