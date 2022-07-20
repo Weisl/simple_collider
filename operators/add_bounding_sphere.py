@@ -61,6 +61,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             # convert to global space
             v = obj.matrix_world @ vertex.co
+            # v = obj.matrix_world.inverted() @ vertex.co
 
             # ignore 1. point since it's already saved
             if i == 0:
