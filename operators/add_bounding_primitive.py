@@ -637,6 +637,7 @@ class OBJECT_OT_add_bounding_object():
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
         self.prev_decimate_time = time.time()
+        self.data_suffix = "_data"
 
         # Mouse
         self.mouse_initial_x = event.mouse_x
