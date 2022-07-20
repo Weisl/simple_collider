@@ -162,6 +162,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         self.type_suffix = self.prefs.sphereColSuffix
 
         collider_data = []
+        all_used_vertices = []
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -188,22 +189,38 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj, used_vertices)
+            if scene.creation_mode == 'INDIVIDUAL':
+                bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
+                                                                                                                   used_vertices)
+                bounding_sphere_data['parent'] = obj
+                collider_data.append(bounding_sphere_data)
+
+            else:  # if scene.creation_mode == 'SELECTION':
+                # used_vertices uses local space
+                # get list of all vertex coordinates X,Y,Z in global space
+                all_used_vertices = all_used_vertices + list(used_vertices)
+
+        if scene.creation_mode == 'SELECTION':
+            bounding_sphere_data = {}
+            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj,
+                                                                                                               all_used_vertices)
+            bounding_sphere_data['parent'] = self.active_obj
             collider_data.append(bounding_sphere_data)
 
         for bounding_sphere_data in collider_data:
             mid_point = bounding_sphere_data['mid_point']
             radius = bounding_sphere_data['radius']
+            parent = bounding_sphere_data['parent']
 
             new_collider = create_sphere(mid_point, radius, self.current_settings_dic['sphere_segments'])
-            self.custom_set_parent(context, obj, new_collider)
+            self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-            collections = obj.users_collection
+            collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_collider.name = super().collider_name(basename=obj.name)
+            new_collider.name = super().collider_name(basename=parent.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
