@@ -1,6 +1,7 @@
 import bmesh
 import bpy
 from bpy.types import Operator
+from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
@@ -77,14 +78,28 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 collider_data.append(convex_collision_data)
 
             else: #if scene.creation_mode == 'SELECTION':
-                all_used_vertices = all_used_vertices + list(used_vertices)
+
+                used_vertices_co = []
+                transformed_vertices = []
+                for v in used_vertices:
+                    used_vertices_co.append(v.co)
+
+
+                for i in range(len(used_vertices_co)):
+                    co = Vector((used_vertices_co[i].x,used_vertices_co[i].y,used_vertices_co[i].z))
+                    used_vertices_co[i] = obj.matrix_world.inverted() @ co
+                    # used_vertices_co[i] = obj.matrix_world @ co
+                    transformed_vertices.append(used_vertices_co[i])
+
+
+                all_used_vertices = all_used_vertices + list(transformed_vertices)
 
 
         if scene.creation_mode == 'SELECTION':
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
             convex_collision_data['verts_loc'] = all_used_vertices
-            collider_data.append(convex_collision_data)
+            collider_data = [convex_collision_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -96,7 +111,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bm = bmesh.new()
 
             for v in verts_loc:
-                bm.verts.new(v.co)  # add a new vert
+                if scene.creation_mode == 'INDIVIDUAL':
+                    bm.verts.new(v.co)  # add a new vert
+                else:
+                    bm.verts.new(v)  # add a new vert
 
             ch = bmesh.ops.convex_hull(bm, input=bm.verts)
 
