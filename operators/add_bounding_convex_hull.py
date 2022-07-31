@@ -1,8 +1,8 @@
 import bmesh
 import bpy
-from bpy.types import Operator
-from mathutils import Vector
+import numpy as np
 
+from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
@@ -45,7 +45,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
         #List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
-        all_used_vertices = []
+        verts_co = []
 
         # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:
@@ -58,6 +58,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             convex_collision_data = {}
+
 
             if self.obj_mode == "EDIT":
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
@@ -78,27 +79,15 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 collider_data.append(convex_collision_data)
 
             else: #if scene.creation_mode == 'SELECTION':
-
-                used_vertices_co = []
-                transformed_vertices = []
-                for v in used_vertices:
-                    used_vertices_co.append(v.co)
-
-
-                for i in range(len(used_vertices_co)):
-                    co = Vector((used_vertices_co[i].x,used_vertices_co[i].y,used_vertices_co[i].z))
-                    used_vertices_co[i] = obj.matrix_world.inverted() @ co
-                    # used_vertices_co[i] = obj.matrix_world @ co
-                    transformed_vertices.append(used_vertices_co[i])
-
-
-                all_used_vertices = all_used_vertices + list(transformed_vertices)
-
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
 
         if scene.creation_mode == 'SELECTION':
+
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
-            convex_collision_data['verts_loc'] = all_used_vertices
+            convex_collision_data['verts_loc'] = verts_co
             collider_data = [convex_collision_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -131,9 +120,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             new_collider = bpy.data.objects.new('asd', me)
             context.scene.collection.objects.link(new_collider)
 
-            matrix = parent.matrix_world
             new_collider.parent = parent
-            new_collider.matrix_world = matrix
+
+            if scene.creation_mode == 'SELECTION':
+                identityMatrix = np.identity(4)
+                new_collider.matrix_world = identityMatrix
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
@@ -142,19 +133,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             new_collider.name = super().collider_name(basename=parent_name)
-
-        # for collider_data in target_objects:
-        #
-        #     parent = collider_data['parent']
-        #     new_collider = collider_data['convex_collider']
-        #
-        #     # save collision objects to delete when canceling the operation
-        #     self.new_colliders_list.append(new_collider)
-        #     collections = parent.users_collection
-        #     self.primitive_postprocessing(context, new_collider, collections)
-        #
-        #     parent_name = parent.name
-        #     new_collider.name = super().collider_name(basename=parent_name)
 
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
