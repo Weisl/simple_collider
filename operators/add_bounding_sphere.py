@@ -160,7 +160,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         collider_data = []
         all_used_vertices = []
-        i = 0
+        verts_co = []
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -188,25 +188,22 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             bounding_sphere_data = {}
 
             if scene.creation_mode == 'INDIVIDUAL':
-                vtx_co = [v.co for v in used_vertices]
-                vtx_co = super().transform_vertex_space(vtx_co, obj)
+                vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,vtx_co)
                 bounding_sphere_data['parent'] = obj
                 collider_data.append(bounding_sphere_data)
 
-            else:  # if scene.creation_mode == 'SELECTION':
-                # used_vertices uses local space
-                # get list of all vertex coordinates X,Y,Z in global space
-                vtx_co = [v.co for v in used_vertices]
-                all_used_vertices += super().transform_vertex_space(vtx_co, obj)
+            else: #if scene.creation_mode == 'SELECTION':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
 
         if scene.creation_mode == 'SELECTION':
             bounding_sphere_data = {}
-            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj,
-                                                                                                               all_used_vertices)
+            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj,verts_co)
             bounding_sphere_data['parent'] = self.active_obj
-            print(str(all_used_vertices))
             collider_data = [bounding_sphere_data]
 
         for bounding_sphere_data in collider_data:
