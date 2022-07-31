@@ -235,8 +235,24 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
-    def generate_bounding_box(self, positionsX, positionsY, positionsZ):
+    def split_coordinates_xyz(self, v_co):
+        positionsX = []
+        positionsY = []
+        positionsZ = []
+
+        # generate a lists of all x, y and z coordinates to find the mins and max
+        for co in v_co:
+            positionsX.append(co[0])
+            positionsY.append(co[1])
+            positionsZ.append(co[2])
+
+        return positionsX,positionsY,positionsZ
+
+    def generate_bounding_box(self, v_co):
         '''get the min and max coordinates for the bounding box'''
+
+        positionsX,positionsY,positionsZ = self.split_coordinates_xyz(v_co)
+
         verts = [
             (max(positionsX), max(positionsY), min(positionsZ)),
             (max(positionsX), min(positionsY), min(positionsZ)),
@@ -340,21 +356,45 @@ class OBJECT_OT_add_bounding_object():
 
         return used_vertices
 
-    def transform_vertex_positions(self, positionsX, positionsY, positionsZ, active_obj):
-        new_positionsX = []
-        new_positionsY = []
-        new_positionsZ = []
-
+    def transform_vertex_space(self, vertex_co, obj):
         # iterate over vertex coordinates to transform the positions to the appropriate space
-        for i in range(len(positionsX)):
-            co = Vector((positionsX[i], positionsY[i], positionsZ[i], 1.0))
-            transformed_co = active_obj.matrix_world.inverted() @ co
+        ws_vertex_co = []
+        for i in range(len(vertex_co)):
+            co = vertex_co[i]
+            ws_vertex_co.append(obj.matrix_world.inverted() @ co)
 
-            new_positionsX.append(transformed_co[0])
-            new_positionsY.append(transformed_co[1])
-            new_positionsZ.append(transformed_co[2])
+        return ws_vertex_co
 
-        return new_positionsX, new_positionsY, new_positionsZ
+    # def transform_vertex_positions(self, vertex_co, active_obj):
+    #     ws_vertex_co = []
+    #
+    #     # iterate over vertex coordinates to transform the positions to the appropriate space
+    #     for i in range(len(ws_vertex_co)):
+    #         co = ws_vertex_co[i]
+    #         transformed_co = active_obj.matrix_world.inverted() @ co
+    #         ws_vertex_co.append(transformed_co)
+    #
+    #     return ws_vertex_co
+
+    def get_point_positions(self, obj, space, used_vertives):
+        """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
+
+        # Modify the BMesh, can do anything here...
+        co = []
+
+        if space == 'GLOBAL':
+            # get world space coordinates of the vertices
+            for v in used_vertives:
+                v_local = v
+                v_global = obj.matrix_world @ v_local.co
+
+                co.append(v_global)
+
+        else: # space == 'LOCAL'
+            for v in used_vertives:
+                co.append(v.co)
+
+        return co
 
     def mesh_from_selection(self, obj, use_modifiers = False):
         mesh = obj.data.copy()
@@ -378,32 +418,6 @@ class OBJECT_OT_add_bounding_object():
         bm.free()
 
         return mesh
-
-    def get_point_positions(self, obj, space, used_vertives):
-        """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
-
-        # Modify the BMesh, can do anything here...
-        positionsX = []
-        positionsY = []
-        positionsZ = []
-
-        if space == 'GLOBAL':
-            # get world space coordinates of the vertices
-            for v in used_vertives:
-                v_local = v
-                v_global = obj.matrix_world @ v_local.co
-
-                positionsX.append(v_global[0])
-                positionsY.append(v_global[1])
-                positionsZ.append(v_global[2])
-
-        else: # space == 'LOCAL'
-            for v in used_vertives:
-                positionsX.append(v.co.x)
-                positionsY.append(v.co.y)
-                positionsZ.append(v.co.z)
-
-        return positionsX, positionsY, positionsZ
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
 

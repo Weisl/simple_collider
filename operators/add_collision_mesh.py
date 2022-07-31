@@ -78,6 +78,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
+        # Create new collider objects
         for mesh_collider_data in collider_data:
             parent = mesh_collider_data['parent']
             new_collider = mesh_collider_data['new_collider']
@@ -100,7 +101,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
             self.new_colliders_list.append(new_collider)
 
-
+        # Merge all collider objects
         if scene.creation_mode == 'SELECTION':
             bpy.ops.object.select_all(action='DESELECT')
             new_collider = None

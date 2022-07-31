@@ -122,9 +122,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         #List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
-        vert_positions_x = []
-        vert_positions_y = []
-        vert_positions_z = []
+        verts_co = []
 
 
         # Create the bounding geometry, depending on edit or object mode.
@@ -151,8 +149,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             if scene.creation_mode == 'INDIVIDUAL':
                 # used_vertices uses local space.
-                positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
-                verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+                co = self.get_point_positions(obj, scene.my_space, used_vertices)
+                verts_loc = self.generate_bounding_box(co)
 
                 #store data needed to generate a bounding box in a dictionary
                 bounding_box_data['parent'] = obj
@@ -161,23 +159,23 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 collider_data.append(bounding_box_data)
 
             else: #if scene.creation_mode == 'SELECTION':
-                # used_vertices uses local space
-                # get list of all vertex coordinates X,Y,Z in global space
-                positionsX, positionsY, positionsZ = self.get_point_positions(obj, 'GLOBAL', used_vertices)
-
-                if scene.my_space == 'LOCAL':
-                    positionsX, positionsY, positionsZ = self.transform_vertex_positions(positionsX, positionsY, positionsZ, self.active_obj)
-
-                vert_positions_x = vert_positions_x + positionsX
-                vert_positions_y = vert_positions_y + positionsY
-                vert_positions_z = vert_positions_z + positionsZ
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
 
         if scene.creation_mode == 'SELECTION':
-            verts_loc = self.generate_bounding_box(vert_positions_x,vert_positions_y,vert_positions_z)
+
+            if scene.my_space == 'LOCAL':
+                ws_vtx_co = verts_co
+                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+
+            bbox_verts = self.generate_bounding_box(verts_co)
+
+
             bounding_box_data = {}
             bounding_box_data['parent'] = self.active_obj
-            bounding_box_data['verts_loc'] = verts_loc
-            collider_data.append(bounding_box_data)
+            bounding_box_data['verts_loc'] = bbox_verts
+            collider_data = [bounding_box_data]
 
 
         bpy.ops.object.mode_set(mode='OBJECT')
