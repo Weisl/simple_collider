@@ -190,6 +190,8 @@ class VIEW3D_PT_collission_panel(Panel):
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         row = layout.row(align=True)
+        row.operator("mesh.add_aligned_bounding_box", icon='MESH_CUBE')
+        row = layout.row(align=True)
         row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
