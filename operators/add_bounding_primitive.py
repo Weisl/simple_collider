@@ -4,6 +4,7 @@ import bmesh
 import time
 import numpy
 
+from mathutils import Vector
 from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
@@ -99,6 +100,10 @@ def draw_viewport_overlay(self, context):
     label = "Display Wireframe "
     value = str(scene.wireframe_mode)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(W)', type='enum')
+
+    label = "Creation Mode "
+    value = str(scene.creation_mode)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(M)', type='bool')
 
     label = "Hide After Creation "
     value = str(scene.my_hide)
@@ -235,8 +240,24 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
-    def generate_bounding_box(self, positionsX, positionsY, positionsZ):
+    def split_coordinates_xyz(self, v_co):
+        positionsX = []
+        positionsY = []
+        positionsZ = []
+
+        # generate a lists of all x, y and z coordinates to find the mins and max
+        for co in v_co:
+            positionsX.append(co[0])
+            positionsY.append(co[1])
+            positionsZ.append(co[2])
+
+        return positionsX,positionsY,positionsZ
+
+    def generate_bounding_box(self, v_co):
         '''get the min and max coordinates for the bounding box'''
+
+        positionsX,positionsY,positionsZ = self.split_coordinates_xyz(v_co)
+
         verts = [
             (max(positionsX), max(positionsY), min(positionsZ)),
             (max(positionsX), min(positionsY), min(positionsZ)),
@@ -340,6 +361,45 @@ class OBJECT_OT_add_bounding_object():
 
         return used_vertices
 
+    def transform_vertex_space(self, vertex_co, obj):
+        # iterate over vertex coordinates to transform the positions to the appropriate space
+        ws_vertex_co = []
+        for i in range(len(vertex_co)):
+            co = vertex_co[i]
+            ws_vertex_co.append(obj.matrix_world.inverted() @ co)
+
+        return ws_vertex_co
+
+    # def transform_vertex_positions(self, vertex_co, active_obj):
+    #     ws_vertex_co = []
+    #
+    #     # iterate over vertex coordinates to transform the positions to the appropriate space
+    #     for i in range(len(ws_vertex_co)):
+    #         co = ws_vertex_co[i]
+    #         transformed_co = active_obj.matrix_world.inverted() @ co
+    #         ws_vertex_co.append(transformed_co)
+    #
+    #     return ws_vertex_co
+
+    def get_point_positions(self, obj, space, used_vertives):
+        """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
+
+        # Modify the BMesh, can do anything here...
+        co = []
+
+        if space == 'GLOBAL':
+            # get world space coordinates of the vertices
+            for v in used_vertives:
+                v_local = v
+                v_global = obj.matrix_world @ v_local.co
+
+                co.append(v_global)
+
+        else: # space == 'LOCAL'
+            for v in used_vertives:
+                co.append(v.co)
+
+        return co
 
     def mesh_from_selection(self, obj, use_modifiers = False):
         mesh = obj.data.copy()
@@ -363,32 +423,6 @@ class OBJECT_OT_add_bounding_object():
         bm.free()
 
         return mesh
-
-    def get_point_positions(self, obj, space, used_vertives):
-        """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
-
-        # Modify the BMesh, can do anything here...
-        positionsX = []
-        positionsY = []
-        positionsZ = []
-
-        if space == 'GLOBAL':
-            # get world space coordinates of the vertices
-            for v in used_vertives:
-                v_local = v
-                v_global = obj.matrix_world @ v_local.co
-
-                positionsX.append(v_global[0])
-                positionsY.append(v_global[1])
-                positionsZ.append(v_global[2])
-
-        else: # space == 'LOCAL'
-            for v in used_vertives:
-                positionsX.append(v.co.x)
-                positionsY.append(v.co.y)
-                positionsZ.append(v.co.z)
-
-        return positionsX, positionsY, positionsZ
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
 
@@ -670,6 +704,7 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
         self.wireframe_idx = 1
+        self.creation_mode_idx = 0
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_type_idx = 0
         self.collision_type = collider_types
@@ -832,6 +867,11 @@ class OBJECT_OT_add_bounding_object():
             context.space_data.shading.show_xray = self.x_ray
             # Another function needs to be called for the modal UI to update :(
             self.set_collisions_wire_preview(scene.wireframe_mode)
+
+        elif event.type == 'M' and event.value == 'RELEASE':
+            self.creation_mode_idx = (self.creation_mode_idx + 1) % len(bpy.types.Scene.bl_rna.properties['creation_mode'].enum_items)
+            scene.creation_mode = bpy.types.Scene.bl_rna.properties['creation_mode'].enum_items[self.creation_mode_idx].identifier
+            self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active

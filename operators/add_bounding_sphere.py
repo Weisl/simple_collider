@@ -57,10 +57,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def calculate_bounding_sphere(self, obj, used_vertices):
         # Get vertices wit min and may values
-        for i, vertex in enumerate(used_vertices):
-
-            # convert to global space
-            v = obj.matrix_world @ vertex.co
+        for i, v in enumerate(used_vertices):
 
             # ignore 1. point since it's already saved
             if i == 0:
@@ -105,7 +102,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         # second pass
         for i, vertex in enumerate(used_vertices):
             # convert to global space
-            v = obj.matrix_world @ vertex.co
+            v = obj.matrix_world @ vertex
 
             # calculate distance to center to find out if the point is in or outside the sphere
             distance_center_to_v = distance_vec(mid_point, v)
@@ -161,6 +158,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         self.type_suffix = self.prefs.sphereColSuffix
 
+        collider_data = []
+        all_used_vertices = []
+        verts_co = []
+
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
 
@@ -172,7 +173,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-            initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene
 
@@ -185,20 +185,41 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            mid_point, radius = self.calculate_bounding_sphere(obj, used_vertices)
+            bounding_sphere_data = {}
+
+            if scene.creation_mode == 'INDIVIDUAL':
+                vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+
+                bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,vtx_co)
+                bounding_sphere_data['parent'] = obj
+                collider_data.append(bounding_sphere_data)
+
+            else: #if scene.creation_mode == 'SELECTION':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
+
+        if scene.creation_mode == 'SELECTION':
+            bounding_sphere_data = {}
+            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj,verts_co)
+            bounding_sphere_data['parent'] = self.active_obj
+            collider_data = [bounding_sphere_data]
+
+        for bounding_sphere_data in collider_data:
+            mid_point = bounding_sphere_data['mid_point']
+            radius = bounding_sphere_data['radius']
+            parent = bounding_sphere_data['parent']
 
             new_collider = create_sphere(mid_point, radius, self.current_settings_dic['sphere_segments'])
-            self.custom_set_parent(context, obj, new_collider)
+            self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-            collections = obj.users_collection
+            collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_name = super().collider_name(basename=obj.name)
-            new_collider.name = new_name
-            new_collider.data.name = new_name + self.data_suffix
-            new_collider.data.name = new_name + self.data_suffix
+            new_collider.name = super().collider_name(basename=parent.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

@@ -1,10 +1,14 @@
 import bmesh
 import bpy
+
 from bpy.types import Operator
+
+
 from bpy_extras.object_utils import object_data_add
 
-from ..operators.object_pivot_and_ailgn import alignObjects
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..operators.object_pivot_and_ailgn import alignObjects
+
 
 tmp_name = 'box_collider'
 
@@ -118,10 +122,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         #List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
+        verts_co = []
+
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
-
             # skip if invalid object
             if obj is None:
                 continue
@@ -142,16 +147,39 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, used_vertices)
-            verts_loc = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+            if scene.creation_mode == 'INDIVIDUAL':
+                # used_vertices uses local space.
+                co = self.get_point_positions(obj, scene.my_space, used_vertices)
+                verts_loc = self.generate_bounding_box(co)
 
-            #store data needed to generate a bounding box in a dictionary
-            bounding_box_data['parent'] = obj
-            bounding_box_data['verts_loc'] = verts_loc
+                #store data needed to generate a bounding box in a dictionary
+                bounding_box_data['parent'] = obj
+                bounding_box_data['verts_loc'] = verts_loc
 
-            collider_data.append(bounding_box_data)
+                collider_data.append(bounding_box_data)
+
+            else: #if scene.creation_mode == 'SELECTION':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
+        if scene.creation_mode == 'SELECTION':
+
+            if scene.my_space == 'LOCAL':
+                ws_vtx_co = verts_co
+                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+
+            bbox_verts = self.generate_bounding_box(verts_co)
+
+
+            bounding_box_data = {}
+            bounding_box_data['parent'] = self.active_obj
+            bounding_box_data['verts_loc'] = bbox_verts
+            collider_data = [bounding_box_data]
+
 
         bpy.ops.object.mode_set(mode='OBJECT')
+
 
         for bounding_box_data in collider_data:
             # get data from dictionary
@@ -160,7 +188,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             global face_order
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
-
             scene = context.scene
 
             if scene.my_space == 'LOCAL':
@@ -183,6 +210,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             new_collider.name = new_name
             new_collider.data.name = new_name + self.data_suffix
             new_collider.data.name = new_name + self.data_suffix
+
+
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
