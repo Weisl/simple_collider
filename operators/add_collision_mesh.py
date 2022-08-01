@@ -93,7 +93,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             from ..operators.object_pivot_and_ailgn import alignObjects
             alignObjects(new_collider, parent)
 
-            new_collider.name = super().collider_name(basename=parent.name)
+            new_name = super().collider_name(basename=parent.name)
+            new_collider.name = new_name
+            new_collider.data.name = new_name + self.data_suffix
+            new_collider.data.name = new_name + self.data_suffix
 
             # save collision objects to delete when canceling the operation
             collections = parent.users_collection

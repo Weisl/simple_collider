@@ -102,7 +102,10 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             collections = new_collider.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_collider.name = super().collider_name(basename=obj.name)
+            new_name = super().collider_name(basename=obj.name)
+            new_collider.name = new_name
+            new_collider.data.name = new_name + self.data_suffix
+            new_collider.data.name = new_name + self.data_suffix
 
         # shape = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
         label = "Mesh To Collider"
