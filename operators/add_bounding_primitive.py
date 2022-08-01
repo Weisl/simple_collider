@@ -340,6 +340,35 @@ class OBJECT_OT_add_bounding_object():
 
         return used_vertices
 
+    def transform_vertex_space(self, vertex_co, obj):
+        # iterate over vertex coordinates to transform the positions to the appropriate space
+        ws_vertex_co = []
+        for i in range(len(vertex_co)):
+            co = vertex_co[i]
+            ws_vertex_co.append(obj.matrix_world.inverted() @ co)
+
+        return ws_vertex_co
+
+    def get_point_positions(self, obj, space, used_vertives):
+        """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
+
+        # Modify the BMesh, can do anything here...
+        co = []
+
+        if space == 'GLOBAL':
+            # get world space coordinates of the vertices
+            for v in used_vertives:
+                v_local = v
+                v_global = obj.matrix_world @ v_local.co
+
+                co.append(v_global)
+
+        else: # space == 'LOCAL'
+            for v in used_vertives:
+                co.append(v.co)
+
+        return co
+
 
     def mesh_from_selection(self, obj, use_modifiers = False):
         mesh = obj.data.copy()
