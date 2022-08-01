@@ -1,5 +1,5 @@
-import bmesh
 import bpy
+import bmesh
 import numpy as np
 
 from bpy.types import Operator
@@ -59,7 +59,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             convex_collision_data = {}
 
-
             if self.obj_mode == "EDIT":
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
@@ -75,7 +74,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
                 # duplicate object
                 convex_collision_data['parent'] = obj
-                convex_collision_data['verts_loc'] = used_vertices
+
+                verts_loc = [v.co for v in used_vertices]
+                convex_collision_data['verts_loc'] = verts_loc
+
                 collider_data.append(convex_collision_data)
 
             else: #if scene.creation_mode == 'SELECTION':
@@ -100,10 +102,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bm = bmesh.new()
 
             for v in verts_loc:
-                if scene.creation_mode == 'INDIVIDUAL':
-                    bm.verts.new(v.co)  # add a new vert
-                else:
-                    bm.verts.new(v)  # add a new vert
+                bm.verts.new(v)  # add a new vert
 
             ch = bmesh.ops.convex_hull(bm, input=bm.verts)
 
