@@ -10,8 +10,6 @@ from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
-DEBUG = False
-
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
     (2, 3, 7, 6),
@@ -23,8 +21,8 @@ CUBE_FACE_INDICES = (
 
 class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
-    bl_idname = "mesh.add_aligned_bounding_box"
-    bl_label = "Add Aligned Box Collision"
+    bl_idname = "mesh.add_minimum_bounding_box"
+    bl_label = "Add Minimum Box Collision"
     bl_description = 'Create bounding box collisions based on the selection'
 
     def gen_cube_verts(self):
@@ -55,6 +53,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         return np.array(min_bb_basis), min_bb_max, min_bb_min
 
     def obj_rotating_calipers(self, obj):
+
         bm = bmesh.new()
         dg = bpy.context.evaluated_depsgraph_get()
         bm.from_object(obj, dg)
@@ -62,21 +61,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         chull_out = bmesh.ops.convex_hull(bm, input=bm.verts, use_existing_faces=False)
         chull_geom = chull_out["geom"]
         chull_points = np.array([bmelem.co for bmelem in chull_geom if isinstance(bmelem, bmesh.types.BMVert)])
-
-        # Create object from Convex-Hull (for debugging)
-        if DEBUG:
-
-            for face in set(bm.faces) - set(chull_geom):
-                bm.faces.remove(face)
-            for edge in set(bm.edges) - set(chull_geom):
-                bm.edges.remove(edge)
-
-            chull_mesh = bpy.data.meshes.new(obj.name + "_convex_hull")
-            chull_mesh.validate()
-            bm.to_mesh(chull_mesh)
-            chull_obj = bpy.data.objects.new(chull_mesh.name, chull_mesh)
-            chull_obj.matrix_world = obj.matrix_world
-            bpy.context.scene.collection.objects.link(chull_obj)
 
         bases = []
 
@@ -159,7 +143,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         collider_data = []
         verts_co = []
 
-
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
             # skip if invalid object
@@ -170,21 +153,69 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             if obj.type != "MESH":
                 continue
 
-            context.view_layer.objects.active = obj
             bounding_box_data = {}
 
-            new_collider = self.obj_rotating_calipers(obj)
+            if self.obj_mode == "EDIT":
+                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
-            new_collider.parent = obj
-            alignObjects(new_collider, obj)
+            else:  # self.obj_mode  == "OBJECT":
+                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+
+            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+                continue
+
+            if scene.creation_mode == 'INDIVIDUAL':
+                # used_vertices uses local space.
+                verts_loc = self.get_point_positions(obj, scene.my_space, used_vertices)
+
+                #store data needed to generate a bounding box in a dictionary
+                bounding_box_data['parent'] = obj
+                bounding_box_data['verts_loc'] = verts_loc
+
+                collider_data.append(bounding_box_data)
+
+            else: #if scene.creation_mode == 'SELECTION':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
+        if scene.creation_mode == 'SELECTION':
+
+            if scene.my_space == 'LOCAL':
+                ws_vtx_co = verts_co
+                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+
+            bounding_box_data = {}
+            bounding_box_data['parent'] = self.active_obj
+            bounding_box_data['verts_loc'] = verts_co
+            collider_data = [bounding_box_data]
+
+        for bounding_box_data in collider_data:
+            # get data from dictionary
+            parent = bounding_box_data['parent']
+            verts_loc = bounding_box_data['verts_loc']
+
+            bm = bmesh.new()
+
+            for v in verts_loc:
+                bm.verts.new(v)  # add a new vert
+            me = bpy.data.meshes.new("mesh")
+            bm.to_mesh(me)
+            bm.free()
+
+            new_collider = bpy.data.objects.new('asd', me)
+            new_collider = self.obj_rotating_calipers(new_collider)
+
+            new_collider.parent = parent
+            alignObjects(new_collider, parent)
 
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-            collections = obj.users_collection
+            collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            parent_name = obj.name
+            parent_name = parent.name
             new_name = super().collider_name(basename=parent_name)
             new_collider.name = new_name
 
