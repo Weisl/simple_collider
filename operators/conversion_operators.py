@@ -125,11 +125,15 @@ class OBJECT_OT_convert_to_mesh(Operator):
         return wm.invoke_props_dialog(self)
 
     def draw(self, context):
+        scene = context.scene
         layout = self.layout
         col = layout.column()
 
         row = col.row()
-        col.prop(self, "my_string")
+        row.prop(self, "my_string")
+
+        row = col.row()
+        row.prop(scene, "DefaultMeshMaterial", text='Material')
 
     @classmethod
     def poll(cls, context):
