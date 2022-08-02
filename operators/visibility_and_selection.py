@@ -250,24 +250,21 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
                                  )
 
     def execute(self, context):
-        scene = context.scene
-        count = 0
         selected_objs = context.selected_objects.copy()
         objects_to_remove = []
 
         for ob in bpy.context.view_layer.objects:
-            if ob.parent in selected_objs:
-
-                if self.mode == 'ALL_COLLIDER':
-                    if ob.get('isCollider') == True:
-                        objects_to_remove.append(ob)
-
-                elif self.mode == 'OBJECTS':
-                    if not ob.get('isCollider'):
-                        objects_to_remove.append(ob)
-
-                elif ob.get('isCollider') and ob.get('collider_type') == self.mode:
+            # if ob.parent in selected_objs:
+            if self.mode == 'ALL_COLLIDER':
+                if ob.get('isCollider') == True:
                     objects_to_remove.append(ob)
+
+            elif self.mode == 'OBJECTS':
+                if not ob.get('isCollider'):
+                    objects_to_remove.append(ob)
+
+            elif ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                objects_to_remove.append(ob)
 
         if len(objects_to_remove) == 0:
             self.report({'INFO'}, 'No objects to delete.')
@@ -281,28 +278,28 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
 
 class COLLISION_OT_simple_delete(COLLISION_OT_Deletion):
     bl_idname = "object.simple_delete_collisions"
-    bl_label = "delete Simple Colliders"
-    bl_description = 'delete all objects that are defined as simple colliders'
+    bl_label = "Delete Simple Colliders"
+    bl_description = 'Delete all objects that are defined as simple colliders'
 
 class COLLISION_OT_complex_delete(COLLISION_OT_Deletion):
     bl_idname = "object.complex_delete_collisions"
-    bl_label = "delete Complex Colliders"
-    bl_description = 'delete all objects that are defined as complex colliders'
+    bl_label = "Delete Complex Colliders"
+    bl_description = 'Delete all objects that are defined as complex colliders'
 
 
 class COLLISION_OT_simple_complex_delete(COLLISION_OT_Deletion):
     bl_idname = "object.simple_complex_delete_collisions"
-    bl_label = "delete Simple and Complex Colliders"
-    bl_description = 'delete all objects that are defined as simple and complex colliders'
+    bl_label = "Delete Simple and Complex Colliders"
+    bl_description = 'Delete all objects that are defined as simple and complex colliders'
 
 
 class COLLISION_OT_all_delete(COLLISION_OT_Deletion):
     bl_idname = "object.all_delete_collisions"
-    bl_label = "delete all Colliders"
-    bl_description = 'delete all collider objects: Simple, Complex, Simple and Complex.'
+    bl_label = "Delete all Colliders"
+    bl_description = 'Delete all collider objects: Simple, Complex, Simple and Complex.'
 
 
 class COLLISION_OT_non_collider_delete(COLLISION_OT_Deletion):
     bl_idname = "object.non_collider_delete_collisions"
-    bl_label = "delete non Colliders"
-    bl_description = 'delete all objects that are not colliders.'
+    bl_label = "Delete non Colliders"
+    bl_description = 'Delete all objects that are not colliders.'
