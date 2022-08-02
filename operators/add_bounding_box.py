@@ -72,7 +72,7 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
 class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
     bl_idname = "mesh.add_bounding_box"
-    bl_label = "Add Box Collision"
+    bl_label = "Add Box"
     bl_description = 'Create bounding box collisions based on the selection'
 
     def __init__(self):
