@@ -46,6 +46,7 @@ class VIEW3D_MT_PIE_template(Menu):
 
         #West
         pie.operator("mesh.add_bounding_box", icon='MESH_CUBE')
+        pie.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
         #East
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
         #South

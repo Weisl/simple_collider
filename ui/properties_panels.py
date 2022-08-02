@@ -2,8 +2,6 @@ from bpy.types import Panel
 import textwrap
 import bpy
 
-
-
 visibility_operators = {
     'ALL_COLLIDER': 'All Colliders',
     'SIMPLE': 'Simple',
@@ -162,6 +160,57 @@ class VIEW3D_PT_collission_panel(Panel):
         obj = context.object
         scene = context.scene
 
+        # Create Collider
+        layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Add Collider Shape')
+        row = layout.row(align=True)
+        row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
+        row = layout.row(align=True)
+        row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
+        row = layout.row(align=True)
+        row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
+        row = layout.row(align=True)
+        row.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
+        row = layout.row(align=True)
+        row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
+
+        #special Collider Creation
+        layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Add Complex Collider')
+        row = layout.row(align=True)
+        row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+        box = layout.box()
+        # row = box.row(align=True)
+        # row.label(text='Auto Convex')
+        row = box.row(align=True)
+        row.prop(scene, 'convex_decomp_depth')
+        # row = box.row()
+        row.prop(scene, 'maxNumVerticesPerCH')
+
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        row = box.row(align=True)
+
+        if prefs.executable_path:
+            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+        else:
+            from .. import bl_info
+            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
+
+        # Conversion
+        layout.separator()
+        row = layout.row(align=True)
+        row.label(text='Convert')
+
+        row = layout.row(align=True)
+        row.operator('object.convert_to_collider', icon='PHYSICS')
+        row = layout.row(align=True)
+        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+
         # Visibillity and Selection
         layout.separator()
 
@@ -181,54 +230,3 @@ class VIEW3D_PT_collission_panel(Panel):
 
         row = layout.row()
         row.prop(scene, "CollisionMaterials", text="")
-
-        # Create Collider
-        layout.separator()
-
-        row = layout.row(align=True)
-        row.label(text='Add Collider')
-        row = layout.row(align=True)
-        row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
-        row = layout.row(align=True)
-        row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
-        row = layout.row(align=True)
-        row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
-        row = layout.row(align=True)
-        row.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
-        row = layout.row(align=True)
-        row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
-
-        #special Collider Creation
-        layout.separator()
-
-        row = layout.row(align=True)
-        row.label(text='Auto Convex')
-
-        row = layout.row()
-        row.prop(scene, 'convex_decomp_depth')
-        row = layout.row()
-        row.prop(scene, 'maxNumVerticesPerCH')
-
-
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-        row = layout.row(align=True)
-
-        if prefs.executable_path:
-            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
-        else:
-            from .. import bl_info
-            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
-
-        # Conversion
-        layout.separator()
-        row = layout.row(align=True)
-        row.label(text='Convert')
-
-        row = layout.row(align=True)
-        row.operator('object.convert_to_collider', icon='PHYSICS')
-        row = layout.row(align=True)
-        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
-        row = layout.row()
-        row.prop(scene, "DefaultMeshMaterial", text='Material')
-
-
