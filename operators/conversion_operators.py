@@ -56,6 +56,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
+
 
         elif event.type == 'C' and event.value == 'RELEASE':
             #toggle through display modes
