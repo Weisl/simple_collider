@@ -61,6 +61,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Collider Complexity
     IgnoreShapeForComplex:  bpy.props.BoolProperty(name='UE: Complex Naming', description='Ignore Shape names for Complex Collisions to work for the Unreal Engine', default=False)
+    useCustomColGroups:  bpy.props.BoolProperty(name='Use Collision Groups', description='', default=False)
 
     colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="", description='Naming used for simple-complex collisions')
     colSimple: bpy.props.StringProperty(name="Simple", default="", description='Naming used for simple collisions')
@@ -186,6 +187,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
+        "useCustomColGroups",
     ]
 
     ui_col_colors = [
@@ -299,7 +301,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator("wm.url_open",
                          text="Documentation").url = "https://weisl.github.io/collider-tools_import_engines/"
 
-
+            box = layout.box()
             boxname = box.box()
             row = box.row()
             row.prop(self, "naming_position", expand=True)

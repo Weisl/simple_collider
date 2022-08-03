@@ -88,66 +88,72 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.non_collider_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'OBJECTS'
 
-    box = layout.box()
 
-    split_left = box.split(factor=0.35)
-    col_01 = split_left.column()
-    col_02 = split_left.column()
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    # row = layout.row(align=True)
+    # row.prop(prefs, 'useCustomColGroups')
 
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['SIMPLE_COMPLEX'])
-    row = col_02.row(align=True)
-    op = row.operator("object.simple_complex_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'SIMPLE_COMPLEX'
+    if prefs.useCustomColGroups:
+        box = layout.box()
 
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['SIMPLE'])
+        split_left = box.split(factor=0.35)
+        col_01 = split_left.column()
+        col_02 = split_left.column()
 
-    row = col_02.row(align=True)
-    op = row.operator("object.simple_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'SIMPLE'
-    op = row.operator("object.simple_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'SIMPLE'
-    op = row.operator("object.simple_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'SIMPLE'
-    op = row.operator("object.simple_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'SIMPLE'
-    op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'SIMPLE'
+        row = col_01.row(align=True)
+        row.label(text=visibility_operators['SIMPLE_COMPLEX'])
+        row = col_02.row(align=True)
+        op = row.operator("object.simple_complex_show_collisions", icon=show_icon, text=show_text)
+        op.hide = False
+        op.mode = 'SIMPLE_COMPLEX'
+        op = row.operator("object.simple_complex_hide_collisions", icon=hide_icon, text=hide_text)
+        op.hide = True
+        op.mode = 'SIMPLE_COMPLEX'
+        op = row.operator("object.simple_complex_select_collisions", icon=select_icon, text=select_text)
+        op.select = True
+        op.mode = 'SIMPLE_COMPLEX'
+        op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
+        op.select = False
+        op.mode = 'SIMPLE_COMPLEX'
+        op = row.operator("object.simple_complex_delete_collisions", icon=delete_icon, text=delete_text)
+        op.mode = 'SIMPLE_COMPLEX'
 
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['COMPLEX'])
-    row = col_02.row(align=True)
-    op = row.operator("object.complex_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'COMPLEX'
-    op = row.operator("object.complex_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'COMPLEX'
-    op = row.operator("object.complex_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'COMPLEX'
-    op = row.operator("object.complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'COMPLEX'
-    op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'COMPLEX'
+        row = col_01.row(align=True)
+        row.label(text=visibility_operators['SIMPLE'])
+
+        row = col_02.row(align=True)
+        op = row.operator("object.simple_show_collisions", icon=show_icon, text=show_text)
+        op.hide = False
+        op.mode = 'SIMPLE'
+        op = row.operator("object.simple_hide_collisions", icon=hide_icon, text=hide_text)
+        op.hide = True
+        op.mode = 'SIMPLE'
+        op = row.operator("object.simple_select_collisions", icon=select_icon, text=select_text)
+        op.select = True
+        op.mode = 'SIMPLE'
+        op = row.operator("object.simple_deselect_collisions", icon=deselect_icon, text=deselect_text)
+        op.select = False
+        op.mode = 'SIMPLE'
+        op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
+        op.mode = 'SIMPLE'
+
+        row = col_01.row(align=True)
+        row.label(text=visibility_operators['COMPLEX'])
+        row = col_02.row(align=True)
+        op = row.operator("object.complex_show_collisions", icon=show_icon, text=show_text)
+        op.hide = False
+        op.mode = 'COMPLEX'
+        op = row.operator("object.complex_hide_collisions", icon=hide_icon, text=hide_text)
+        op.hide = True
+        op.mode = 'COMPLEX'
+        op = row.operator("object.complex_select_collisions", icon=select_icon, text=select_text)
+        op.select = True
+        op.mode = 'COMPLEX'
+        op = row.operator("object.complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
+        op.select = False
+        op.mode = 'COMPLEX'
+        op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
+        op.mode = 'COMPLEX'
 
 
 
