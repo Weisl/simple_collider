@@ -5,23 +5,43 @@ import bpy
 from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
+
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_settings_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
+
 from ..ui.properties_panels import label_multiline
 from ..operators.add_bounding_primitive import create_name_number
 
 
 
 def update_panel_category(self, context):
-    is_panel = hasattr(bpy.types, 'VIEW3D_PT_collission_panel')
+    panelNames=[
+        'VIEW3D_PT_collission_panel',
+        'VIEW3D_PT_collission_visibility_panel',
+        'VIEW3D_PT_collission_settings_panel',
+        'VIEW3D_PT_collission_material_panel',
+    ]
+    panels=[
+        VIEW3D_PT_collission_panel,
+        VIEW3D_PT_collission_visibility_panel,
+        VIEW3D_PT_collission_settings_panel,
+        VIEW3D_PT_collission_material_panel,
+    ]
+    for panel in panelNames:
+        is_panel = hasattr(bpy.types, panel)
 
-    if is_panel:
+    for panel in panels:
         try:
-            bpy.utils.unregister_class(VIEW3D_PT_collission_panel)
+            bpy.utils.unregister_class(panel)
         except:
             pass
 
-    VIEW3D_PT_collission_panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
-    bpy.utils.register_class(VIEW3D_PT_collission_panel)
+        panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
+        bpy.utils.register_class(panel)
+
+
     return
 
 
@@ -268,6 +288,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = layout.row()
                 row.prop(self, propName)
 
+            box = layout.box()
+            box.label(text="Complexity")
+            for propName in self.props_complexity:
+                row = box.row()
+                row.prop(self, propName)
 
         if self.prefs_tabs == 'NAMING':
             row = layout.row(align=True)
@@ -332,12 +357,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             box2.label(text="Shape")
             for propName in self.props_shapes:
                 row = box2.row()
-                row.prop(self, propName)
-
-            box3 = layout.box()
-            box3.label(text="Complexity")
-            for propName in self.props_complexity:
-                row = box3.row()
                 row.prop(self, propName)
 
 
