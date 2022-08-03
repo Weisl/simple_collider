@@ -250,7 +250,6 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
                                  )
 
     def execute(self, context):
-        selected_objs = context.selected_objects.copy()
         objects_to_remove = []
 
         for ob in bpy.context.view_layer.objects:
