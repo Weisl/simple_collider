@@ -34,7 +34,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "Settings", "settings"), ('KEYMAP', "Keymap", "keymap"), ('THEME', "Theme", "theme"), ('VHACD', "Auto Convex", "auto_convex")),
+        items=(('SETTINGS', "Settings", "settings"),('NAMING', "Naming", "naming"), ('KEYMAP', "Keymap", "keymap"), ('UI', "Ui", "ui"), ('VHACD', "Auto Convex", "auto_convex")),
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
 
@@ -260,9 +260,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         if self.prefs_tabs == 'SETTINGS':
 
             row = layout.row()
-            row.prop(self, "collider_category", expand=True)
-
-            row = layout.row()
             row.label(text='Collection Settings')
 
             for propName in self.col_props:
@@ -270,6 +267,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
 
+        if self.prefs_tabs == 'NAMING':
             row = layout.row(align=True)
 
             box = layout.box()
@@ -340,6 +338,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = box3.row()
                 row.prop(self, propName)
 
+
         elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()
             col = box.column()
@@ -364,7 +363,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     col.label(text="No hotkey entry found")
                     col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
 
-        elif self.prefs_tabs == 'THEME':
+        elif self.prefs_tabs == 'UI':
+
+            row = layout.row()
+            row.prop(self, "collider_category", expand=True)
+
             layout.separator()
             row = layout.row()
             row.label(text="3D Viewport Colors")

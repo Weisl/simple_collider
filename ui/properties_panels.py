@@ -3,11 +3,11 @@ import textwrap
 import bpy
 
 visibility_operators = {
-    'ALL_COLLIDER': 'All Colliders',
+    'ALL_COLLIDER': 'Colliders',
+    'OBJECTS': "Non Colliders",
+    'SIMPLE_COMPLEX':'Simple and Complex',
     'SIMPLE': 'Simple',
     'COMPLEX': 'Complex',
-    'SIMPLE_COMPLEX':'Simple and Complex',
-    'OBJECTS': "Objects",
 }
 
 def label_multiline(context, text, parent):
@@ -38,7 +38,6 @@ def draw_visibility_selection_menu(layout):
     col_01 = split_left.column()
     col_02 = split_left.column()
 
-    layout = layout
     show_icon = 'HIDE_OFF'
     hide_icon = 'HIDE_ON'
     show_text = ''
@@ -70,6 +69,48 @@ def draw_visibility_selection_menu(layout):
     op.mode = 'ALL_COLLIDER'
     op = row.operator("object.all_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'ALL_COLLIDER'
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['OBJECTS'])
+    row = col_02.row(align=True)
+    op = row.operator("object.non_collider_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'OBJECTS'
+    op = row.operator("object.non_collider_delete_collisions", icon=delete_icon, text=delete_text)
+    op.mode = 'OBJECTS'
+
+    box = layout.box()
+
+    split_left = box.split(factor=0.35)
+    col_01 = split_left.column()
+    col_02 = split_left.column()
+
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators['SIMPLE_COMPLEX'])
+    row = col_02.row(align=True)
+    op = row.operator("object.simple_complex_show_collisions", icon=show_icon, text=show_text)
+    op.hide = False
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_hide_collisions", icon=hide_icon, text=hide_text)
+    op.hide = True
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = 'SIMPLE_COMPLEX'
+    op = row.operator("object.simple_complex_delete_collisions", icon=delete_icon, text=delete_text)
+    op.mode = 'SIMPLE_COMPLEX'
 
     row = col_01.row(align=True)
     row.label(text=visibility_operators['SIMPLE'])
@@ -108,63 +149,29 @@ def draw_visibility_selection_menu(layout):
     op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'COMPLEX'
 
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['SIMPLE_COMPLEX'])
-    row = col_02.row(align=True)
-    op = row.operator("object.simple_complex_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'SIMPLE_COMPLEX'
-    op = row.operator("object.simple_complex_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'SIMPLE_COMPLEX'
 
 
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['OBJECTS'])
-    row = col_02.row(align=True)
-    op = row.operator("object.non_collider_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'OBJECTS'
-
-
-class VIEW3D_PT_collission_panel(Panel):
+class VIEW3D_PT_collission(Panel):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Collider Tools"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Collider Tools"
 
+class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Collider Tools"
+
     def draw(self, context):
         layout = self.layout
-
-        obj = context.object
         scene = context.scene
 
-        # Create Collider
-        layout.separator()
 
+        # Create Collider
         row = layout.row(align=True)
         row.label(text='Add Collider Shape')
+
         row = layout.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         row = layout.row(align=True)
@@ -176,13 +183,14 @@ class VIEW3D_PT_collission_panel(Panel):
         row = layout.row(align=True)
         row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
-        #special Collider Creation
         layout.separator()
-
-        row = layout.row(align=True)
-        row.label(text='Add Complex Collider')
         row = layout.row(align=True)
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+        #special Collider Creation
+        layout.separator()
+        row = layout.row(align=True)
+        row.label(text='Add Complex Collider')
 
         box = layout.box()
         # row = box.row(align=True)
@@ -211,22 +219,75 @@ class VIEW3D_PT_collission_panel(Panel):
         row = layout.row(align=True)
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
-        # Visibillity and Selection
-        layout.separator()
 
-        row = layout.row(align=True)
-        row.label(text='Visibility and Selection')
+class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Visibility, Selection, Deletion"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        # Visibillity and Selection
+        # row = layout.row(align=True)
+        # row.label(text='Visibility and Selection')
 
         draw_visibility_selection_menu(layout)
 
-        # Physics Materials
-        layout.separator()
 
-        row = layout.row()
-        row.label(text='Physics Material')
+
+
+class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Physics Materials"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        # Physics Materials
+        # row = layout.row()
+        # row.label(text='Physics Material')
 
         row = layout.row()
         row.prop(scene, "PhysicsIdentifier", text='Filter')
 
         row = layout.row()
         row.prop(scene, "CollisionMaterials", text="")
+
+class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Collider Settings"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        # Choose Naming Preset
+        row = layout.row(align=True)
+        row.label(text='Naming')
+
+        #Naming presets
+        from ..preferences.naming_preset import OBJECT_MT_collision_presets
+        row = layout.row(align=True)
+        row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+
+        #Edit Naming
+        from .. import bl_info
+        row.operator("preferences.addon_search", text="Edit Preset").addon_name = bl_info["name"]
+
+        row = layout.row(align=True)
+        row.label(text='Creation Settings')
+        row = layout.row(align=True)
+        row.prop(scene, "my_hide")
+        row = layout.row(align=True)
+        row.prop(scene, "my_collision_shading_view")
+        row = layout.row(align=True)
+        row.prop(scene, "my_space")
+        row = layout.row(align=True)
+        row.prop(scene, "wireframe_mode")
+        row = layout.row(align=True)
+        row.prop(scene, "creation_mode")

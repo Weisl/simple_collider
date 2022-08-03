@@ -56,6 +56,8 @@ def register():
     obj = bpy.types.Object
 
     # Display setting of the bounding object in the viewport
+    scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation", description="Hide Bounding Object After Creation.", default=False)
+
     scene.my_collision_shading_view = bpy.props.EnumProperty(name="Display", description='How to display the collision in the viewport.',
                                                              items=(('SOLID', "Solid", "Display the collider as a solid."),('WIRE', "Wire", "Display the collider as a wireframe"),('BOUNDS', "Bounds", "Display the bounds of the collider")),
                                                              default="SOLID")
@@ -63,8 +65,6 @@ def register():
     # Tranformation space to be used for creating the bounding object.
     scene.my_space = bpy.props.EnumProperty(name="Generation Axis",
                                             items=(('LOCAL', "Local","Generate the collision based on the local space of the object vertices."),('GLOBAL', "Global", "Generate the collision based on the global space of the object vertices.")),default="LOCAL")
-
-    scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation", description="Hide Bounding Object After Creation.", default=False)
 
     scene.wireframe_mode = bpy.props.EnumProperty(name="Wireframe Mode",
                                                 items=(('OFF', "Off","There is no wireframe preview on the collision mesh."),
@@ -77,9 +77,12 @@ def register():
                                                        ('SELECTION', "Selection","")),
                                                 description="", default='INDIVIDUAL')
 
+
+    #OBJECT
     obj.basename = bpy.props.StringProperty(default='geo', name='Basename', description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).')
 
     obj.collider_type = bpy.props.EnumProperty(name="Shading", items=[('BOX', "Box", "Used to descibe boxed shape collision shapes."),('SHERE', "Sphere", "Used to descibe spherical collision shapes."),('CONVEX', "CONVEX", "Used to descibe convex shaped collision shapes."),('MESH', "Triangle Mesh", "Used to descibe complex triangle mesh collisions.")], default='BOX')
+
 
     obj.collider_complexity = bpy.props.EnumProperty(name="collider complexity", items=[
         ('SIMPLE_COMPLEX', "Simple Complex", "(Simple and Complex) Custom value to distinguish different types of collisions in a game engine."),

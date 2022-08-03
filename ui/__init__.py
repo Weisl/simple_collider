@@ -4,6 +4,9 @@ from . import pie_menu
 classes = (
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.VIEW3D_PT_collission_panel,
+    properties_panels.VIEW3D_PT_collission_settings_panel,
+    properties_panels.VIEW3D_PT_collission_visibility_panel,
+    properties_panels.VIEW3D_PT_collission_material_panel,
     pie_menu.VIEW3D_MT_collision,
     pie_menu.VIEW3D_MT_PIE_template,
 )
