@@ -240,8 +240,6 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         draw_visibility_selection_menu(layout)
 
 
-
-
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 

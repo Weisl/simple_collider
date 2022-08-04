@@ -1,5 +1,30 @@
 import bpy
 from bpy.types import UIList
+from bpy.props import StringProperty
+
+from .material_functions import set_material, remove_materials
+
+class MATERIAL_OT_set_physics_material(bpy.types.Operator):
+    """Tooltip"""
+    bl_idname = "material.set_physics_material"
+    bl_label = "Set Physics Material"
+
+    physics_material_name: StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects is not None
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            try:
+                mat = bpy.data.materials[self.physics_material_name]
+                remove_materials(obj)
+                set_material(obj, mat)
+            except:
+                print('ERROR')
+            return {'FINISHED'}
+
 
 class MATERIAL_UL_physics_materials(UIList):
     # The draw_item function is called for each item of the collection that is visible in the list.
@@ -16,8 +41,6 @@ class MATERIAL_UL_physics_materials(UIList):
     #         need them.
 
     export : bpy.props.BoolProperty(name="Export", default=False)
-    # Test to create renamint in table
-    #stringTest = bpy.props.StringProperty(name = "Name",update = testUpdate(), get = testGetAsset, set = testSetAsset)
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         scn = context.scene
@@ -27,23 +50,12 @@ class MATERIAL_UL_physics_materials(UIList):
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             if mat:
-                row = layout.row(align = True)
+                # Multi prop edit (Checkbox: which mats should be edited)
+                # row.prop(mat, "edit", text="")
+
+                row = layout.row(align=True)
                 lb = row.label(text=mat.name)
-
-                # icon = 'ERROR'
-                # if obj.get('isAsset') is not None and obj.type == 'EMPTY':
-                #     icon = 'FILE_TICK'
-
-                # split = layout.split(factor = 0.5)
-                # split.prop(item, "manipulate", text = "")
-                # split = layout.split(factor = 0.8)
-                # split.operator('assetmanager.select_item', text = mat.name, icon = 'OBJECT_DATA').name = mat.name
-                # row = split.row(align = True)
-                #row.operator('assetmanager.select_item', text = '', icon = 'OBJECT_DATA').name = item.name
-                # op1 = row.operator('assetmanager.select_hierarchy', text = '', icon = 'COLLAPSEMENU')
-                # op1.my_assetName = mat.name
-                # op2 = row.operator('master.asset_rename', text = '', icon = 'FILE_FONT')
-                # op2.my_assetName = mat.name
-                # op3 = row.operator('assetmanager.asset_local_singleview', text = '', icon = 'SOLO_ON')
-                # op3.my_assetName = mat.name
+                op2 = row.operator('material.set_physics_material', text='', icon='MATERIAL')
+                op2.physics_material_name = mat.name
+                row.prop(mat, "diffuse_color", text='')
         return

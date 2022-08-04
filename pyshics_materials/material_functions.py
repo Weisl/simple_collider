@@ -1,7 +1,6 @@
 import bpy
 
 
-
 def make_physics_material(name, diffuse, fakeUser=True):
 
     for mat in bpy.data.materials:

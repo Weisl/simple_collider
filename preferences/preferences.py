@@ -288,11 +288,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = layout.row()
                 row.prop(self, propName)
 
-            box = layout.box()
-            box.label(text="Complexity")
-            for propName in self.props_complexity:
-                row = box.row()
-                row.prop(self, propName)
 
         if self.prefs_tabs == 'NAMING':
             row = layout.row(align=True)
@@ -359,6 +354,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = box2.row()
                 row.prop(self, propName)
 
+            box = layout.box()
+            box.label(text="Complexity")
+            for propName in self.props_complexity:
+                row = box.row()
+                row.prop(self, propName)
 
         elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()
