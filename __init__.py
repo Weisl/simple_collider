@@ -13,15 +13,18 @@ bl_info = {
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(Ui)
-    importlib.reload(Operators)
-    importlib.reload(Auto_Convex)
-    importlib.reload(Preferences)
+    importlib.reload(ui)
+    importlib.reload(operators)
+    importlib.reload(auto_Convex)
+    importlib.reload(pyshics_materials)
+    importlib.reload(preferences)
+
 
 else:
     from . import ui
     from . import operators
     from . import auto_Convex
+    from . import pyshics_materials
     from . import preferences
 
 import bpy
@@ -44,7 +47,7 @@ def register():
     )
 
     scene.PhysicsIdentifier = bpy.props.StringProperty(
-        default="",
+        default="*COL",
         description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.',
         name='Physics Material Filter',
     )
@@ -59,6 +62,7 @@ def register():
     ui.register()
     operators.register()
     auto_Convex.register()
+    pyshics_materials.register()
 
     # keymap and preferences should be last
     preferences.register()
@@ -74,6 +78,7 @@ def unregister():
 
     # call unregister function of the sub-modules
     preferences.unregister()
+    pyshics_materials.unregister()
     auto_Convex.unregister()
     operators.unregister()
     ui.unregister()

@@ -1,6 +1,7 @@
-from bpy.types import Panel
-import textwrap
 import bpy
+import textwrap
+
+from bpy.types import Panel
 
 visibility_operators = {
     'ALL_COLLIDER': 'Colliders',
@@ -195,7 +196,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
         #special Collider Creation
-        layout.separator()
+        # layout.separator()
         row = layout.row(align=True)
         row.label(text='Add Complex Collider')
 
@@ -217,7 +218,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
             row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
 
         # Conversion
-        layout.separator()
+        # layout.separator()
         row = layout.row(align=True)
         row.label(text='Convert')
 
@@ -250,15 +251,14 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        # Physics Materials
-        # row = layout.row()
-        # row.label(text='Physics Material')
-
         row = layout.row()
+        row.prop(scene, "CollisionMaterials", text="Default")
+
+        col = layout.column(align=True)
+        row = col.row()
         row.prop(scene, "PhysicsIdentifier", text='Filter')
-
-        row = layout.row()
-        row.prop(scene, "CollisionMaterials", text="")
+        row = col.row()
+        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "asset_list_index")
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""

@@ -20,14 +20,14 @@ def update_panel_category(self, context):
     panelNames=[
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
-        'VIEW3D_PT_collission_settings_panel',
         'VIEW3D_PT_collission_material_panel',
+        # 'VIEW3D_PT_collission_settings_panel',
     ]
     panels=[
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
-        VIEW3D_PT_collission_settings_panel,
         VIEW3D_PT_collission_material_panel,
+        # VIEW3D_PT_collission_settings_panel,
     ]
     for panel in panelNames:
         is_panel = hasattr(bpy.types, panel)
