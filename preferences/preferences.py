@@ -5,23 +5,43 @@ import bpy
 from tempfile import gettempdir
 from .naming_preset import COLLISION_preset
 from .naming_preset import OBJECT_MT_collision_presets
+
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_settings_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
+
 from ..ui.properties_panels import label_multiline
 from ..operators.add_bounding_primitive import create_name_number
 
 
 
 def update_panel_category(self, context):
-    is_panel = hasattr(bpy.types, 'VIEW3D_PT_collission_panel')
+    panelNames=[
+        'VIEW3D_PT_collission_panel',
+        'VIEW3D_PT_collission_visibility_panel',
+        'VIEW3D_PT_collission_settings_panel',
+        'VIEW3D_PT_collission_material_panel',
+    ]
+    panels=[
+        VIEW3D_PT_collission_panel,
+        VIEW3D_PT_collission_visibility_panel,
+        VIEW3D_PT_collission_settings_panel,
+        VIEW3D_PT_collission_material_panel,
+    ]
+    for panel in panelNames:
+        is_panel = hasattr(bpy.types, panel)
 
-    if is_panel:
+    for panel in panels:
         try:
-            bpy.utils.unregister_class(VIEW3D_PT_collission_panel)
+            bpy.utils.unregister_class(panel)
         except:
             pass
 
-    VIEW3D_PT_collission_panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
-    bpy.utils.register_class(VIEW3D_PT_collission_panel)
+        panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
+        bpy.utils.register_class(panel)
+
+
     return
 
 
@@ -34,7 +54,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "Settings", "settings"), ('KEYMAP', "Keymap", "keymap"), ('THEME', "Theme", "theme"), ('VHACD', "Auto Convex", "auto_convex")),
+        items=(('SETTINGS', "Settings", "settings"),('NAMING', "Naming", "naming"), ('KEYMAP', "Keymap", "keymap"), ('UI', "Ui", "ui"), ('VHACD', "Auto Convex", "auto_convex")),
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
 
@@ -61,6 +81,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Collider Complexity
     IgnoreShapeForComplex:  bpy.props.BoolProperty(name='UE: Complex Naming', description='Ignore Shape names for Complex Collisions to work for the Unreal Engine', default=False)
+    useCustomColGroups:  bpy.props.BoolProperty(name='Use Collision Groups', description='', default=False)
 
     colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="", description='Naming used for simple-complex collisions')
     colSimple: bpy.props.StringProperty(name="Simple", default="", description='Naming used for simple collisions')
@@ -186,6 +207,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
+        "useCustomColGroups",
     ]
 
     ui_col_colors = [
@@ -260,16 +282,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         if self.prefs_tabs == 'SETTINGS':
 
             row = layout.row()
-            row.prop(self, "collider_category", expand=True)
-
-            row = layout.row()
             row.label(text='Collection Settings')
 
             for propName in self.col_props:
                 row = layout.row()
                 row.prop(self, propName)
 
+            box = layout.box()
+            box.label(text="Complexity")
+            for propName in self.props_complexity:
+                row = box.row()
+                row.prop(self, propName)
 
+        if self.prefs_tabs == 'NAMING':
             row = layout.row(align=True)
 
             box = layout.box()
@@ -301,7 +326,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator("wm.url_open",
                          text="Documentation").url = "https://weisl.github.io/collider-tools_import_engines/"
 
-
+            box = layout.box()
             boxname = box.box()
             row = box.row()
             row.prop(self, "naming_position", expand=True)
@@ -334,11 +359,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = box2.row()
                 row.prop(self, propName)
 
-            box3 = layout.box()
-            box3.label(text="Complexity")
-            for propName in self.props_complexity:
-                row = box3.row()
-                row.prop(self, propName)
 
         elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()
@@ -364,7 +384,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     col.label(text="No hotkey entry found")
                     col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
 
-        elif self.prefs_tabs == 'THEME':
+        elif self.prefs_tabs == 'UI':
+
+            row = layout.row()
+            row.prop(self, "collider_category", expand=True)
+
             layout.separator()
             row = layout.row()
             row.label(text="3D Viewport Colors")
