@@ -35,8 +35,8 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 
 def draw_visibility_selection_menu(layout):
     split_left = layout.split(factor=0.35)
-    col_01 = split_left.column()
-    col_02 = split_left.column()
+    col_01 = split_left.column(align=True)
+    col_02 = split_left.column(align=True)
 
     show_icon = 'HIDE_OFF'
     hide_icon = 'HIDE_ON'
@@ -97,8 +97,8 @@ def draw_visibility_selection_menu(layout):
         box = layout.box()
 
         split_left = box.split(factor=0.35)
-        col_01 = split_left.column()
-        col_02 = split_left.column()
+        col_01 = split_left.column(align=True)
+        col_02 = split_left.column(align=True)
 
         row = col_01.row(align=True)
         row.label(text=visibility_operators['SIMPLE_COMPLEX'])
@@ -178,15 +178,16 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.label(text='Add Collider Shape')
 
-        row = layout.row(align=True)
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
         layout.separator()
@@ -198,16 +199,16 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.label(text='Add Complex Collider')
 
+
+        # Auto Convex
         box = layout.box()
-        # row = box.row(align=True)
-        # row.label(text='Auto Convex')
-        row = box.row(align=True)
+        col = box.column(align=True)
+        row = col.row(align=True)
         row.prop(scene, 'convex_decomp_depth')
-        # row = box.row()
         row.prop(scene, 'maxNumVerticesPerCH')
 
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-        row = box.row(align=True)
+        row = col.row(align=True)
 
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
@@ -220,9 +221,10 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.label(text='Convert')
 
-        row = layout.row(align=True)
+        col = layout.column(align=True)
+        row = col.row(align=True)
         row.operator('object.convert_to_collider', icon='PHYSICS')
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
 
@@ -233,11 +235,6 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-
-        # Visibillity and Selection
-        # row = layout.row(align=True)
-        # row.label(text='Visibility and Selection')
 
         draw_visibility_selection_menu(layout)
 
@@ -289,11 +286,13 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.label(text='Creation Settings')
         row = layout.row(align=True)
         row.prop(scene, "my_hide")
-        row = layout.row(align=True)
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
         row.prop(scene, "my_collision_shading_view")
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.prop(scene, "my_space")
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.prop(scene, "wireframe_mode")
-        row = layout.row(align=True)
+        row = col.row(align=True)
         row.prop(scene, "creation_mode")
