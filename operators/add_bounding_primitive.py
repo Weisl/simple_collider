@@ -371,7 +371,7 @@ class OBJECT_OT_add_bounding_object():
         return ws_vertex_co
 
 
-    def get_point_positions(self, obj, space, used_vertives):
+    def get_point_positions(self, obj, space, used_vertices):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
 
         # Modify the BMesh, can do anything here...
@@ -379,14 +379,14 @@ class OBJECT_OT_add_bounding_object():
 
         if space == 'GLOBAL':
             # get world space coordinates of the vertices
-            for v in used_vertives:
+            for v in used_vertices:
                 v_local = v
                 v_global = obj.matrix_world @ v_local.co
 
                 co.append(v_global)
 
         else: # space == 'LOCAL'
-            for v in used_vertives:
+            for v in used_vertices:
                 co.append(v.co)
 
         return co

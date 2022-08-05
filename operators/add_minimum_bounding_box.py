@@ -180,7 +180,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             else: #if scene.creation_mode == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
-
                 verts_co = verts_co + ws_vtx_co
 
         if scene.creation_mode == 'SELECTION':
