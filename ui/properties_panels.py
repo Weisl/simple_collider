@@ -254,6 +254,8 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         row.prop(scene, "PhysicsIdentifier", text='Filter')
         row = col.row()
         row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "asset_list_index")
+        row = col.row()
+        row.operator('material.create_physics_material', icon='PLUS', text="")
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
