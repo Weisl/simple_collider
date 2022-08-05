@@ -43,6 +43,7 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "material.set_physics_material"
     bl_label = "Set Physics Material"
+    bl_options = {'REGISTER', 'UNDO'}
 
     physics_material_name: StringProperty()
 
