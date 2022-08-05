@@ -5,7 +5,7 @@ import time
 import numpy
 
 from mathutils import Vector
-from ..pyshics_materials.material_functions import remove_materials, set_material, make_physics_material
+from ..pyshics_materials.material_functions import remove_materials, set_physics_material, make_physics_material
 
 collider_types = ['SIMPLE_COMPLEX','SIMPLE', 'COMPLEX']
 
@@ -371,7 +371,7 @@ class OBJECT_OT_add_bounding_object():
         return ws_vertex_co
 
 
-    def get_point_positions(self, obj, space, used_vertives):
+    def get_point_positions(self, obj, space, used_vertices):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
 
         # Modify the BMesh, can do anything here...
@@ -379,14 +379,14 @@ class OBJECT_OT_add_bounding_object():
 
         if space == 'GLOBAL':
             # get world space coordinates of the vertices
-            for v in used_vertives:
+            for v in used_vertices:
                 v_local = v
                 v_global = obj.matrix_world @ v_local.co
 
                 co.append(v_global)
 
         else: # space == 'LOCAL'
-            for v in used_vertives:
+            for v in used_vertices:
                 co.append(v.co)
 
         return co
@@ -427,7 +427,8 @@ class OBJECT_OT_add_bounding_object():
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
-        self.set_physics_material(context, bounding_object)
+
+        set_physics_material(bounding_object, self.prefs.physics_material_name)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
@@ -600,17 +601,6 @@ class OBJECT_OT_add_bounding_object():
             mod = bounding_object.modifiers['Collision_decimate']
             bounding_object.modifiers.remove(mod)
 
-    #Materials
-    def set_physics_material(self, context, bounding_object):
-        remove_materials(bounding_object)
-        if self.physics_material_name:
-            set_material(bounding_object, self.physics_material_name)
-        else:
-            # default_material = make_physics_material('COL_DEFAULT',(0.75, 0.25, 0.25, 0.5))
-            default_material = make_physics_material('COL_DEFAULT',(1, 1, 1, 0.5))
-            bpy.context.scene.CollisionMaterials = default_material
-            set_material(bounding_object, default_material)
-
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
         return t1
@@ -700,7 +690,6 @@ class OBJECT_OT_add_bounding_object():
         self.collision_type = collider_types
 
         # Physics Materials
-        self.physics_material_name = scene.CollisionMaterials
         self.new_colliders_list = []
 
         self.name_count = 0
@@ -770,7 +759,7 @@ class OBJECT_OT_add_bounding_object():
 
                         remove_materials(obj)
                         for mat in data['material_slots']:
-                            set_material(obj,bpy.data.materials[mat])
+                            set_physics_material(obj,bpy.data.materials[mat])
 
                         self.del_displace_modifier(context, obj)
                         self.del_decimate_modifier(context, obj)

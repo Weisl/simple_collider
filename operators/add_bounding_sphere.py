@@ -52,12 +52,15 @@ def create_sphere(pos, diameter, segments):
 class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_sphere"
-    bl_label = "Add Sphere"
+    bl_label = "Add Sphere Collision"
     bl_description = 'Create spherical bounding collisions based on the selection'
 
     def calculate_bounding_sphere(self, obj, used_vertices):
         # Get vertices wit min and may values
-        for i, v in enumerate(used_vertices):
+        for i, vertex in enumerate(used_vertices):
+
+            # convert to global space
+            v = obj.matrix_world @ vertex.co
 
             # ignore 1. point since it's already saved
             if i == 0:
@@ -102,7 +105,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         # second pass
         for i, vertex in enumerate(used_vertices):
             # convert to global space
-            v = obj.matrix_world @ vertex
+            v = obj.matrix_world @ vertex.co
 
             # calculate distance to center to find out if the point is in or outside the sphere
             distance_center_to_v = distance_vec(mid_point, v)
@@ -159,7 +162,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         self.type_suffix = self.prefs.sphereColSuffix
 
         collider_data = []
-        all_used_vertices = []
         verts_co = []
 
         # Create the bounding geometry, depending on edit or object mode.
@@ -173,6 +175,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
+            initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene
 
@@ -188,21 +191,28 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             bounding_sphere_data = {}
 
             if scene.creation_mode == 'INDIVIDUAL':
-                vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
-
-                bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,vtx_co)
+                bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj, used_vertices)
                 bounding_sphere_data['parent'] = obj
                 collider_data.append(bounding_sphere_data)
 
-            else: #if scene.creation_mode == 'SELECTION':
-                # get list of all vertex coordinates in global space
+            else:  # if scene.creation_mode == 'SELECTION':
+            # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-
         if scene.creation_mode == 'SELECTION':
             bounding_sphere_data = {}
-            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj,verts_co)
+
+            verts_co = self.transform_vertex_space(verts_co, self.active_obj)
+
+            bm = bmesh.new()
+            for v in verts_co:
+                bm.verts.new(v)  # add a new vert
+            me = bpy.data.meshes.new("mesh")
+            bm.to_mesh(me)
+            bm.free()
+
+            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj, me.vertices)
             bounding_sphere_data['parent'] = self.active_obj
             collider_data = [bounding_sphere_data]
 
