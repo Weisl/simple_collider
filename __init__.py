@@ -29,22 +29,9 @@ else:
 
 import bpy
 
-def scene_my_collision_material_poll(self, material):
-    ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
-    if bpy.context.scene.PhysicsIdentifier in material.name:
-        return material.name
-
-
 def register():
     # register variables saved in the blender scene
     scene = bpy.types.Scene
-
-    scene.CollisionMaterials = bpy.props.PointerProperty(
-        type=bpy.types.Material,
-        poll=scene_my_collision_material_poll,
-        name='Physics Material',
-        description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.'
-    )
 
     scene.PhysicsIdentifier = bpy.props.StringProperty(
         default="*COL",
@@ -72,7 +59,6 @@ def unregister():
     scene = bpy.types.Scene
 
     # delete variables saved in the scenes file
-    del scene.CollisionMaterials
     del scene.PhysicsIdentifier
     del scene.DefaultMeshMaterial
 

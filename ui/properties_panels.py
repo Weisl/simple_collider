@@ -249,9 +249,6 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        row = layout.row()
-        row.prop(scene, "CollisionMaterials", text="Default")
-
         col = layout.column(align=True)
         row = col.row()
         row.prop(scene, "PhysicsIdentifier", text='Filter')

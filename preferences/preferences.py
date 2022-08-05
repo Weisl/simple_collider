@@ -45,6 +45,11 @@ def update_panel_category(self, context):
     return
 
 
+def scene_my_collision_material_poll(self):
+    ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
+    if bpy.context.scene.PhysicsIdentifier in self.name:
+        return self.name
+
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
     # this must match the addon name, use '__package__'
@@ -184,6 +189,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',description='Minimum volume to add vertices to convex-hulls',
                                             default=0.0001, min=0.0, max=0.01, precision=5)
 
+    physics_material_name: bpy.props.StringProperty(name='Physics Material',
+                                                     default='COL_DEFAULT',
+                                                     # type=bpy.types.Material,
+                                                     # poll=scene_my_collision_material_poll,
+                                                     description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
+
+
     props = [
         "separator",
         "colPreSuffix",
@@ -208,6 +220,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "use_col_collection",
         "col_collection_name",
         "useCustomColGroups",
+        "physics_material_name",
     ]
 
     ui_col_colors = [

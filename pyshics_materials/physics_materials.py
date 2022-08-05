@@ -2,7 +2,7 @@ import bpy
 from bpy.types import UIList
 from bpy.props import StringProperty
 
-from .material_functions import set_material, remove_materials
+from .material_functions import set_physics_material, remove_materials
 
 class MATERIAL_OT_set_physics_material(bpy.types.Operator):
     """Tooltip"""
@@ -17,12 +17,14 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
 
     def execute(self, context):
         for obj in context.selected_objects:
+
             try:
-                mat = bpy.data.materials[self.physics_material_name]
                 remove_materials(obj)
-                set_material(obj, mat)
-            except:
-                print('ERROR')
+                set_physics_material(obj, self.physics_material_name)
+
+            except Exception as e:
+                print('ERROR: ' + str(e))
+
             return {'FINISHED'}
 
 
@@ -46,7 +48,7 @@ class MATERIAL_UL_physics_materials(UIList):
         scn = context.scene
         mat = item
         self.filter_name = scn.PhysicsIdentifier
-        self.name_ob = item.name
+        # self.name_ob = item.name
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             if mat:
@@ -55,7 +57,8 @@ class MATERIAL_UL_physics_materials(UIList):
 
                 row = layout.row(align=True)
                 lb = row.label(text=mat.name)
-                op2 = row.operator('material.set_physics_material', text='', icon='MATERIAL')
-                op2.physics_material_name = mat.name
+
+                op2 = row.operator('material.set_physics_material', text='', icon='MATERIAL').physics_material_name = mat.name
+
                 row.prop(mat, "diffuse_color", text='')
         return
