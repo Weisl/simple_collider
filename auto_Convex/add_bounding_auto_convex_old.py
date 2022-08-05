@@ -1,9 +1,12 @@
+
+
 import bpy
+import bmesh
+
 from bpy.types import Operator
 
 from os import path as os_path
 from subprocess import Popen
-from mathutils import Matrix
 
 from .off_eport import off_export
 from ..operators.object_pivot_and_ailgn import alignObjects
@@ -103,10 +106,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             return {'CANCELLED'}
 
-        for obj in self.selected_objects:
-            obj.select_set(False)
-
-        basemeshes = []
+        collider_data = []
+        verts_co = []
 
         for obj in self.selected_objects:
             # skip if invalid object
@@ -117,42 +118,59 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-
-            translation, quaternion, scale = obj.matrix_world.decompose()
-            scale_matrix = Matrix(((scale.x, 0, 0, 0), (0, scale.y, 0, 0), (0, 0, scale.z, 0), (0, 0, 0, 1)))
-
-            post_matrix = scale_matrix
-            post_matrix = quaternion.to_matrix().to_4x4() @ post_matrix
-            post_matrix = Matrix.Translation(translation) @ post_matrix
-
-            context.view_layer.objects.active = obj
-
+            convex_collision_data = {}
 
             if self.obj_mode == "EDIT":
-                new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
-            else:  # mode == "OBJECT":
-                new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if new_mesh == None:
+            else:  # self.obj_mode  == "OBJECT":
+                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+
+            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            mesh = new_mesh
-            mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+            if scene.creation_mode == 'INDIVIDUAL':
+                convex_collision_data['parent'] = obj
 
-            base_data = {}
-            base_data['parent'] = obj
-            base_data['mesh'] = mesh
-            basemeshes.append(base_data)
+                #only store vertex positions
+                verts_loc = [v.co for v in used_vertices]
+                convex_collision_data['verts_loc'] = verts_loc
+
+                collider_data.append(convex_collision_data)
+
+
+            else: #if scene.creation_mode == 'SELECTION':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
+        if scene.creation_mode == 'SELECTION':
+
+            convex_collision_data = {}
+            convex_collision_data['parent'] = self.active_obj
+            convex_collision_data['verts_loc'] = verts_co
+            collider_data = [convex_collision_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
+
         convex_decomposition_data = []
 
-        for base_data in basemeshes:
-            parent = base_data['parent']
-            mesh = base_data['mesh']
+        for convex_collision_data in collider_data:
+            parent = convex_collision_data['parent']
+            verts_loc = convex_collision_data['verts_loc']
+
+            bm = bmesh.new()
+
+            for v in verts_loc:
+                bm.verts.new(v)  # add a new vert
+
+            mesh = bpy.data.meshes.new("mesh")
+            bm.to_mesh(mesh)
+            bm.free()
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
+
             off_filename = os_path.join(data_path, '{}.off'.format(filename))
             outFileName = os_path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os_path.join(data_path, '{}_log.txt'.format(filename))
@@ -178,8 +196,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if not os_path.exists(outFileName):
                 continue
 
+            # get list of imported assets
             bpy.ops.import_scene.x3d(filepath=outFileName, axis_forward='Y', axis_up='Z')
             imported = bpy.context.selected_objects
+            imported = list(set(imported) - set(self.selected_objects))
 
             for ob in imported:
                 ob.select_set(False)
@@ -187,7 +207,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             convex_collisions_data = {}
             convex_collisions_data['colliders'] = imported
             convex_collisions_data['parent'] = parent
-            convex_collisions_data['post_matrix'] = post_matrix
             convex_decomposition_data.append(convex_collisions_data)
 
         context.view_layer.objects.active = self.active_obj
@@ -195,16 +214,16 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
-            post_matrix = convex_collisions_data['post_matrix']
+            # post_matrix = convex_collisions_data['post_matrix']
 
-            debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name), str(post_matrix))
             # print(debug_text)
 
             for new_collider in convex_collision:
                 new_collider.name = super().collider_name(basename=parent.name)
 
-                self.custom_set_parent(context, parent, new_collider)
-                new_collider.matrix_basis = post_matrix
+                if scene.creation_mode == 'INDIVIDUAL':
+                    self.custom_set_parent(context, parent, new_collider)
+
                 alignObjects(new_collider, parent)
 
                 collections = parent.users_collection
@@ -218,7 +237,3 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         print("Time elapsed: ", str(self.get_time_elapsed()))
         return {'FINISHED'}
-
-
-
-
