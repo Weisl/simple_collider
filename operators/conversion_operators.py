@@ -156,6 +156,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 # replace collision material
                 remove_materials(obj)
                 if scene.DefaultMeshMaterial:
+
                     set_physics_material(obj, scene.DefaultMeshMaterial)
                 else:
                     default_material = make_physics_material('Material', (1, 1, 1, 1))

@@ -236,7 +236,6 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
     def draw(self, context):
         layout = self.layout
-
         draw_visibility_selection_menu(layout)
 
 

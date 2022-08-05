@@ -164,26 +164,29 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if scene.creation_mode == 'INDIVIDUAL':
-                # used_vertices uses local space.
-                verts_loc = self.get_point_positions(obj, scene.my_space, used_vertices)
 
+
+            if scene.creation_mode == 'INDIVIDUAL':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'LOCAL', used_vertices)
+
+                # used_vertices uses local space.
                 #store data needed to generate a bounding box in a dictionary
                 bounding_box_data['parent'] = obj
-                bounding_box_data['verts_loc'] = verts_loc
+                bounding_box_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(bounding_box_data)
 
             else: #if scene.creation_mode == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+
                 verts_co = verts_co + ws_vtx_co
 
         if scene.creation_mode == 'SELECTION':
 
-            if scene.my_space == 'LOCAL':
-                ws_vtx_co = verts_co
-                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+            ws_vtx_co = verts_co
+            verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
             bounding_box_data = {}
             bounding_box_data['parent'] = self.active_obj
