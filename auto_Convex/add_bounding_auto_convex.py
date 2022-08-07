@@ -213,10 +213,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             print('Create Debug Mesh')
 
             convex_collision_data['mesh'] = me
-
-
-
-
             collider_data = [convex_collision_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -278,7 +274,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.name = super().collider_name(basename=parent.name)
 
                 self.custom_set_parent(context, parent, new_collider)
-                alignObjects(new_collider, parent)
+
+                if scene.creation_mode == 'INDIVIDUAL':
+                    alignObjects(new_collider, parent)
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections)
