@@ -1,5 +1,3 @@
-
-
 import bpy
 import bmesh
 

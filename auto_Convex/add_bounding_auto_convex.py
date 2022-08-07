@@ -1,4 +1,6 @@
 import bpy
+import bmesh
+
 from bpy.types import Operator
 
 from os import path as os_path
@@ -8,6 +10,54 @@ from mathutils import Matrix
 from .off_eport import off_export
 from ..operators.object_pivot_and_ailgn import alignObjects
 from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
+import bmesh
+import bpy
+
+
+def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
+    """ takes as input a list of bm references and outputs a single merged bmesh
+    allows an additional 'normal_update=True' to force _normal_ calculations.
+    """
+
+    bm = bmesh.new()
+    add_vert = bm.verts.new
+    add_face = bm.faces.new
+    add_edge = bm.edges.new
+
+    for bm_to_add, matrix in zip(list_of_bmeshes, list_of_matrices):
+        bm_to_add.transform(matrix)
+
+    for bm_to_add in list_of_bmeshes:
+        offset = len(bm.verts)
+
+        for v in bm_to_add.verts:
+            add_vert(v.co)
+
+        bm.verts.index_update()
+        bm.verts.ensure_lookup_table()
+
+        if bm_to_add.faces:
+            for face in bm_to_add.faces:
+                add_face(tuple(bm.verts[i.index + offset] for i in face.verts))
+            bm.faces.index_update()
+
+        if bm_to_add.edges:
+            for edge in bm_to_add.edges:
+                edge_seq = tuple(bm.verts[i.index + offset] for i in edge.verts)
+                try:
+                    add_edge(edge_seq)
+                except ValueError:
+                    # edge exists!
+                    pass
+            bm.edges.index_update()
+
+    if normal_update:
+        bm.normal_update()
+
+    return bm
+
+
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
@@ -106,7 +156,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for obj in self.selected_objects:
             obj.select_set(False)
 
-        basemeshes = []
+        collider_data = []
+        meshes = []
+        matrices = []
 
         for obj in self.selected_objects:
             # skip if invalid object
@@ -117,16 +169,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if obj.type != "MESH":
                 continue
 
-
-            translation, quaternion, scale = obj.matrix_world.decompose()
-            scale_matrix = Matrix(((scale.x, 0, 0, 0), (0, scale.y, 0, 0), (0, 0, scale.z, 0), (0, 0, 0, 1)))
-
-            post_matrix = scale_matrix
-            post_matrix = quaternion.to_matrix().to_4x4() @ post_matrix
-            post_matrix = Matrix.Translation(translation) @ post_matrix
-
             context.view_layer.objects.active = obj
-
 
             if self.obj_mode == "EDIT":
                 new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
@@ -136,20 +179,48 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh == None:
                 continue
 
-            mesh = new_mesh
-            mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+            if scene.creation_mode == 'INDIVIDUAL':
+                convex_collision_data = {}
+                convex_collision_data['parent'] = obj
+                convex_collision_data['mesh'] = new_mesh
+                collider_data.append(convex_collision_data)
 
-            base_data = {}
-            base_data['parent'] = obj
-            base_data['mesh'] = mesh
-            basemeshes.append(base_data)
+            else:  # if scene.creation_mode == 'SELECTION':
+                meshes.append(new_mesh)
+                matrices.append(obj.matrix_world)
+
+        if scene.creation_mode == 'SELECTION':
+            convex_collision_data = {}
+            convex_collision_data['parent'] = self.active_obj
+
+            bmeshes = []
+
+            for mesh in meshes:
+                bm_new = bmesh.new()
+                bm_new.from_mesh(mesh)
+                bmeshes.append(bm_new)
+
+            bm_out = bmesh.new()
+            bm_out = bmesh_join(bmeshes, matrices)
+
+            me = bpy.data.meshes.new("debug_obj")
+            bm_out.to_mesh(me)
+            bm_out.free()
+
+            new_collider = bpy.data.objects.new('debug_mesh', me)
+            bpy.context.scene.collection.objects.link(new_collider)
+
+            print('Create Debug Mesh')
+
+            convex_collision_data['mesh'] = me
+            collider_data = [convex_collision_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
         convex_decomposition_data = []
 
-        for base_data in basemeshes:
-            parent = base_data['parent']
-            mesh = base_data['mesh']
+        for convex_collision_data in collider_data:
+            parent = convex_collision_data['parent']
+            mesh = convex_collision_data['mesh']
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
@@ -187,7 +258,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             convex_collisions_data = {}
             convex_collisions_data['colliders'] = imported
             convex_collisions_data['parent'] = parent
-            convex_collisions_data['post_matrix'] = post_matrix
             convex_decomposition_data.append(convex_collisions_data)
 
         context.view_layer.objects.active = self.active_obj
@@ -195,17 +265,18 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
-            post_matrix = convex_collisions_data['post_matrix']
+            # post_matrix = convex_collisions_data['post_matrix']
 
-            debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name), str(post_matrix))
+            # debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name)))
             # print(debug_text)
 
             for new_collider in convex_collision:
                 new_collider.name = super().collider_name(basename=parent.name)
 
                 self.custom_set_parent(context, parent, new_collider)
-                new_collider.matrix_basis = post_matrix
-                alignObjects(new_collider, parent)
+
+                if scene.creation_mode == 'INDIVIDUAL':
+                    alignObjects(new_collider, parent)
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections)
