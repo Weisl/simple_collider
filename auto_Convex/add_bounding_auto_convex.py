@@ -179,17 +179,17 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh == None:
                 continue
 
-            if scene.creation_mode == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 convex_collision_data = {}
                 convex_collision_data['parent'] = obj
                 convex_collision_data['mesh'] = new_mesh
                 collider_data.append(convex_collision_data)
 
-            else:  # if scene.creation_mode == 'SELECTION':
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
-        if scene.creation_mode == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
 
@@ -275,7 +275,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
                 self.custom_set_parent(context, parent, new_collider)
 
-                if scene.creation_mode == 'INDIVIDUAL':
+                if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                     alignObjects(new_collider, parent)
 
                 collections = parent.users_collection

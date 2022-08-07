@@ -72,16 +72,15 @@ def register():
                                                        ('ALWAYS', "Always","The wireframes remain visible afterwards.")),
                                                 description="Hide Bounding Object After Creation.", default='PREVIEW')
 
-    scene.creation_mode = bpy.props.EnumProperty(name="Creation Mode",
-                                                items=(('INDIVIDUAL', "Individual",""),
-                                                       ('SELECTION', "Selection","")),
-                                                description="", default='INDIVIDUAL')
-
-
     #OBJECT
     obj.basename = bpy.props.StringProperty(default='geo', name='Basename', description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).')
 
-    obj.collider_type = bpy.props.EnumProperty(name="Shading", items=[('BOX', "Box", "Used to descibe boxed shape collision shapes."),('SHERE', "Sphere", "Used to descibe spherical collision shapes."),('CONVEX', "CONVEX", "Used to descibe convex shaped collision shapes."),('MESH', "Triangle Mesh", "Used to descibe complex triangle mesh collisions.")], default='BOX')
+    obj.collider_type = bpy.props.EnumProperty(name="Shading",
+                                               items=[('BOX', "Box", "Used to descibe boxed shape collision shapes."),
+                                                      ('SHERE', "Sphere", "Used to descibe spherical collision shapes."),
+                                                      ('CONVEX', "CONVEX", "Used to descibe convex shaped collision shapes."),
+                                                      ('MESH', "Triangle Mesh", "Used to descibe complex triangle mesh collisions.")],
+                                               default='BOX')
 
 
     obj.collider_complexity = bpy.props.EnumProperty(name="collider complexity", items=[

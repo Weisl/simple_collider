@@ -105,7 +105,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.new_colliders_list.append(new_collider)
 
         # Merge all collider objects
-        if scene.creation_mode == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             bpy.ops.object.select_all(action='DESELECT')
             new_collider = None
 

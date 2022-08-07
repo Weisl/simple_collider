@@ -190,17 +190,17 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             bounding_sphere_data = {}
 
-            if scene.creation_mode == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj, used_vertices)
                 bounding_sphere_data['parent'] = obj
                 collider_data.append(bounding_sphere_data)
 
-            else:  # if scene.creation_mode == 'SELECTION':
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if scene.creation_mode == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             bounding_sphere_data = {}
 
             verts_co = self.transform_vertex_space(verts_co, self.active_obj)

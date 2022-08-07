@@ -101,10 +101,6 @@ def draw_viewport_overlay(self, context):
     value = str(scene.wireframe_mode)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(W)', type='enum')
 
-    label = "Creation Mode "
-    value = str(scene.creation_mode)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(M)', type='bool')
-
     label = "Hide After Creation "
     value = str(scene.my_hide)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(H)', type='bool')
@@ -120,6 +116,10 @@ def draw_viewport_overlay(self, context):
     label = "Collider Complexity"
     value = str(self.collision_type[self.collision_type_idx])
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(T)', type='enum')
+
+    label = "Creation Mode "
+    value = self.creation_mode[self.creation_mode_idx]
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value = value, key='(M)', type='enum')
 
     if context.space_data.shading.type == 'SOLID':
         label = "Preview View "
@@ -684,7 +684,10 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
         self.wireframe_idx = 1
+
+        self.creation_mode = ['INDIVIDUAL','SELECTION']
         self.creation_mode_idx = 0
+
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_type_idx = 0
         self.collision_type = collider_types
@@ -848,8 +851,7 @@ class OBJECT_OT_add_bounding_object():
             self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE':
-            self.creation_mode_idx = (self.creation_mode_idx + 1) % len(bpy.types.Scene.bl_rna.properties['creation_mode'].enum_items)
-            scene.creation_mode = bpy.types.Scene.bl_rna.properties['creation_mode'].enum_items[self.creation_mode_idx].identifier
+            self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':

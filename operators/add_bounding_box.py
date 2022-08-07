@@ -147,7 +147,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if scene.creation_mode == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, scene.my_space, used_vertices)
                 verts_loc = self.generate_bounding_box(co)
@@ -158,12 +158,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
                 collider_data.append(bounding_box_data)
 
-            else: #if scene.creation_mode == 'SELECTION':
+            else: #if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if scene.creation_mode == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
 
             if scene.my_space == 'LOCAL':
                 ws_vtx_co = verts_co

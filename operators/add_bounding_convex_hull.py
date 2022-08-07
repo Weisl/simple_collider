@@ -68,7 +68,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None: # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if scene.creation_mode == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # update mesh when changing selection in edit mode etc.
                 obj.update_from_editmode()
 
@@ -80,12 +80,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
                 collider_data.append(convex_collision_data)
 
-            else: #if scene.creation_mode == 'SELECTION':
+            else: #if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if scene.creation_mode == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
 
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
@@ -121,7 +121,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider.parent = parent
 
-            if scene.creation_mode == 'SELECTION':
+            if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 identityMatrix = np.identity(4)
                 new_collider.matrix_world = identityMatrix
 
