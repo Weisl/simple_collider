@@ -2,6 +2,7 @@ from . import properties_panels
 from . import pie_menu
 
 classes = (
+    properties_panels.EXPLORER_OT_open_folder,
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.VIEW3D_PT_collission_panel,
     properties_panels.VIEW3D_PT_collission_visibility_panel,

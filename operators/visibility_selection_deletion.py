@@ -57,50 +57,60 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class COLLISION_OT_simple_show(COLLISION_OT_Visibility):
     bl_idname = "object.simple_show_collisions"
     bl_label = "Show Simple Colliders"
     bl_description = 'Show all objects that are defined as simple colliders'
+
 
 class COLLISION_OT_simple_hide(COLLISION_OT_Visibility):
     bl_idname = "object.simple_hide_collisions"
     bl_label = "Hide Simple Colliders"
     bl_description = 'Hide all objects that are defined as simple colliders'
 
+
 class COLLISION_OT_complex_show(COLLISION_OT_Visibility):
     bl_idname = "object.complex_show_collisions"
     bl_label = "Show Complex Colliders"
     bl_description = 'Show all objects that are defined as complex colliders'
+
 
 class COLLISION_OT_complex_hide(COLLISION_OT_Visibility):
     bl_idname = "object.complex_hide_collisions"
     bl_label = "Hide Complex Colliders"
     bl_description = 'Hide all objects that are defined as complex colliders'
 
+
 class COLLISION_OT_simple_complex_show(COLLISION_OT_Visibility):
     bl_idname = "object.simple_complex_show_collisions"
     bl_label = "Show Simple and Complex Colliders"
     bl_description = 'Show all objects that are defined as simple and complex colliders'
+
 
 class COLLISION_OT_simple_complex_hide(COLLISION_OT_Visibility):
     bl_idname = "object.simple_complex_hide_collisions"
     bl_label = "Hide Simple and Complex Colliders"
     bl_description = 'Hide all objects that are defined as simple and complex colliders'
 
+
 class COLLISION_OT_all_show(COLLISION_OT_Visibility):
     bl_idname = "object.all_show_collisions"
     bl_label = "Show all Colliders"
     bl_description = 'Show all collider objects: Simple, Complex, Simple and Complex.'
+
 
 class COLLISION_OT_all_hide(COLLISION_OT_Visibility):
     bl_idname = "object.all_hide_collisions"
     bl_label = "Hide all Colliders"
     bl_description = 'Hide all collider objects: Simple, Complex, Simple and Complex.'
 
+
 class COLLISION_OT_non_collider_show(COLLISION_OT_Visibility):
     bl_idname = "object.non_collider_show_collisions"
     bl_label = "Show non Colliders"
     bl_description = 'Show all objects that are not colliders.'
+
 
 class COLLISION_OT_non_collider_hide(COLLISION_OT_Visibility):
     bl_idname = "object.non_collider_hide_collisions"
@@ -152,7 +162,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                     else:
                         ob.select_set(not self.select)
 
-        else: # self.select = False
+        else:  # self.select = False
             for ob in bpy.context.view_layer.objects:
                 if self.mode == 'ALL_COLLIDER':
                     if ob.get('isCollider') == True:
@@ -275,10 +285,12 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class COLLISION_OT_simple_delete(COLLISION_OT_Deletion):
     bl_idname = "object.simple_delete_collisions"
     bl_label = "Delete Simple Colliders"
     bl_description = 'Delete all objects that are defined as simple colliders'
+
 
 class COLLISION_OT_complex_delete(COLLISION_OT_Deletion):
     bl_idname = "object.complex_delete_collisions"

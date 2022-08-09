@@ -1,23 +1,56 @@
 import bpy
+import os
+import subprocess
 import textwrap
-
-
-from bpy.types import Panel
 
 visibility_operators = {
     'ALL_COLLIDER': 'Colliders',
     'OBJECTS': "Non Colliders",
-    'SIMPLE_COMPLEX':'Simple and Complex',
+    'SIMPLE_COMPLEX': 'Simple and Complex',
     'SIMPLE': 'Simple',
     'COMPLEX': 'Complex',
 }
 
+
+def collider_presets_folder():
+    # Make sure there is a directory for presets
+    collider_presets = "collider_tools"
+    collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
+    collider_preset_paths = bpy.utils.preset_paths(collider_presets)
+
+    if (collider_preset_directory not in collider_preset_paths):
+        if (not os.path.exists(collider_preset_directory)):
+            os.makedirs(collider_preset_directory)
+
+    return collider_preset_directory
+
+
 def label_multiline(context, text, parent):
-    chars = int(context.region.width / 7)   # 7 pix on 1 character
+    chars = int(context.region.width / 7)  # 7 pix on 1 character
     wrapper = textwrap.TextWrapper(width=chars)
     text_lines = wrapper.wrap(text=text)
     for text_line in text_lines:
         parent.label(text=text_line)
+
+
+class EXPLORER_OT_open_folder(bpy.types.Operator):
+    """Open render output directory in Explorer"""
+    bl_idname = "explorer.open_in_explorer"
+    bl_label = "Open Folder"
+    bl_description = "Open folder in explorer"
+
+    dirpath: bpy.props.StringProperty()
+
+    def execute(self, context):
+
+        if os.path.isdir(self.dirpath):
+            subprocess.Popen(["explorer.exe", self.dirpath])
+        else:
+            self.report({'ERROR'}, 'Invalid Preset Path')
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
 
 class PREFERENCES_OT_open_addon(bpy.types.Operator):
     """Tooltip"""
@@ -40,17 +73,20 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 
         import addon_utils
         mod = addon_utils.addons_fake_modules.get('collider_tools')
-        mod.bl_info['show_expanded'] = True
 
-        # Find User Preferences area and redraw it
-        for window in bpy.context.window_manager.windows:
-            for area in window.screen.areas:
-                if area.type == 'USER_PREFERENCES':
-                    area.tag_redraw()
+        #mod is None the first time the operation is called :/
+        if mod:
+            mod.bl_info['show_expanded'] = True
 
+            # Find User Preferences area and redraw it
+            for window in bpy.context.window_manager.windows:
+                for area in window.screen.areas:
+                    if area.type == 'USER_PREFERENCES':
+                        area.tag_redraw()
 
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
+
 
 def draw_visibility_selection_menu(layout):
     split_left = layout.split(factor=0.35)
@@ -106,7 +142,6 @@ def draw_visibility_selection_menu(layout):
     op.mode = 'OBJECTS'
     op = row.operator("object.non_collider_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = 'OBJECTS'
-
 
     prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
     # row = layout.row(align=True)
@@ -175,13 +210,13 @@ def draw_visibility_selection_menu(layout):
         op.mode = 'COMPLEX'
 
 
-
-class VIEW3D_PT_collission(Panel):
+class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
 
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Collider Tools"
+
 
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
@@ -192,18 +227,21 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        #Naming presets
+        # Naming presets
         from ..preferences.naming_preset import OBJECT_MT_collision_presets
         row = layout.row(align=True)
         row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
 
-        #Edit Naming
+        # Edit Naming
         from .. import bl_info
         addon_name = bl_info["name"]
 
-        op = row.operator("preferences.addon_search", text="Edit Preset")
+        op = row.operator("preferences.addon_search", text="", icon='SETTINGS')
         op.addon_name = addon_name
         op.prefs_tabs = 'NAMING'
+
+        op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+        op.dirpath = collider_presets_folder()
 
         # Create Collider
         row = layout.row(align=True)
@@ -225,11 +263,10 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
-        #special Collider Creation
+        # special Collider Creation
         # layout.separator()
         row = layout.row(align=True)
         row.label(text='Add Complex Collider')
-
 
         # Auto Convex
         box = layout.box()
@@ -280,12 +317,15 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
+        row = layout.row()
+        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
+
         col = layout.column(align=True)
         row = col.row()
         row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "asset_list_index")
 
-        row = layout.row()
-        row.operator('material.create_physics_material', icon='PLUS', text="Physics Material")
+
+
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
@@ -299,7 +339,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         # Choose Naming Preset
         row = layout.row(align=True)
         row.label(text='Naming')
-
 
         row = layout.row(align=True)
         row.label(text='Creation Settings')

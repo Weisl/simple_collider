@@ -27,11 +27,8 @@ else:
     from . import pyshics_materials
     from . import preferences
 
-import bpy
-
 
 def register():
-
     # call the register function of the sub modules
     ui.register()
     operators.register()
@@ -43,7 +40,6 @@ def register():
 
 
 def unregister():
-
     # call unregister function of the sub-modules
     preferences.unregister()
     pyshics_materials.unregister()

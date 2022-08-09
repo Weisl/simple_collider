@@ -24,7 +24,6 @@ def add_hotkey(context=None):
     kc = wm.keyconfigs.addon
 
     if kc:
-
         km = kc.keymaps.new(name="3D View", space_type='VIEW_3D', region_type='WINDOW')
         kmi = km.keymap_items.new(idname='wm.call_menu_pie', type='C', value='PRESS', ctrl=True, shift=True)
         kmi.properties.name = "COLLISION_MT_pie_menu"
@@ -59,5 +58,3 @@ class COLLISION_OT_add_hotkey_renaming(bpy.types.Operator):
     def execute(self, context):
         add_hotkey(context)
         return {'FINISHED'}
-
-

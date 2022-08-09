@@ -1,8 +1,8 @@
-import bmesh
 import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+
 
 class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
@@ -60,7 +60,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             mesh_collider_data = {}
 
             if self.obj_mode == "EDIT":
-                new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
+                new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
 
             else:  # mode == "OBJECT":

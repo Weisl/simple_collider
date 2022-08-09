@@ -1,5 +1,4 @@
 import bpy
-
 import bpy.types
 
 from . import material_functions
@@ -17,13 +16,13 @@ def register():
     material = bpy.types.Material
 
     # Scene.asset_list_index = bpy.props.IntProperty(name = "Index for lis one", default=0, get=getListIndex)
-    scene.asset_list_index = bpy.props.IntProperty(name = "Index for lis one", default=0)
+    scene.asset_list_index = bpy.props.IntProperty(name="Index for lis one", default=0)
 
-    # register variables saved in the blender scene
+    # register variables saved in the blender scene¶
 
     scene.DefaultMeshMaterial = bpy.props.PointerProperty(
         type=bpy.types.Material,
-        name = 'Default Mesh Material',
+        name='Default Mesh Material',
         description='The default mesh material will be assigned to any mesh that is converted from a collider to a mesh object'
     )
 

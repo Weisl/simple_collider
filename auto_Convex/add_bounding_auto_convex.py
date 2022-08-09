@@ -1,18 +1,13 @@
-import bpy
-import bmesh
-
-from bpy.types import Operator
-
 from os import path as os_path
+
+import bmesh
+import bpy
+from bpy.types import Operator
 from subprocess import Popen
-from mathutils import Matrix
 
 from .off_eport import off_export
-from ..operators.object_pivot_and_ailgn import alignObjects
 from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
-
-import bmesh
-import bpy
+from ..operators.object_pivot_and_ailgn import alignObjects
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
@@ -56,7 +51,6 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
         bm.normal_update()
 
     return bm
-
 
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
@@ -172,7 +166,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
 
             if self.obj_mode == "EDIT":
-                new_mesh = self.get_mesh_Edit(obj,use_modifiers=self.my_use_modifier_stack)
+                new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
 
@@ -289,7 +283,3 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         print("Time elapsed: ", str(self.get_time_elapsed()))
         return {'FINISHED'}
-
-
-
-

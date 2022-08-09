@@ -1,5 +1,7 @@
-from .properties_panels import visibility_operators, draw_visibility_selection_menu
 from bpy.types import Menu
+
+from .properties_panels import draw_visibility_selection_menu
+
 
 # spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
 class VIEW3D_MT_collision(Menu):
@@ -47,22 +49,22 @@ class VIEW3D_MT_PIE_template(Menu):
         # operator_enum will just spread all available options
         # for the type enum of the operator on the pie
 
-        #West
+        # West
         pie.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         pie.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
-        #East
+        # East
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
-        #South
+        # South
         other = pie.column()
         other_menu = other.box().column()
         # other_menu.scale_x= 2
         other_menu.menu_contents("VIEW3D_MT_collision")
 
-        #North
+        # North
         pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
 
-        #NorthWest
+        # NorthWest
         pie.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
-        #NorthEast
+        # NorthEast
         pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')

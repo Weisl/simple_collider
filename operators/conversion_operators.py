@@ -1,21 +1,22 @@
-import bmesh
 import bpy
 from bpy.types import Operator
+
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_physics_material, make_physics_material, remove_materials
 
-collider_shapes = ['meshColSuffix', 'boxColSuffix','sphereColSuffix', 'convexColSuffix']
+collider_shapes = ['meshColSuffix', 'boxColSuffix', 'sphereColSuffix', 'convexColSuffix']
 
 
 def create_name_number(name, nr):
     nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
     return name + nr
 
-def unique_name(name, i = 1):
+
+def unique_name(name, i=1):
     '''recursive function to find unique name'''
     new_name = create_name_number(name, i)
     while new_name in bpy.data.objects:
-        i=i+1
+        i = i + 1
         new_name = create_name_number(name, i)
     return new_name
 
@@ -61,7 +62,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
 
         elif event.type == 'C' and event.value == 'RELEASE':
-            #toggle through display modes
+            # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
             self.set_name_suffix()
             self.update_names()
@@ -76,7 +77,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         for mat in obj.material_slots:
             dic['material_slots'].append(mat.name)
 
-        dic['color'] = [obj.color[0],obj.color[1],obj.color[2],obj.color[3]]
+        dic['color'] = [obj.color[0], obj.color[1], obj.color[2], obj.color[3]]
         dic['show_wire'] = obj.show_wire
         return dic
 
@@ -115,6 +116,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().print_generation_time(label)
         return {'RUNNING_MODAL'}
 
+
 class OBJECT_OT_convert_to_mesh(Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_mesh"
@@ -147,7 +149,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
         for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
-                #Reste object properties to regular mesh
+                # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
                 obj.name = unique_name(self.my_string)
@@ -177,4 +179,3 @@ class OBJECT_OT_convert_to_mesh(Operator):
                                 bpy.context.scene.collection.objects.link(obj)
 
         return {'FINISHED'}
-
