@@ -63,6 +63,17 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
 
             return {'FINISHED'}
 
+def get_val(self):
+    return self["filter_name"]
+    print(str(1))
+
+def set_val(self, value):
+    self['filter_name'] = value
+    print(str(2))
+
+def update_val(self, context):
+    self['filter_name'] = self['my_filter']
+    print(str(3))
 
 class MATERIAL_UL_physics_materials(UIList):
     # The draw_item function is called for each item of the collection that is visible in the list.
@@ -78,13 +89,20 @@ class MATERIAL_UL_physics_materials(UIList):
     #   Note: as index and flt_flag are optional arguments, you do not have to use/declare them here if you don't
     #         need them.
 
-    export : bpy.props.BoolProperty(name="Export", default=False)
+    set_initial_state : bpy.props.BoolProperty(default=True)
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         scn = context.scene
         mat = item
-        self.filter_name = scn.PhysicsIdentifier
-        # self.name_ob = item.name
+
+        self.use_filter_show = True
+
+        if self.set_initial_state:
+            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
+            self.filter_name = prefs.physics_material_filter
+            self.set_initial_state = False
+
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             if mat:
@@ -98,3 +116,8 @@ class MATERIAL_UL_physics_materials(UIList):
 
                 row.prop(mat, "diffuse_color", text='')
         return
+
+    def draw_filter(self, context, layout):
+        # Nothing much to say here, it's usual UI code...
+        row = layout.row()
+        row.prop(self, "filter_name", text="Filter",)

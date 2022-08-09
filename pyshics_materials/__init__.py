@@ -1,6 +1,6 @@
 import bpy
 
-from bpy.types import Scene, Material
+import bpy.types
 
 from . import material_functions
 from . import physics_materials
@@ -11,22 +11,23 @@ classes = (
     physics_materials.MATERIAL_UL_physics_materials,
 )
 
-# def getListIndex(self):
-#     scene = bpy.context.scene
-#     mat = bpy.data.materials
-#
-#     if mat is not None:
-#         idx = scene.objects.find(mat.name)
-#         return idx
-#     else:
-#         return 0
-
-
 
 def register():
+    scene = bpy.types.Scene
+    material = bpy.types.Material
+
     # Scene.asset_list_index = bpy.props.IntProperty(name = "Index for lis one", default=0, get=getListIndex)
-    Scene.asset_list_index = bpy.props.IntProperty(name = "Index for lis one", default=0)
-    Material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
+    scene.asset_list_index = bpy.props.IntProperty(name = "Index for lis one", default=0)
+
+    # register variables saved in the blender scene
+
+    scene.DefaultMeshMaterial = bpy.props.PointerProperty(
+        type=bpy.types.Material,
+        name = 'Default Mesh Material',
+        description='The default mesh material will be assigned to any mesh that is converted from a collider to a mesh object'
+    )
+
+    material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
 
     from bpy.utils import register_class
 
@@ -35,10 +36,15 @@ def register():
 
 
 def unregister():
+    scene = bpy.types.Scene
+    material = bpy.types.Material
+
     from bpy.utils import unregister_class
 
     for cls in reversed(classes):
         unregister_class(cls)
 
-    del Material.edit
-    del Scene.asset_list_index
+    # delete variables saved in the scenes file
+    del material.edit
+    del scene.DefaultMeshMaterial
+    del scene.asset_list_index

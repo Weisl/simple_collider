@@ -40,15 +40,7 @@ def update_panel_category(self, context):
 
         panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
         bpy.utils.register_class(panel)
-
-
     return
-
-
-def scene_my_collision_material_poll(self):
-    ''' Returns material only if the name contains the physics material identifier specified in the preferences '''
-    if bpy.context.scene.PhysicsIdentifier in self.name:
-        return self.name
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Contains the blender addon preferences"""
@@ -195,6 +187,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                      # poll=scene_my_collision_material_poll,
                                                      description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
 
+    physics_material_filter : bpy.props.StringProperty(name='Physics Material Filter',
+                                                       default="*COL",
+                                                       description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.',)
 
     props = [
         "separator",
@@ -221,6 +216,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "col_collection_name",
         "useCustomColGroups",
         "physics_material_name",
+        "physics_material_filter",
     ]
 
     ui_col_colors = [
