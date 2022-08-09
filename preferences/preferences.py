@@ -181,7 +181,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',description='Minimum volume to add vertices to convex-hulls',
                                             default=0.0001, min=0.0, max=0.01, precision=5)
 
-    physics_material_name: bpy.props.StringProperty(name='Physics Material',
+    physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
                                                      default='COL_DEFAULT',
                                                      # type=bpy.types.Material,
                                                      # poll=scene_my_collision_material_poll,

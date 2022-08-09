@@ -63,17 +63,6 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
 
             return {'FINISHED'}
 
-def get_val(self):
-    return self["filter_name"]
-    print(str(1))
-
-def set_val(self, value):
-    self['filter_name'] = value
-    print(str(2))
-
-def update_val(self, context):
-    self['filter_name'] = self['my_filter']
-    print(str(3))
 
 class MATERIAL_UL_physics_materials(UIList):
     # The draw_item function is called for each item of the collection that is visible in the list.
