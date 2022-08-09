@@ -53,7 +53,6 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
 
     def execute(self, context):
         for obj in context.selected_objects:
-
             try:
                 remove_materials(obj)
                 set_physics_material(obj, self.physics_material_name)
@@ -61,7 +60,7 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
             except Exception as e:
                 print('ERROR assigning physics material: ' + str(e))
 
-            return {'FINISHED'}
+        return {'FINISHED'}
 
 
 class MATERIAL_UL_physics_materials(UIList):
@@ -81,7 +80,6 @@ class MATERIAL_UL_physics_materials(UIList):
     set_initial_state : bpy.props.BoolProperty(default=True)
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        scn = context.scene
         mat = item
 
         self.use_filter_show = True
@@ -99,10 +97,8 @@ class MATERIAL_UL_physics_materials(UIList):
                 # row.prop(mat, "edit", text="")
 
                 row = layout.row(align=True)
-                lb = row.label(text=mat.name)
-
-                op2 = row.operator('material.set_physics_material', text='', icon='MATERIAL').physics_material_name = mat.name
-
+                row.label(text=mat.name)
+                row.operator('material.set_physics_material', text='', icon='MATERIAL').physics_material_name = mat.name
                 row.prop(mat, "diffuse_color", text='')
         return
 
