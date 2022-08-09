@@ -14,8 +14,6 @@ from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import label_multiline
 from ..operators.add_bounding_primitive import create_name_number
 
-
-
 def update_panel_category(self, context):
     panelNames=[
         'VIEW3D_PT_collission_panel',

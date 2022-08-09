@@ -30,7 +30,10 @@ class VIEW3D_MT_collision(Menu):
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
             from .. import bl_info
-            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
+            op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
+            op.addon_name = bl_info["name"]
+            op.prefs_tabs = 'VHACD'
+
 
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.

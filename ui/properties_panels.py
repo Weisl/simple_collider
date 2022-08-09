@@ -1,6 +1,7 @@
 import bpy
 import textwrap
 
+
 from bpy.types import Panel
 
 visibility_operators = {
@@ -24,13 +25,30 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
     bl_label = "Open Addon preferences"
 
     addon_name: bpy.props.StringProperty()
+    prefs_tabs: bpy.props.StringProperty()
 
     def execute(self, context):
+
         bpy.ops.screen.userpref_show()
+
         bpy.context.preferences.active_section = 'ADDONS'
         bpy.data.window_managers["WinMan"].addon_search = self.addon_name
+
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-        prefs.prefs_tabs = 'VHACD'
+        prefs.prefs_tabs = self.prefs_tabs
+
+
+        import addon_utils
+        mod = addon_utils.addons_fake_modules.get('collider_tools')
+        mod.bl_info['show_expanded'] = True
+
+        # Find User Preferences area and redraw it
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == 'USER_PREFERENCES':
+                    area.tag_redraw()
+
+
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
@@ -174,6 +192,18 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
+        #Naming presets
+        from ..preferences.naming_preset import OBJECT_MT_collision_presets
+        row = layout.row(align=True)
+        row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+
+        #Edit Naming
+        from .. import bl_info
+        addon_name = bl_info["name"]
+
+        op = row.operator("preferences.addon_search", text="Edit Preset")
+        op.addon_name = addon_name
+        op.prefs_tabs = 'NAMING'
 
         # Create Collider
         row = layout.row(align=True)
@@ -215,7 +245,9 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
             from .. import bl_info
-            row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR').addon_name = bl_info["name"]
+            op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
+            op.addon_name = bl_info["name"]
+            op.prefs_tabs = 'VHACD'
 
         # Conversion
         # layout.separator()
@@ -268,14 +300,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.label(text='Naming')
 
-        #Naming presets
-        from ..preferences.naming_preset import OBJECT_MT_collision_presets
-        row = layout.row(align=True)
-        row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
-
-        #Edit Naming
-        from .. import bl_info
-        row.operator("preferences.addon_search", text="Edit Preset").addon_name = bl_info["name"]
 
         row = layout.row(align=True)
         row.label(text='Creation Settings')
