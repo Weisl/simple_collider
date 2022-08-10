@@ -9,6 +9,7 @@ from . import add_collision_mesh
 from . import add_minimum_bounding_box
 from . import conversion_operators
 from . import visibility_selection_deletion
+from . import visibility_settings
 
 classes = (
     add_bounding_box.OBJECT_OT_add_bounding_box,
@@ -47,8 +48,16 @@ classes = (
     visibility_selection_deletion.COLLISION_OT_all_hide,
     visibility_selection_deletion.COLLISION_OT_non_collider_show,
     visibility_selection_deletion.COLLISION_OT_non_collider_hide,
-
+    visibility_settings.VIEW3D_OT_object_view,
+    visibility_settings.VIEW3D_OT_material_view,
 )
+
+
+def update_display_colliders(self, context):
+    for obj in bpy.data.objects:
+        if obj.get('isCollider'):
+            obj.display_type = self.display_type
+    return {'FINISHED'}
 
 
 def register():
@@ -62,9 +71,11 @@ def register():
     scene.my_collision_shading_view = bpy.props.EnumProperty(name="Display",
                                                              description='How to display the collision in the viewport.',
                                                              items=(
-                                                             ('SOLID', "Solid", "Display the collider as a solid."),
-                                                             ('WIRE', "Wire", "Display the collider as a wireframe"), (
-                                                             'BOUNDS', "Bounds", "Display the bounds of the collider")),
+                                                                 ('SOLID', "Solid", "Display the collider as a solid."),
+                                                                 (
+                                                                 'WIRE', "Wire", "Display the collider as a wireframe"),
+                                                                 ('BOUNDS', "Bounds",
+                                                                  "Display the bounds of the collider")),
                                                              default="SOLID")
 
     # Tranformation space to be used for creating the bounding object.
@@ -74,6 +85,16 @@ def register():
                                                    ('GLOBAL', "Global",
                                                     "Generate the collision based on the global space of the object vertices.")),
                                             default="LOCAL")
+
+    scene.display_type = bpy.props.EnumProperty(name="Collider Display",
+                                                items=(
+                                                    # ('TEXTURED', "Textured", "Display the colliders with textures"),
+                                                    ('SOLID', "Solid", "Display the colliders as solid"),
+                                                    ('WIRE', "Wire", "Display the colliders as wireframe"),
+                                                    # ('BOUNDS', "Bounds", "Display the bounds of the the colliders")
+                                                ),
+                                                default="SOLID",
+                                                update=update_display_colliders)
 
     scene.wireframe_mode = bpy.props.EnumProperty(name="Wireframe Mode",
                                                   items=(('OFF', "Off",
@@ -91,7 +112,8 @@ def register():
     obj.collider_type = bpy.props.EnumProperty(name="Shading",
                                                items=[('BOX', "Box", "Used to descibe boxed shape collision shapes."),
                                                       (
-                                                      'SHERE', "Sphere", "Used to descibe spherical collision shapes."),
+                                                          'SHERE', "Sphere",
+                                                          "Used to descibe spherical collision shapes."),
                                                       ('CONVEX', "CONVEX",
                                                        "Used to descibe convex shaped collision shapes."),
                                                       ('MESH', "Triangle Mesh",
@@ -103,7 +125,8 @@ def register():
          "(Simple and Complex) Custom value to distinguish different types of collisions in a game engine."),
         ('SIMPLE', "Simple", "(Simple) Custom value to distinguish different types of collisions in a game engine."),
         (
-        'COMPLEX', "Complex", "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
+            'COMPLEX', "Complex",
+            "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
                                                      default="SIMPLE_COMPLEX")
 
     from bpy.utils import register_class

@@ -1,5 +1,6 @@
 import bpy
 import os
+import platform
 import subprocess
 import textwrap
 
@@ -37,7 +38,7 @@ class EXPLORER_OT_open_folder(bpy.types.Operator):
     """Open render output directory in Explorer"""
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"
-    bl_description = "Open folder in explorer"
+    bl_description = "Open preset folder in explorer"
 
     dirpath: bpy.props.StringProperty()
 
@@ -70,11 +71,10 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         prefs.prefs_tabs = self.prefs_tabs
 
-
         import addon_utils
         mod = addon_utils.addons_fake_modules.get('collider_tools')
 
-        #mod is None the first time the operation is called :/
+        # mod is None the first time the operation is called :/
         if mod:
             mod.bl_info['show_expanded'] = True
 
@@ -232,16 +232,17 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
 
-        # Edit Naming
+        # Get Addon Name
         from .. import bl_info
         addon_name = bl_info["name"]
 
-        op = row.operator("preferences.addon_search", text="", icon='SETTINGS')
+        op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'NAMING'
 
-        op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-        op.dirpath = collider_presets_folder()
+        if platform.system() == 'Windows':
+            op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+            op.dirpath = collider_presets_folder()
 
         # Create Collider
         row = layout.row(align=True)
@@ -268,22 +269,25 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.label(text='Add Complex Collider')
 
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
         # Auto Convex
         box = layout.box()
         col = box.column(align=True)
         row = col.row(align=True)
         row.prop(scene, 'convex_decomp_depth')
         row.prop(scene, 'maxNumVerticesPerCH')
+        op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+        op.addon_name = addon_name
+        op.prefs_tabs = 'VHACD'
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         row = col.row(align=True)
 
         if prefs.executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
-            from .. import bl_info
             op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
-            op.addon_name = bl_info["name"]
+            op.addon_name = addon_name
             op.prefs_tabs = 'VHACD'
 
         # Conversion
@@ -305,6 +309,17 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
     def draw(self, context):
         layout = self.layout
+        scene = context.scene
+
+        col = layout.column(align = True)
+        row = col.row(align=True)
+        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Collider Groups')
+        row = col.row(align=True)
+        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Physics Materials')
+
+        row = layout.row(align=True)
+        row.prop(scene, 'display_type', text='Display as')
+
         draw_visibility_selection_menu(layout)
 
 
@@ -317,20 +332,17 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        row = layout.row()
-        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
-
         col = layout.column(align=True)
         row = col.row()
+        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
+        row = col.row()
         row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "asset_list_index")
-
-
 
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Collider Settings"
+    bl_label = "Creation Settings"
 
     def draw(self, context):
         layout = self.layout
@@ -338,19 +350,18 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
 
         # Choose Naming Preset
         row = layout.row(align=True)
-        row.label(text='Naming')
-
-        row = layout.row(align=True)
         row.label(text='Creation Settings')
+
         row = layout.row(align=True)
         row.prop(scene, "my_hide")
-
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop(scene, "my_collision_shading_view")
         row = col.row(align=True)
-        row.prop(scene, "my_space")
-        row = col.row(align=True)
         row.prop(scene, "wireframe_mode")
+        # row = col.row(align=True)
+        # row.prop(scene, "creation_mode")
+
+
         row = col.row(align=True)
-        row.prop(scene, "creation_mode")
+        row.prop(scene, "my_space")

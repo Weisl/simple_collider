@@ -21,7 +21,7 @@ CUBE_FACE_INDICES = (
 class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
     bl_idname = "mesh.add_minimum_bounding_box"
-    bl_label = "Add Minimum Box"
+    bl_label = "Oriented Minimum BBox"
     bl_description = 'Create bounding box collisions based on the selection'
 
     def gen_cube_verts(self):

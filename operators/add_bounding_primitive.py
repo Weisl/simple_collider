@@ -111,12 +111,6 @@ def draw_viewport_overlay(self, context):
     value = str(scene.my_hide)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(H)', type='bool')
 
-    label = "Opacity"
-    value = self.current_settings_dic['alpha']
-    value = '{initial_value:.3f}'.format(initial_value=value)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(A)', type='modal',
-                        highlight=self.opacity_active)
-
     label = 'Persistent Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
@@ -155,6 +149,12 @@ def draw_viewport_overlay(self, context):
     label = "Toggle X Ray "
     value = str(self.x_ray)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)', type='bool')
+
+    label = "Opacity"
+    value = self.current_settings_dic['alpha']
+    value = '{initial_value:.3f}'.format(initial_value=value)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(A)', type='modal',
+                        highlight=self.opacity_active)
 
     label = "Shrink/Inflate"
     value = self.current_settings_dic['discplace_offset']
@@ -771,7 +771,7 @@ class OBJECT_OT_add_bounding_object():
 
                         remove_materials(obj)
                         for mat in data['material_slots']:
-                            set_physics_material(obj, bpy.data.materials[mat])
+                            set_physics_material(obj, mat)
 
                         self.del_displace_modifier(context, obj)
                         self.del_decimate_modifier(context, obj)
@@ -861,6 +861,7 @@ class OBJECT_OT_add_bounding_object():
             self.set_collisions_wire_preview(scene.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE':
+
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
