@@ -267,13 +267,13 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         # special Collider Creation
         # layout.separator()
         row = layout.row(align=True)
-        row.label(text='Add Complex Collider')
+        row.label(text='Auto Convex')
 
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
         # Auto Convex
-        box = layout.box()
-        col = box.column(align=True)
+        # box = layout.box()
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.prop(scene, 'convex_decomp_depth')
         row.prop(scene, 'maxNumVerticesPerCH')
@@ -336,7 +336,7 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         row = col.row()
         row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
         row = col.row()
-        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "asset_list_index")
+        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
 
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):

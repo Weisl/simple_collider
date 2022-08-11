@@ -129,9 +129,11 @@ def register():
             "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
                                                      default="SIMPLE_COMPLEX")
 
+
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
+
 
 
 def unregister():

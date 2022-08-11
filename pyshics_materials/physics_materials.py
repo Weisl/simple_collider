@@ -2,7 +2,7 @@ import bpy
 from bpy.props import StringProperty
 from bpy.types import UIList
 
-from .material_functions import set_physics_material, remove_materials, make_physics_material
+from .material_functions import set_physics_material, remove_materials, create_material
 
 
 class MATERIAL_OT_physics_material_create(bpy.types.Operator):
@@ -36,7 +36,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
         return {'CANCELLED'}
 
     def execute(self, context):
-        physics_material = make_physics_material(self.my_baseName, self.rgb_controller)
+        physics_material = create_material(self.my_baseName, self.rgb_controller)
         return {"FINISHED"}
 
 

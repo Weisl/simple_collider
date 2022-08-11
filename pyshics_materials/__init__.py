@@ -15,8 +15,7 @@ def register():
     scene = bpy.types.Scene
     material = bpy.types.Material
 
-    # Scene.asset_list_index = bpy.props.IntProperty(name = "Index for lis one", default=0, get=getListIndex)
-    scene.asset_list_index = bpy.props.IntProperty(name="Index for lis one", default=0)
+    scene.material_list_index = bpy.props.IntProperty(name="Index for material list", default=0)
 
     # register variables saved in the blender scene¶
 
@@ -33,7 +32,6 @@ def register():
     for cls in classes:
         register_class(cls)
 
-
 def unregister():
     scene = bpy.types.Scene
     material = bpy.types.Material
@@ -46,4 +44,4 @@ def unregister():
     # delete variables saved in the scenes file
     del material.edit
     del scene.DefaultMeshMaterial
-    del scene.asset_list_index
+    del scene.material_list_index

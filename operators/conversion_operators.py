@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..pyshics_materials.material_functions import set_physics_material, make_physics_material, remove_materials
+from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
 collider_shapes = ['meshColSuffix', 'boxColSuffix', 'sphereColSuffix', 'convexColSuffix']
 
@@ -160,7 +160,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 if scene.DefaultMeshMaterial:
                     set_physics_material(obj, scene.DefaultMeshMaterial.name)
                 else:
-                    default_material = make_physics_material('Material', (1, 1, 1, 1))
+                    default_material = create_material('Material', (1, 1, 1, 1))
                     bpy.context.scene.DefaultMeshMaterial = default_material
                     set_physics_material(obj, default_material.name)
 
