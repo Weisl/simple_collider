@@ -11,7 +11,13 @@ from . import conversion_operators
 from . import visibility_selection_deletion
 from . import visibility_settings
 
+# from visibility_selection_deletion import mode_items
+#
+# class VisibilityToggleProperty(bpy.types.PropertyGroup):
+#     for item in mode_items:
+#
 classes = (
+    # VisibilityToggleProperty,
     add_bounding_box.OBJECT_OT_add_bounding_box,
     add_minimum_bounding_box.OBJECT_OT_add_aligned_bounding_box,
     add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder,
@@ -48,6 +54,7 @@ classes = (
     visibility_selection_deletion.COLLISION_OT_all_hide,
     visibility_selection_deletion.COLLISION_OT_non_collider_show,
     visibility_selection_deletion.COLLISION_OT_non_collider_hide,
+    visibility_selection_deletion.COLLISION_OT_toggle_collider_visibility,
     visibility_settings.VIEW3D_OT_object_view,
     visibility_settings.VIEW3D_OT_material_view,
 )
@@ -67,6 +74,10 @@ def register():
     # Display setting of the bounding object in the viewport
     scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation",
                                            description="Hide Bounding Object After Creation.", default=False)
+
+    # Display setting of the bounding object in the viewport
+    scene.visibility_toggle_all = bpy.props.BoolProperty(name="Toggle Visibility",
+                                                         description="", default=False)
 
     scene.my_collision_shading_view = bpy.props.EnumProperty(name="Display",
                                                              description='How to display the collision in the viewport.',
@@ -104,6 +115,8 @@ def register():
                                                          ('ALWAYS', "Always",
                                                           "The wireframes remain visible afterwards.")),
                                                   description="Hide Bounding Object After Creation.", default='PREVIEW')
+
+
 
     # OBJECT
     obj.basename = bpy.props.StringProperty(default='geo', name='Basename',
@@ -150,6 +163,7 @@ def unregister():
     del scene.my_space
     del scene.my_hide
     del scene.wireframe_mode
+    del scene.visible
 
     del obj.basename
     del obj.collider_type

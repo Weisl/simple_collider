@@ -12,7 +12,6 @@ visibility_operators = {
     'COMPLEX': 'Complex',
 }
 
-
 def collider_presets_folder():
     # Make sure there is a directory for presets
     collider_presets = "collider_tools"
@@ -87,8 +86,30 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
+def draw_group_visibility(context, group_identifier, col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text):
+    row = col_01.row(align=True)
+    row.label(text=visibility_operators[group_identifier])
 
-def draw_visibility_selection_menu(layout):
+    row = col_02.row(align=True)
+
+    scene = context.scene
+    if scene.visibility_toggle_all == True:
+        op = row.operator("object.group_visibility_toggle", text=show_text, icon=show_icon)
+    else:
+        op = row.operator("object.group_visibility_toggle", text=hide_text, icon=hide_icon)
+
+    op.mode = group_identifier
+    op = row.operator("object.all_select_collisions", icon=select_icon, text=select_text)
+    op.select = True
+    op.mode = group_identifier
+    op = row.operator("object.all_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op.select = False
+    op.mode = group_identifier
+    op = row.operator("object.all_delete_collisions", icon=delete_icon, text=delete_text)
+    op.mode = group_identifier
+
+
+def draw_visibility_selection_menu(context, layout):
     split_left = layout.split(factor=0.35)
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
@@ -106,47 +127,11 @@ def draw_visibility_selection_menu(layout):
     delete_icon = 'TRASH'
     delete_text = ''
 
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['ALL_COLLIDER'])
+    draw_group_visibility(context, 'ALL_COLLIDER', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+    draw_group_visibility(context, 'OBJECTS', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
 
-    row = col_02.row(align=True)
-    op = row.operator("object.all_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'ALL_COLLIDER'
-    op = row.operator("object.all_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'ALL_COLLIDER'
-    op = row.operator("object.all_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'ALL_COLLIDER'
-    op = row.operator("object.all_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'ALL_COLLIDER'
-    op = row.operator("object.all_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'ALL_COLLIDER'
-
-    row = col_01.row(align=True)
-    row.label(text=visibility_operators['OBJECTS'])
-    row = col_02.row(align=True)
-    op = row.operator("object.non_collider_show_collisions", icon=show_icon, text=show_text)
-    op.hide = False
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_hide_collisions", icon=hide_icon, text=hide_text)
-    op.hide = True
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_select_collisions", icon=select_icon, text=select_text)
-    op.select = True
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_deselect_collisions", icon=deselect_icon, text=deselect_text)
-    op.select = False
-    op.mode = 'OBJECTS'
-    op = row.operator("object.non_collider_delete_collisions", icon=delete_icon, text=delete_text)
-    op.mode = 'OBJECTS'
 
     prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-    # row = layout.row(align=True)
-    # row.prop(prefs, 'useCustomColGroups')
-
     if prefs.useCustomColGroups:
         box = layout.box()
 
@@ -154,61 +139,12 @@ def draw_visibility_selection_menu(layout):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        row = col_01.row(align=True)
-        row.label(text=visibility_operators['SIMPLE_COMPLEX'])
-        row = col_02.row(align=True)
-        op = row.operator("object.simple_complex_show_collisions", icon=show_icon, text=show_text)
-        op.hide = False
-        op.mode = 'SIMPLE_COMPLEX'
-        op = row.operator("object.simple_complex_hide_collisions", icon=hide_icon, text=hide_text)
-        op.hide = True
-        op.mode = 'SIMPLE_COMPLEX'
-        op = row.operator("object.simple_complex_select_collisions", icon=select_icon, text=select_text)
-        op.select = True
-        op.mode = 'SIMPLE_COMPLEX'
-        op = row.operator("object.simple_complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
-        op.select = False
-        op.mode = 'SIMPLE_COMPLEX'
-        op = row.operator("object.simple_complex_delete_collisions", icon=delete_icon, text=delete_text)
-        op.mode = 'SIMPLE_COMPLEX'
-
-        row = col_01.row(align=True)
-        row.label(text=visibility_operators['SIMPLE'])
-
-        row = col_02.row(align=True)
-        op = row.operator("object.simple_show_collisions", icon=show_icon, text=show_text)
-        op.hide = False
-        op.mode = 'SIMPLE'
-        op = row.operator("object.simple_hide_collisions", icon=hide_icon, text=hide_text)
-        op.hide = True
-        op.mode = 'SIMPLE'
-        op = row.operator("object.simple_select_collisions", icon=select_icon, text=select_text)
-        op.select = True
-        op.mode = 'SIMPLE'
-        op = row.operator("object.simple_deselect_collisions", icon=deselect_icon, text=deselect_text)
-        op.select = False
-        op.mode = 'SIMPLE'
-        op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
-        op.mode = 'SIMPLE'
-
-        row = col_01.row(align=True)
-        row.label(text=visibility_operators['COMPLEX'])
-        row = col_02.row(align=True)
-        op = row.operator("object.complex_show_collisions", icon=show_icon, text=show_text)
-        op.hide = False
-        op.mode = 'COMPLEX'
-        op = row.operator("object.complex_hide_collisions", icon=hide_icon, text=hide_text)
-        op.hide = True
-        op.mode = 'COMPLEX'
-        op = row.operator("object.complex_select_collisions", icon=select_icon, text=select_text)
-        op.select = True
-        op.mode = 'COMPLEX'
-        op = row.operator("object.complex_deselect_collisions", icon=deselect_icon, text=deselect_text)
-        op.select = False
-        op.mode = 'COMPLEX'
-        op = row.operator("object.simple_delete_collisions", icon=delete_icon, text=delete_text)
-        op.mode = 'COMPLEX'
-
+        draw_group_visibility(context, 'SIMPLE_COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
+                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+        draw_group_visibility(context, 'SIMPLE', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
+                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+        draw_group_visibility(context, 'COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
+                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
 
 class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
@@ -320,7 +256,7 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.prop(scene, 'display_type', text='Display as')
 
-        draw_visibility_selection_menu(layout)
+        draw_visibility_selection_menu(context, layout)
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):

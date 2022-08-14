@@ -314,3 +314,46 @@ class COLLISION_OT_non_collider_delete(COLLISION_OT_Deletion):
     bl_idname = "object.non_collider_delete_collisions"
     bl_label = "Delete non Colliders"
     bl_description = 'Delete all objects that are not colliders.'
+
+
+class COLLISION_OT_toggle_collider_visibility(bpy.types.Operator):
+    """Toggle visibility of collider group"""
+    bl_idname = "object.group_visibility_toggle"
+    bl_label = "Toggle Visibility"
+    bl_description = "Toggle the visibility"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    state: bpy.props.StringProperty()
+    mode: bpy.props.EnumProperty(items=mode_items,
+                                 name='Hide Mode',
+                                 default='ALL_COLLIDER'
+                                 )
+
+    def execute(self, context):
+        setVisToggle = False
+        scene = context.scene
+
+        if scene.visibility_toggle_all is None or scene.visibility_toggle_all == False:
+            setVisToggle = True
+
+        obList = []
+
+        for ob in bpy.context.view_layer.objects:
+            # if ob.parent in selected_objs:
+            if self.mode == 'ALL_COLLIDER':
+                if ob.get('isCollider') == True:
+                    obList.append(ob)
+
+            elif self.mode == 'OBJECTS':
+                if not ob.get('isCollider'):
+                    obList.append(ob)
+
+            elif ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                obList.append(ob)
+
+        for ob in obList:
+            ob.hide_viewport = False if setVisToggle == True else True
+
+        scene.visibility_toggle_all = not scene.visibility_toggle_all
+
+        return {'FINISHED'}

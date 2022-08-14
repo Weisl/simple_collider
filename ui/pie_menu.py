@@ -8,7 +8,7 @@ class VIEW3D_MT_collision(Menu):
     bl_label = 'Collision Visibility'
 
     def draw(self, context):
-        draw_visibility_selection_menu(self.layout)
+        draw_visibility_selection_menu(context, self.layout)
 
         self.layout.separator()
 
