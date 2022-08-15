@@ -206,9 +206,6 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
 
     bl_label = "Collider Tools"
 
-    # def draw_header(self, context):
-    #     draw_naming_presets(self, context)
-
     def draw(self, context):
         layout = self.layout
         scene = context.scene
