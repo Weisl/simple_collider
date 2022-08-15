@@ -11,13 +11,46 @@ from . import conversion_operators
 from . import visibility_selection_deletion
 from . import visibility_settings
 
+
 # from visibility_selection_deletion import mode_items
-#
-# class VisibilityToggleProperty(bpy.types.PropertyGroup):
-#     for item in mode_items:
-#
+
+def update_hidden(self, context):
+    print("self.hidden = " + str(self.hidden))
+    for ob in bpy.data.objects:
+        if ob.get('isCollider'):
+            ob.hide_viewport = self.hidden
+    self.hidden = not self.hidden
+
+def update_selected(self, context):
+    print("self.selected = " + str(self.selected))
+    for ob in bpy.data.objects:
+        if ob.get('isCollider'):
+            ob.select_set(self.selected)
+        else:
+            ob.select_set(not self.selected)
+    self.selected = not self.selected
+
+class ColliderGroup(bpy.types.PropertyGroup):
+    name: bpy.props.StringProperty(default='Group')
+    hidden: bpy.props.BoolProperty(default=True, update=update_hidden)
+    selected: bpy.props.BoolProperty(default=False, update=update_selected)
+
+    show_icon = bpy.props.StringProperty(default='HIDE_OFF')
+    hide_icon = bpy.props.StringProperty(default='HIDE_ON')
+    show_text = bpy.props.StringProperty(default='')
+    hide_text = bpy.props.StringProperty(default='')
+
+    select_icon = bpy.props.StringProperty(default='NONE')
+    deselect_icon = bpy.props.StringProperty(default='NONE')
+    select_text = bpy.props.StringProperty(default='Select')
+    deselect_text = bpy.props.StringProperty(default='Deselect')
+
+    delete_icon = bpy.props.StringProperty(default='TRASH')
+    delete_text = bpy.props.StringProperty(default='')
+
+
 classes = (
-    # VisibilityToggleProperty,
+    ColliderGroup,
     add_bounding_box.OBJECT_OT_add_bounding_box,
     add_minimum_bounding_box.OBJECT_OT_add_aligned_bounding_box,
     add_bounding_cylinder.OBJECT_OT_add_bounding_cylinder,
@@ -74,10 +107,6 @@ def register():
     # Display setting of the bounding object in the viewport
     scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation",
                                            description="Hide Bounding Object After Creation.", default=False)
-
-    # Display setting of the bounding object in the viewport
-    scene.visibility_toggle_all = bpy.props.BoolProperty(name="Toggle Visibility",
-                                                         description="", default=False)
 
     scene.my_collision_shading_view = bpy.props.EnumProperty(name="Display",
                                                              description='How to display the collision in the viewport.',
@@ -147,7 +176,12 @@ def register():
     for cls in classes:
         register_class(cls)
 
-
+    # Pointer Properties have to be initialized after classes
+    scene.visibility_toggle_all = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_obj = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_complex_simple = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_complex = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_simple = bpy.props.PointerProperty(type=ColliderGroup)
 
 def unregister():
     from bpy.utils import unregister_class

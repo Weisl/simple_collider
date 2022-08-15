@@ -86,7 +86,20 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
-def draw_group_visibility(context, group_identifier, col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text):
+def draw_group_visibility(context, group_identifier, col_01, col_02):
+    show_icon = 'HIDE_OFF'
+    hide_icon = 'HIDE_ON'
+    show_text = ''
+    hide_text = ''
+
+    select_icon = 'NONE'
+    deselect_icon = 'NONE'
+    select_text = 'Select'
+    deselect_text = 'Deselect'
+
+    delete_icon = 'TRASH'
+    delete_text = ''
+
     row = col_01.row(align=True)
     row.label(text=visibility_operators[group_identifier])
 
@@ -108,43 +121,62 @@ def draw_group_visibility(context, group_identifier, col_01, col_02, show_text, 
     op = row.operator("object.all_delete_collisions", icon=delete_icon, text=delete_text)
     op.mode = group_identifier
 
+def draw_group_properties(context, property, col_01, col_02):
+    scene = context.scene
+
+    row = col_01.row(align=True)
+    row.label(text=property.name)
+
+    # row = col_02.row(align=True)
+    # if property.hidden:
+    #     row.prop(property, 'hidden', text=property.hide_text, icon=property.hide_icon)
+    # else:
+    #     row.prop(property, 'hidden', text=property.show_text, icon=property.show_icon)
+    # if property.selected:
+    #     row.prop(property, 'selected', text=property.select_text, icon=property.select_icon)
+    # else:
+    #     row.prop(property, 'selected', text=property.deselect_text, icon=property.deselect_icon)
+
+
+    row = col_02.row(align=True)
+
+    if property.hidden:
+        row.prop(property, 'hidden', text='', icon='HIDE_OFF')
+    else:
+        row.prop(property, 'hidden', text='', icon='HIDE_ON')
+
+    if property.selected:
+        row.prop(property, 'selected', text='', icon='RESTRICT_SELECT_OFF')
+    else:
+        row.prop(property, 'selected', text='', icon='RESTRICT_SELECT_OFF')
 
 def draw_visibility_selection_menu(context, layout):
     split_left = layout.split(factor=0.35)
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
-    show_icon = 'HIDE_OFF'
-    hide_icon = 'HIDE_ON'
-    show_text = ''
-    hide_text = ''
+    scene = context.scene
+    draw_group_properties(context, scene.visibility_toggle_all, col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_obj, col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_complex_simple, col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_complex, col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_simple, col_01, col_02)
 
-    select_icon = 'NONE'
-    deselect_icon = 'NONE'
-    select_text = 'Select'
-    deselect_text = 'Deselect'
-
-    delete_icon = 'TRASH'
-    delete_text = ''
-
-    draw_group_visibility(context, 'ALL_COLLIDER', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-    draw_group_visibility(context, 'OBJECTS', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-
-
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-    if prefs.useCustomColGroups:
-        box = layout.box()
-
-        split_left = box.split(factor=0.35)
-        col_01 = split_left.column(align=True)
-        col_02 = split_left.column(align=True)
-
-        draw_group_visibility(context, 'SIMPLE_COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-        draw_group_visibility(context, 'SIMPLE', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-        draw_group_visibility(context, 'COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+    # draw_group_visibility(context, 'ALL_COLLIDER', col_01, col_02)
+    # draw_group_visibility(context, 'OBJECTS', col_01, col_02)
+    #
+    #
+    # prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    # if prefs.useCustomColGroups:
+    #     box = layout.box()
+    #
+    #     split_left = box.split(factor=0.35)
+    #     col_01 = split_left.column(align=True)
+    #     col_02 = split_left.column(align=True)
+    #
+    #     draw_group_visibility(context, 'SIMPLE_COMPLEX', col_01, col_02)
+    #     draw_group_visibility(context, 'SIMPLE', col_01, col_02)
+    #     draw_group_visibility(context, 'COMPLEX', col_01, col_02)
 
 class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
@@ -241,7 +273,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Visibility, Selection, Deletion"
+    bl_label = "Display"
 
     def draw(self, context):
         layout = self.layout
@@ -249,9 +281,8 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
         col = layout.column(align = True)
         row = col.row(align=True)
-        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Collider Groups')
-        row = col.row(align=True)
-        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Physics Materials')
+        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Materials')
+        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Groups')
 
         row = layout.row(align=True)
         row.prop(scene, 'display_type', text='Display as')
