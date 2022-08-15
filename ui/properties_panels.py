@@ -3,6 +3,7 @@ import os
 import platform
 import subprocess
 import textwrap
+from bpy.types import Menu
 
 visibility_operators = {
     'ALL_COLLIDER': 'Colliders',
@@ -11,6 +12,42 @@ visibility_operators = {
     'SIMPLE': 'Simple',
     'COMPLEX': 'Complex',
 }
+
+
+def get_addon_name():
+    # Get Addon Name
+    from .. import bl_info
+    return bl_info["name"]
+
+
+def draw_auto_convex(self, context):
+    prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+    scene = context.scene
+    addon_name = get_addon_name()
+
+    # Auto Convex
+    layout = self.layout
+
+    row = layout.row(align=True)
+    row.label(text='Auto Convex')
+
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.prop(scene, 'convex_decomp_depth')
+    row.prop(scene, 'maxNumVerticesPerCH')
+    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+    op.addon_name = addon_name
+    op.prefs_tabs = 'VHACD'
+
+    row = col.row(align=True)
+
+    if prefs.executable_path:
+        row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+    else:
+        op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
+        op.addon_name = addon_name
+        op.prefs_tabs = 'VHACD'
+
 
 def collider_presets_folder():
     # Make sure there is a directory for presets
@@ -86,7 +123,9 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
-def draw_group_visibility(context, group_identifier, col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text):
+
+def draw_group_visibility(context, group_identifier, col_01, col_02, show_text, show_icon, hide_text, hide_icon,
+                          select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text):
     row = col_01.row(align=True)
     row.label(text=visibility_operators[group_identifier])
 
@@ -127,9 +166,10 @@ def draw_visibility_selection_menu(context, layout):
     delete_icon = 'TRASH'
     delete_text = ''
 
-    draw_group_visibility(context, 'ALL_COLLIDER', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-    draw_group_visibility(context, 'OBJECTS', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-
+    draw_group_visibility(context, 'ALL_COLLIDER', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
+                          select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+    draw_group_visibility(context, 'OBJECTS', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon,
+                          select_text, deselect_icon, deselect_text, delete_icon, delete_text)
 
     prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
     if prefs.useCustomColGroups:
@@ -145,6 +185,7 @@ def draw_visibility_selection_menu(context, layout):
                               select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
         draw_group_visibility(context, 'COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
                               select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+
 
 class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
@@ -163,14 +204,13 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
+        row = layout.row(align=True)
+
         # Naming presets
         from ..preferences.naming_preset import OBJECT_MT_collision_presets
-        row = layout.row(align=True)
         row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
 
-        # Get Addon Name
-        from .. import bl_info
-        addon_name = bl_info["name"]
+        addon_name = get_addon_name()
 
         op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
         op.addon_name = addon_name
@@ -200,31 +240,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
-        # special Collider Creation
-        # layout.separator()
-        row = layout.row(align=True)
-        row.label(text='Auto Convex')
-
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-
-        # Auto Convex
-        # box = layout.box()
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(scene, 'convex_decomp_depth')
-        row.prop(scene, 'maxNumVerticesPerCH')
-        op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
-        op.addon_name = addon_name
-        op.prefs_tabs = 'VHACD'
-
-        row = col.row(align=True)
-
-        if prefs.executable_path:
-            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
-        else:
-            op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
-            op.addon_name = addon_name
-            op.prefs_tabs = 'VHACD'
+        draw_auto_convex(self, context)
 
         # Conversion
         # layout.separator()
@@ -247,7 +263,7 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
         row = col.row(align=True)
         row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Collider Groups')
         row = col.row(align=True)
@@ -298,6 +314,58 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         # row = col.row(align=True)
         # row.prop(scene, "creation_mode")
 
-
         row = col.row(align=True)
         row.prop(scene, "my_space")
+
+
+# spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
+class VIEW3D_MT_collision(Menu):
+    bl_label = 'Collision Visibility'
+
+    def draw(self, context):
+        draw_visibility_selection_menu(context, self.layout)
+
+        self.layout.separator()
+        row = self.layout.row(align=True)
+        row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+        self.layout.separator()
+        col = self.layout.column(align=True)
+        col.operator('object.convert_to_collider', icon='PHYSICS')
+        col.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+
+        self.layout.separator()
+
+        draw_auto_convex(self, context)
+
+
+class VIEW3D_MT_PIE_template(Menu):
+    # label is displayed at the center of the pie menu.
+    bl_label = "Collision Pie"
+    bl_idname = "COLLISION_MT_pie_menu"
+
+    def draw(self, context):
+        layout = self.layout
+
+        pie = layout.menu_pie()
+        # operator_enum will just spread all available options
+        # for the type enum of the operator on the pie
+
+        # West
+        pie.operator("mesh.add_bounding_box", icon='MESH_CUBE')
+        # East
+        pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
+        # South
+        other = pie.column()
+        other_menu = other.box().column()
+        # other_menu.scale_x= 2
+        other_menu.menu_contents("VIEW3D_MT_collision")
+
+        # North
+        pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
+
+        # NorthWest
+        pie.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
+
+        # NorthEast
+        pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
