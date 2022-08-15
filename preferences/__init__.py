@@ -1,4 +1,5 @@
 import bpy
+import os
 
 from . import keymap
 from . import naming_preset
@@ -9,8 +10,6 @@ from .preferences import update_panel_category
 # keymap needs to be registered before the preferences UI
 classes = (
     naming_preset.COLLISION_preset,
-    naming_preset.OBJECT_MT_collision_presets,
-
     keymap.COLLISION_OT_add_hotkey_renaming,
     preferences.CollisionAddonPrefs,
 )

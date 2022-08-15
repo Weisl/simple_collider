@@ -5,6 +5,17 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
+def collider_presets_folder():
+    # Make sure there is a directory for presets
+    collider_presets = "collider_tools"
+    collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
+    collider_preset_paths = bpy.utils.preset_paths(collider_presets)
+
+    if (collider_preset_directory not in collider_preset_paths):
+        if (not os.path.exists(collider_preset_directory)):
+            os.makedirs(collider_preset_directory)
+
+    return collider_preset_directory
 
 def get_addon_name():
     # Get Addon Name
@@ -41,79 +52,12 @@ def draw_auto_convex(self, context):
         op.prefs_tabs = 'VHACD'
 
 
-def collider_presets_folder():
-    # Make sure there is a directory for presets
-    collider_presets = "collider_tools"
-    collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
-    collider_preset_paths = bpy.utils.preset_paths(collider_presets)
-
-    if (collider_preset_directory not in collider_preset_paths):
-        if (not os.path.exists(collider_preset_directory)):
-            os.makedirs(collider_preset_directory)
-
-    return collider_preset_directory
-
-
 def label_multiline(context, text, parent):
     chars = int(context.region.width / 7)  # 7 pix on 1 character
     wrapper = textwrap.TextWrapper(width=chars)
     text_lines = wrapper.wrap(text=text)
     for text_line in text_lines:
         parent.label(text=text_line)
-
-
-class EXPLORER_OT_open_folder(bpy.types.Operator):
-    """Open render output directory in Explorer"""
-    bl_idname = "explorer.open_in_explorer"
-    bl_label = "Open Folder"
-    bl_description = "Open preset folder in explorer"
-
-    dirpath: bpy.props.StringProperty()
-
-    def execute(self, context):
-
-        if os.path.isdir(self.dirpath):
-            subprocess.Popen(["explorer.exe", self.dirpath])
-        else:
-            self.report({'ERROR'}, 'Invalid Preset Path')
-            return {'CANCELLED'}
-
-        return {'FINISHED'}
-
-
-class PREFERENCES_OT_open_addon(bpy.types.Operator):
-    """Tooltip"""
-    bl_idname = "preferences.addon_search"
-    bl_label = "Open Addon preferences"
-
-    addon_name: bpy.props.StringProperty()
-    prefs_tabs: bpy.props.StringProperty()
-
-    def execute(self, context):
-
-        bpy.ops.screen.userpref_show()
-
-        bpy.context.preferences.active_section = 'ADDONS'
-        bpy.data.window_managers["WinMan"].addon_search = self.addon_name
-
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-        prefs.prefs_tabs = self.prefs_tabs
-
-        import addon_utils
-        mod = addon_utils.addons_fake_modules.get('collider_tools')
-
-        # mod is None the first time the operation is called :/
-        if mod:
-            mod.bl_info['show_expanded'] = True
-
-            # Find User Preferences area and redraw it
-            for window in bpy.context.window_manager.windows:
-                for area in window.screen.areas:
-                    if area.type == 'USER_PREFERENCES':
-                        area.tag_redraw()
-
-        # bpy.ops.preferences.addon_expand(module=self.addon_name)
-        return {'FINISHED'}
 
 
 def draw_group_properties(context, property, identifier, col_01, col_02):
@@ -170,7 +114,66 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_simple, 'COMPLEX', col_01, col_02)
 
 
+class EXPLORER_OT_open_folder(bpy.types.Operator):
+    """Open render output directory in Explorer"""
+    bl_idname = "explorer.open_in_explorer"
+    bl_label = "Open Folder"
+    bl_description = "Open preset folder in explorer"
 
+    dirpath: bpy.props.StringProperty()
+
+    def execute(self, context):
+
+        if os.path.isdir(self.dirpath):
+            subprocess.Popen(["explorer.exe", self.dirpath])
+        else:
+            self.report({'ERROR'}, 'Invalid Preset Path')
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
+
+class OBJECT_MT_collision_presets(Menu):
+    bl_label = "Naming Preset"
+    preset_subdir = "collider_tools"
+    preset_operator = "script.execute_preset"
+    subclass = 'PresetMenu'
+    draw = Menu.draw_preset
+
+
+class PREFERENCES_OT_open_addon(bpy.types.Operator):
+    """Tooltip"""
+    bl_idname = "preferences.addon_search"
+    bl_label = "Open Addon preferences"
+
+    addon_name: bpy.props.StringProperty()
+    prefs_tabs: bpy.props.StringProperty()
+
+    def execute(self, context):
+
+        bpy.ops.screen.userpref_show()
+
+        bpy.context.preferences.active_section = 'ADDONS'
+        bpy.data.window_managers["WinMan"].addon_search = self.addon_name
+
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs.prefs_tabs = self.prefs_tabs
+
+        import addon_utils
+        mod = addon_utils.addons_fake_modules.get('collider_tools')
+
+        # mod is None the first time the operation is called :/
+        if mod:
+            mod.bl_info['show_expanded'] = True
+
+            # Find User Preferences area and redraw it
+            for window in bpy.context.window_manager.windows:
+                for area in window.screen.areas:
+                    if area.type == 'USER_PREFERENCES':
+                        area.tag_redraw()
+
+        # bpy.ops.preferences.addon_expand(module=self.addon_name)
+        return {'FINISHED'}
 
 
 class VIEW3D_PT_collission(bpy.types.Panel):
@@ -179,6 +182,23 @@ class VIEW3D_PT_collission(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Collider Tools"
+
+
+def draw_naming_presets(self, context):
+    layout = self.layout
+    row = layout.row(align=True)
+
+    row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+
+    addon_name = get_addon_name()
+
+    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+    op.addon_name = addon_name
+    op.prefs_tabs = 'NAMING'
+
+    if platform.system() == 'Windows':
+        op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+        op.dirpath = collider_presets_folder()
 
 
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
@@ -190,21 +210,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        row = layout.row(align=True)
-
-        # Naming presets
-        from ..preferences.naming_preset import OBJECT_MT_collision_presets
-        row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
-
-        addon_name = get_addon_name()
-
-        op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
-        op.addon_name = addon_name
-        op.prefs_tabs = 'NAMING'
-
-        if platform.system() == 'Windows':
-            op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-            op.dirpath = collider_presets_folder()
+        draw_naming_presets(self, context)
 
         # Create Collider
         row = layout.row(align=True)

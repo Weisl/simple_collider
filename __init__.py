@@ -29,6 +29,7 @@ else:
 
 
 def register():
+
     # call the register function of the sub modules
     ui.register()
     operators.register()
