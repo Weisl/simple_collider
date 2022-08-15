@@ -9,6 +9,24 @@ mode_items = [
     ("OBJECTS", "objects", "Show/Hide all complex collisions", 16),
 ]
 
+def main(mode, hide, count = 0):
+    for ob in bpy.context.view_layer.objects:
+        if mode == 'ALL_COLLIDER':
+            if ob.get('isCollider') == True:
+                ob.hide_viewport = hide
+                count += 1
+
+        elif mode == 'OBJECTS':
+            if not ob.get('isCollider'):
+                ob.hide_viewport = hide
+                count += 1
+
+        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+            if ob.get('isCollider') and ob.get('collider_type') == mode:
+                ob.hide_viewport = hide
+                count += 1
+
+    return count
 
 class COLLISION_OT_Visibility(bpy.types.Operator):
     """Hide/Show collision objects"""
@@ -28,25 +46,8 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
                                  )
 
     def execute(self, context):
-        scene = context.scene
-        count = 0
 
-        # objects = [ob.hide_set(True) for ob in bpy.context.view_layer.objects if ob.get('isCollider')]
-        for ob in bpy.context.view_layer.objects:
-            if self.mode == 'ALL_COLLIDER':
-                if ob.get('isCollider') == True:
-                    ob.hide_viewport = self.hide
-                    count += 1
-
-            elif self.mode == 'OBJECTS':
-                if not ob.get('isCollider'):
-                    ob.hide_viewport = self.hide
-                    count += 1
-
-            else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
-                if ob.get('isCollider') and ob.get('collider_type') == self.mode:
-                    ob.hide_viewport = self.hide
-                    count += 1
+        count = main(self.mode, self.hide)
 
         if count == 0:
             if self.hide:

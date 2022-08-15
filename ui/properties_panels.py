@@ -5,14 +5,6 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
-visibility_operators = {
-    'ALL_COLLIDER': 'Colliders',
-    'OBJECTS': "Non Colliders",
-    'SIMPLE_COMPLEX': 'Simple and Complex',
-    'SIMPLE': 'Simple',
-    'COMPLEX': 'Complex',
-}
-
 
 def get_addon_name():
     # Get Addon Name
@@ -124,20 +116,28 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def draw_group_visibility(context, group_identifier, col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                          select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text):
+def draw_group_properties(context, property, identifier, col_01, col_02):
+    select_icon = 'NONE'
+    deselect_icon = 'NONE'
+    select_text = 'Select'
+    deselect_text = 'Deselect'
+
+    delete_icon = 'TRASH'
+    delete_text = ''
+
+    group_identifier = identifier
+    # group_name = property.name
+
     row = col_01.row(align=True)
-    row.label(text=visibility_operators[group_identifier])
+    row.label(text=group_identifier)
 
     row = col_02.row(align=True)
 
-    scene = context.scene
-    if scene.visibility_toggle_all == True:
-        op = row.operator("object.group_visibility_toggle", text=show_text, icon=show_icon)
+    if property.hidden:
+        row.prop(property, 'hidden', text='', icon='HIDE_OFF')
     else:
-        op = row.operator("object.group_visibility_toggle", text=hide_text, icon=hide_icon)
+        row.prop(property, 'hidden', text='', icon='HIDE_ON')
 
-    op.mode = group_identifier
     op = row.operator("object.all_select_collisions", icon=select_icon, text=select_text)
     op.select = True
     op.mode = group_identifier
@@ -153,38 +153,24 @@ def draw_visibility_selection_menu(context, layout):
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
-    show_icon = 'HIDE_OFF'
-    hide_icon = 'HIDE_ON'
-    show_text = ''
-    hide_text = ''
+    scene = context.scene
 
-    select_icon = 'NONE'
-    deselect_icon = 'NONE'
-    select_text = 'Select'
-    deselect_text = 'Deselect'
+    draw_group_properties(context, scene.visibility_toggle_all, 'ALL_COLLIDER', col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_obj, 'OBJECTS', col_01, col_02)
 
-    delete_icon = 'TRASH'
-    delete_text = ''
-
-    draw_group_visibility(context, 'ALL_COLLIDER', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                          select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-    draw_group_visibility(context, 'OBJECTS', col_01, col_02, show_text, show_icon, hide_text, hide_icon, select_icon,
-                          select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = context.preferences.addons[__package__.split('.')[0]].preferences
     if prefs.useCustomColGroups:
         box = layout.box()
-
         split_left = box.split(factor=0.35)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_visibility(context, 'SIMPLE_COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-        draw_group_visibility(context, 'SIMPLE', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
-        draw_group_visibility(context, 'COMPLEX', col_01, col_02, show_text, show_icon, hide_text, hide_icon,
-                              select_icon, select_text, deselect_icon, deselect_text, delete_icon, delete_text)
+        draw_group_properties(context, scene.visibility_toggle_complex_simple, 'SIMPLE_COMPLEX', col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_complex, 'SIMPLE', col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_simple, 'COMPLEX', col_01, col_02)
+
+
+
 
 
 class VIEW3D_PT_collission(bpy.types.Panel):
@@ -257,7 +243,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Visibility, Selection, Deletion"
+    bl_label = "Display"
 
     def draw(self, context):
         layout = self.layout
@@ -265,9 +251,8 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Collider Groups')
-        row = col.row(align=True)
-        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Physics Materials')
+        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Materials')
+        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Groups')
 
         row = layout.row(align=True)
         row.prop(scene, 'display_type', text='Display as')
