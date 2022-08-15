@@ -5,14 +5,13 @@ import rna_keymap_ui
 from tempfile import gettempdir
 
 from .naming_preset import COLLISION_preset
-from .naming_preset import OBJECT_MT_collision_presets
 from ..operators.add_bounding_primitive import create_name_number
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import label_multiline
 from ..ui.properties_panels import collider_presets_folder
-
+from ..ui.properties_panels import OBJECT_MT_collision_presets
 
 
 def update_panel_category(self, context):
@@ -51,7 +50,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "Settings", "settings"), ('NAMING', "Naming", "naming"), ('KEYMAP', "Keymap", "keymap"),
+        items=(('SETTINGS', "Settings", "settings"), ('NAMING', "Presets", "presets"), ('KEYMAP', "Keymap", "keymap"),
                ('UI', "Ui", "ui"), ('VHACD', "Auto Convex", "auto_convex")),
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
@@ -349,22 +348,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             box = layout.box()
 
-            row = box.row(align=True)
-            row.label(text="Naming Settings")
+            # row = box.row(align=True)
+            # row.label(text="Naming Presets")
 
             row = box.row(align=True)
             row.label(text="Presets")
             row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
-
             row.operator("wm.url_open", text="",
                          icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
-
-            if platform.system() == 'Windows':
-                op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-                op.dirpath = collider_presets_folder()
-
             # row = box.row(align=True)
             # row.label(text="Download game engine naming presets")
             # row = box.row(align=True)
@@ -374,6 +367,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             #
             # row.operator("wm.url_open",
             #              text="Unity").url = "https://weisl.github.io//files//default.py"
+
+
+            row.operator("wm.url_open", text="",
+                         icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
+
+            if platform.system() == 'Windows':
+                op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+                op.dirpath = collider_presets_folder()
 
 
             box = layout.box()
