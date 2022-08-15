@@ -206,10 +206,8 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
 
     bl_label = "Collider Tools"
 
-    # HEADER DOES NOT WORK FOR SOME REASON
-    # https://sinestesia.co/blog/tutorials/using-blenders-presets-in-python/
-    # def draw_header_preset(self, _context):
-    #     OBJECT_MT_collision_presets.draw_panel_header(self.layout)
+    # def draw_header(self, context):
+    #     draw_naming_presets(self, context)
 
     def draw(self, context):
         layout = self.layout
