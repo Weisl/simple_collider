@@ -1,14 +1,12 @@
 import bmesh
 import bpy
 import math
-
 import numpy as np
-
-from mathutils import Matrix
-from ..operators.object_pivot_and_ailgn import alignObjects
 from bpy.types import Operator
-from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from mathutils import Matrix
 
+from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..operators.object_pivot_and_ailgn import alignObjects
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -19,10 +17,11 @@ CUBE_FACE_INDICES = (
     (7, 3, 1, 5),
 )
 
+
 class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
     bl_idname = "mesh.add_minimum_bounding_box"
-    bl_label = "Add Minimum Box"
+    bl_label = "Oriented Minimum BBox"
     bl_description = 'Create bounding box collisions based on the selection'
 
     def gen_cube_verts(self):
@@ -104,7 +103,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         return bb_obj
 
-
     def __init__(self):
         super().__init__()
         self.use_modifier_stack = True
@@ -132,6 +130,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.execute(context)
 
         return {'RUNNING_MODAL'}
+
     def execute(self, context):
         # CLEANUP and INIT
         super().execute(context)
@@ -139,7 +138,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         scene = context.scene
         self.type_suffix = self.prefs.boxColSuffix
 
-        #List for storing dictionaries of data used to generate the collision meshes
+        # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
 
@@ -161,29 +160,26 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             else:  # self.obj_mode  == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-
-
-            if scene.creation_mode == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'LOCAL', used_vertices)
 
                 # used_vertices uses local space.
-                #store data needed to generate a bounding box in a dictionary
+                # store data needed to generate a bounding box in a dictionary
                 bounding_box_data['parent'] = obj
                 bounding_box_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(bounding_box_data)
 
-            else: #if scene.creation_mode == 'SELECTION':
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if scene.creation_mode == 'SELECTION':
-
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             ws_vtx_co = verts_co
             verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
@@ -210,7 +206,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             new_collider.parent = parent
             alignObjects(new_collider, parent)
-
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

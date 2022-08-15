@@ -27,24 +27,8 @@ else:
     from . import pyshics_materials
     from . import preferences
 
-import bpy
 
 def register():
-    # register variables saved in the blender scene
-    scene = bpy.types.Scene
-
-    scene.PhysicsIdentifier = bpy.props.StringProperty(
-        default="*COL",
-        description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.',
-        name='Physics Material Filter',
-    )
-
-    scene.DefaultMeshMaterial = bpy.props.PointerProperty(
-        type=bpy.types.Material,
-        name = 'Default Mesh Material',
-        description='The default mesh material will be assigned to any mesh that is converted from a collider to a mesh object'
-    )
-
     # call the register function of the sub modules
     ui.register()
     operators.register()
@@ -56,12 +40,6 @@ def register():
 
 
 def unregister():
-    scene = bpy.types.Scene
-
-    # delete variables saved in the scenes file
-    del scene.PhysicsIdentifier
-    del scene.DefaultMeshMaterial
-
     # call unregister function of the sub-modules
     preferences.unregister()
     pyshics_materials.unregister()

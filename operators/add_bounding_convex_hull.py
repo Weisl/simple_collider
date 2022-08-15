@@ -1,9 +1,10 @@
-import bpy
 import bmesh
+import bpy
 import numpy as np
-
 from bpy.types import Operator
+
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create convex bounding collisions based on the selection"""
@@ -43,7 +44,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         scene = context.scene
         self.type_suffix = self.prefs.convexColSuffix
 
-        #List for storing dictionaries of data used to generate the collision meshes
+        # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
 
@@ -65,10 +66,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             else:  # self.obj_mode  == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if scene.creation_mode == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # update mesh when changing selection in edit mode etc.
                 obj.update_from_editmode()
 
@@ -80,13 +81,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
                 collider_data.append(convex_collision_data)
 
-            else: #if scene.creation_mode == 'SELECTION':
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if scene.creation_mode == 'SELECTION':
-
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
             convex_collision_data['verts_loc'] = verts_co
@@ -121,7 +121,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider.parent = parent
 
-            if scene.creation_mode == 'SELECTION':
+            if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 identityMatrix = np.identity(4)
                 new_collider.matrix_world = identityMatrix
 
@@ -132,7 +132,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             new_collider.name = super().collider_name(basename=parent_name)
-
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

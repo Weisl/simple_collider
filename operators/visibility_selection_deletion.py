@@ -9,6 +9,24 @@ mode_items = [
     ("OBJECTS", "objects", "Show/Hide all complex collisions", 16),
 ]
 
+def main(mode, hide, count = 0):
+    for ob in bpy.context.view_layer.objects:
+        if mode == 'ALL_COLLIDER':
+            if ob.get('isCollider') == True:
+                ob.hide_viewport = hide
+                count += 1
+
+        elif mode == 'OBJECTS':
+            if not ob.get('isCollider'):
+                ob.hide_viewport = hide
+                count += 1
+
+        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+            if ob.get('isCollider') and ob.get('collider_type') == mode:
+                ob.hide_viewport = hide
+                count += 1
+
+    return count
 
 class COLLISION_OT_Visibility(bpy.types.Operator):
     """Hide/Show collision objects"""
@@ -28,25 +46,8 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
                                  )
 
     def execute(self, context):
-        scene = context.scene
-        count = 0
 
-        # objects = [ob.hide_set(True) for ob in bpy.context.view_layer.objects if ob.get('isCollider')]
-        for ob in bpy.context.view_layer.objects:
-            if self.mode == 'ALL_COLLIDER':
-                if ob.get('isCollider') == True:
-                    ob.hide_viewport = self.hide
-                    count += 1
-
-            elif self.mode == 'OBJECTS':
-                if not ob.get('isCollider'):
-                    ob.hide_viewport = self.hide
-                    count += 1
-
-            else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
-                if ob.get('isCollider') and ob.get('collider_type') == self.mode:
-                    ob.hide_viewport = self.hide
-                    count += 1
+        count = main(self.mode, self.hide)
 
         if count == 0:
             if self.hide:
@@ -57,50 +58,60 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class COLLISION_OT_simple_show(COLLISION_OT_Visibility):
     bl_idname = "object.simple_show_collisions"
     bl_label = "Show Simple Colliders"
     bl_description = 'Show all objects that are defined as simple colliders'
+
 
 class COLLISION_OT_simple_hide(COLLISION_OT_Visibility):
     bl_idname = "object.simple_hide_collisions"
     bl_label = "Hide Simple Colliders"
     bl_description = 'Hide all objects that are defined as simple colliders'
 
+
 class COLLISION_OT_complex_show(COLLISION_OT_Visibility):
     bl_idname = "object.complex_show_collisions"
     bl_label = "Show Complex Colliders"
     bl_description = 'Show all objects that are defined as complex colliders'
+
 
 class COLLISION_OT_complex_hide(COLLISION_OT_Visibility):
     bl_idname = "object.complex_hide_collisions"
     bl_label = "Hide Complex Colliders"
     bl_description = 'Hide all objects that are defined as complex colliders'
 
+
 class COLLISION_OT_simple_complex_show(COLLISION_OT_Visibility):
     bl_idname = "object.simple_complex_show_collisions"
     bl_label = "Show Simple and Complex Colliders"
     bl_description = 'Show all objects that are defined as simple and complex colliders'
+
 
 class COLLISION_OT_simple_complex_hide(COLLISION_OT_Visibility):
     bl_idname = "object.simple_complex_hide_collisions"
     bl_label = "Hide Simple and Complex Colliders"
     bl_description = 'Hide all objects that are defined as simple and complex colliders'
 
+
 class COLLISION_OT_all_show(COLLISION_OT_Visibility):
     bl_idname = "object.all_show_collisions"
     bl_label = "Show all Colliders"
     bl_description = 'Show all collider objects: Simple, Complex, Simple and Complex.'
+
 
 class COLLISION_OT_all_hide(COLLISION_OT_Visibility):
     bl_idname = "object.all_hide_collisions"
     bl_label = "Hide all Colliders"
     bl_description = 'Hide all collider objects: Simple, Complex, Simple and Complex.'
 
+
 class COLLISION_OT_non_collider_show(COLLISION_OT_Visibility):
     bl_idname = "object.non_collider_show_collisions"
     bl_label = "Show non Colliders"
     bl_description = 'Show all objects that are not colliders.'
+
 
 class COLLISION_OT_non_collider_hide(COLLISION_OT_Visibility):
     bl_idname = "object.non_collider_hide_collisions"
@@ -152,7 +163,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                     else:
                         ob.select_set(not self.select)
 
-        else: # self.select = False
+        else:  # self.select = False
             for ob in bpy.context.view_layer.objects:
                 if self.mode == 'ALL_COLLIDER':
                     if ob.get('isCollider') == True:
@@ -275,10 +286,12 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
 class COLLISION_OT_simple_delete(COLLISION_OT_Deletion):
     bl_idname = "object.simple_delete_collisions"
     bl_label = "Delete Simple Colliders"
     bl_description = 'Delete all objects that are defined as simple colliders'
+
 
 class COLLISION_OT_complex_delete(COLLISION_OT_Deletion):
     bl_idname = "object.complex_delete_collisions"
@@ -302,3 +315,46 @@ class COLLISION_OT_non_collider_delete(COLLISION_OT_Deletion):
     bl_idname = "object.non_collider_delete_collisions"
     bl_label = "Delete non Colliders"
     bl_description = 'Delete all objects that are not colliders.'
+
+
+class COLLISION_OT_toggle_collider_visibility(bpy.types.Operator):
+    """Toggle visibility of collider group"""
+    bl_idname = "object.group_visibility_toggle"
+    bl_label = "Toggle Visibility"
+    bl_description = "Toggle the visibility"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    state: bpy.props.StringProperty()
+    mode: bpy.props.EnumProperty(items=mode_items,
+                                 name='Hide Mode',
+                                 default='ALL_COLLIDER'
+                                 )
+
+    def execute(self, context):
+        setVisToggle = False
+        scene = context.scene
+
+        if scene.visibility_toggle_all is None or scene.visibility_toggle_all == False:
+            setVisToggle = True
+
+        obList = []
+
+        for ob in bpy.context.view_layer.objects:
+            # if ob.parent in selected_objs:
+            if self.mode == 'ALL_COLLIDER':
+                if ob.get('isCollider') == True:
+                    obList.append(ob)
+
+            elif self.mode == 'OBJECTS':
+                if not ob.get('isCollider'):
+                    obList.append(ob)
+
+            elif ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                obList.append(ob)
+
+        for ob in obList:
+            ob.hide_viewport = False if setVisToggle == True else True
+
+        scene.visibility_toggle_all = not scene.visibility_toggle_all
+
+        return {'FINISHED'}

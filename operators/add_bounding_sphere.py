@@ -7,6 +7,7 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_sphere_name = 'box_collider'
 
+
 def distance_vec(point1: Vector, point2: Vector):
     """Calculate distance between two points."""
     return (point2 - point1).length
@@ -17,7 +18,6 @@ def midpoint(p1, p2):
 
 
 def create_sphere(pos, diameter, segments):
-
     global tmp_sphere_name
 
     # Create an empty mesh and the object.
@@ -35,16 +35,15 @@ def create_sphere(pos, diameter, segments):
     # Construct the bmesh sphere and assign it to the blender mesh.
     bm = bmesh.new()
     if bpy.app.version >= (3, 0, 0):
-        bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, radius=diameter)
+        bmesh.ops.create_uvsphere(bm, u_segments=segments * 2, v_segments=segments, radius=diameter)
     else:
-        bmesh.ops.create_uvsphere(bm, u_segments=segments*2, v_segments=segments, diameter=diameter)
+        bmesh.ops.create_uvsphere(bm, u_segments=segments * 2, v_segments=segments, diameter=diameter)
 
     for f in bm.faces: f.smooth = True
 
     bm.to_mesh(mesh)
     mesh.update()
     bm.clear()
-
 
     return basic_sphere
 
@@ -141,7 +140,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.sphere_segments_active  = not self.sphere_segments_active
+            self.sphere_segments_active = not self.sphere_segments_active
             self.displace_active = False
             self.opacity_active = False
             self.decimate_active = False
@@ -185,22 +184,23 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             else:  # mode == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None: # Skip object if there is no Mesh data to create the collider
+            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
             bounding_sphere_data = {}
 
-            if scene.creation_mode == 'INDIVIDUAL':
-                bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj, used_vertices)
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
+                                                                                                                   used_vertices)
                 bounding_sphere_data['parent'] = obj
                 collider_data.append(bounding_sphere_data)
 
-            else:  # if scene.creation_mode == 'SELECTION':
-            # get list of all vertex coordinates in global space
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+                # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if scene.creation_mode == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             bounding_sphere_data = {}
 
             verts_co = self.transform_vertex_space(verts_co, self.active_obj)
@@ -212,7 +212,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             bm.to_mesh(me)
             bm.free()
 
-            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(self.active_obj, me.vertices)
+            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(
+                self.active_obj, me.vertices)
             bounding_sphere_data['parent'] = self.active_obj
             collider_data = [bounding_sphere_data]
 
