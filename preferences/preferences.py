@@ -1,5 +1,6 @@
 import rna_keymap_ui
 import bpy
+import platform
 import rna_keymap_ui
 from tempfile import gettempdir
 
@@ -10,6 +11,8 @@ from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import label_multiline
+from ..ui.properties_panels import collider_presets_folder
+
 
 
 def update_panel_category(self, context):
@@ -350,25 +353,28 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.label(text="Naming Settings")
 
             row = box.row(align=True)
+            row.label(text="Presets")
             row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
 
-            row = box.row(align=True)
-            row.label(text="Download game engine naming presets")
+            row.operator("wm.url_open", text="",
+                         icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
 
-            row = box.row(align=True)
-            row.label(text="Download Presets:")
-            row.operator("wm.url_open",
-                         text="UE").url = "https://weisl.github.io//files//UE.py"
+            if platform.system() == 'Windows':
+                op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+                op.dirpath = collider_presets_folder()
 
-            row.operator("wm.url_open",
-                         text="Unity").url = "https://weisl.github.io//files//default.py"
+            # row = box.row(align=True)
+            # row.label(text="Download game engine naming presets")
+            # row = box.row(align=True)
+            # row.label(text="Download Presets:")
+            # row.operator("wm.url_open",
+            #              text="UE").url = "https://weisl.github.io//files//UE.py"
+            #
+            # row.operator("wm.url_open",
+            #              text="Unity").url = "https://weisl.github.io//files//default.py"
 
-            row = box.row(align=True)
-            row.label(text="How to install Presets")
-            row.operator("wm.url_open",
-                         text="Documentation").url = "https://weisl.github.io/collider-tools_import_engines/"
 
             box = layout.box()
             boxname = box.box()
@@ -455,70 +461,78 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
+            if platform.system() is not 'Windows':
+                text = "Auto convex is only supported for Windows at this moment."
+                label_multiline(
+                    context=context,
+                    text=text,
+                    parent=layout
+                )
 
-            text = "The auto convex collision generation requires the V-hacd library to work."
-            label_multiline(
-                context=context,
-                text=text,
-                parent=layout
-            )
-
-            texts = []
-            if not self.executable_path or not self.data_path:
-                texts.append(
-                    "1. Download the V-hacd executable from the link below (Download V-hacd). If you encounter any issues, try using the Chrome browser. Edge requires you to confirm the download for security reasons. (optional) Copy the downloaded executable to another directory on your hard drive.")
-                texts.append(
-                    "2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
-                texts.append(
-                    "3. The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
-
-                box = layout.box()
-                for text in texts:
-                    label_multiline(
-                        context=context,
-                        text=text,
-                        parent=box
-                    )
-
-            row = layout.row(align=True)
-            row.label(text="1. Download V-HACD")
-            row.operator("wm.url_open",
-                         text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/app/TestVHACD.exe"
-            # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
-
-            row = layout.row()
-            if self.executable_path:
-                row.prop(self, 'executable_path', text='2. V-hacd .exe path')
             else:
-                row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
+                text = "The auto convex collision generation requires the V-hacd library to work."
+                label_multiline(
+                    context=context,
+                    text=text,
+                    parent=layout
+                )
 
-            row = layout.row()
-            if self.data_path:
-                row.prop(self, "data_path", text="3. Temporary Data Path")
-            else:
-                row.prop(self, "data_path", text="3. Temporary Data Path", icon="ERROR")
+                texts = []
+                if not self.executable_path or not self.data_path:
+                    texts.append(
+                        "1. Download the V-hacd executable from the link below (Download V-hacd). If you encounter any issues, try using the Chrome browser. Edge requires you to confirm the download for security reasons. (optional) Copy the downloaded executable to another directory on your hard drive.")
+                    texts.append(
+                        "2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
+                    texts.append(
+                        "3. The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
 
-            box = layout.box()
-            row = box.row()
-            row.label(text="Information about the executable: V-Hacd Github")
-            row = box.row()
-            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                    box = layout.box()
+                    for text in texts:
+                        label_multiline(
+                            context=context,
+                            text=text,
+                            parent=box
+                        )
 
-            if self.executable_path:
+                row = layout.row(align=True)
+                row.label(text="1. Download V-HACD")
+                row.operator("wm.url_open",
+                             text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/app/TestVHACD.exe"
+                # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
 
-                layout.separator()
+                row = layout.row()
+                if self.executable_path:
+                    row.prop(self, 'executable_path', text='2. V-hacd .exe path')
+                else:
+                    row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
+
+                row = layout.row()
+                if self.data_path:
+                    row.prop(self, "data_path", text="3. Temporary Data Path")
+                else:
+                    row.prop(self, "data_path", text="3. Temporary Data Path", icon="ERROR")
 
                 box = layout.box()
                 row = box.row()
-                row.label(text="Generation Settings")
+                row.label(text="Information about the executable: V-Hacd Github")
                 row = box.row()
-                row.label(text="Parameter Information")
+                row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
 
                 if self.executable_path:
-                    row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
-                    for propName in self.vhacd_props_config:
-                        row = box.row()
-                        row.prop(self, propName)
-                else:
+
+                    layout.separator()
+
+                    box = layout.box()
                     row = box.row()
-                    row.label(text="Install V-HACD", icon="ERROR")
+                    row.label(text="Generation Settings")
+                    row = box.row()
+                    row.label(text="Parameter Information")
+
+                    if self.executable_path:
+                        row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                        for propName in self.vhacd_props_config:
+                            row = box.row()
+                            row.prop(self, propName)
+                    else:
+                        row = box.row()
+                        row.label(text="Install V-HACD", icon="ERROR")

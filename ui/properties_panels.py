@@ -5,6 +5,18 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
+def collider_presets_folder():
+    # Make sure there is a directory for presets
+    collider_presets = "collider_tools"
+    collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
+    collider_preset_paths = bpy.utils.preset_paths(collider_presets)
+
+    if (collider_preset_directory not in collider_preset_paths):
+        if (not os.path.exists(collider_preset_directory)):
+            os.makedirs(collider_preset_directory)
+
+    return collider_preset_directory
+
 
 def get_addon_name():
     # Get Addon Name
@@ -23,22 +35,30 @@ def draw_auto_convex(self, context):
     row = layout.row(align=True)
     row.label(text='Auto Convex')
 
-    col = layout.column(align=True)
-    row = col.row(align=True)
-    row.prop(scene, 'convex_decomp_depth')
-    row.prop(scene, 'maxNumVerticesPerCH')
-    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
-    op.addon_name = addon_name
-    op.prefs_tabs = 'VHACD'
-
-    row = col.row(align=True)
-
-    if prefs.executable_path:
-        row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+    if platform.system() is not 'Windows':
+        text = "Auto convex is only supported for Windows at this moment."
+        label_multiline(
+            context=context,
+            text=text,
+            parent=layout
+        )
     else:
-        op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(scene, 'convex_decomp_depth')
+        row.prop(scene, 'maxNumVerticesPerCH')
+        op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
+
+        row = col.row(align=True)
+
+        if prefs.executable_path:
+            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+        else:
+            op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
+            op.addon_name = addon_name
+            op.prefs_tabs = 'VHACD'
 
 
 def collider_presets_folder():
@@ -183,8 +203,8 @@ class VIEW3D_PT_collission(bpy.types.Panel):
 
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
-
     bl_label = "Collider Tools"
+
 
     def draw(self, context):
         layout = self.layout
@@ -244,6 +264,7 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Display"
+    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -264,6 +285,7 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Physics Materials"
+    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -280,6 +302,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Creation Settings"
+    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -305,23 +328,60 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
 
 # spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
 class VIEW3D_MT_collision(Menu):
-    bl_label = 'Collision Visibility'
+    bl_label = 'Collision Creation'
 
     def draw(self, context):
-        draw_visibility_selection_menu(context, self.layout)
+        row = self.layout.row(align=True)
+        row.label(text='Generation')
 
-        self.layout.separator()
         row = self.layout.row(align=True)
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+        draw_auto_convex(self, context)
 
         self.layout.separator()
         col = self.layout.column(align=True)
         col.operator('object.convert_to_collider', icon='PHYSICS')
         col.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
+
+# spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
+class VIEW3D_MT_collision_visibility(Menu):
+    bl_label = 'Collision Visibility'
+
+    def draw(self, context):
+        scene = context.scene
+
+        row = self.layout.row(align=True)
+        row.label(text='Display')
+
+        self.layout.separator()
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Materials')
+        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Groups')
+        row.prop(scene, 'display_type', text='Display as')
+
+        draw_visibility_selection_menu(context, self.layout)
+
+
+# spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
+class VIEW3D_MT_collision_physics_materials(Menu):
+    bl_label = 'Physics Materials'
+
+    def draw(self, context):
+        scene = context.scene
+
+        row = self.layout.row(align=True)
+        row.label(text='Physics Materials')
+
         self.layout.separator()
 
-        draw_auto_convex(self, context)
+        col = self.layout.column(align=True)
+        row = col.row()
+        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
+        row = col.row()
+        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
 
 
 class VIEW3D_MT_PIE_template(Menu):
@@ -340,11 +400,21 @@ class VIEW3D_MT_PIE_template(Menu):
         pie.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         # East
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
+
         # South
-        other = pie.column()
-        other_menu = other.box().column()
-        # other_menu.scale_x= 2
-        other_menu.menu_contents("VIEW3D_MT_collision")
+        box = pie.split()
+
+        # b = box.box()
+        # column = b.column()
+        # column.menu_contents("VIEW3D_MT_collision_visibility")
+
+        b = box.box()
+        column = b.column()
+        column.menu_contents("VIEW3D_MT_collision")
+
+        # b = box.box()
+        # column = b.column()
+        # column.menu_contents("VIEW3D_MT_collision_physics_materials")
 
         # North
         pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
