@@ -1,4 +1,5 @@
 import bpy
+import os
 
 from . import keymap
 from . import naming_preset

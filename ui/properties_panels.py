@@ -5,6 +5,17 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
+def collider_presets_folder():
+    # Make sure there is a directory for presets
+    collider_presets = "collider_tools"
+    collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
+    collider_preset_paths = bpy.utils.preset_paths(collider_presets)
+
+    if (collider_preset_directory not in collider_preset_paths):
+        if (not os.path.exists(collider_preset_directory)):
+            os.makedirs(collider_preset_directory)
+
+    return collider_preset_directory
 
 def get_addon_name():
     # Get Addon Name
@@ -39,19 +50,6 @@ def draw_auto_convex(self, context):
         op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
-
-
-def collider_presets_folder():
-    # Make sure there is a directory for presets
-    collider_presets = "collider_tools"
-    collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
-    collider_preset_paths = bpy.utils.preset_paths(collider_presets)
-
-    if (collider_preset_directory not in collider_preset_paths):
-        if (not os.path.exists(collider_preset_directory)):
-            os.makedirs(collider_preset_directory)
-
-    return collider_preset_directory
 
 
 def label_multiline(context, text, parent):
@@ -139,6 +137,7 @@ class OBJECT_MT_collision_presets(Menu):
     bl_label = "Naming Preset"
     preset_subdir = "collider_tools"
     preset_operator = "script.execute_preset"
+    subclass = 'PresetMenu'
     draw = Menu.draw_preset
 
 
@@ -175,6 +174,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 
         # bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
+
 
 class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
