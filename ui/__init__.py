@@ -3,6 +3,7 @@ from . import properties_panels
 classes = (
     properties_panels.EXPLORER_OT_open_folder,
     properties_panels.PREFERENCES_OT_open_addon,
+    properties_panels.OBJECT_MT_collision_presets,
     properties_panels.VIEW3D_MT_collision,
     properties_panels.VIEW3D_PT_collission_panel,
     properties_panels.VIEW3D_PT_collission_visibility_panel,

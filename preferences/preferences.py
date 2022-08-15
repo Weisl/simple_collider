@@ -4,12 +4,12 @@ import rna_keymap_ui
 from tempfile import gettempdir
 
 from .naming_preset import COLLISION_preset
-from .naming_preset import OBJECT_MT_collision_presets
 from ..operators.add_bounding_primitive import create_name_number
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import label_multiline
+from ..ui.properties_panels import OBJECT_MT_collision_presets
 
 
 def update_panel_category(self, context):
