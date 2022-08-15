@@ -48,7 +48,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "Settings", "settings"), ('NAMING', "Naming", "naming"), ('KEYMAP', "Keymap", "keymap"),
+        items=(('SETTINGS', "Settings", "settings"), ('NAMING', "Presets", "presets"), ('KEYMAP', "Keymap", "keymap"),
                ('UI', "Ui", "ui"), ('VHACD', "Auto Convex", "auto_convex")),
         default='SETTINGS',
         description='Tabs to toggle different addon settings')
@@ -346,29 +346,26 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             box = layout.box()
 
-            row = box.row(align=True)
-            row.label(text="Naming Settings")
+            # row = box.row(align=True)
+            # row.label(text="Naming Presets")
 
             row = box.row(align=True)
             row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
+            row.operator("wm.url_open", text="",
+                         icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
+            # row = box.row(align=True)
+            # row.label(text="Download game engine naming presets")
+            # row = box.row(align=True)
+            # row.label(text="Download Presets:")
+            # row.operator("wm.url_open",
+            #              text="UE").url = "https://weisl.github.io//files//UE.py"
+            #
+            # row.operator("wm.url_open",
+            #              text="Unity").url = "https://weisl.github.io//files//default.py"
 
-            row = box.row(align=True)
-            row.label(text="Download game engine naming presets")
 
-            row = box.row(align=True)
-            row.label(text="Download Presets:")
-            row.operator("wm.url_open",
-                         text="UE").url = "https://weisl.github.io//files//UE.py"
-
-            row.operator("wm.url_open",
-                         text="Unity").url = "https://weisl.github.io//files//default.py"
-
-            row = box.row(align=True)
-            row.label(text="How to install Presets")
-            row.operator("wm.url_open",
-                         text="Documentation").url = "https://weisl.github.io/collider-tools_import_engines/"
 
             box = layout.box()
             boxname = box.box()
