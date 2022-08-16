@@ -409,6 +409,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             from .keymap import get_hotkey_entry_item
             # Menus and Pies
             kmis.append(get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu'))
+            kmis.append(get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel'))
+            kmis.append(get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel'))
 
             for kmi in kmis:
                 if kmi:

@@ -9,7 +9,8 @@ def remove_hotkey():
     # only works for menues and pie menus
     for km, kmi in addon_keymaps:
         if hasattr(kmi.properties, 'name'):
-            if kmi.properties.name in ['COLLISION_pie_menu']:
+            if kmi.properties.name in ['COLLISION_MT_pie_menu', 'VIEW3D_PT_collission_visibility_panel',
+                                       'VIEW3D_PT_collission_material_panel']:
                 km.keymap_items.remove(kmi)
 
     addon_keymaps.clear()
@@ -31,16 +32,17 @@ def add_hotkey(context=None):
         addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D', region_type='WINDOW')
-        kmi = km.keymap_items.new(idname='wm.call_panel', type='C', value='PRESS', shift=True)
-        kmi.properties.name = 'OBJECT_PT_camera_manager_popup'
-        kmi.active = False
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True)
+        kmi.properties.name = 'VIEW3D_PT_collission_visibility_panel'
+        kmi.active = True
         addon_keymaps.append((km, kmi))
 
-        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D', region_type='WINDOW')
-        kmi = km.keymap_items.new(idname='wm.call_panel', type='C', value='PRESS', alt=True)
-        kmi.properties.name = "CAMERA_MT_pie_menu"
-        kmi.active = False
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D', region_type='WINDOW')
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True, ctrl=True )
+        kmi.properties.name = 'VIEW3D_PT_collission_material_panel'
+        kmi.active = True
         addon_keymaps.append((km, kmi))
+
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
     ''' returns hotkey of specific type, with specific properties.name (keymap is not a dict, so referencing by keys is not enough
