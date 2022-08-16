@@ -207,7 +207,7 @@ class OBJECT_MT_collision_presets(Menu):
     draw = Menu.draw_preset
 
 
-############## PRESET ##############################
+############## PANELS ##############################
 
 class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
@@ -216,8 +216,6 @@ class VIEW3D_PT_collission(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Collider Tools"
 
-
-############## PANELS ##############################
 
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
@@ -267,7 +265,6 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Display"
-    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -288,7 +285,6 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Physics Materials"
-    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -305,7 +301,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Creation Settings"
-    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -406,13 +401,13 @@ class VIEW3D_MT_PIE_template(Menu):
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
 
         # South
-        box = pie.split()
+        split = pie.split()
 
         # b = box.box()
         # column = b.column()
         # column.menu_contents("VIEW3D_MT_collision_visibility")
 
-        b = box.box()
+        b = split.box()
         column = b.column()
         column.menu_contents("VIEW3D_MT_collision_creation")
 

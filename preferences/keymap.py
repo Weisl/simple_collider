@@ -30,17 +30,17 @@ def add_hotkey(context=None):
         kmi.active = True
         addon_keymaps.append((km, kmi))
 
-        # km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D', region_type='WINDOW')
-        # kmi = km.keymap_items.new(idname='wm.call_panel', type='C', value='PRESS', shift=True)
-        # kmi.properties.name = 'OBJECT_PT_camera_manager_popup'
-        # kmi.active = False
-        # addon_keymaps.append((km, kmi))
-        #
-        # km = kc.keymaps.new(name="3D View", space_type='VIEW_3D', region_type='WINDOW')
-        # kmi = km.keymap_items.new(idname='wm.call_panel', type='C', value='PRESS', alt=True)
-        # kmi.properties.name = "CAMERA_MT_pie_menu"
-        # kmi.active = False
-        # addon_keymaps.append((km, kmi))
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D', region_type='WINDOW')
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='C', value='PRESS', shift=True)
+        kmi.properties.name = 'OBJECT_PT_camera_manager_popup'
+        kmi.active = False
+        addon_keymaps.append((km, kmi))
+
+        km = kc.keymaps.new(name="3D View", space_type='VIEW_3D', region_type='WINDOW')
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='C', value='PRESS', alt=True)
+        kmi.properties.name = "CAMERA_MT_pie_menu"
+        kmi.active = False
+        addon_keymaps.append((km, kmi))
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
     ''' returns hotkey of specific type, with specific properties.name (keymap is not a dict, so referencing by keys is not enough
