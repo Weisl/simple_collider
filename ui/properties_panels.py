@@ -331,8 +331,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
 
 ############## MENUS ##############################
 
-
-class VIEW3D_MT_collision(Menu):
+class VIEW3D_MT_collision_creation(Menu):
     bl_label = 'Collision Creation'
 
     def draw(self, context):
@@ -415,7 +414,7 @@ class VIEW3D_MT_PIE_template(Menu):
 
         b = box.box()
         column = b.column()
-        column.menu_contents("VIEW3D_MT_collision")
+        column.menu_contents("VIEW3D_MT_collision_creation")
 
         # b = box.box()
         # column = b.column()
