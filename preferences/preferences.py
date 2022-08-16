@@ -1,4 +1,3 @@
-import rna_keymap_ui
 import bpy
 import platform
 import rna_keymap_ui
@@ -6,12 +5,12 @@ from tempfile import gettempdir
 
 from .naming_preset import COLLISION_preset
 from ..operators.add_bounding_primitive import create_name_number
+from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
-from ..ui.properties_panels import label_multiline
 from ..ui.properties_panels import collider_presets_folder
-from ..ui.properties_panels import OBJECT_MT_collision_presets
+from ..ui.properties_panels import label_multiline
 
 
 def update_panel_category(self, context):
@@ -368,14 +367,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             # row.operator("wm.url_open",
             #              text="Unity").url = "https://weisl.github.io//files//default.py"
 
-
             row.operator("wm.url_open", text="",
                          icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
 
             if platform.system() == 'Windows':
                 op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()
-
 
             box = layout.box()
             boxname = box.box()
@@ -530,7 +527,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     row.label(text="Parameter Information")
 
                     if self.executable_path:
-                        row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                        row.operator("wm.url_open",
+                                     text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
                         for propName in self.vhacd_props_config:
                             row = box.row()
                             row.prop(self, propName)

@@ -20,6 +20,7 @@ classes = (
     properties_panels.VIEW3D_MT_PIE_template,
 )
 
+
 def get_preset_folder_path():
     path = Path(str(__file__))
     parent = path.parent.parent.parent.absolute()
@@ -27,8 +28,8 @@ def get_preset_folder_path():
     collider_presets = "collider_tools"
     collider_addon_directory = os.path.join(parent, collider_presets, "presets")
 
-
     return collider_addon_directory
+
 
 def initialize_presets():
     my_presets = collider_presets_folder()
@@ -47,7 +48,7 @@ def initialize_presets():
     #     except:
     #         pass
 
-        # Copy them
+    # Copy them
     for f in files:
         filepath = os.path.join(my_bundled_presets, f)
         print('FILEPATH = ' + filepath)
@@ -60,14 +61,13 @@ def register():
     for cls in classes:
         register_class(cls)
 
-
     # addon_name = str(__package__.split('.')[0])
     # print("FILE = " + str(__file__))
     # print("PACKAGE = " + str(__package__))
     # print("NAME = " + str(__name__))
 
-
     initialize_presets()
+
 
 def unregister():
     from bpy.utils import unregister_class

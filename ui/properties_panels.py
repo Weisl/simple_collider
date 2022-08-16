@@ -5,6 +5,7 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
+
 def collider_presets_folder():
     # Make sure there is a directory for presets
     collider_presets = "collider_tools"
@@ -213,7 +214,6 @@ def draw_naming_presets(self, context):
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
     bl_label = "Collider Tools"
-
 
     def draw(self, context):
         layout = self.layout

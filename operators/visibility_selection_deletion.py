@@ -9,7 +9,8 @@ mode_items = [
     ("OBJECTS", "objects", "Show/Hide all complex collisions", 16),
 ]
 
-def main(mode, hide, count = 0):
+
+def main(mode, hide, count=0):
     for ob in bpy.context.view_layer.objects:
         if mode == 'ALL_COLLIDER':
             if ob.get('isCollider') == True:
@@ -27,6 +28,7 @@ def main(mode, hide, count = 0):
                 count += 1
 
     return count
+
 
 class COLLISION_OT_Visibility(bpy.types.Operator):
     """Hide/Show collision objects"""

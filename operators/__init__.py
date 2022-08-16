@@ -19,6 +19,7 @@ default_groups_dic = {
     'COMPLEX': 'Complex',
 }
 
+
 def update_hidden(self, context):
     print("self.hidden = " + str(self.hidden))
     for ob in bpy.data.objects:
@@ -55,6 +56,7 @@ class ColliderGroup(bpy.types.PropertyGroup):
 
     delete_icon = bpy.props.StringProperty(default='TRASH')
     delete_text = bpy.props.StringProperty(default='')
+
 
 classes = (
     ColliderGroup,
@@ -99,6 +101,7 @@ classes = (
     visibility_settings.VIEW3D_OT_material_view,
 )
 
+
 def update_display_colliders(self, context):
     for obj in bpy.data.objects:
         if obj.get('isCollider'):
@@ -123,7 +126,8 @@ def register():
                                                              items=(
                                                                  ('SOLID', "Solid", "Display the collider as a solid."),
                                                                  (
-                                                                 'WIRE', "Wire", "Display the collider as a wireframe"),
+                                                                     'WIRE', "Wire",
+                                                                     "Display the collider as a wireframe"),
                                                                  ('BOUNDS', "Bounds",
                                                                   "Display the bounds of the collider")),
                                                              default="SOLID")
@@ -155,8 +159,6 @@ def register():
                                                           "The wireframes remain visible afterwards.")),
                                                   description="Hide Bounding Object After Creation.", default='PREVIEW')
 
-
-
     # OBJECT
     obj.basename = bpy.props.StringProperty(default='geo', name='Basename',
                                             description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).')
@@ -181,7 +183,6 @@ def register():
             "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
                                                      default="SIMPLE_COMPLEX")
 
-
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
@@ -194,6 +195,7 @@ def register():
     scene.visibility_toggle_complex_simple = bpy.props.PointerProperty(type=ColliderGroup)
     scene.visibility_toggle_complex = bpy.props.PointerProperty(type=ColliderGroup)
     scene.visibility_toggle_simple = bpy.props.PointerProperty(type=ColliderGroup)
+
 
 def unregister():
     scene = bpy.types.Scene

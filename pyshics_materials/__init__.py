@@ -32,6 +32,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
+
 def unregister():
     scene = bpy.types.Scene
     material = bpy.types.Material

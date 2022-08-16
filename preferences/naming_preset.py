@@ -1,6 +1,7 @@
 from bl_operators.presets import AddPresetBase
 from bpy.types import Operator
 
+
 class COLLISION_preset(AddPresetBase, Operator):
     '''Naming presets for collisions'''
     bl_idname = "collision.collision_name_preset"

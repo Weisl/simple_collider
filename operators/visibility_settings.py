@@ -23,5 +23,3 @@ class VIEW3D_OT_material_view(bpy.types.Operator):
         context.space_data.shading.type = 'SOLID'
         context.space_data.shading.color_type = 'MATERIAL'
         return {'FINISHED'}
-
-
