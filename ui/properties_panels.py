@@ -124,6 +124,25 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_simple, 'COMPLEX', col_01, col_02)
 
 
+def draw_naming_presets(self, context):
+    layout = self.layout
+    row = layout.row(align=True)
+
+    row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+
+    addon_name = get_addon_name()
+
+    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+    op.addon_name = addon_name
+    op.prefs_tabs = 'NAMING'
+
+    if platform.system() == 'Windows':
+        op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+        op.dirpath = collider_presets_folder()
+
+
+############## OPERATORS ##############################
+
 class EXPLORER_OT_open_folder(bpy.types.Operator):
     """Open render output directory in Explorer"""
     bl_idname = "explorer.open_in_explorer"
@@ -141,14 +160,6 @@ class EXPLORER_OT_open_folder(bpy.types.Operator):
             return {'CANCELLED'}
 
         return {'FINISHED'}
-
-
-class OBJECT_MT_collision_presets(Menu):
-    bl_label = "Naming Preset"
-    preset_subdir = "collider_tools"
-    preset_operator = "script.execute_preset"
-    subclass = 'PresetMenu'
-    draw = Menu.draw_preset
 
 
 class PREFERENCES_OT_open_addon(bpy.types.Operator):
@@ -186,29 +197,24 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         return {'FINISHED'}
 
 
+############## PRESET ##############################
+
+class OBJECT_MT_collision_presets(Menu):
+    bl_label = "Naming Preset"
+    preset_subdir = "collider_tools"
+    preset_operator = "script.execute_preset"
+    subclass = 'PresetMenu'
+    draw = Menu.draw_preset
+
+
+############## PANELS ##############################
+
 class VIEW3D_PT_collission(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
 
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Collider Tools"
-
-
-def draw_naming_presets(self, context):
-    layout = self.layout
-    row = layout.row(align=True)
-
-    row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
-
-    addon_name = get_addon_name()
-
-    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
-    op.addon_name = addon_name
-    op.prefs_tabs = 'NAMING'
-
-    if platform.system() == 'Windows':
-        op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-        op.dirpath = collider_presets_folder()
 
 
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
@@ -259,7 +265,6 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Display"
-    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -280,16 +285,23 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Physics Materials"
-    width = 200
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
 
-        col = layout.column(align=True)
-        row = col.row()
-        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
-        row = col.row()
+        row = layout.row(align=True)
+        row.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
+
+        split_left = layout.split(factor=0.65, align=True)
+        col_01 = split_left.column(align=True)
+        col_02 = split_left.column(align=True)
+
+        mat = bpy.data.materials[scene.material_list_index]
+        col_01.prop(mat, "name", text="")
+        col_02.prop(mat, "diffuse_color", text='')
+
+        row = layout.row(align=True)
         row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
 
 
@@ -297,7 +309,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Creation Settings"
-    width = 200
 
     def draw(self, context):
         layout = self.layout
@@ -321,9 +332,11 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(scene, "my_space")
 
 
-# spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
-class VIEW3D_MT_collision(Menu):
+############## MENUS ##############################
+
+class VIEW3D_MT_collision_creation(Menu):
     bl_label = 'Collision Creation'
+    bl_ui_units_x = 45
 
     def draw(self, context):
         row = self.layout.row(align=True)
@@ -340,7 +353,6 @@ class VIEW3D_MT_collision(Menu):
         col.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
 
-# spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
 class VIEW3D_MT_collision_visibility(Menu):
     bl_label = 'Collision Visibility'
 
@@ -360,7 +372,6 @@ class VIEW3D_MT_collision_visibility(Menu):
         draw_visibility_selection_menu(context, self.layout)
 
 
-# spawn an edit mode selection pie (run while object is in edit mode to get a valid output)
 class VIEW3D_MT_collision_physics_materials(Menu):
     bl_label = 'Physics Materials'
 
@@ -378,6 +389,8 @@ class VIEW3D_MT_collision_physics_materials(Menu):
         row = col.row()
         row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
 
+
+############## PIE ##############################
 
 class VIEW3D_MT_PIE_template(Menu):
     # label is displayed at the center of the pie menu.
@@ -397,16 +410,16 @@ class VIEW3D_MT_PIE_template(Menu):
         pie.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
 
         # South
-        box = pie.split()
+        split = pie.split()
 
+        b = split.box()
+        column = b.column()
+        column.menu_contents("VIEW3D_MT_collision_creation")
+
+        # Additional Boxes in the Pie menu
         # b = box.box()
         # column = b.column()
         # column.menu_contents("VIEW3D_MT_collision_visibility")
-
-        b = box.box()
-        column = b.column()
-        column.menu_contents("VIEW3D_MT_collision")
-
         # b = box.box()
         # column = b.column()
         # column.menu_contents("VIEW3D_MT_collision_physics_materials")

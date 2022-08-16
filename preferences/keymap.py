@@ -9,7 +9,8 @@ def remove_hotkey():
     # only works for menues and pie menus
     for km, kmi in addon_keymaps:
         if hasattr(kmi.properties, 'name'):
-            if kmi.properties.name in ['COLLISION_pie_menu']:
+            if kmi.properties.name in ['COLLISION_MT_pie_menu', 'VIEW3D_PT_collission_visibility_panel',
+                                       'VIEW3D_PT_collission_material_panel']:
                 km.keymap_items.remove(kmi)
 
     addon_keymaps.clear()
@@ -27,6 +28,18 @@ def add_hotkey(context=None):
         km = kc.keymaps.new(name="3D View", space_type='VIEW_3D', region_type='WINDOW')
         kmi = km.keymap_items.new(idname='wm.call_menu_pie', type='C', value='PRESS', ctrl=True, shift=True)
         kmi.properties.name = "COLLISION_MT_pie_menu"
+        kmi.active = True
+        addon_keymaps.append((km, kmi))
+
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D', region_type='WINDOW')
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True)
+        kmi.properties.name = 'VIEW3D_PT_collission_visibility_panel'
+        kmi.active = True
+        addon_keymaps.append((km, kmi))
+
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D', region_type='WINDOW')
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True, ctrl=True )
+        kmi.properties.name = 'VIEW3D_PT_collission_material_panel'
         kmi.active = True
         addon_keymaps.append((km, kmi))
 

@@ -438,7 +438,12 @@ class OBJECT_OT_add_bounding_object():
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
-        set_physics_material(bounding_object, self.prefs.physics_material_name)
+        mat_name = ''
+        if bpy.data.materials[context.scene.material_list_index]:
+            mat_name = bpy.data.materials[context.scene.material_list_index].name
+        else:  # No default material is selected
+            mat_name = self.prefs.physics_material_name
+        set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]

@@ -82,24 +82,38 @@ class MATERIAL_UL_physics_materials(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mat = item
-
         self.use_filter_show = True
 
-        if self.set_initial_state:
-            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-
-            self.filter_name = prefs.physics_material_filter
-            self.set_initial_state = False
-
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            if mat:
-                # Multi prop edit (Checkbox: which mats should be edited)
-                # row.prop(mat, "edit", text="")
+            if self.set_initial_state:
+                prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+                self.filter_name = prefs.physics_material_filter
 
-                row = layout.row(align=True)
-                row.label(text=mat.name)
-                row.operator('material.set_physics_material', text='', icon='MATERIAL').physics_material_name = mat.name
-                row.prop(mat, "diffuse_color", text='')
+                self.set_initial_state = False
+
+            if mat:
+                if self.layout_type in {'DEFAULT','COMPACT'}:
+                    # split_left = layout.split(factor=0.65, align=True)
+                    # col_01 = split_left.column(align=True)
+                    # col_02 = split_left.column(align=True)
+                    #
+                    # col_01.prop(mat, "name", text="",  emboss=False, icon_value=icon)
+                    # # col_01.label(text=mat.name)
+                    # row = col_02.row(align=True)
+                    # row.operator('material.set_physics_material', text='',
+                    #              icon='MATERIAL').physics_material_name = mat.name
+                    # # row.prop(mat, "diffuse_color", text='')
+
+                    row = layout.row(align=True)
+                    row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
+                    row.operator('material.set_physics_material', text='',
+                                 icon='MATERIAL').physics_material_name = mat.name
+
+
+        elif self.layout_type in {'GRID'}:
+            layout.alignment = 'CENTER'
+            layout.label(text="", icon_value=icon)
+
         return
 
     def draw_filter(self, context, layout):
