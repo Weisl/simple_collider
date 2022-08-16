@@ -1,21 +1,22 @@
-import bmesh
 import bpy
 from bpy.types import Operator
-from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..pyshics_materials.material_functions import set_material, make_physics_material, remove_materials
 
-collider_shapes = ['meshColSuffix', 'boxColSuffix','sphereColSuffix', 'convexColSuffix']
+from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
+
+collider_shapes = ['meshColSuffix', 'boxColSuffix', 'sphereColSuffix', 'convexColSuffix']
 
 
 def create_name_number(name, nr):
     nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
     return name + nr
 
-def unique_name(name, i = 1):
+
+def unique_name(name, i=1):
     '''recursive function to find unique name'''
     new_name = create_name_number(name, i)
     while new_name in bpy.data.objects:
-        i=i+1
+        i = i + 1
         new_name = create_name_number(name, i)
     return new_name
 
@@ -56,9 +57,12 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             return {'FINISHED'}
         if status == {'CANCELLED'}:
             return {'CANCELLED'}
+        if status == {'PASS_THROUGH'}:
+            return {'PASS_THROUGH'}
+
 
         elif event.type == 'C' and event.value == 'RELEASE':
-            #toggle through display modes
+            # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
             self.set_name_suffix()
             self.update_names()
@@ -73,7 +77,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         for mat in obj.material_slots:
             dic['material_slots'].append(mat.name)
 
-        dic['color'] = [obj.color[0],obj.color[1],obj.color[2],obj.color[3]]
+        dic['color'] = [obj.color[0], obj.color[1], obj.color[2], obj.color[3]]
         dic['show_wire'] = obj.show_wire
         return dic
 
@@ -102,12 +106,16 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             collections = new_collider.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_collider.name = super().collider_name(basename=obj.name)
+            new_name = super().collider_name(basename=obj.name)
+            new_collider.name = new_name
+            new_collider.data.name = new_name + self.data_suffix
+            new_collider.data.name = new_name + self.data_suffix
 
         # shape = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
         label = "Mesh To Collider"
         super().print_generation_time(label)
         return {'RUNNING_MODAL'}
+
 
 class OBJECT_OT_convert_to_mesh(Operator):
     """Convert existing objects to be a collider"""
@@ -122,11 +130,15 @@ class OBJECT_OT_convert_to_mesh(Operator):
         return wm.invoke_props_dialog(self)
 
     def draw(self, context):
+        scene = context.scene
         layout = self.layout
         col = layout.column()
 
         row = col.row()
-        col.prop(self, "my_string")
+        row.prop(self, "my_string")
+
+        row = col.row()
+        row.prop(scene, "DefaultMeshMaterial", text='Material')
 
     @classmethod
     def poll(cls, context):
@@ -137,7 +149,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
         for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
-                #Reste object properties to regular mesh
+                # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
                 obj.name = unique_name(self.my_string)
@@ -146,11 +158,11 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 # replace collision material
                 remove_materials(obj)
                 if scene.DefaultMeshMaterial:
-                    set_material(obj, scene.DefaultMeshMaterial)
+                    set_physics_material(obj, scene.DefaultMeshMaterial.name)
                 else:
-                    default_material = make_physics_material('Material', (1, 1, 1, 1))
+                    default_material = create_material('Material', (1, 1, 1, 1))
                     bpy.context.scene.DefaultMeshMaterial = default_material
-                    set_material(obj, default_material)
+                    set_physics_material(obj, default_material.name)
 
                 # remove from collision collection
                 prefs = context.preferences.addons[__package__.split('.')[0]].preferences
@@ -167,4 +179,3 @@ class OBJECT_OT_convert_to_mesh(Operator):
                                 bpy.context.scene.collection.objects.link(obj)
 
         return {'FINISHED'}
-

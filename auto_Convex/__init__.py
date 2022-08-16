@@ -1,4 +1,5 @@
 import bpy
+
 from . import add_bounding_auto_convex
 
 classes = (
@@ -7,7 +8,6 @@ classes = (
 
 
 def register():
-
     scene = bpy.types.Scene
     scene.convex_decomp_depth = bpy.props.IntProperty(
         name='Depth',
@@ -29,7 +29,6 @@ def register():
 
     for cls in classes:
         register_class(cls)
-
 
 
 def unregister():

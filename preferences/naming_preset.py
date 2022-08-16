@@ -1,11 +1,6 @@
 from bl_operators.presets import AddPresetBase
-from bpy.types import Operator, Menu
+from bpy.types import Operator
 
-class OBJECT_MT_collision_presets(Menu):
-    bl_label = "Naming Preset"
-    preset_subdir = "collider_tools"
-    preset_operator = "script.execute_preset"
-    draw = Menu.draw_preset
 
 class COLLISION_preset(AddPresetBase, Operator):
     '''Naming presets for collisions'''

@@ -1,27 +1,28 @@
-from math import sqrt, radians
-
-import bpy, bmesh
-from bpy.props import (
-    IntProperty,
-)
+import bpy
 from bpy.types import Operator
+from math import sqrt, radians
 from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'cylindrical_collider'
 
+
 def calc_hypothenuse(a, b):
     """calculate the hypothenuse"""
     return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
 
+
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create cylindrical bounding collisions based on the selection"""
     bl_idname = "mesh.add_bounding_cylinder"
-    bl_label = "Add Cylindrical Collision"
+    bl_label = "Add Cylinder"
     bl_description = 'Create cylindrical bounding collisions based on the selection'
 
-    def generate_dimensions_WS(self, positionsX, positionsY, positionsZ):
+    def generate_dimensions_WS(self, v_co):
+
+        positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
+
         """Generate the dimenstions based on the 3 lists of positions (X,Y,Z)"""
         dimensions = []
         dimensions.append(abs(max(positionsX) - min(positionsX)))
@@ -46,7 +47,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         return radius, depth
 
-    def generate_cylinder_object(self, context, radius, depth, location, rotation_euler = False):
+    def generate_cylinder_object(self, context, radius, depth, location, rotation_euler=False):
         """Create cylindrical collider for every selected object in object mode
         base_object contains a blender object
         name_suffix gets added to the newly created object name
@@ -58,7 +59,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                                             radius=radius,
                                             depth=depth,
                                             end_fill_type='TRIFAN',
-                                            calc_uvs= True,)
+                                            calc_uvs=True, )
 
         new_collider = context.object
         new_collider.name = tmp_name
@@ -81,7 +82,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_global_local_switches = True
 
-        #cylinder specific
+        # cylinder specific
         self.use_vertex_count = True
         self.use_cylinder_axis = True
 
@@ -128,6 +129,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.type_suffix = self.prefs.convexColSuffix
 
         collider_data = []
+        verts_co = []
 
         for obj in context.selected_objects.copy():
 
@@ -142,21 +144,43 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bounding_cylinder_data = {}
 
             if self.obj_mode == 'EDIT':
-                vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
             else:
-                vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            positionsX, positionsY, positionsZ = self.get_point_positions(obj, scene.my_space, vertices)
-            dimensions = self.generate_dimensions_WS(positionsX, positionsY, positionsZ)
-            bounding_box = self.generate_bounding_box(positionsX, positionsY, positionsZ)
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                v_co = self.get_point_positions(obj, scene.my_space, used_vertices)
 
+                dimensions = self.generate_dimensions_WS(v_co)
+                bounding_box = self.generate_bounding_box(v_co)
+
+                radius, depth = self.generate_radius_depth(dimensions)
+
+                bounding_cylinder_data['parent'] = obj
+                bounding_cylinder_data['radius'] = radius
+                bounding_cylinder_data['depth'] = depth
+                bounding_cylinder_data['bbox'] = bounding_box
+                collider_data.append(bounding_cylinder_data)
+
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            if scene.my_space == 'LOCAL':
+                ws_vtx_co = verts_co
+                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+
+            dimensions = self.generate_dimensions_WS(verts_co)
+            bounding_box = self.generate_bounding_box(verts_co)
             radius, depth = self.generate_radius_depth(dimensions)
 
-            bounding_cylinder_data['parent'] = obj
+            bounding_cylinder_data['parent'] = self.active_obj
             bounding_cylinder_data['radius'] = radius
             bounding_cylinder_data['depth'] = depth
             bounding_cylinder_data['bbox'] = bounding_box
-            collider_data.append(bounding_cylinder_data)
+            collider_data = [bounding_cylinder_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -172,10 +196,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 matrix_WS = parent.matrix_world
                 center = sum((Vector(matrix_WS @ Vector(b)) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,
-                                                    rotation_euler=parent.rotation_euler)
+                                                             rotation_euler=parent.rotation_euler)
                 new_collider.scale = parent.scale
 
-            else: # scene.my_space == 'GLOBAL'
+            else:  # scene.my_space == 'GLOBAL'
                 center = sum((Vector(b) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center)
 
@@ -183,10 +207,13 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_collider.name = super().collider_name(basename=parent.name)
+            new_name = super().collider_name(basename=parent.name)
+            new_collider.name = new_name
+            new_collider.data.name = new_name + self.data_suffix
+            new_collider.data.name = new_name + self.data_suffix
+
             self.custom_set_parent(context, parent, new_collider)
 
         super().reset_to_initial_state(context)
         super().print_generation_time("Convex Cylindrical Collider")
         return {'RUNNING_MODAL'}
-
