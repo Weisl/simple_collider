@@ -113,9 +113,12 @@ def draw_visibility_selection_menu(context, layout):
     draw_group_properties(context, scene.visibility_toggle_obj, 'OBJECTS', col_01, col_02)
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
     if prefs.useCustomColGroups:
-        box = layout.box()
-        split_left = box.split(factor=0.35)
+        row = layout.row(align=True)
+        row.label(text='Collider Groups')
+
+        split_left = layout.split(factor=0.35)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
@@ -270,6 +273,9 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
+        draw_visibility_selection_menu(context, layout)
+
+        layout.separator()
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Materials')
@@ -277,8 +283,6 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
         row = layout.row(align=True)
         row.prop(scene, 'display_type', text='Display as')
-
-        draw_visibility_selection_menu(context, layout)
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
