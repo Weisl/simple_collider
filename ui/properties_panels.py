@@ -290,10 +290,18 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        col = layout.column(align=True)
-        row = col.row()
-        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
-        row = col.row()
+        row = layout.row(align=True)
+        row.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
+
+        split_left = layout.split(factor=0.65, align=True)
+        col_01 = split_left.column(align=True)
+        col_02 = split_left.column(align=True)
+
+        mat = bpy.data.materials[scene.material_list_index]
+        col_01.prop(mat, "name", text="")
+        col_02.prop(mat, "diffuse_color", text='')
+
+        row = layout.row(align=True)
         row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
 
 

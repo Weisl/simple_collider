@@ -11,14 +11,18 @@ classes = (
 )
 
 
+def update_material_idx_func(self, context):
+    print("self.material_list_index = " + str(self.material_list_index))
+    self.material_list_index = self.material_list_index % len(bpy.data.materials)
+
+
 def register():
     scene = bpy.types.Scene
     material = bpy.types.Material
 
-    scene.material_list_index = bpy.props.IntProperty(name="Index for material list", default=0)
+    scene.material_list_index = bpy.props.IntProperty(name="Index for material list", default=0, min=0, update=update_material_idx_func)
 
-    # register variables saved in the blender scene¶
-
+    # register variables saved in the blender scene
     scene.DefaultMeshMaterial = bpy.props.PointerProperty(
         type=bpy.types.Material,
         name='Default Mesh Material',
