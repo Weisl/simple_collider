@@ -328,6 +328,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
 
 class VIEW3D_MT_collision_creation(Menu):
     bl_label = 'Collision Creation'
+    bl_ui_units_x = 45
 
     def draw(self, context):
         row = self.layout.row(align=True)
@@ -403,14 +404,14 @@ class VIEW3D_MT_PIE_template(Menu):
         # South
         split = pie.split()
 
-        # b = box.box()
-        # column = b.column()
-        # column.menu_contents("VIEW3D_MT_collision_visibility")
-
         b = split.box()
         column = b.column()
         column.menu_contents("VIEW3D_MT_collision_creation")
 
+        # Additional Boxes in the Pie menu
+        # b = box.box()
+        # column = b.column()
+        # column.menu_contents("VIEW3D_MT_collision_visibility")
         # b = box.box()
         # column = b.column()
         # column.menu_contents("VIEW3D_MT_collision_physics_materials")
