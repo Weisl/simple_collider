@@ -259,10 +259,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
-            # post_matrix = convex_collisions_data['post_matrix']
-
-            # debug_text = ('Collider list "{}" Parent: "{}", Matrix "{}"').format(str(convex_collision), str(parent.name)))
-            # print(debug_text)
 
             for new_collider in convex_collision:
                 new_collider.name = super().collider_name(basename=parent.name)

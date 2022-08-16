@@ -33,7 +33,7 @@ def create_default_material(physics_material_name):
     if physics_material_name and physics_material_name in bpy.data.materials:
         default_material = bpy.data.materials[physics_material_name]
     else:
-        default_material = create_material('COL_DEFAULT', (1, 1, 1, 0.5))
+        default_material = create_material('COL_DEFAULT', (0.75, 0.5, 1, 0.5))
 
     return default_material
 

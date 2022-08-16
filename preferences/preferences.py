@@ -343,12 +343,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
         if self.prefs_tabs == 'NAMING':
-            row = layout.row(align=True)
-
             box = layout.box()
-
-            # row = box.row(align=True)
-            # row.label(text="Naming Presets")
 
             row = box.row(align=True)
             row.label(text="Presets")
@@ -357,24 +352,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
                          icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
-            # row = box.row(align=True)
-            # row.label(text="Download game engine naming presets")
-            # row = box.row(align=True)
-            # row.label(text="Download Presets:")
-            # row.operator("wm.url_open",
-            #              text="UE").url = "https://weisl.github.io//files//UE.py"
-            #
-            # row.operator("wm.url_open",
-            #              text="Unity").url = "https://weisl.github.io//files//default.py"
-
-            row.operator("wm.url_open", text="",
-                         icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
-
             if platform.system() == 'Windows':
                 op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()
 
-            box = layout.box()
+
             boxname = box.box()
             row = box.row()
             row.prop(self, "naming_position", expand=True)
