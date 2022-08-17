@@ -20,7 +20,6 @@ default_groups_enum = [('ALL_COLLIDER', "Colliders", "", '', 1),
 
 def update_hide(self, context):
     print("self.hide = " + str(self.hide))
-    self.count = self.count + 1
     for ob in bpy.context.view_layer.objects:
         if self.mode == 'ALL_COLLIDER':
             if ob.get('isCollider') == True:
@@ -51,7 +50,6 @@ def update_display_colliders(self, context):
 
 
 class ColliderGroup(bpy.types.PropertyGroup):
-    count: bpy.props.IntProperty(name="count", default=0)
     mode: bpy.props.EnumProperty(name="Group",
                                  items=default_groups_enum,
                                  description="",
@@ -59,8 +57,9 @@ class ColliderGroup(bpy.types.PropertyGroup):
 
     hide: bpy.props.BoolProperty(default=False, update=update_hide)
 
-    show_icon: bpy.props.StringProperty(default='HIDE_OFF')
-    hide_icon: bpy.props.StringProperty(default='HIDE_ON')
+    show_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_OFF')
+    hide_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_ON')
+
     show_text: bpy.props.StringProperty(default='')
     hide_text: bpy.props.StringProperty(default='')
 
