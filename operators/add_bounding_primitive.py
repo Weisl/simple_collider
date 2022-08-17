@@ -642,7 +642,11 @@ class OBJECT_OT_add_bounding_object():
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type == 'MESH':
+                count = count + 1
+        return count > 0
 
     def invoke(self, context, event):
         global collider_types
