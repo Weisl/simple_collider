@@ -18,12 +18,19 @@ default_groups_enum = [('ALL_COLLIDER', "Colliders", "", '', 1),
                        ('COMPLEX', "Complex", "", '', 16)]
 
 
-def update_hidden(self, context):
-    print("self.hidden = " + str(self.hidden))
-    for ob in bpy.data.objects:
-        if ob.get('isCollider'):
-            ob.hide_viewport = self.hidden
-    self.hidden = not self.hidden
+def update_hide(self, context):
+    print("self.hide = " + str(self.hide))
+    self.count = self.count + 1
+    for ob in bpy.context.view_layer.objects:
+        if self.mode == 'ALL_COLLIDER':
+            if ob.get('isCollider') == True:
+                ob.hide_viewport = self.hide
+        elif self.mode == 'OBJECTS':
+            if not ob.get('isCollider'):
+                ob.hide_viewport = self.hide
+        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+            if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                ob.hide_viewport = self.hide
 
 
 def update_selected(self, context):
@@ -43,31 +50,14 @@ def update_display_colliders(self, context):
     return {'FINISHED'}
 
 
-def update_collider_visibility(self, context):
-    for ob in bpy.context.view_layer.objects:
-        if self.mode == 'ALL_COLLIDER':
-            if ob.get('isCollider') == True:
-                ob.hide_viewport = self.hidden
-        elif self.mode == 'OBJECTS':
-            if not ob.get('isCollider'):
-                ob.hide_viewport = self.hidden
-        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
-            if ob.get('isCollider') and ob.get('collider_type') == self.mode:
-                ob.hide_viewport = self.hidden
-
-
 class ColliderGroup(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty(default='Group')
-    identifier: bpy.props.StringProperty(default='Group')
-
+    count: bpy.props.IntProperty(name="count", default=0)
     mode: bpy.props.EnumProperty(name="Group",
                                  items=default_groups_enum,
                                  description="",
-                                 default='ALL_COLLIDER',
-                                 update=update_collider_visibility)
+                                 default='ALL_COLLIDER')
 
-    hidden: bpy.props.BoolProperty(default=True, update=update_hidden)
-    selected: bpy.props.BoolProperty(default=False, update=update_selected)
+    hide: bpy.props.BoolProperty(default=False, update=update_hide)
 
     show_icon: bpy.props.StringProperty(default='HIDE_OFF')
     hide_icon: bpy.props.StringProperty(default='HIDE_ON')

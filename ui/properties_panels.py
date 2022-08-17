@@ -78,15 +78,16 @@ def draw_group_properties(context, property, col_01, col_02):
 
     row = col_02.row(align=True)
 
-    if property.hidden:
-        row.prop(property, 'hidden', text=str(property.show_text), icon=str(property.show_icon))
+    if property.hide:
+        row.prop(property, 'hide', text=str(property.hide_text), icon=str(property.hide_icon))
     else:
-        row.prop(property, 'hidden', text=str(property.hide_text), icon=str(property.hide_icon))
+        row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
 
     op = row.operator("object.all_select_collisions", icon=str(property.select_icon), text=str(property.select_text))
     op.select = True
     op.mode = group_identifier
-    op = row.operator("object.all_deselect_collisions", icon=str(property.deselect_icon), text=str(property.deselect_text))
+    op = row.operator("object.all_deselect_collisions", icon=str(property.deselect_icon),
+                      text=str(property.deselect_text))
     op.select = False
     op.mode = group_identifier
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
@@ -104,10 +105,6 @@ def draw_visibility_selection_menu(context, layout):
     draw_group_properties(context, scene.visibility_toggle_obj, col_01, col_02)
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-
-    row = layout.row(align=True)
-    row.prop(prefs, 'useCustomColGroups', text='')
-    row.label(text='Collider Groups')
 
     if prefs.useCustomColGroups:
         split_left = layout.split(factor=0.35)
