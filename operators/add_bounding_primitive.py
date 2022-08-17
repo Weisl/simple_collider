@@ -456,9 +456,6 @@ class OBJECT_OT_add_bounding_object():
         else:
             bounding_object.show_wire = False
 
-        # bounding_object.display_type = scene.display_type
-        bounding_object.hide_render = True
-
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
@@ -808,7 +805,9 @@ class OBJECT_OT_add_bounding_object():
                     self.del_decimate_modifier(context, obj)
 
                 # set the display settings for the collider objects
-                obj.display_type = scene.my_collision_shading_view
+                obj.display_type = scene.display_type
+                obj.hide_render = True
+
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
 

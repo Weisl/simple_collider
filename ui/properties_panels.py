@@ -322,8 +322,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(scene, "my_hide")
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(scene, "my_collision_shading_view")
-        row = col.row(align=True)
         row.prop(scene, "wireframe_mode")
         # row = col.row(align=True)
         # row.prop(scene, "creation_mode")

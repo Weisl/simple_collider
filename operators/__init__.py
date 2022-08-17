@@ -151,17 +151,6 @@ def register():
     scene.visibility_toggle_all = bpy.props.BoolProperty(name="Toggle Visibility",
                                                          description="", default=False)
 
-    scene.my_collision_shading_view = bpy.props.EnumProperty(name="Display",
-                                                             description='How to display the collision in the viewport.',
-                                                             items=(
-                                                                 ('SOLID', "Solid", "Display the collider as a solid."),
-                                                                 (
-                                                                     'WIRE', "Wire",
-                                                                     "Display the collider as a wireframe"),
-                                                                 ('BOUNDS', "Bounds",
-                                                                  "Display the bounds of the collider")),
-                                                             default="SOLID")
-
     # Tranformation space to be used for creating the bounding object.
     scene.my_space = bpy.props.EnumProperty(name="Generation Axis",
                                             items=(('LOCAL', "Local",
@@ -243,7 +232,6 @@ def unregister():
         unregister_class(cls)
 
     # delete custom properties on unregister
-    del scene.my_collision_shading_view
     del scene.my_space
     del scene.my_hide
     del scene.wireframe_mode
