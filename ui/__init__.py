@@ -36,9 +36,9 @@ def initialize_presets():
 
     # Get a list of all the files in your bundled presets folder
     my_bundled_presets = get_preset_folder_path()
-    print('my_bundled_presets ' + str(my_bundled_presets))
+    # print('my_bundled_presets ' + str(my_bundled_presets))
     files = os.listdir(my_bundled_presets)
-    print('list my_bundled_presets ' + str(my_bundled_presets))
+    # print('list my_bundled_presets ' + str(my_bundled_presets))
 
     # if not os.path.isdir(my_presets):
     #     # makedirs() will also create all the parent folders (like "object")
@@ -50,7 +50,7 @@ def initialize_presets():
     # Copy them
     for f in files:
         filepath = os.path.join(my_bundled_presets, f)
-        print('FILEPATH = ' + filepath)
+        # print('FILEPATH = ' + filepath)
         shutil.copy2(filepath, my_presets)
 
 

@@ -443,6 +443,7 @@ class OBJECT_OT_add_bounding_object():
             mat_name = bpy.data.materials[context.scene.material_list_index].name
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
+
         set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
@@ -641,7 +642,11 @@ class OBJECT_OT_add_bounding_object():
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type == 'MESH':
+                count = count + 1
+        return count > 0
 
     def invoke(self, context, event):
         global collider_types
@@ -804,7 +809,9 @@ class OBJECT_OT_add_bounding_object():
                     self.del_decimate_modifier(context, obj)
 
                 # set the display settings for the collider objects
-                obj.display_type = scene.my_collision_shading_view
+                obj.display_type = scene.display_type
+                obj.hide_render = True
+
                 if scene.my_hide:
                     obj.hide_viewport = scene.my_hide
 
