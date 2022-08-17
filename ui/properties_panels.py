@@ -70,35 +70,27 @@ def label_multiline(context, text, parent):
         parent.label(text=text_line)
 
 
-def draw_group_properties(context, property, identifier, col_01, col_02):
-    select_icon = 'NONE'
-    deselect_icon = 'NONE'
-    select_text = 'Select'
-    deselect_text = 'Deselect'
-
-    delete_icon = 'TRASH'
-    delete_text = ''
-
-    group_identifier = identifier
-    # group_name = property.name
+def draw_group_properties(context, property, col_01, col_02):
+    group_identifier = property.mode
 
     row = col_01.row(align=True)
-    row.label(text=group_identifier)
+    row.label(text=str(group_identifier))
 
     row = col_02.row(align=True)
 
-    if property.hidden:
-        row.prop(property, 'hidden', text='', icon='HIDE_OFF')
+    if property.hide:
+        row.prop(property, 'hide', text=str(property.hide_text), icon=str(property.hide_icon))
     else:
-        row.prop(property, 'hidden', text='', icon='HIDE_ON')
+        row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
 
-    op = row.operator("object.all_select_collisions", icon=select_icon, text=select_text)
+    op = row.operator("object.all_select_collisions", icon=str(property.select_icon), text=str(property.select_text))
     op.select = True
     op.mode = group_identifier
-    op = row.operator("object.all_deselect_collisions", icon=deselect_icon, text=deselect_text)
+    op = row.operator("object.all_deselect_collisions", icon=str(property.deselect_icon),
+                      text=str(property.deselect_text))
     op.select = False
     op.mode = group_identifier
-    op = row.operator("object.all_delete_collisions", icon=delete_icon, text=delete_text)
+    op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier
 
 
@@ -109,23 +101,19 @@ def draw_visibility_selection_menu(context, layout):
 
     scene = context.scene
 
-    draw_group_properties(context, scene.visibility_toggle_all, 'ALL_COLLIDER', col_01, col_02)
-    draw_group_properties(context, scene.visibility_toggle_obj, 'OBJECTS', col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_all, col_01, col_02)
+    draw_group_properties(context, scene.visibility_toggle_obj, col_01, col_02)
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-
-    row = layout.row(align=True)
-    row.prop(prefs, 'useCustomColGroups', text='')
-    row.label(text='Collider Groups')
 
     if prefs.useCustomColGroups:
         split_left = layout.split(factor=0.35)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, scene.visibility_toggle_complex_simple, 'SIMPLE_COMPLEX', col_01, col_02)
-        draw_group_properties(context, scene.visibility_toggle_complex, 'SIMPLE', col_01, col_02)
-        draw_group_properties(context, scene.visibility_toggle_simple, 'COMPLEX', col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_complex_simple, col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_complex, col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_simple, col_01, col_02)
 
 
 def draw_naming_presets(self, context):
@@ -269,6 +257,13 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Display"
+
+    def __init__(self):
+        bpy.context.scene.visibility_toggle_all.mode = 'ALL_COLLIDER'
+        bpy.context.scene.visibility_toggle_obj.mode = 'OBJECTS'
+        bpy.context.scene.visibility_toggle_complex_simple.mode = 'SIMPLE_COMPLEX'
+        bpy.context.scene.visibility_toggle_complex.mode = 'COMPLEX'
+        bpy.context.scene.visibility_toggle_simple.mode = 'SIMPLE'
 
     def draw(self, context):
         layout = self.layout

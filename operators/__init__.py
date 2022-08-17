@@ -11,21 +11,25 @@ from . import conversion_operators
 from . import visibility_selection_deletion
 from . import visibility_settings
 
-default_groups_dic = {
-    'ALL_COLLIDER': 'Colliders',
-    'OBJECTS': "Non Colliders",
-    'SIMPLE_COMPLEX': 'Simple and Complex',
-    'SIMPLE': 'Simple',
-    'COMPLEX': 'Complex',
-}
+default_groups_enum = [('ALL_COLLIDER', "Colliders", "", '', 1),
+                       ('OBJECTS', "Non Colliders", "", '', 2),
+                       ('SIMPLE_COMPLEX', "", '', 4),
+                       ('SIMPLE', "Simple", "", '', 8),
+                       ('COMPLEX', "Complex", "", '', 16)]
 
 
-def update_hidden(self, context):
-    print("self.hidden = " + str(self.hidden))
-    for ob in bpy.data.objects:
-        if ob.get('isCollider'):
-            ob.hide_viewport = self.hidden
-    self.hidden = not self.hidden
+def update_hide(self, context):
+    print("self.hide = " + str(self.hide))
+    for ob in bpy.context.view_layer.objects:
+        if self.mode == 'ALL_COLLIDER':
+            if ob.get('isCollider') == True:
+                ob.hide_viewport = self.hide
+        elif self.mode == 'OBJECTS':
+            if not ob.get('isCollider'):
+                ob.hide_viewport = self.hide
+        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+            if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                ob.hide_viewport = self.hide
 
 
 def update_selected(self, context):
@@ -38,24 +42,34 @@ def update_selected(self, context):
     self.selected = not self.selected
 
 
+def update_display_colliders(self, context):
+    for obj in bpy.data.objects:
+        if obj.get('isCollider'):
+            obj.display_type = self.display_type
+    return {'FINISHED'}
+
+
 class ColliderGroup(bpy.types.PropertyGroup):
-    name: bpy.props.StringProperty(default='Group')
-    identifier: bpy.props.StringProperty(default='Group')
-    hidden: bpy.props.BoolProperty(default=True, update=update_hidden)
-    selected: bpy.props.BoolProperty(default=False, update=update_selected)
+    mode: bpy.props.EnumProperty(name="Group",
+                                 items=default_groups_enum,
+                                 description="",
+                                 default='ALL_COLLIDER')
 
-    show_icon = bpy.props.StringProperty(default='HIDE_OFF')
-    hide_icon = bpy.props.StringProperty(default='HIDE_ON')
-    show_text = bpy.props.StringProperty(default='')
-    hide_text = bpy.props.StringProperty(default='')
+    hide: bpy.props.BoolProperty(default=False, update=update_hide)
 
-    select_icon = bpy.props.StringProperty(default='NONE')
-    deselect_icon = bpy.props.StringProperty(default='NONE')
-    select_text = bpy.props.StringProperty(default='Select')
-    deselect_text = bpy.props.StringProperty(default='Deselect')
+    show_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_OFF')
+    hide_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_ON')
 
-    delete_icon = bpy.props.StringProperty(default='TRASH')
-    delete_text = bpy.props.StringProperty(default='')
+    show_text: bpy.props.StringProperty(default='')
+    hide_text: bpy.props.StringProperty(default='')
+
+    select_icon: bpy.props.StringProperty(default='NONE')
+    deselect_icon: bpy.props.StringProperty(default='NONE')
+    select_text: bpy.props.StringProperty(default='Select')
+    deselect_text: bpy.props.StringProperty(default='Deselect')
+
+    delete_icon: bpy.props.StringProperty(default='TRASH')
+    delete_text: bpy.props.StringProperty(default='')
 
 
 classes = (
@@ -100,13 +114,6 @@ classes = (
     visibility_settings.VIEW3D_OT_object_view,
     visibility_settings.VIEW3D_OT_material_view,
 )
-
-
-def update_display_colliders(self, context):
-    for obj in bpy.data.objects:
-        if obj.get('isCollider'):
-            obj.display_type = self.display_type
-    return {'FINISHED'}
 
 
 def register():
@@ -187,7 +194,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    scene.visibility_toggle = default_groups_dic
+    scene.visibility_toggle_list = []
 
     # # Pointer Properties have to be initialized after classes
     scene.visibility_toggle_all = bpy.props.PointerProperty(type=ColliderGroup)
@@ -206,7 +213,6 @@ def unregister():
     del scene.visibility_toggle_complex_simple
     del scene.visibility_toggle_obj
     del scene.visibility_toggle_all
-    del scene.visibility_toggle
 
     from bpy.utils import unregister_class
 
