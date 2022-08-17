@@ -83,7 +83,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     IgnoreShapeForComplex: bpy.props.BoolProperty(name='UE: Complex Naming',
                                                   description='Ignore Shape names for Complex Collisions to work for the Unreal Engine',
                                                   default=False)
-    useCustomColGroups: bpy.props.BoolProperty(name='Use Collision Groups', description='', default=False)
+    useCustomColGroups: bpy.props.BoolProperty(name='Use Collision Groups', description='', default=True)
 
     colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="",
                                                description='Naming used for simple-complex collisions')
