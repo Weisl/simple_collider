@@ -11,11 +11,12 @@ from . import conversion_operators
 from . import visibility_selection_deletion
 from . import visibility_settings
 
-default_groups_enum = [('ALL_COLLIDER', "Colliders", "", '', 1),
-                       ('OBJECTS', "Non Colliders", "", '', 2),
-                       ('SIMPLE_COMPLEX', "", '', 4),
-                       ('SIMPLE', "Simple", "", '', 8),
-                       ('COMPLEX', "Complex", "", '', 16)]
+default_groups_enum = [('ALL_COLLIDER', "Colliders", "Show/Hide all objects that are colliders.", '', 1),
+                       ('OBJECTS', "Non Colliders", "Show/Hide all objects that are not colliders.", '', 2),
+                       ('SIMPLE_COMPLEX', "Simple Complex",
+                        "Show/Hide all objects that are defined as simple and complex colliders.", '', 4),
+                       ('SIMPLE', "Simple", "Show/Hide all objects that are defined as simple colliders.", '', 8),
+                       ('COMPLEX', "Complex", "Show/Hide all objects that are defined as complex colliders.", '', 16)]
 
 
 def update_hide(self, context):
@@ -50,12 +51,34 @@ def update_display_colliders(self, context):
 
 
 class ColliderGroup(bpy.types.PropertyGroup):
+
+    def get_groups_enum(self):
+        '''Set name and description according to type'''
+        for group in default_groups_enum:
+            if group[4] == self["mode"]:
+                self.name = group[1]
+                self.icon = group[3]
+
+        return self["mode"]
+
+    def set_groups_enum(self, val):
+        self["mode"] = val
+        # ColliderGroup.mode.val = str(val)
+
     mode: bpy.props.EnumProperty(name="Group",
                                  items=default_groups_enum,
                                  description="",
-                                 default='ALL_COLLIDER')
+                                 default='ALL_COLLIDER',
+                                 get=get_groups_enum,
+                                 set=set_groups_enum
+                                 )
 
-    hide: bpy.props.BoolProperty(default=False, update=update_hide)
+    name: bpy.props.StringProperty()
+    icon: bpy.props.StringProperty()
+
+    hide: bpy.props.BoolProperty(default=False, update=update_hide,
+                                 name='Disable in Viewport',
+                                 description="Show/Hide all objects that are not colliders.")
 
     show_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_OFF')
     hide_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_ON')

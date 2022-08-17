@@ -36,7 +36,7 @@ def draw_auto_convex(self, context):
     row = layout.row(align=True)
     row.label(text='Auto Convex')
 
-    if platform.system() is not 'Windows':
+    if platform.system() != 'Windows':
         text = "Auto convex is only supported for Windows at this moment."
         label_multiline(
             context=context,
@@ -72,9 +72,10 @@ def label_multiline(context, text, parent):
 
 def draw_group_properties(context, property, col_01, col_02):
     group_identifier = property.mode
+    group_name = property.name
 
     row = col_01.row(align=True)
-    row.label(text=str(group_identifier))
+    row.label(text=group_name)
 
     row = col_02.row(align=True)
 
@@ -290,8 +291,7 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         scene = context.scene
 
-        row = layout.row(align=True)
-        row.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
+
 
         split_left = layout.split(factor=0.65, align=True)
         col_01 = split_left.column(align=True)
@@ -301,9 +301,9 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         col_01.prop(mat, "name", text="")
         col_02.prop(mat, "diffuse_color", text='')
 
-        row = layout.row(align=True)
-        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
-
+        col = layout.column(align=True)
+        col.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
+        col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
