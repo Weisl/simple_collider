@@ -443,6 +443,7 @@ class OBJECT_OT_add_bounding_object():
             mat_name = bpy.data.materials[context.scene.material_list_index].name
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
+
         set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
@@ -454,6 +455,9 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.show_wire = True
         else:
             bounding_object.show_wire = False
+
+        # bounding_object.display_type = scene.display_type
+        bounding_object.hide_render = True
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
