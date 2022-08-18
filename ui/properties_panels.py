@@ -107,7 +107,7 @@ def draw_visibility_selection_menu(context, layout):
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
-    if prefs.useCustomColGroups:
+    if prefs.collider_groups_enabled:
         split_left = layout.split(factor=0.35)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)

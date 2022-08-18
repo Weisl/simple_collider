@@ -463,9 +463,9 @@ class OBJECT_OT_add_bounding_object():
 
     def set_object_color(self, obj):
         if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            obj.color = self.prefs.my_color_simple_complex
+            obj.color = self.prefs.user_group_01_color
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
-            obj.color = self.prefs.my_color_simple
+            obj.color = self.prefs.user_group_02_color
         elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
             obj.color = self.prefs.my_color_complex
 
@@ -475,11 +475,11 @@ class OBJECT_OT_add_bounding_object():
     def get_complexity_suffix(self):
 
         if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            suffix = self.prefs.colSimpleComplex
+            suffix = self.prefs.user_group_01
         elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
-            suffix = self.prefs.colSimple
+            suffix = self.prefs.user_group_02
         elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            suffix = self.prefs.colComplex
+            suffix = self.prefs.user_group_03
 
         return suffix
 
@@ -532,19 +532,19 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        if self.prefs.IgnoreShapeForComplex and self.collision_type[self.collision_type_idx] == 'COMPLEX':
+        if self.prefs.collider_groups_naming_use and self.collision_type[self.collision_type_idx] == 'COMPLEX':
             pre_suffix_componetns = [
-                self.prefs.colPreSuffix,
+                self.prefs.collision_string_prefix,
                 self.get_complexity_suffix(),
-                self.prefs.optionalSuffix
+                self.prefs.collision_string_suffix
             ]
 
         else:
             pre_suffix_componetns = [
-                self.prefs.colPreSuffix,
+                self.prefs.collision_string_prefix,
                 self.type_suffix,
                 self.get_complexity_suffix(),
-                self.prefs.optionalSuffix
+                self.prefs.collision_string_suffix
             ]
 
         name_pre_suffix = ''
@@ -964,7 +964,7 @@ class OBJECT_OT_add_bounding_object():
                 for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
-                self.prefs.my_color_simple_complex[3] = color_alpha
+                self.prefs.user_group_01_color[3] = color_alpha
                 self.current_settings_dic['alpha'] = color_alpha
 
             if self.vertex_count_active:

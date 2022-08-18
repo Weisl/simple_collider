@@ -60,7 +60,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_options = {'REGISTER', 'PRESET'}
 
     def set_export_path(self, path):
-        self.type_suffix = self.prefs.convexColSuffix
+        self.type_suffix = self.prefs.convex_shape_identifier
 
         # Check executable path
         executable_path = bpy.path.abspath(path)

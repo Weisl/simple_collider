@@ -42,7 +42,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.convexColSuffix
+        self.type_suffix = self.prefs.convex_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

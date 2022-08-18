@@ -126,7 +126,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.convexColSuffix
+        self.type_suffix = self.prefs.convex_shape_identifier
 
         collider_data = []
         verts_co = []
