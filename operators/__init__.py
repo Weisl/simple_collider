@@ -13,10 +13,10 @@ from . import visibility_settings
 
 default_groups_enum = [('ALL_COLLIDER', "Colliders", "Show/Hide all objects that are colliders.", '', 1),
                        ('OBJECTS', "Non Colliders", "Show/Hide all objects that are not colliders.", '', 2),
-                       ('SIMPLE_COMPLEX', "Simple Complex",
-                        "Show/Hide all objects that are defined as simple and complex colliders.", '', 4),
-                       ('SIMPLE', "Simple", "Show/Hide all objects that are defined as simple colliders.", '', 8),
-                       ('COMPLEX', "Complex", "Show/Hide all objects that are defined as complex colliders.", '', 16)]
+                       ('USER_01', "User Group 01",
+                        "Show/Hide all objects that are part of User Group 01", '', 4),
+                       ('USER_02', "User Group 02", "Show/Hide all objects that are part of User Group 02", '', 8),
+                       ('USER_03', "User Group 03", "Show/Hide all objects that are part of User Group 03", '', 16)]
 
 
 def update_hide(self, context):
@@ -28,7 +28,7 @@ def update_hide(self, context):
         elif self.mode == 'OBJECTS':
             if not ob.get('isCollider'):
                 ob.hide_viewport = self.hide
-        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+        else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_type') == self.mode:
                 ob.hide_viewport = self.hide
 
@@ -56,7 +56,10 @@ class ColliderGroup(bpy.types.PropertyGroup):
         '''Set name and description according to type'''
         for group in default_groups_enum:
             if group[4] == self["mode"]:
-                self.name = group[1]
+
+                from .add_bounding_primitive import get_complexity_suffix
+                # self.identifier = get_complexity_suffix(group[0])
+                self.name = get_complexity_suffix(group[0])
                 self.icon = group[3]
 
         return self["mode"]
@@ -158,10 +161,8 @@ def register():
 
     scene.display_type = bpy.props.EnumProperty(name="Collider Display",
                                                 items=(
-                                                    # ('TEXTURED', "Textured", "Display the colliders with textures"),
                                                     ('SOLID', "Solid", "Display the colliders as solid"),
                                                     ('WIRE', "Wire", "Display the colliders as wireframe"),
-                                                    # ('BOUNDS', "Bounds", "Display the bounds of the the colliders")
                                                 ),
                                                 default="SOLID",
                                                 update=update_display_colliders)
@@ -191,13 +192,13 @@ def register():
                                                default='BOX')
 
     obj.collider_complexity = bpy.props.EnumProperty(name="collider complexity", items=[
-        ('SIMPLE_COMPLEX', "Simple Complex",
+        ('USER_01', "Simple Complex",
          "(Simple and Complex) Custom value to distinguish different types of collisions in a game engine."),
-        ('SIMPLE', "Simple", "(Simple) Custom value to distinguish different types of collisions in a game engine."),
+        ('USER_02', "Simple", "(Simple) Custom value to distinguish different types of collisions in a game engine."),
         (
-            'COMPLEX', "Complex",
+            'USER_03', "Complex",
             "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
-                                                     default="SIMPLE_COMPLEX")
+                                                     default="USER_01")
 
     from bpy.utils import register_class
     for cls in classes:
@@ -208,18 +209,18 @@ def register():
     # # Pointer Properties have to be initialized after classes
     scene.visibility_toggle_all = bpy.props.PointerProperty(type=ColliderGroup)
     scene.visibility_toggle_obj = bpy.props.PointerProperty(type=ColliderGroup)
-    scene.visibility_toggle_complex_simple = bpy.props.PointerProperty(type=ColliderGroup)
-    scene.visibility_toggle_complex = bpy.props.PointerProperty(type=ColliderGroup)
-    scene.visibility_toggle_simple = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_user_group_01 = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_user_group_02 = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_user_group_03 = bpy.props.PointerProperty(type=ColliderGroup)
 
 
 def unregister():
     scene = bpy.types.Scene
     obj = bpy.types.Object
 
-    del scene.visibility_toggle_simple
-    del scene.visibility_toggle_complex
-    del scene.visibility_toggle_complex_simple
+    del scene.visibility_toggle_user_group_03
+    del scene.visibility_toggle_user_group_02
+    del scene.visibility_toggle_user_group_01
     del scene.visibility_toggle_obj
     del scene.visibility_toggle_all
 

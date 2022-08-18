@@ -112,9 +112,9 @@ def draw_visibility_selection_menu(context, layout):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, scene.visibility_toggle_complex_simple, col_01, col_02)
-        draw_group_properties(context, scene.visibility_toggle_complex, col_01, col_02)
-        draw_group_properties(context, scene.visibility_toggle_simple, col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_user_group_01, col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02)
 
 
 def draw_naming_presets(self, context):
@@ -262,9 +262,10 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     def __init__(self):
         bpy.context.scene.visibility_toggle_all.mode = 'ALL_COLLIDER'
         bpy.context.scene.visibility_toggle_obj.mode = 'OBJECTS'
-        bpy.context.scene.visibility_toggle_complex_simple.mode = 'SIMPLE_COMPLEX'
-        bpy.context.scene.visibility_toggle_complex.mode = 'COMPLEX'
-        bpy.context.scene.visibility_toggle_simple.mode = 'SIMPLE'
+
+        bpy.context.scene.visibility_toggle_user_group_01.mode = 'USER_01'
+        bpy.context.scene.visibility_toggle_user_group_02.mode = 'USER_02'
+        bpy.context.scene.visibility_toggle_user_group_03.mode = 'USER_03'
 
     def draw(self, context):
         layout = self.layout

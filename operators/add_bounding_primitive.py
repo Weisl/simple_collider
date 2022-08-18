@@ -6,7 +6,7 @@ import time
 
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
 
-collider_types = ['SIMPLE_COMPLEX', 'SIMPLE', 'COMPLEX']
+collider_types = ['USER_01', 'USER_02', 'USER_03']
 
 
 def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
@@ -86,6 +86,19 @@ def create_name_number(name, nr):
     nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
     return name + nr
 
+def get_complexity_suffix(complexity_identifier):
+    suffix=''
+    print('complexity_identifier ' + str(complexity_identifier))
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    if complexity_identifier == 'USER_01':
+        suffix = prefs.user_group_01
+    elif complexity_identifier == 'USER_02':
+        suffix = prefs.user_group_02
+    elif complexity_identifier == 'USER_03':
+        suffix = prefs.user_group_03
+
+    return suffix
+
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
@@ -128,7 +141,7 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(V)',
                             type='enum')
 
-    if self.use_type_change:
+    if self.use_shape_change:
         label = "Collider Shape"
         value = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)',
@@ -462,26 +475,15 @@ class OBJECT_OT_add_bounding_object():
         self.set_object_color(bounding_object)
 
     def set_object_color(self, obj):
-        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
+        if self.collision_type[self.collision_type_idx] == 'USER_01':
             obj.color = self.prefs.user_group_01_color
-        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
+        elif self.collision_type[self.collision_type_idx] == 'USER_02':
             obj.color = self.prefs.user_group_02_color
-        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            obj.color = self.prefs.my_color_complex
+        elif self.collision_type[self.collision_type_idx] == 'USER_03':
+            obj.color = self.prefs.user_group_03_color
 
     def set_object_type(self, obj):
         obj['collider_type'] = self.collision_type[self.collision_type_idx]
-
-    def get_complexity_suffix(self):
-
-        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            suffix = self.prefs.user_group_01
-        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
-            suffix = self.prefs.user_group_02
-        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            suffix = self.prefs.user_group_03
-
-        return suffix
 
     def add_to_collections(self, obj, collection_name):
         if collection_name not in bpy.data.collections:
@@ -532,18 +534,18 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        if self.prefs.collider_groups_naming_use and self.collision_type[self.collision_type_idx] == 'COMPLEX':
+        if self.prefs.collider_groups_naming_use and self.collision_type[self.collision_type_idx] == 'USER_03':
             pre_suffix_componetns = [
                 self.prefs.collision_string_prefix,
-                self.get_complexity_suffix(),
+                get_complexity_suffix(self.collision_type[self.collision_type_idx]),
                 self.prefs.collision_string_suffix
             ]
 
         else:
             pre_suffix_componetns = [
                 self.prefs.collision_string_prefix,
-                self.type_suffix,
-                self.get_complexity_suffix(),
+                self.shape_suffix,
+                get_complexity_suffix(self.collision_type[self.collision_type_idx]),
                 self.prefs.collision_string_suffix
             ]
 
@@ -634,8 +636,8 @@ class OBJECT_OT_add_bounding_object():
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
-        self.type_suffix = ''
-        self.use_type_change = False
+        self.shape_suffix = ''
+        self.use_shape_change = False
 
         # UI/UX
         self.ignore_input = False

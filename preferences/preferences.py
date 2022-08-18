@@ -112,7 +112,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
-    collider_groups_naming_use: bpy.props.BoolProperty(name='Use Collider Group Naming',
+    collider_groups_naming_use: bpy.props.BoolProperty(name='Ignore Shape Naming for User Groups',
                                                        description='',
                                                        default=True)
 
@@ -137,22 +137,23 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # UI
 
     # The object color for the bounding object
-    user_group_01_color: bpy.props.FloatVectorProperty(name="Simple Complex Color",
+    user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
                                                        description="Object color and alpha for User Collider Group 01",
                                                        default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
                                                        subtype='COLOR', size=4)
 
     # The object color for the bounding object
-    user_group_02_color: bpy.props.FloatVectorProperty(name="Simple Color",
+    user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
                                                        description="Object color and alpha for User Collider Group 02",
                                                        default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
                                                        size=4)
 
     # The object color for the bounding object
-    user_group_03_color: bpy.props.FloatVectorProperty(name="Complex Color",
+    user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
                                                        description="Object color and alpha for User Collider Group 03.",
                                                        default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
                                                        size=4)
+
 
 
     # Modal Fonts
@@ -260,10 +261,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     props_shapes = [
-        "mesh_shape_identifier",
-        "convex_shape_identifier",
         "box_shape_identifier",
         "sphere_shape_identifier",
+        "convex_shape_identifier",
+        "mesh_shape_identifier",
     ]
 
     props_collider_groups = [
@@ -286,9 +287,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     ui_col_colors = [
-        'my_color_simple_complex',
-        'my_color_simple',
-        'my_color_complex',
+        'user_group_01_color',
+        'user_group_02_color',
+        'user_group_03_color',
     ]
 
     ui_props = [
@@ -356,7 +357,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         if self.prefs_tabs == 'SETTINGS':
 
             row = layout.row()
-            row.label(text='Collection Settings')
+            row.label(text='Collections')
 
             for propName in self.col_props:
                 row = layout.row()
