@@ -147,9 +147,6 @@ def register():
     scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation",
                                            description="Hide Bounding Object After Creation.", default=False)
 
-    # Display setting of the bounding object in the viewport
-    scene.visibility_toggle_all = bpy.props.BoolProperty(name="Toggle Visibility",
-                                                         description="", default=False)
 
     # Tranformation space to be used for creating the bounding object.
     scene.my_space = bpy.props.EnumProperty(name="Generation Axis",
@@ -232,11 +229,10 @@ def unregister():
         unregister_class(cls)
 
     # delete custom properties on unregister
+    del scene.wireframe_mode
     del scene.my_space
     del scene.my_hide
-    del scene.wireframe_mode
-    del scene.visible
 
-    del obj.basename
-    del obj.collider_type
     del obj.collider_complexity
+    del obj.collider_type
+    del obj.basename
