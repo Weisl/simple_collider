@@ -76,18 +76,19 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
     group_name = property.name
 
     if user_group:
-        split = col_01.split(factor=0.05, align=True)
+        split = col_01.split(factor=0.95, align=True)
         col_a = split.column(align=True)
         col_b = split.column(align=True)
 
         row = col_a.row(align=True)
-        row.enabled = False
-        row.prop(property, "color", text='')
+        op = row.operator('object.assign_user_group', text='', icon='FORWARD')
+        op.mode = group_identifier
+        row.label(text=group_name)
+        # row.prop(property, 'name', text='')
 
         row = col_b.row(align=True)
-        row.label(text=group_name)
-        op = row.operator('object.assign_user_group', text='', icon='PLUS')
-        op.mode = group_identifier
+        row.enabled = False
+        row.prop(property, "color", text='')
 
     else:
         row = col_01.row(align=True)
@@ -95,16 +96,15 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
 
     row = col_02.row(align=True)
 
-    if property.select:
-        row.prop(property, 'select', icon=str(property.select_icon), text=str(property.select_text))
-    else:
-        row.prop(property, 'select', icon=str(property.deselect_icon), text=str(property.deselect_text))
-
     if property.hide:
         row.prop(property, 'hide', text=str(property.hide_text), icon=str(property.hide_icon))
     else:
         row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
 
+    if property.select:
+        row.prop(property, 'select', icon=str(property.select_icon), text=str(property.select_text))
+    else:
+        row.prop(property, 'select', icon=str(property.deselect_icon), text=str(property.deselect_text))
     # op = row.operator("object.all_select_collisions", icon=str(property.select_icon), text=str(property.select_text))
     # op.select = True
     # op.mode = group_identifier
@@ -140,8 +140,8 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
         draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
 
-    row = layout.row()
-    row.operator('object.hide_collisions', text='Refresh Groups', icon="FILE_REFRESH")
+    # row = layout.row()
+    # row.operator('object.hide_collisions', text='Update Groups', icon="FILE_REFRESH")
 
 
 def draw_naming_presets(self, context):
