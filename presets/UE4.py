@@ -17,6 +17,9 @@ prefs.collider_groups_naming_use = True
 prefs.user_group_01 = ''
 prefs.user_group_02 = ''
 prefs.user_group_03 = 'Complex'
+prefs.user_group_01_name = 'Group 1'
+prefs.user_group_02_name = 'Group 2'
+prefs.user_group_03_name = 'Complex'
 prefs.physics_material_name = 'MI_COL'
 prefs.physics_material_filter = 'COL'
 

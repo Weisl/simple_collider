@@ -116,12 +116,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        description='',
                                                        default=True)
 
-    user_group_01: bpy.props.StringProperty(name="Collider Group 01", default="",
+    user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
                                             description='Naming of User Collider Group 01.')
-    user_group_02: bpy.props.StringProperty(name="Collider Group 02", default="",
+    user_group_02_name: bpy.props.StringProperty(name="Name", default="Group 02",
                                             description='Naming of User Collider Group 02.')
-    user_group_03: bpy.props.StringProperty(name="Collider Group 03", default="Complex",
+    user_group_03_name: bpy.props.StringProperty(name="Name", default="Group 03",
                                             description='Naming of User Collider Group 03.')
+
+    user_group_01: bpy.props.StringProperty(name="Identifier", default="",
+                                            description='Naming of User Collider Group 01.')
+    user_group_02: bpy.props.StringProperty(name="Identifier", default="",
+                                            description='Naming of User Collider Group 02.')
+    user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
+                                            description='Naming of User Collider Group 03.')
+
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
                                                     default='COL_DEFAULT',
@@ -270,10 +278,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     props_collider_groups = [
         "collider_groups_enabled",
         "collider_groups_naming_use",
+    ]
+
+    props_collider_groups_identifier = [
         "user_group_01",
         "user_group_02",
         "user_group_03",
     ]
+
+    props_collider_groups_name = [
+        "user_group_01_name",
+        "user_group_02_name",
+        "user_group_03_name",
+    ]
+
 
     props_physics_materials = [
         "physics_material_name",
@@ -414,6 +432,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             for propName in self.props_collider_groups:
                 row = box.row()
                 row.prop(self, propName)
+
+            count = 1
+            for prop_01, prop_02 in zip(self.props_collider_groups_name, self.props_collider_groups_identifier):
+                split = box.split(align=True, factor=0.1)
+                split.label(text="Group_" + str(count) + ":")
+
+                split = split.split()
+                split.prop(self, prop_01)
+                split.prop(self, prop_02)
+                count += 1
 
             box = layout.box()
             box.label(text="Physics Materials")

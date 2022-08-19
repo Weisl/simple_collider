@@ -43,7 +43,7 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
     )
 
     mode: bpy.props.EnumProperty(items=mode_items,
-                                 name='Hide Mode',
+                                 name='Mode',
                                  default='ALL_COLLIDER'
                                  )
 

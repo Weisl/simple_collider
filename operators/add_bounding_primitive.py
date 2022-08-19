@@ -4,6 +4,7 @@ import bpy
 import numpy
 import time
 
+from .user_groups import get_complexity_suffix, get_complexity_name, set_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
 
 collider_types = ['USER_01', 'USER_02', 'USER_03']
@@ -86,19 +87,6 @@ def create_name_number(name, nr):
     nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
     return name + nr
 
-def get_complexity_suffix(complexity_identifier):
-    suffix=''
-    print('complexity_identifier ' + str(complexity_identifier))
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-    if complexity_identifier == 'USER_01':
-        suffix = prefs.user_group_01
-    elif complexity_identifier == 'USER_02':
-        suffix = prefs.user_group_02
-    elif complexity_identifier == 'USER_03':
-        suffix = prefs.user_group_03
-
-    return suffix
-
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
@@ -128,7 +116,7 @@ def draw_viewport_overlay(self, context):
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
     label = "Collider Complexity"
-    value = str(self.collision_type[self.collision_type_idx])
+    value = str(get_complexity_name(self.collision_type[self.collision_type_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
     label = "Creation Mode "
@@ -472,15 +460,8 @@ class OBJECT_OT_add_bounding_object():
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
-        self.set_object_color(bounding_object)
+        set_object_color(bounding_object, self.collision_type[self.collision_type_idx])
 
-    def set_object_color(self, obj):
-        if self.collision_type[self.collision_type_idx] == 'USER_01':
-            obj.color = self.prefs.user_group_01_color
-        elif self.collision_type[self.collision_type_idx] == 'USER_02':
-            obj.color = self.prefs.user_group_02_color
-        elif self.collision_type[self.collision_type_idx] == 'USER_03':
-            obj.color = self.prefs.user_group_03_color
 
     def set_object_type(self, obj):
         obj['collider_type'] = self.collision_type[self.collision_type_idx]
@@ -920,7 +901,7 @@ class OBJECT_OT_add_bounding_object():
             # toggle through display modes
             self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
             for obj in self.new_colliders_list:
-                self.set_object_color(obj)
+                self.set_object_color(obj, self.collision_type[self.collision_type_idx])
                 self.set_object_type(obj)
                 self.update_names()
 
