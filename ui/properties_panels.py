@@ -101,17 +101,15 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
     else:
         row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
 
-    if property.select:
-        row.prop(property, 'select', icon=str(property.select_icon), text=str(property.select_text))
-    else:
-        row.prop(property, 'select', icon=str(property.deselect_icon), text=str(property.deselect_text))
-    # op = row.operator("object.all_select_collisions", icon=str(property.select_icon), text=str(property.select_text))
-    # op.select = True
-    # op.mode = group_identifier
-    # op = row.operator("object.all_deselect_collisions", icon=str(property.deselect_icon),
-    #                   text=str(property.deselect_text))
-    # op.select = False
-    # op.mode = group_identifier
+    op = row.operator("object.all_select_collisions", icon=str(property.selected_icon), text=str(property.selected_text))
+    op.select = True
+    op.mode = group_identifier
+
+    # SELECTION TOGGLE
+    # if property.selected:
+    #     row.prop(property, 'selected', icon=str(property.selected_icon), text=str(property.selected_text))
+    # else:
+    #     row.prop(property, 'selected', icon=str(property.deselected_icon), text=str(property.deselected_text))
 
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier

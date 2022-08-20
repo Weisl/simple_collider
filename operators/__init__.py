@@ -27,7 +27,9 @@ def update_hide(self, context):
             if ob.get('isCollider') == True:
                 ob.hide_viewport = self.hide
         elif self.mode == 'OBJECTS':
-            if not ob.get('isCollider'):
+            print('0')
+            if ob.get('isCollider') == None:
+                print('1')
                 ob.hide_viewport = self.hide
         else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_type') == self.mode:
@@ -35,23 +37,23 @@ def update_hide(self, context):
 
 
 def update_selected(self, context):
-    print("self.selected = " + str(self.selected))
+    print("self.select = " + str(self.selected))
     for ob in bpy.data.objects:
-        if self.mode == 'ALL_COLLIDER':
-            if ob.get('isCollider'):
-                ob.select_set(self.selected)
-            else:
-                ob.select_set(not self.selected)
-        elif self.mode == 'OBJECTS':
-            if not ob.get('isCollider'):
-                ob.select_set(self.selected)
-            else:
-                ob.select_set(not self.selected)
-        else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-            if ob.get('isCollider') and ob.get('collider_type') == self.mode:
-                ob.select_set(self.selected)
-            else:
-                ob.select_set(not self.selected)
+        if self.selected == True:
+            ob.select_set(False)
+        else: # self.selected == False
+            if self.mode == 'ALL_COLLIDER':
+                if ob.get('isCollider'):
+                    ob.select_set(not self.selected)
+
+            elif self.mode == 'OBJECTS':
+                if not ob.get('isCollider'):
+                    ob.select_set(not self.selected)
+
+            else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
+                if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                    ob.select_set(not self.selected)
+
 
 
 def update_display_colliders(self, context):
@@ -67,15 +69,16 @@ class ColliderGroup(bpy.types.PropertyGroup):
         '''Set name and description according to type'''
         for group in default_groups_enum:
             if group[4] == self["mode"]:
-                from .user_groups import get_complexity_name
-                from .user_groups import get_complexity_suffix
-                from .user_groups import get_group_color
+                from .user_groups import get_groups_name
+                from .user_groups import get_groups_identifier
+                from .user_groups import get_groups_color
                 # self.identifier = get_complexity_suffix(group[0])
-                self.name = get_complexity_name(group[0])
-                self.identifier = get_complexity_suffix(group[0])
+                self.name = get_groups_name(group[0])
+                self.identifier = get_groups_identifier(group[0])
                 self.icon = group[3]
-                color = get_group_color(group[0])
-                self.color = color[0], color[1], color[2]
+
+                color = get_groups_color(group[0])
+                self.color = (color[0], color[1], color[2])
 
         return self["mode"]
 
@@ -105,7 +108,7 @@ class ColliderGroup(bpy.types.PropertyGroup):
                                  name='Disable in Viewport',
                                  description="Show/Hide all objects that are not colliders.")
 
-    select: bpy.props.BoolProperty(default=False, name="Select/Deselect", update=update_selected)
+    selected: bpy.props.BoolProperty(default=False, name="Select/Deselect", update=update_selected)
 
     show_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_OFF')
     hide_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_ON')
@@ -113,15 +116,10 @@ class ColliderGroup(bpy.types.PropertyGroup):
     show_text: bpy.props.StringProperty(default='')
     hide_text: bpy.props.StringProperty(default='')
 
-    # select_icon: bpy.props.StringProperty(default='NONE')
-    # deselect_icon: bpy.props.StringProperty(default='NONE')
-    # select_text: bpy.props.StringProperty(default='Select')
-    # deselect_text: bpy.props.StringProperty(default='Deselect')
-
-    select_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_ON')
-    deselect_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_OFF')
-    select_text: bpy.props.StringProperty(default='')
-    deselect_text: bpy.props.StringProperty(default='')
+    selected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_ON')
+    deselected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_OFF')
+    selected_text: bpy.props.StringProperty(default='')
+    deselected_text: bpy.props.StringProperty(default='')
 
     delete_icon: bpy.props.StringProperty(default='TRASH')
     delete_text: bpy.props.StringProperty(default='')

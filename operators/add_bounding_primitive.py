@@ -4,7 +4,7 @@ import bpy
 import numpy
 import time
 
-from .user_groups import get_complexity_suffix, get_complexity_name, set_object_color
+from .user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
 
 collider_types = ['USER_01', 'USER_02', 'USER_03']
@@ -116,7 +116,7 @@ def draw_viewport_overlay(self, context):
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
     label = "Collider Complexity"
-    value = str(get_complexity_name(self.collision_type[self.collision_type_idx]))
+    value = str(get_groups_name(self.collision_type[self.collision_type_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
     label = "Creation Mode "
@@ -460,7 +460,7 @@ class OBJECT_OT_add_bounding_object():
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
-        set_object_color(bounding_object, self.collision_type[self.collision_type_idx])
+        set_groups_object_color(bounding_object, self.collision_type[self.collision_type_idx])
 
 
     def set_object_type(self, obj):
@@ -518,7 +518,7 @@ class OBJECT_OT_add_bounding_object():
         if self.prefs.collider_groups_naming_use and self.collision_type[self.collision_type_idx] == 'USER_03':
             pre_suffix_componetns = [
                 self.prefs.collision_string_prefix,
-                get_complexity_suffix(self.collision_type[self.collision_type_idx]),
+                get_groups_identifier(self.collision_type[self.collision_type_idx]),
                 self.prefs.collision_string_suffix
             ]
 
@@ -526,7 +526,7 @@ class OBJECT_OT_add_bounding_object():
             pre_suffix_componetns = [
                 self.prefs.collision_string_prefix,
                 self.shape_suffix,
-                get_complexity_suffix(self.collision_type[self.collision_type_idx]),
+                get_groups_identifier(self.collision_type[self.collision_type_idx]),
                 self.prefs.collision_string_suffix
             ]
 
