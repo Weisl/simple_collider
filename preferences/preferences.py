@@ -49,76 +49,120 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "Settings", "settings"), ('NAMING', "Presets", "presets"), ('KEYMAP', "Keymap", "keymap"),
-               ('UI', "Ui", "ui"), ('VHACD', "Auto Convex", "auto_convex")),
+        items=(('SETTINGS', "General", "General addon settings."),
+               ('NAMING', "Presets",
+                "Settings related to presets. Settings changed here will be saved and changed with the presets."),
+               ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
+               ('UI', "Ui", "Settings related to the Ui and display of the addon."),
+               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation.")),
         default='SETTINGS',
-        description='Tabs to toggle different addon settings')
+        description='Settings category:')
+
+    ###################################################################
+    # GENERAL
 
     collider_category: bpy.props.StringProperty(name="Category Name",
                                                 description="Category name used to organize the addon in the properties panel for all the addons.",
                                                 default='Collider Tools',
                                                 update=update_panel_category)  # update = update_panel_position,
+    # Collections
+    use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
+                                               description='Link all collision objects to a specific Collection for collisions',
+                                               default=True)
 
-    # Naming
+    col_collection_name: bpy.props.StringProperty(name='Collection Name',
+                                                  description='Name of the collection newly created collisions get added to',
+                                                  default='Collisions')
+
+    ###################################################################
+    # PRESETS
+
     naming_position: bpy.props.EnumProperty(
         name='Collider Naming',
-        items=(('PREFIX', "Prefix", "Prefix"), ('SUFFIX', "Suffix", "Suffix")),
+        items=(('PREFIX', "Prefix", "Prefix"),
+               ('SUFFIX', "Suffix", "Suffix")),
         default='PREFIX',
         description='Add custom naming as prefix or suffix'
     )
-    separator: bpy.props.StringProperty(name="Separator", default="_",
-                                        description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
-
-    basename: bpy.props.StringProperty(name="Replace Basename", default="geo", description='')
     replace_name: bpy.props.BoolProperty(name='Use Replace Name',
                                          description='Replace the name with a new one or use the name of the original object for the newly created collision name',
                                          default=False)
 
-    colPreSuffix: bpy.props.StringProperty(name="Collision Pre", default="",
-                                           description='Simple string (text) added to the name of the collider')
-    optionalSuffix: bpy.props.StringProperty(name="Collision Post", default="",
-                                             description='Additional string (text) added to the name of the collider for custom purpose')
+    basename: bpy.props.StringProperty(name="Basename", default="geo",
+                                       description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
 
-    # Collider Complexity
-    IgnoreShapeForComplex: bpy.props.BoolProperty(name='UE: Complex Naming',
-                                                  description='Ignore Shape names for Complex Collisions to work for the Unreal Engine',
-                                                  default=False)
-    useCustomColGroups: bpy.props.BoolProperty(name='Use Collision Groups', description='', default=False)
+    separator: bpy.props.StringProperty(name="Separator", default="_",
+                                        description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
 
-    colSimpleComplex: bpy.props.StringProperty(name="Simple & Complex", default="",
-                                               description='Naming used for simple-complex collisions')
-    colSimple: bpy.props.StringProperty(name="Simple", default="", description='Naming used for simple collisions')
-    colComplex: bpy.props.StringProperty(name="Complex", default="Complex",
-                                         description='Naming used for complex collisions')
+    collision_string_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
+                                                      description='Simple string added to the beginning of the collider suffix/prefix.')
+
+    collision_string_suffix: bpy.props.StringProperty(name="Collision Postfix", default="",
+                                                      description='Simple string added to the end of the collider suffix/prefix.')
 
     # Collider Shapes
-    boxColSuffix: bpy.props.StringProperty(name="Box Collision", default="UBX",
-                                           description='Naming used to define box collisions')
-    convexColSuffix: bpy.props.StringProperty(name="Convex Collision", default="UCX",
-                                              description='Naming used to define convex collisions')
-    sphereColSuffix: bpy.props.StringProperty(name="Sphere Collision", default="USP",
-                                              description='Naming used to define sphere collisions')
-    meshColSuffix: bpy.props.StringProperty(name="Mesh Collision", default="Mesh",
-                                            description='Naming used to define triangle mesh collisions')
+    box_shape_identifier: bpy.props.StringProperty(name="Box Collision", default="UBX",
+                                                   description='Naming used to define box colliders')
+    convex_shape_identifier: bpy.props.StringProperty(name="Convex Collision", default="UCX",
+                                                      description='Naming used to define convex colliders')
+    sphere_shape_identifier: bpy.props.StringProperty(name="Sphere Collision", default="USP",
+                                                      description='Naming used to define sphere colliders')
+    mesh_shape_identifier: bpy.props.StringProperty(name="Mesh Collision", default="Mesh",
+                                                    description='Naming used to define triangle mesh colliders')
 
-    # COLORS
-    # The object color for the bounding object
-    my_color_simple_complex: bpy.props.FloatVectorProperty(name="Simple Complex Color",
-                                                           description="Object color and alpha for simple-complex collisions",
-                                                           default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
-                                                           subtype='COLOR', size=4)
+    # Collider Groups
+    collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
+    collider_groups_naming_use: bpy.props.BoolProperty(name='Ignore Shape Naming for User Groups',
+                                                       description='',
+                                                       default=True)
+
+    user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
+                                            description='Naming of User Collider Group 01.')
+    user_group_02_name: bpy.props.StringProperty(name="Name", default="Group 02",
+                                            description='Naming of User Collider Group 02.')
+    user_group_03_name: bpy.props.StringProperty(name="Name", default="Group 03",
+                                            description='Naming of User Collider Group 03.')
+
+    user_group_01: bpy.props.StringProperty(name="Identifier", default="",
+                                            description='Naming of User Collider Group 01.')
+    user_group_02: bpy.props.StringProperty(name="Identifier", default="",
+                                            description='Naming of User Collider Group 02.')
+    user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
+                                            description='Naming of User Collider Group 03.')
+
+
+    physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
+                                                    default='COL_DEFAULT',
+                                                    # type=bpy.types.Material,
+                                                    # poll=scene_my_collision_material_poll,
+                                                    description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
+
+    physics_material_filter: bpy.props.StringProperty(name='Physics Material Filter',
+                                                      default="*COL",
+                                                      description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.', )
+
+    ###################################################################
+    # UI
 
     # The object color for the bounding object
-    my_color_simple: bpy.props.FloatVectorProperty(name="Simple Color",
-                                                   description="Object color and alpha for simple collisions",
-                                                   default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
-                                                   size=4)
+    user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
+                                                       description="Object color and alpha for User Collider Group 01",
+                                                       default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
+                                                       subtype='COLOR', size=4)
 
     # The object color for the bounding object
-    my_color_complex: bpy.props.FloatVectorProperty(name="Complex Color",
-                                                    description="Object color and alpha for complex collisions",
-                                                    default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
-                                                    size=4)
+    user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
+                                                       description="Object color and alpha for User Collider Group 02",
+                                                       default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=4)
+
+    # The object color for the bounding object
+    user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
+                                                       description="Object color and alpha for User Collider Group 03.",
+                                                       default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=4)
+
+
 
     # Modal Fonts
     modal_color_default: bpy.props.FloatVectorProperty(name="Default",
@@ -130,6 +174,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                      description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
                                                      default=(1.0, 1.0, 0.5, 1), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
+
     modal_color_highlight: bpy.props.FloatVectorProperty(name="Active Highlight",
                                                          description="Font Color in the 3D Viewport for settings that remain after changing even when calling collision operator again",
                                                          default=(0.0, 1.0, 1.0, 1.0), min=0.0, max=1.0,
@@ -154,19 +199,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                            description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes",
                                            default=56)
 
-    padding_bottom: bpy.props.IntProperty(name='Padding Bottom',
-                                          description="The text padding in px. The padding defines the distance between the viewport bottom and the start of the modal operator text.",
-                                          default=100)
 
-    ## Collections
-    use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
-                                               description='Link all collision objects to a specific Collection for collisions',
-                                               default=True)
-    col_collection_name: bpy.props.StringProperty(name='Collection Name',
-                                                  description='Name of the collection newly created collisions get added to',
-                                                  default='Collisions')
-
-    #### VHACD ####
+    ###################################################################
+    # VHACD
 
     executable_path: bpy.props.StringProperty(name='VHACD exe',
                                               description='Path to VHACD executable',
@@ -226,53 +261,57 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                             description='Minimum volume to add vertices to convex-hulls',
                                             default=0.0001, min=0.0, max=0.01, precision=5)
 
-    physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
-                                                    default='COL_DEFAULT',
-                                                    # type=bpy.types.Material,
-                                                    # poll=scene_my_collision_material_poll,
-                                                    description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
-
-    physics_material_filter: bpy.props.StringProperty(name='Physics Material Filter',
-                                                      default="*COL",
-                                                      description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.', )
 
     props = [
         "separator",
-        "colPreSuffix",
-        "optionalSuffix",
+        "collision_string_prefix",
+        "collision_string_suffix",
     ]
 
     props_shapes = [
-        "meshColSuffix",
-        "convexColSuffix",
-        "boxColSuffix",
-        "sphereColSuffix",
+        "box_shape_identifier",
+        "sphere_shape_identifier",
+        "convex_shape_identifier",
+        "mesh_shape_identifier",
     ]
 
-    props_complexity = [
-        "IgnoreShapeForComplex",
-        "colSimple",
-        "colComplex",
-        "colSimpleComplex",
+    props_collider_groups = [
+        "collider_groups_enabled",
+        "collider_groups_naming_use",
+    ]
+
+    props_collider_groups_identifier = [
+        "user_group_01",
+        "user_group_02",
+        "user_group_03",
+    ]
+
+    props_collider_groups_name = [
+        "user_group_01_name",
+        "user_group_02_name",
+        "user_group_03_name",
+    ]
+
+
+    props_physics_materials = [
+        "physics_material_name",
+        "physics_material_filter",
     ]
 
     col_props = [
         "use_col_collection",
         "col_collection_name",
         "useCustomColGroups",
-        "physics_material_name",
-        "physics_material_filter",
     ]
 
     ui_col_colors = [
-        'my_color_simple_complex',
-        'my_color_simple',
-        'my_color_complex',
+        'user_group_01_color',
+        'user_group_02_color',
+        'user_group_03_color',
     ]
 
     ui_props = [
         "modal_font_size",
-        # "padding_bottom",
         "modal_color_title",
         "modal_color_highlight",
         "modal_color_modal",
@@ -305,10 +344,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             name = basename
 
         pre_suffix_componetns = [
-            self.colPreSuffix,
-            self.boxColSuffix,
-            self.colSimpleComplex,
-            self.optionalSuffix,
+            self.collision_string_prefix,
+            self.box_shape_identifier,
+            self.user_group_01,
+            self.collision_string_suffix,
         ]
 
         name_pre_suffix = ''
@@ -336,7 +375,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         if self.prefs_tabs == 'SETTINGS':
 
             row = layout.row()
-            row.label(text='Collection Settings')
+            row.label(text='Collections')
 
             for propName in self.col_props:
                 row = layout.row()
@@ -355,7 +394,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             if platform.system() == 'Windows':
                 op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()
-
 
             boxname = box.box()
             row = box.row()
@@ -390,10 +428,27 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
             box = layout.box()
-            box.label(text="Complexity")
-            for propName in self.props_complexity:
+            box.label(text="Collider Groups")
+            for propName in self.props_collider_groups:
                 row = box.row()
                 row.prop(self, propName)
+
+            count = 1
+            for prop_01, prop_02 in zip(self.props_collider_groups_name, self.props_collider_groups_identifier):
+                split = box.split(align=True, factor=0.1)
+                split.label(text="Group_" + str(count) + ":")
+
+                split = split.split()
+                split.prop(self, prop_01)
+                split.prop(self, prop_02)
+                count += 1
+
+            box = layout.box()
+            box.label(text="Physics Materials")
+            for propName in self.props_physics_materials:
+                row = box.row()
+                row.prop(self, propName)
+
 
         elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()

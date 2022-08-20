@@ -136,7 +136,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.boxColSuffix
+        self.type_suffix = self.prefs.box_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

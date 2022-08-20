@@ -35,6 +35,10 @@ def draw_auto_convex(self, context):
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
+    row.operator("wm.url_open", text="", icon='INFO').url = "https://github.com/kmammou/v-hacd"
+    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+    op.addon_name = addon_name
+    op.prefs_tabs = 'VHACD'
 
     if platform.system() != 'Windows':
         text = "Auto convex is only supported for Windows at this moment."
@@ -48,9 +52,6 @@ def draw_auto_convex(self, context):
         row = col.row(align=True)
         row.prop(scene, 'convex_decomp_depth')
         row.prop(scene, 'maxNumVerticesPerCH')
-        op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
-        op.addon_name = addon_name
-        op.prefs_tabs = 'VHACD'
 
         row = col.row(align=True)
 
@@ -70,12 +71,28 @@ def label_multiline(context, text, parent):
         parent.label(text=text_line)
 
 
-def draw_group_properties(context, property, col_01, col_02):
+def draw_group_properties(context, property, col_01, col_02, user_group=False):
     group_identifier = property.mode
     group_name = property.name
 
-    row = col_01.row(align=True)
-    row.label(text=group_name)
+    if user_group:
+        split = col_01.split(factor=0.95, align=True)
+        col_a = split.column(align=True)
+        col_b = split.column(align=True)
+
+        row = col_a.row(align=True)
+        op = row.operator('object.assign_user_group', text='', icon='FORWARD')
+        op.mode = group_identifier
+        row.label(text=group_name)
+        # row.prop(property, 'name', text='')
+
+        row = col_b.row(align=True)
+        row.enabled = False
+        row.prop(property, "color", text='')
+
+    else:
+        row = col_01.row(align=True)
+        row.label(text=group_name)
 
     row = col_02.row(align=True)
 
@@ -84,19 +101,24 @@ def draw_group_properties(context, property, col_01, col_02):
     else:
         row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
 
-    op = row.operator("object.all_select_collisions", icon=str(property.select_icon), text=str(property.select_text))
+    op = row.operator("object.all_select_collisions", icon=str(property.selected_icon), text=str(property.selected_text))
     op.select = True
     op.mode = group_identifier
-    op = row.operator("object.all_deselect_collisions", icon=str(property.deselect_icon),
-                      text=str(property.deselect_text))
-    op.select = False
-    op.mode = group_identifier
+
+    # SELECTION TOGGLE
+    # if property.selected:
+    #     row.prop(property, 'selected', icon=str(property.selected_icon), text=str(property.selected_text))
+    # else:
+    #     row.prop(property, 'selected', icon=str(property.deselected_icon), text=str(property.deselected_text))
+
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier
 
 
 def draw_visibility_selection_menu(context, layout):
-    split_left = layout.split(factor=0.35)
+    split_factor = 0.7
+
+    split_left = layout.split(factor=split_factor, align=True)
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
@@ -107,14 +129,17 @@ def draw_visibility_selection_menu(context, layout):
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
-    if prefs.useCustomColGroups:
-        split_left = layout.split(factor=0.35)
+    if prefs.collider_groups_enabled:
+        split_left = layout.split(factor=split_factor, align=True)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, scene.visibility_toggle_complex_simple, col_01, col_02)
-        draw_group_properties(context, scene.visibility_toggle_complex, col_01, col_02)
-        draw_group_properties(context, scene.visibility_toggle_simple, col_01, col_02)
+        draw_group_properties(context, scene.visibility_toggle_user_group_01, col_01, col_02, user_group=True)
+        draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
+        draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
+
+    # row = layout.row()
+    # row.operator('object.hide_collisions', text='Update Groups', icon="FILE_REFRESH")
 
 
 def draw_naming_presets(self, context):
@@ -125,13 +150,13 @@ def draw_naming_presets(self, context):
 
     addon_name = get_addon_name()
 
-    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
-    op.addon_name = addon_name
-    op.prefs_tabs = 'NAMING'
-
     if platform.system() == 'Windows':
         op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
         op.dirpath = collider_presets_folder()
+
+    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+    op.addon_name = addon_name
+    op.prefs_tabs = 'NAMING'
 
 
 ############## OPERATORS ##############################
@@ -240,10 +265,9 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
+        layout.separator()
         draw_auto_convex(self, context)
 
-        # Conversion
-        # layout.separator()
         row = layout.row(align=True)
         row.label(text='Convert')
 
@@ -253,18 +277,30 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = col.row(align=True)
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
+        layout.separator()
+
+        row = layout.row(align=True)
+        row.label(text='Display as')
+        row.prop(scene, 'display_type', text='')
+
 
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Display"
+    # bl_label = "Collider Groups"
+    bl_label = ""
 
     def __init__(self):
         bpy.context.scene.visibility_toggle_all.mode = 'ALL_COLLIDER'
         bpy.context.scene.visibility_toggle_obj.mode = 'OBJECTS'
-        bpy.context.scene.visibility_toggle_complex_simple.mode = 'SIMPLE_COMPLEX'
-        bpy.context.scene.visibility_toggle_complex.mode = 'COMPLEX'
-        bpy.context.scene.visibility_toggle_simple.mode = 'SIMPLE'
+
+        bpy.context.scene.visibility_toggle_user_group_01.mode = 'USER_01'
+        bpy.context.scene.visibility_toggle_user_group_02.mode = 'USER_02'
+        bpy.context.scene.visibility_toggle_user_group_03.mode = 'USER_03'
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
 
     def draw(self, context):
         layout = self.layout
@@ -273,27 +309,23 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         draw_visibility_selection_menu(context, layout)
 
         layout.separator()
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Materials')
-        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Groups')
-
-        row = layout.row(align=True)
-        row.prop(scene, 'display_type', text='Display as')
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Physics Materials"
+    # bl_label = "Physics Materials"
+    bl_label = ""
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
 
-
-
-        split_left = layout.split(factor=0.65, align=True)
+        split_left = layout.split(factor=0.75, align=True)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
@@ -304,6 +336,7 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         col = layout.column(align=True)
         col.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
         col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
+
 
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
@@ -357,14 +390,8 @@ class VIEW3D_MT_collision_visibility(Menu):
     def draw(self, context):
         scene = context.scene
 
-        row = self.layout.row(align=True)
-        row.label(text='Display')
-
-        self.layout.separator()
         col = self.layout.column(align=True)
         row = col.row(align=True)
-        row.operator('view.collider_view_material', icon='SHADING_TEXTURE', text='Materials')
-        row.operator('view.collider_view_object', icon='SHADING_SOLID', text='Groups')
         row.prop(scene, 'display_type', text='Display as')
 
         draw_visibility_selection_menu(context, self.layout)

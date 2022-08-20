@@ -158,7 +158,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        self.type_suffix = self.prefs.sphereColSuffix
+        self.type_suffix = self.prefs.sphere_shape_identifier
 
         collider_data = []
         verts_co = []

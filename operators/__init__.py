@@ -8,15 +8,16 @@ from . import add_bounding_sphere
 from . import add_collision_mesh
 from . import add_minimum_bounding_box
 from . import conversion_operators
+from . import user_groups
 from . import visibility_selection_deletion
 from . import visibility_settings
 
 default_groups_enum = [('ALL_COLLIDER', "Colliders", "Show/Hide all objects that are colliders.", '', 1),
                        ('OBJECTS', "Non Colliders", "Show/Hide all objects that are not colliders.", '', 2),
-                       ('SIMPLE_COMPLEX', "Simple Complex",
-                        "Show/Hide all objects that are defined as simple and complex colliders.", '', 4),
-                       ('SIMPLE', "Simple", "Show/Hide all objects that are defined as simple colliders.", '', 8),
-                       ('COMPLEX', "Complex", "Show/Hide all objects that are defined as complex colliders.", '', 16)]
+                       ('USER_01', "User Group 01",
+                        "Show/Hide all objects that are part of User Group 01", '', 4),
+                       ('USER_02', "User Group 02", "Show/Hide all objects that are part of User Group 02", '', 8),
+                       ('USER_03', "User Group 03", "Show/Hide all objects that are part of User Group 03", '', 16)]
 
 
 def update_hide(self, context):
@@ -26,21 +27,33 @@ def update_hide(self, context):
             if ob.get('isCollider') == True:
                 ob.hide_viewport = self.hide
         elif self.mode == 'OBJECTS':
-            if not ob.get('isCollider'):
+            print('0')
+            if ob.get('isCollider') == None:
+                print('1')
                 ob.hide_viewport = self.hide
-        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+        else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_type') == self.mode:
                 ob.hide_viewport = self.hide
 
 
 def update_selected(self, context):
-    print("self.selected = " + str(self.selected))
+    print("self.select = " + str(self.selected))
     for ob in bpy.data.objects:
-        if ob.get('isCollider'):
-            ob.select_set(self.selected)
-        else:
-            ob.select_set(not self.selected)
-    self.selected = not self.selected
+        if self.selected == True:
+            ob.select_set(False)
+        else: # self.selected == False
+            if self.mode == 'ALL_COLLIDER':
+                if ob.get('isCollider'):
+                    ob.select_set(not self.selected)
+
+            elif self.mode == 'OBJECTS':
+                if not ob.get('isCollider'):
+                    ob.select_set(not self.selected)
+
+            else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
+                if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                    ob.select_set(not self.selected)
+
 
 
 def update_display_colliders(self, context):
@@ -56,8 +69,16 @@ class ColliderGroup(bpy.types.PropertyGroup):
         '''Set name and description according to type'''
         for group in default_groups_enum:
             if group[4] == self["mode"]:
-                self.name = group[1]
+                from .user_groups import get_groups_name
+                from .user_groups import get_groups_identifier
+                from .user_groups import get_groups_color
+                # self.identifier = get_complexity_suffix(group[0])
+                self.name = get_groups_name(group[0])
+                self.identifier = get_groups_identifier(group[0])
                 self.icon = group[3]
+
+                color = get_groups_color(group[0])
+                self.color = (color[0], color[1], color[2])
 
         return self["mode"]
 
@@ -74,11 +95,20 @@ class ColliderGroup(bpy.types.PropertyGroup):
                                  )
 
     name: bpy.props.StringProperty()
+    identifier: bpy.props.StringProperty()
     icon: bpy.props.StringProperty()
+
+    color: bpy.props.FloatVectorProperty(name="Color",
+                                         subtype='COLOR',
+                                         options={'TEXTEDIT_UPDATE'},
+                                         size=3,
+                                         default=[0.0, 0.0, 0.0])
 
     hide: bpy.props.BoolProperty(default=False, update=update_hide,
                                  name='Disable in Viewport',
                                  description="Show/Hide all objects that are not colliders.")
+
+    selected: bpy.props.BoolProperty(default=False, name="Select/Deselect", update=update_selected)
 
     show_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_OFF')
     hide_icon: bpy.props.StringProperty(default='RESTRICT_VIEW_ON')
@@ -86,10 +116,10 @@ class ColliderGroup(bpy.types.PropertyGroup):
     show_text: bpy.props.StringProperty(default='')
     hide_text: bpy.props.StringProperty(default='')
 
-    select_icon: bpy.props.StringProperty(default='NONE')
-    deselect_icon: bpy.props.StringProperty(default='NONE')
-    select_text: bpy.props.StringProperty(default='Select')
-    deselect_text: bpy.props.StringProperty(default='Deselect')
+    selected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_ON')
+    deselected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_OFF')
+    selected_text: bpy.props.StringProperty(default='')
+    deselected_text: bpy.props.StringProperty(default='')
 
     delete_icon: bpy.props.StringProperty(default='TRASH')
     delete_text: bpy.props.StringProperty(default='')
@@ -107,6 +137,7 @@ classes = (
     visibility_selection_deletion.COLLISION_OT_Selection,
     conversion_operators.OBJECT_OT_convert_to_collider,
     conversion_operators.OBJECT_OT_convert_to_mesh,
+    user_groups.COLLISION_OT_assign_user_group,
     visibility_selection_deletion.COLLISION_OT_Deletion,
     visibility_selection_deletion.COLLISION_OT_simple_select,
     visibility_selection_deletion.COLLISION_OT_simple_deselect,
@@ -147,10 +178,6 @@ def register():
     scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation",
                                            description="Hide Bounding Object After Creation.", default=False)
 
-    # Display setting of the bounding object in the viewport
-    scene.visibility_toggle_all = bpy.props.BoolProperty(name="Toggle Visibility",
-                                                         description="", default=False)
-
     # Tranformation space to be used for creating the bounding object.
     scene.my_space = bpy.props.EnumProperty(name="Generation Axis",
                                             items=(('LOCAL', "Local",
@@ -161,10 +188,8 @@ def register():
 
     scene.display_type = bpy.props.EnumProperty(name="Collider Display",
                                                 items=(
-                                                    # ('TEXTURED', "Textured", "Display the colliders with textures"),
                                                     ('SOLID', "Solid", "Display the colliders as solid"),
                                                     ('WIRE', "Wire", "Display the colliders as wireframe"),
-                                                    # ('BOUNDS', "Bounds", "Display the bounds of the the colliders")
                                                 ),
                                                 default="SOLID",
                                                 update=update_display_colliders)
@@ -194,13 +219,13 @@ def register():
                                                default='BOX')
 
     obj.collider_complexity = bpy.props.EnumProperty(name="collider complexity", items=[
-        ('SIMPLE_COMPLEX', "Simple Complex",
+        ('USER_01', "Simple Complex",
          "(Simple and Complex) Custom value to distinguish different types of collisions in a game engine."),
-        ('SIMPLE', "Simple", "(Simple) Custom value to distinguish different types of collisions in a game engine."),
+        ('USER_02', "Simple", "(Simple) Custom value to distinguish different types of collisions in a game engine."),
         (
-            'COMPLEX', "Complex",
+            'USER_03', "Complex",
             "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
-                                                     default="SIMPLE_COMPLEX")
+                                                     default="USER_01")
 
     from bpy.utils import register_class
     for cls in classes:
@@ -211,18 +236,18 @@ def register():
     # # Pointer Properties have to be initialized after classes
     scene.visibility_toggle_all = bpy.props.PointerProperty(type=ColliderGroup)
     scene.visibility_toggle_obj = bpy.props.PointerProperty(type=ColliderGroup)
-    scene.visibility_toggle_complex_simple = bpy.props.PointerProperty(type=ColliderGroup)
-    scene.visibility_toggle_complex = bpy.props.PointerProperty(type=ColliderGroup)
-    scene.visibility_toggle_simple = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_user_group_01 = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_user_group_02 = bpy.props.PointerProperty(type=ColliderGroup)
+    scene.visibility_toggle_user_group_03 = bpy.props.PointerProperty(type=ColliderGroup)
 
 
 def unregister():
     scene = bpy.types.Scene
     obj = bpy.types.Object
 
-    del scene.visibility_toggle_simple
-    del scene.visibility_toggle_complex
-    del scene.visibility_toggle_complex_simple
+    del scene.visibility_toggle_user_group_03
+    del scene.visibility_toggle_user_group_02
+    del scene.visibility_toggle_user_group_01
     del scene.visibility_toggle_obj
     del scene.visibility_toggle_all
 
@@ -232,11 +257,10 @@ def unregister():
         unregister_class(cls)
 
     # delete custom properties on unregister
+    del scene.wireframe_mode
     del scene.my_space
     del scene.my_hide
-    del scene.wireframe_mode
-    del scene.visible
 
-    del obj.basename
-    del obj.collider_type
     del obj.collider_complexity
+    del obj.collider_type
+    del obj.basename

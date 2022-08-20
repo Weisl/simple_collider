@@ -3,9 +3,9 @@ import bpy
 # Enum property.
 mode_items = [
     ("ALL_COLLIDER", "all", "Show/Hide all collisions", 1),
-    ("SIMPLE_COMPLEX", "simple_and_complex", "Show/Hide all simple-complex collisions", 2),
-    ("SIMPLE", "simple", "Show/Hide all simple collisions", 4),
-    ("COMPLEX", "complex", "Show/Hide all complex collisions", 8),
+    ("USER_01", "simple_and_complex", "Show/Hide all simple-complex collisions", 2),
+    ("USER_02", "simple", "Show/Hide all simple collisions", 4),
+    ("USER_03", "complex", "Show/Hide all complex collisions", 8),
     ("OBJECTS", "objects", "Show/Hide all complex collisions", 16),
 ]
 
@@ -22,7 +22,7 @@ def main(mode, hide, count=0):
                 ob.hide_viewport = hide
                 count += 1
 
-        else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+        else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_type') == mode:
                 ob.hide_viewport = hide
                 count += 1
@@ -43,7 +43,7 @@ class COLLISION_OT_Visibility(bpy.types.Operator):
     )
 
     mode: bpy.props.EnumProperty(items=mode_items,
-                                 name='Hide Mode',
+                                 name='Mode',
                                  default='ALL_COLLIDER'
                                  )
 
@@ -158,7 +158,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                     else:
                         ob.select_set(not self.select)
 
-                else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+                else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
                     if ob.get('isCollider') and ob.get('collider_type') == self.mode:
                         count += 1
                         ob.select_set(self.select)
@@ -175,7 +175,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                     if not ob.get('isCollider'):
                         count += 1
                         ob.select_set(self.select)
-                else:  # if self.mode == 'SIMPLE' or self.mode == 'COMPLEX'
+                else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
                     if ob.get('isCollider') and ob.get('collider_type') == self.mode:
                         count += 1
                         ob.select_set(self.select)
