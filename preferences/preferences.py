@@ -4,13 +4,14 @@ import rna_keymap_ui
 from tempfile import gettempdir
 
 from .naming_preset import COLLISION_preset
-from ..operators.add_bounding_primitive import create_name_number
 from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
+
+from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
 def update_panel_category(self, context):
@@ -117,11 +118,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        default=True)
 
     user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
-                                            description='Naming of User Collider Group 01.')
+                                                 description='Naming of User Collider Group 01.')
     user_group_02_name: bpy.props.StringProperty(name="Name", default="Group 02",
-                                            description='Naming of User Collider Group 02.')
+                                                 description='Naming of User Collider Group 02.')
     user_group_03_name: bpy.props.StringProperty(name="Name", default="Group 03",
-                                            description='Naming of User Collider Group 03.')
+                                                 description='Naming of User Collider Group 03.')
 
     user_group_01: bpy.props.StringProperty(name="Identifier", default="",
                                             description='Naming of User Collider Group 01.')
@@ -129,7 +130,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                             description='Naming of User Collider Group 02.')
     user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
                                             description='Naming of User Collider Group 03.')
-
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
                                                     default='COL_DEFAULT',
@@ -161,8 +161,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        description="Object color and alpha for User Collider Group 03.",
                                                        default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
                                                        size=4)
-
-
 
     # Modal Fonts
     modal_color_default: bpy.props.FloatVectorProperty(name="Default",
@@ -198,7 +196,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     modal_font_size: bpy.props.IntProperty(name='Font Size',
                                            description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes",
                                            default=56)
-
 
     ###################################################################
     # VHACD
@@ -261,7 +258,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                             description='Minimum volume to add vertices to convex-hulls',
                                             default=0.0001, min=0.0, max=0.01, precision=5)
 
-
     props = [
         "separator",
         "collision_string_prefix",
@@ -291,7 +287,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "user_group_02_name",
         "user_group_03_name",
     ]
-
 
     props_physics_materials = [
         "physics_material_name",
@@ -335,36 +330,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "minVolumePerCH",
     ]
 
-    def collider_name(self, basename='Basename'):
-        separator = self.separator
-
-        if self.replace_name:
-            name = self.basename
-        else:
-            name = basename
-
-        pre_suffix_componetns = [
-            self.collision_string_prefix,
-            self.box_shape_identifier,
-            self.user_group_01,
-            self.collision_string_suffix,
-        ]
-
-        name_pre_suffix = ''
-        if self.naming_position == 'SUFFIX':
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + separator + comp
-            new_name = name + name_pre_suffix
-
-        else:  # self.naming_position == 'PREFIX'
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + comp + separator
-            new_name = name_pre_suffix + name
-
-        return create_name_number(new_name, nr=1)
-
     # here you specify how they are drawn
     def draw(self, context):
         layout = self.layout
@@ -406,7 +371,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Pre + Shape + Complexity + Collision Post + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + self.collider_name(basename='Suzanne'))
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.collider_name(basename='Suzanne'))
 
             row = box.row()
             row.prop(self, "replace_name")

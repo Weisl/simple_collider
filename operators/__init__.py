@@ -116,8 +116,8 @@ class ColliderGroup(bpy.types.PropertyGroup):
     show_text: bpy.props.StringProperty(default='')
     hide_text: bpy.props.StringProperty(default='')
 
-    selected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_ON')
-    deselected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_OFF')
+    selected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_OFF')
+    deselected_icon: bpy.props.StringProperty(default='RESTRICT_SELECT_ON')
     selected_text: bpy.props.StringProperty(default='')
     deselected_text: bpy.props.StringProperty(default='')
 

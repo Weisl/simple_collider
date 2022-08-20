@@ -194,10 +194,44 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
 
+
+
 class OBJECT_OT_add_bounding_object():
     """Abstract parent class for modal operators contain common methods and properties for all add bounding object operators"""
     bl_options = {'REGISTER', 'UNDO'}
     bm = []
+
+    @classmethod
+    def collider_name(cls, basename='Basename'):
+        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        separator = prefs.separator
+
+        if prefs.replace_name:
+            name = prefs.basename
+        else:
+            name = basename
+
+        pre_suffix_componetns = [
+            prefs.collision_string_prefix,
+            prefs.box_shape_identifier,
+            prefs.user_group_01,
+            prefs.collision_string_suffix,
+        ]
+
+        name_pre_suffix = ''
+        if prefs.naming_position == 'SUFFIX':
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + separator + comp
+            new_name = name + name_pre_suffix
+
+        else:  # prefs.naming_position == 'PREFIX'
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + comp + separator
+            new_name = name_pre_suffix + name
+
+        return create_name_number(new_name, nr=1)
 
     @classmethod
     def bmesh(cls, bm):
@@ -214,14 +248,15 @@ class OBJECT_OT_add_bounding_object():
 
         return dict
 
+
     def get_shape_name(self, identifier):
-        if identifier == 'boxColSuffix':
+        if identifier == 'box_shape_identifier':
             return 'BOX'
-        elif identifier == 'sphereColSuffix':
+        elif identifier == 'sphere_shape_identifier':
             return 'SPHERE'
-        elif identifier == 'convexColSuffix':
+        elif identifier == 'convex_shape_identifier':
             return 'CONVEX'
-        else:  # identifier == 'meshColSuffix':
+        else:  # identifier == 'mesh_shape_identifier':
             return 'MESH'
 
     def force_redraw(self):
@@ -507,48 +542,9 @@ class OBJECT_OT_add_bounding_object():
         self.name_count = self.name_count + 1
         return new_name
 
-    def collider_name(self, basename='Basename'):
-        separator = self.prefs.separator
-
-        if self.prefs.replace_name:
-            name = self.prefs.basename
-        else:
-            name = basename
-
-        if self.prefs.collider_groups_naming_use and self.collision_type[self.collision_type_idx] == 'USER_03':
-            pre_suffix_componetns = [
-                self.prefs.collision_string_prefix,
-                get_groups_identifier(self.collision_type[self.collision_type_idx]),
-                self.prefs.collision_string_suffix
-            ]
-
-        else:
-            pre_suffix_componetns = [
-                self.prefs.collision_string_prefix,
-                self.shape_suffix,
-                get_groups_identifier(self.collision_type[self.collision_type_idx]),
-                self.prefs.collision_string_suffix
-            ]
-
-        name_pre_suffix = ''
-
-        if self.prefs.naming_position == 'SUFFIX':
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + separator + comp
-            new_name = name + name_pre_suffix
-
-        else:  # self.prefs.naming_position == 'PREFIX'
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + comp + separator
-            new_name = name_pre_suffix + name
-
-        return self.unique_name(new_name)
-
     def update_names(self):
         for obj in self.new_colliders_list:
-            obj.name = self.collider_name()
+            obj.name = self.collider_name(basename=obj.name)
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
@@ -901,7 +897,7 @@ class OBJECT_OT_add_bounding_object():
             # toggle through display modes
             self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
             for obj in self.new_colliders_list:
-                self.set_object_color(obj, self.collision_type[self.collision_type_idx])
+                set_groups_object_color(obj, self.collision_type[self.collision_type_idx])
                 self.set_object_type(obj)
                 self.update_names()
 

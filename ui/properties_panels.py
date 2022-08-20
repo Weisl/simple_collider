@@ -370,19 +370,26 @@ class VIEW3D_MT_collision_creation(Menu):
     bl_ui_units_x = 45
 
     def draw(self, context):
-        row = self.layout.row(align=True)
+        layout = self.layout
+        scene = context.scene
+
+        row = layout.row(align=True)
         row.label(text='Generation')
 
-        row = self.layout.row(align=True)
+        row = layout.row(align=True)
         row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
         draw_auto_convex(self, context)
 
-        self.layout.separator()
-        col = self.layout.column(align=True)
+        layout.separator()
+        col = layout.column(align=True)
         col.operator('object.convert_to_collider', icon='PHYSICS')
         col.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
+        layout.separator()
+        row = layout.row(align=True)
+        row.label(text='Display as')
+        row.prop(scene, 'display_type', text='')
 
 class VIEW3D_MT_collision_visibility(Menu):
     bl_label = 'Collision Visibility'
