@@ -17,7 +17,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.type_suffix = self.prefs.mesh_shape_identifier
+        self.shape_suffix= self.prefs.mesh_shape_identifier
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -84,13 +84,13 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             new_collider = mesh_collider_data['new_collider']
 
             context.scene.collection.objects.link(new_collider)
-            self.type_suffix = self.prefs.mesh_shape_identifier
+            self.shape_suffix= self.prefs.mesh_shape_identifier
 
             # create collision meshes
             self.custom_set_parent(context, parent, new_collider)
             self.remove_all_modifiers(context, new_collider)
 
-            from ..operators.object_pivot_and_ailgn import alignObjects
+            from .add_bounding_primitive import alignObjects
             alignObjects(new_collider, parent)
 
             new_name = super().collider_name(basename=parent.name)

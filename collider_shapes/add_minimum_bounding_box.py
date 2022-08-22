@@ -6,7 +6,7 @@ from bpy.types import Operator
 from mathutils import Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..operators.object_pivot_and_ailgn import alignObjects
+from .add_bounding_primitive import alignObjects
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -136,7 +136,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.box_shape_identifier
+        self.shape_suffix= self.prefs.box_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

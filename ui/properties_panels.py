@@ -82,6 +82,7 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
 
         row = col_a.row(align=True)
         op = row.operator('object.assign_user_group', text='', icon='FORWARD')
+        # op = row.operator('object.assign_user_group', text='', icon='SORT_ASC')
         op.mode = group_identifier
         row.label(text=group_name)
         # row.prop(property, 'name', text='')
@@ -161,7 +162,7 @@ def draw_naming_presets(self, context):
 
 ############## OPERATORS ##############################
 
-class EXPLORER_OT_open_folder(bpy.types.Operator):
+class EXPLORER_OT_open_directory(bpy.types.Operator):
     """Open render output directory in Explorer"""
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"

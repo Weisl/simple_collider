@@ -6,8 +6,9 @@ from bpy.types import Operator
 from subprocess import Popen
 
 from .off_eport import off_export
-from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..operators.object_pivot_and_ailgn import alignObjects
+
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import alignObjects
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
@@ -60,7 +61,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_options = {'REGISTER', 'PRESET'}
 
     def set_export_path(self, path):
-        self.type_suffix = self.prefs.convex_shape_identifier
+        self.shape_suffix= self.prefs.convex_shape_identifier
 
         # Check executable path
         executable_path = bpy.path.abspath(path)

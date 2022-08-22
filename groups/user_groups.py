@@ -1,6 +1,6 @@
 import bpy
 
-from .visibility_selection_deletion import mode_items
+from ..collider_operators.visibility_selection_deletion import mode_items
 
 
 def get_groups_identifier(groups_identifier):

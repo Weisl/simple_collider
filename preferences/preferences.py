@@ -4,6 +4,7 @@ import rna_keymap_ui
 from tempfile import gettempdir
 
 from .naming_preset import COLLISION_preset
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
@@ -11,21 +12,19 @@ from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
 
-from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
-
 
 def update_panel_category(self, context):
     panelNames = [
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
-        # 'VIEW3D_PT_collission_settings_panel',
+
     ]
     panels = [
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
         VIEW3D_PT_collission_material_panel,
-        # VIEW3D_PT_collission_settings_panel,
+
     ]
     for panel in panelNames:
         is_panel = hasattr(bpy.types, panel)
@@ -194,7 +193,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size',
-                                           description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes",
+                                           description="Changes the font size in the 3D viewport when calling the modal collider_shapes to create different collision shapes",
                                            default=56)
 
     ###################################################################
@@ -371,7 +370,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Pre + Shape + Complexity + Collision Post + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.collider_name(basename='Suzanne'))
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape_identifier,
+                                                                                       'USER_01',
+                                                                                       basename='Suzanne'))
 
             row = box.row()
             row.prop(self, "replace_name")
@@ -463,7 +464,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
-            if platform.system() is not 'Windows':
+            if platform.system() != 'Windows':
                 text = "Auto convex is only supported for Windows at this moment."
                 label_multiline(
                     context=context,

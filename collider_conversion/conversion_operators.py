@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import Operator
 
-from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
 collider_shapes = ['meshColSuffix', 'boxColSuffix', 'sphereColSuffix', 'convexColSuffix']
@@ -31,13 +31,13 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         suffix = self.collider_shapes[self.collider_shapes_idx]
 
         if suffix == 'boxColSuffix':
-            self.type_suffix = self.prefs.box_shape_identifier
+            self.shape_suffix = self.prefs.box_shape_identifier
         elif suffix == 'sphereColSuffix':
-            self.type_suffix = self.prefs.sphere_shape_identifier
+            self.shape_suffix = self.prefs.sphere_shape_identifier
         elif suffix == 'convexColSuffix':
-            self.type_suffix = self.prefs.convex_shape_identifier
+            self.shape_suffix = self.prefs.convex_shape_identifier
         else:  # suffix == 'meshColSuffix'
-            self.type_suffix = self.prefs.mesh_shape_identifier
+            self.shape_suffix = self.prefs.mesh_shape_identifier
 
     def __init__(self):
         super().__init__()
@@ -86,7 +86,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         self.original_obj_data = []
-        self.type_suffix = self.prefs.mesh_shape_identifier
+        self.shape_suffix = self.prefs.mesh_shape_identifier
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -179,3 +179,4 @@ class OBJECT_OT_convert_to_mesh(Operator):
                                 bpy.context.scene.collection.objects.link(obj)
 
         return {'FINISHED'}
+

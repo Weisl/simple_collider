@@ -4,7 +4,7 @@ from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..operators.object_pivot_and_ailgn import alignObjects
+from .add_bounding_primitive import alignObjects
 
 tmp_name = 'box_collider'
 
@@ -117,7 +117,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.box_shape_identifier
+        self.shape_suffix = self.prefs.box_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

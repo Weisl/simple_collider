@@ -54,7 +54,7 @@ def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
                 if km.keymap_items[i].properties.name == kmi_value:
                     return km_item
 
-    # for operators
+    # for collider_shapes
     else:
         if km.keymap_items.get(kmi_name):
             return km.keymap_items.get(kmi_name)
