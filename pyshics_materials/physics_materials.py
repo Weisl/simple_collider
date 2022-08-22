@@ -105,9 +105,11 @@ class MATERIAL_UL_physics_materials(UIList):
                     # # row.prop(mat, "diffuse_color", text='')
 
                     row = layout.row(align=True)
-                    row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
                     row.operator('material.set_physics_material', text='',
-                                 icon='MATERIAL').physics_material_name = mat.name
+                                 icon='FORWARD').physics_material_name = mat.name
+                    row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
+                    # row.operator('material.set_physics_material', text='',
+                    #              icon='MATERIAL').physics_material_name = mat.name
 
 
         elif self.layout_type in {'GRID'}:
