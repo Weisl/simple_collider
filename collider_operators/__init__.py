@@ -2,7 +2,6 @@ from . import visibility_selection_deletion
 from . import visibility_settings
 
 classes = (
-    visibility_selection_deletion.COLLISION_OT_Visibility,
     visibility_selection_deletion.COLLISION_OT_Selection,
     visibility_selection_deletion.COLLISION_OT_Deletion,
     visibility_selection_deletion.COLLISION_OT_simple_select,
@@ -20,16 +19,6 @@ classes = (
     visibility_selection_deletion.COLLISION_OT_non_collider_select,
     visibility_selection_deletion.COLLISION_OT_non_collider_deselect,
     visibility_selection_deletion.COLLISION_OT_non_collider_delete,
-    visibility_selection_deletion.COLLISION_OT_simple_show,
-    visibility_selection_deletion.COLLISION_OT_simple_hide,
-    visibility_selection_deletion.COLLISION_OT_complex_show,
-    visibility_selection_deletion.COLLISION_OT_complex_hide,
-    visibility_selection_deletion.COLLISION_OT_simple_complex_show,
-    visibility_selection_deletion.COLLISION_OT_simple_complex_hide,
-    visibility_selection_deletion.COLLISION_OT_all_show,
-    visibility_selection_deletion.COLLISION_OT_all_hide,
-    visibility_selection_deletion.COLLISION_OT_non_collider_show,
-    visibility_selection_deletion.COLLISION_OT_non_collider_hide,
     visibility_selection_deletion.COLLISION_OT_toggle_collider_visibility,
     visibility_settings.VIEW3D_OT_object_view,
     visibility_settings.VIEW3D_OT_material_view,
