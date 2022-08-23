@@ -120,7 +120,7 @@ def draw_viewport_overlay(self, context):
     label = 'Persistent Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    label = "Collider Complexity"
+    label = "Collider Group"
     value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
@@ -263,7 +263,7 @@ class OBJECT_OT_add_bounding_object():
     def collider_name(self, basename='Basename'):
         shape_identifier = self.collider_shapes[self.collider_shapes_idx]
         user_group = self.collision_groups[self.collision_group_idx]
-        self.class_collider_name(shape_identifier=shape_identifier, user_group=user_group, basename=basename)
+        return self.class_collider_name(shape_identifier=self.shape_suffix, user_group=user_group, basename=basename)
 
     def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
         dict = {}
@@ -703,6 +703,9 @@ class OBJECT_OT_add_bounding_object():
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_group_idx = 0
         self.collision_groups = collider_groups
+
+        self.collider_shapes = ['box_shape_identifier', 'sphere_shape_identifier', 'convex_shape_identifier', 'mesh_shape_identifier']
+        self.collider_shapes_idx = 0
 
         self.new_colliders_list = []
 

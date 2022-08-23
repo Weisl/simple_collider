@@ -2,11 +2,12 @@ from os import path as os_path
 
 import bmesh
 import bpy
+import os
 from bpy.types import Operator
+from pathlib import Path
 from subprocess import Popen
 
 from .off_eport import off_export
-
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..collider_shapes.add_bounding_primitive import alignObjects
 
@@ -60,8 +61,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Split the object collision into multiple convex hulls using Hierarchical Approximate Convex Decomposition'
     bl_options = {'REGISTER', 'PRESET'}
 
-    def set_export_path(self, path):
-        self.shape_suffix= self.prefs.convex_shape_identifier
+    def set_custom_executable_path(self, path):
 
         # Check executable path
         executable_path = bpy.path.abspath(path)
@@ -78,6 +78,30 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
 
         return executable_path
+
+    def set_default_executable_path(self):
+        path = Path(str(__file__))
+        parent = path.parent.parent.absolute()
+        print('parent = path.parent.parent.absolute() ' + str(parent))
+
+        vhacd_app_folder = "v-hacd_app"
+        collider_addon_directory = os.path.join(parent, vhacd_app_folder)
+        print('collider_addon_directory ' + str(collider_addon_directory))
+
+        if os_path.isdir(collider_addon_directory):
+            executable_path = os_path.join(collider_addon_directory, 'VHACD_4_0.exe')
+            print('executable_path ' + str(executable_path))
+            return executable_path
+
+        elif not os_path.isfile(collider_addon_directory):
+            self.report({'ERROR'}, 'Path to V-HACD executable required')
+            return {'CANCELLED'}
+
+        elif not os_path.exists(collider_addon_directory):
+            self.report({'ERROR'}, 'Cannot find V-HACD executable at specified path')
+            return {'CANCELLED'}
+
+        return collider_addon_directory
 
     def set_data_path(self, path):
         # Check data path
@@ -122,6 +146,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
+        self.shape_suffix = self.prefs.convex_shape_identifier
+
         import addon_utils
         addon_name = 'io_scene_x3d'
         addon_utils.check(addon_name)
@@ -133,9 +159,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         print("enabled", success.bl_info['name'])
 
-        executable_path = self.set_export_path(self.prefs.executable_path)
-        data_path = self.set_data_path(self.prefs.data_path)
+        # executable_path = self.set_custom_executable_path(self.prefs.executable_path)
 
+        # if executable_path == {'CANCELLED'}:
+        executable_path = self.set_default_executable_path()
+
+        data_path = self.set_data_path(self.prefs.data_path)
         scene = bpy.context.scene
 
         if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:

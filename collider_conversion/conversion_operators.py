@@ -4,40 +4,12 @@ from bpy.types import Operator
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
-collider_shapes = ['meshColSuffix', 'boxColSuffix', 'sphereColSuffix', 'convexColSuffix']
-
-
-def create_name_number(name, nr):
-    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
-    return name + nr
-
-
-def unique_name(name, i=1):
-    '''recursive function to find unique name'''
-    new_name = create_name_number(name, i)
-    while new_name in bpy.data.objects:
-        i = i + 1
-        new_name = create_name_number(name, i)
-    return new_name
-
-
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"
     bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
 
-    def set_name_suffix(self):
-        suffix = self.collider_shapes[self.collider_shapes_idx]
-
-        if suffix == 'boxColSuffix':
-            self.shape_suffix = self.prefs.box_shape_identifier
-        elif suffix == 'sphereColSuffix':
-            self.shape_suffix = self.prefs.sphere_shape_identifier
-        elif suffix == 'convexColSuffix':
-            self.shape_suffix = self.prefs.convex_shape_identifier
-        else:  # suffix == 'meshColSuffix'
-            self.shape_suffix = self.prefs.mesh_shape_identifier
 
     def __init__(self):
         super().__init__()
@@ -47,8 +19,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.collider_shapes_idx = 0
-        self.collider_shapes = collider_shapes
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -152,7 +122,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = unique_name(self.my_string)
+                obj.name = self.unique_name(self.my_string)
                 obj.display_type = 'TEXTURED'
 
                 # replace collision material
