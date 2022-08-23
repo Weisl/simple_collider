@@ -32,6 +32,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
 
     # padding bottom
     font_size = self.prefs.modal_font_size
+
     # padding_bottom = self.prefs.padding_bottom
     padding_bottom = 0
 
@@ -137,7 +138,7 @@ def draw_viewport_overlay(self, context):
     if self.use_shape_change:
         label = "Collider Shape"
         value = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(Q)',
                             type='enum')
 
     if self.use_cylinder_axis:
@@ -214,18 +215,17 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        if prefs.collider_groups_naming_use and user_group == 'USER_03':
-            pre_suffix_componetns = [
-                prefs.collision_string_prefix,
-                get_groups_identifier(user_group),
-                prefs.collision_string_suffix
-            ]
-
-        else:
+        if prefs.collider_groups_enabled:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
                 shape_identifier,
                 get_groups_identifier(user_group),
+                prefs.collision_string_suffix
+            ]
+        else:  # prefs.collider_groups_enabled == False:
+            pre_suffix_componetns = [
+                prefs.collision_string_prefix,
+                shape_identifier,
                 prefs.collision_string_suffix
             ]
 
@@ -261,7 +261,6 @@ class OBJECT_OT_add_bounding_object():
         cls.bm.append(bm)
 
     def collider_name(self, basename='Basename'):
-        shape_identifier = self.collider_shapes[self.collider_shapes_idx]
         user_group = self.collision_groups[self.collision_group_idx]
         return self.class_collider_name(shape_identifier=self.shape_suffix, user_group=user_group, basename=basename)
 
@@ -704,7 +703,8 @@ class OBJECT_OT_add_bounding_object():
         self.collision_group_idx = 0
         self.collision_groups = collider_groups
 
-        self.collider_shapes = ['box_shape_identifier', 'sphere_shape_identifier', 'convex_shape_identifier', 'mesh_shape_identifier']
+        self.collider_shapes = ['box_shape_identifier', 'sphere_shape_identifier', 'convex_shape_identifier',
+                                'mesh_shape_identifier']
         self.collider_shapes_idx = 0
 
         self.new_colliders_list = []

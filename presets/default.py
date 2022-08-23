@@ -13,7 +13,6 @@ prefs.sphere_shape_identifier = 'Sphere'
 prefs.convex_shape_identifier = 'Convex'
 prefs.mesh_shape_identifier = 'Mesh'
 prefs.collider_groups_enabled = True
-prefs.collider_groups_naming_use = False
 prefs.user_group_01 = 'SimpleComplex'
 prefs.user_group_02 = 'Simple'
 prefs.user_group_03 = 'Complex'

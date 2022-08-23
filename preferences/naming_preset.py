@@ -26,7 +26,6 @@ class COLLISION_preset(AddPresetBase, Operator):
         "prefs.convex_shape_identifier",
         "prefs.mesh_shape_identifier",
         "prefs.collider_groups_enabled",
-        "prefs.collider_groups_naming_use",
         "prefs.user_group_01",
         "prefs.user_group_02",
         "prefs.user_group_03",

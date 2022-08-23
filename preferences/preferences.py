@@ -88,7 +88,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                          description='Replace the name with a new one or use the name of the original object for the newly created collision name',
                                          default=False)
 
-    basename: bpy.props.StringProperty(name="Basename", default="geo",
+    basename: bpy.props.StringProperty(name="Replace Name", default="geo",
                                        description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
 
     separator: bpy.props.StringProperty(name="Separator", default="_",
@@ -97,7 +97,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     collision_string_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
                                                       description='Simple string added to the beginning of the collider suffix/prefix.')
 
-    collision_string_suffix: bpy.props.StringProperty(name="Collision Postfix", default="",
+    collision_string_suffix: bpy.props.StringProperty(name="Collision Suffix", default="",
                                                       description='Simple string added to the end of the collider suffix/prefix.')
 
     # Collider Shapes
@@ -112,9 +112,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
-    collider_groups_naming_use: bpy.props.BoolProperty(name='Ignore Shape Naming for User Groups',
-                                                       description='',
-                                                       default=True)
 
     user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
                                                  description='Naming of User Collider Group 01.')
@@ -272,7 +269,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     props_collider_groups = [
         "collider_groups_enabled",
-        "collider_groups_naming_use",
     ]
 
     props_collider_groups_identifier = [
@@ -295,7 +291,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
-        "useCustomColGroups",
     ]
 
     ui_col_colors = [
@@ -365,9 +360,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = boxname.row()
             if self.naming_position == 'PREFIX':
-                row.label(text="Name = Collision Pre + Shape + Complexity + Collision Post + Basename + Numbering")
-            else:
-                row.label(text="Name = Basename + Collision Pre + Shape + Complexity + Collision Post + Numbering")
+                row.label(text="Name = Collision Prefix + Shape + Group + Collision Suffix + Basename + Numbering")
+            else: # self.naming_position == 'SUFFIX':
+                row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
             row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape_identifier,
@@ -378,10 +373,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.prop(self, "replace_name")
 
             row = box.row()
-            if self.replace_name:
-                row.prop(self, "basename")
-            else:
-                row.prop(self, "basename", icon="ERROR")
+
+            if not self.replace_name:
+                row.enabled = False
+            row.prop(self, "basename")
 
             for propName in self.props:
                 row = box.row()

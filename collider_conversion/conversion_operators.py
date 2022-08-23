@@ -13,7 +13,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
-        self.use_type_change = True
+        self.use_shape_change = True
         self.use_decimation = True
         self.is_mesh_to_collider = True
 
@@ -31,10 +31,10 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             return {'PASS_THROUGH'}
 
 
-        elif event.type == 'C' and event.value == 'RELEASE':
+        elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.set_name_suffix()
+            self.shape_suffix = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
             self.update_names()
 
         return {'RUNNING_MODAL'}

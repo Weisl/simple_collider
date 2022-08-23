@@ -13,7 +13,6 @@ prefs.sphere_shape_identifier = 'USP'
 prefs.convex_shape_identifier = 'UCX'
 prefs.mesh_shape_identifier = ''
 prefs.collider_groups_enabled = True
-prefs.collider_groups_naming_use = True
 prefs.user_group_01 = ''
 prefs.user_group_02 = ''
 prefs.user_group_03 = 'Complex'
