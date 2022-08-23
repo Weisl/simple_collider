@@ -261,6 +261,7 @@ class OBJECT_OT_add_bounding_object():
         cls.bm.append(bm)
 
     def collider_name(self, basename='Basename'):
+        self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx]
         return self.class_collider_name(shape_identifier=self.shape_suffix, user_group=user_group, basename=basename)
 
@@ -557,7 +558,7 @@ class OBJECT_OT_add_bounding_object():
 
     def update_names(self):
         for obj in self.new_colliders_list:
-            obj.name = self.collider_name()
+            obj.name = self.collider_name(basename=self.basename)
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
