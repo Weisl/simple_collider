@@ -134,11 +134,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         for obj in context.selected_objects.copy():
 
             # skip if invalid object
-            if obj is None:
-                continue
-
-            # skip non Mesh objects like lamps, curves etc.
-            if obj.type != "MESH":
+            if not self.is_valid_object(obj):
                 continue
 
             bounding_cylinder_data = {}
