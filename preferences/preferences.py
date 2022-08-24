@@ -239,14 +239,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',
                                            description='Collapse overlapping vertices in generated mesh', default=True)
 
-    apply_transforms: bpy.props.EnumProperty(name='Apply', description='Apply Transformations to generated mesh',
-                                             items=(('LRS', 'Location + Rotation + Scale',
-                                                     'Apply location, rotation and scale'),
-                                                    ('RS', 'Rotation + Scale', 'Apply rotation and scale'),
-                                                    ('S', 'Scale', 'Apply scale only'),
-                                                    ('NONE', 'None', 'Do not apply transformations'),
-                                                    ), default='NONE')
-
     # VHACD parameters
     resolution: bpy.props.IntProperty(name='Voxel Resolution',
                                       description='Maximum number of voxels generated during the voxelization stage',
