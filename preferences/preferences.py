@@ -51,7 +51,7 @@ def get_default_executable_path():
 
     vhacd_app_folder = "v-hacd_app"
     OS_folder = 'Win'
-    exe_name = 'VHACD_4_0.exe'
+    exe_name = 'VHACD.exe'
 
     collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
 
@@ -240,42 +240,42 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                            description='Collapse overlapping vertices in generated mesh', default=True)
 
     # VHACD parameters
-    resolution: bpy.props.IntProperty(name='Voxel Resolution',
-                                      description='Maximum number of voxels generated during the voxelization stage',
-                                      default=100000, min=10000, max=64000000)
-    concavity: bpy.props.FloatProperty(name='Maximum Concavity', description='Maximum concavity', default=0.0015,
-                                       min=0.0, max=1.0, precision=4)
+    vhacd_resolution: bpy.props.IntProperty(name='Voxel Resolution',
+                                            description='Maximum number of voxels generated during the voxelization stage',
+                                            default=100000, min=10000, max=64000000)
+    vhacd_concavity: bpy.props.FloatProperty(name='Maximum Concavity', description='Maximum concavity', default=0.0015,
+                                             min=0.0, max=1.0, precision=4)
 
     # Quality settings
-    planeDownsampling: bpy.props.IntProperty(name='Plane Downsampling',
-                                             description='Granularity of the search for the "best" clipping plane',
-                                             default=4, min=1, max=16)
+    vhacd_planeDownsampling: bpy.props.IntProperty(name='Plane Downsampling',
+                                                   description='Granularity of the search for the "best" clipping plane',
+                                                   default=4, min=1, max=16)
 
     # Quality settings
-    convexhullDownsampling: bpy.props.IntProperty(name='Convex Hull Downsampling',
-                                                  description='Precision of the convex-hull generation process during the clipping plane selection stage',
-                                                  default=4, min=1, max=16)
+    vhacd_convexhullDownsampling: bpy.props.IntProperty(name='Convex Hull Downsampling',
+                                                        description='Precision of the convex-hull generation process during the clipping plane selection stage',
+                                                        default=4, min=1, max=16)
 
-    alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
-                                   default=0.05, min=0.0, max=1.0, precision=4)
+    vhacd_alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
+                                         default=0.05, min=0.0, max=1.0, precision=4)
 
-    beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
-                                  min=0.0, max=1.0, precision=4)
+    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
+                                        min=0.0, max=1.0, precision=4)
 
-    gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
-                                   default=0.00125, min=0.0, max=1.0, precision=5)
+    vhacd_gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
+                                         default=0.00125, min=0.0, max=1.0, precision=5)
 
-    pca: bpy.props.BoolProperty(name='PCA',
-                                description='Enable/disable normalizing the mesh before applying the convex decomposition',
-                                default=False)
+    vhacd_pca: bpy.props.BoolProperty(name='PCA',
+                                      description='Enable/disable normalizing the mesh before applying the convex decomposition',
+                                      default=False)
 
-    mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
-                                 items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
+    vhacd_mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
+                                       items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
                                         ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
 
-    minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
-                                            description='Minimum volume to add vertices to convex-hulls',
-                                            default=0.0001, min=0.0, max=0.01, precision=5)
+    vhacd_minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
+                                                  description='Minimum volume to add vertices to convex-hulls',
+                                                  default=0.0001, min=0.0, max=0.01, precision=5)
 
     props = [
         "separator",
@@ -333,18 +333,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     vhacd_props_config = [
-        "resolution",
-        "concavity",
-        "resolution",
-        "concavity",
-        "planeDownsampling",
-        "convexhullDownsampling",
-        "alpha",
-        "beta",
-        "gamma",
-        "pca",
-        "mode",
-        "minVolumePerCH",
+        "vhacd_resolution",
+        "vhacd_concavity",
+        "vhacd_planeDownsampling",
+        "vhacd_convexhullDownsampling",
+        "vhacd_alpha",
+        "vhacd_beta",
+        "vhacd_gamma",
+        "vhacd_pca",
+        "vhacd_mode",
+        "vhacd_minVolumePerCH",
     ]
 
     # here you specify how they are drawn
