@@ -44,21 +44,21 @@ def update_panel_category(self, context):
     return
 
 
-def get_default_executable_path(self):
+def get_default_executable_path():
     '''Set the default exectuable path for the vhacd exe to the addon folder. '''
     path = Path(str(__file__))
     parent = path.parent.parent.absolute()
-    print('parent = path.parent.parent.absolute() ' + str(parent))
 
     vhacd_app_folder = "v-hacd_app"
     OS_folder = 'Win'
+    exe_name = 'VHACD_4_0.exe'
+
     collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
-    print('collider_addon_directory ' + str(collider_addon_directory))
 
     if os.path.isdir(collider_addon_directory):
-        executable_path = os.path.join(collider_addon_directory, 'VHACD_4_0.exe')
-        print('executable_path ' + str(executable_path))
-        return executable_path
+        executable_path = os.path.join(collider_addon_directory, exe_name)
+        if os.path.isfile(executable_path):
+            return executable_path
 
     return False
 
@@ -228,9 +228,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     default_executable_path: bpy.props.StringProperty(name='VHACD exe',
                                                       description='Path to VHACD executable',
-                                                      default='',
+                                                      default=get_default_executable_path(),
                                                       subtype='FILE_PATH',
-                                                      get=get_default_executable_path
                                                       )
 
     data_path: bpy.props.StringProperty(name='Data Path', description='Data path to store V-HACD meshes and logs',
@@ -530,7 +529,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row = layout.row()
             if self.data_path:
                 row.prop(self, "data_path", text="Temporary Data Path")
-            else: # temp folder is missing
+            else:  # temp folder is missing
                 box = layout.box()
                 text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
                 label_multiline(
@@ -555,4 +554,3 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 for propName in self.vhacd_props_config:
                     row = box.row()
                     row.prop(self, propName)
-
