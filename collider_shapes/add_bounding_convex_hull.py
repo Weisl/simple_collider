@@ -10,7 +10,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create convex bounding collisions based on the selection"""
     bl_idname = "mesh.add_bounding_convex_hull"
     bl_label = "Add Convex Hull"
-    bl_description = 'Create convex bounding collisions based on the selection'
+    bl_description = 'Create convex colliders based on the selection'
 
     def __init__(self):
         super().__init__()
@@ -42,7 +42,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.convex_shape_identifier
+        self.shape_suffix = self.prefs.convex_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

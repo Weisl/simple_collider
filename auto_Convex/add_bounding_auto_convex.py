@@ -6,8 +6,8 @@ from bpy.types import Operator
 from subprocess import Popen
 
 from .off_eport import off_export
-from ..operators.add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..operators.object_pivot_and_ailgn import alignObjects
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import alignObjects
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
@@ -56,29 +56,20 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
-    bl_description = 'Split the object collision into multiple convex hulls using Hierarchical Approximate Convex Decomposition'
+    bl_description = 'Create multiple convex hull colliders to represent any object using Hierarchical Approximate Convex Decomposition'
     bl_options = {'REGISTER', 'PRESET'}
 
-    def set_export_path(self, path):
-        self.type_suffix = self.prefs.convex_shape_identifier
-
+    def overwrite_executable_path(self, path):
+        '''Users can overwrite the default executable path. '''
         # Check executable path
         executable_path = bpy.path.abspath(path)
-        if os_path.isdir(executable_path):
-            executable_path = os_path.join(executable_path, 'testVHACD')
+
+        if os_path.isfile(executable_path):
             return executable_path
+        return False
 
-        elif not os_path.isfile(executable_path):
-            self.report({'ERROR'}, 'Path to V-HACD executable required')
-            return {'CANCELLED'}
-
-        if not os_path.exists(executable_path):
-            self.report({'ERROR'}, 'Cannot find V-HACD executable at specified path')
-            return {'CANCELLED'}
-
-        return executable_path
-
-    def set_data_path(self, path):
+    def set_temp_data_path(self, path):
+        '''Set folder to temporarily store the exported data. '''
         # Check data path
         data_path = bpy.path.abspath(path)
 
@@ -121,23 +112,30 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
+        self.shape_suffix = self.prefs.convex_shape_identifier
+
         import addon_utils
         addon_name = 'io_scene_x3d'
         addon_utils.check(addon_name)
 
         success = addon_utils.enable(addon_name)
         if not success:
-            print(addon_name, "is not found")
+            msg = str(addon_name, "is not found")
+            self.report({'ERROR'},msg)
             return {'CANCELLED'}
 
-        print("enabled", success.bl_info['name'])
+        overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
+        vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
 
-        executable_path = self.set_export_path(self.prefs.executable_path)
-        data_path = self.set_data_path(self.prefs.data_path)
+        if not vhacd_exe:
+            self.report({'ERROR'},
+                        'V-HACD executable is required for Auto Convex to work. Please follow the installation instructions and try it again.')
+            return {'CANCELLED'}
 
+        data_path = self.set_temp_data_path(self.prefs.data_path)
         scene = bpy.context.scene
 
-        if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
+        if vhacd_exe == {'CANCELLED'} or data_path == {'CANCELLED'}:
             self.report({'WARNING'}, 'No executable path found!')
             context.space_data.shading.color_type = self.color_type
             try:
@@ -204,8 +202,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             new_collider = bpy.data.objects.new('debug_mesh', me)
             bpy.context.scene.collection.objects.link(new_collider)
 
-            print('Create Debug Mesh')
-
             convex_collision_data['mesh'] = me
             collider_data = [convex_collision_data]
 
@@ -229,7 +225,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                         '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
                         '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
                         '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                executable_path, off_filename, self.prefs.resolution, scene.convex_decomp_depth,
+                vhacd_exe, off_filename, self.prefs.resolution, scene.convex_decomp_depth,
                 self.prefs.concavity, self.prefs.planeDownsampling, self.prefs.convexhullDownsampling,
                 self.prefs.alpha, self.prefs.beta, self.prefs.gamma, self.prefs.pca, self.prefs.mode == 'TETRAHEDRON',
                 scene.maxNumVerticesPerCH, self.prefs.minVolumePerCH, outFileName, logFileName)

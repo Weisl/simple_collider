@@ -1,24 +1,33 @@
 import bpy
 from bpy.types import Operator
 
-from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
-collider_shapes = ['meshColSuffix', 'boxColSuffix', 'sphereColSuffix', 'convexColSuffix']
 
+class OBJECT_OT_regenerate_name(Operator):
+    """Regenerate collider names based on prefab"""
+    bl_idname = "object.regenerate_name"
+    bl_label = "Regenerate Name"
+    bl_description = 'Regenerate collider names based on prefab'
 
-def create_name_number(name, nr):
-    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
-    return name + nr
+    @classmethod
+    def poll(cls, context):
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type == 'MESH':
+                count = count + 1
+        return count > 0
 
+    def execute(self, context):
+        for obj in context.selected_objects:
+            if obj.parent:
+                shape_identifier = obj.get('obj_collider_shape')
+                user_group = obj.get('obj_collider_group')
 
-def unique_name(name, i=1):
-    '''recursive function to find unique name'''
-    new_name = create_name_number(name, i)
-    while new_name in bpy.data.objects:
-        i = i + 1
-        new_name = create_name_number(name, i)
-    return new_name
+                if shape_identifier and user_group:
+                    obj.name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                                                                                 basename=obj.parent.name)
 
 
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
@@ -27,28 +36,14 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
 
-    def set_name_suffix(self):
-        suffix = self.collider_shapes[self.collider_shapes_idx]
-
-        if suffix == 'boxColSuffix':
-            self.type_suffix = self.prefs.box_shape_identifier
-        elif suffix == 'sphereColSuffix':
-            self.type_suffix = self.prefs.sphere_shape_identifier
-        elif suffix == 'convexColSuffix':
-            self.type_suffix = self.prefs.convex_shape_identifier
-        else:  # suffix == 'meshColSuffix'
-            self.type_suffix = self.prefs.mesh_shape_identifier
-
     def __init__(self):
         super().__init__()
-        self.use_type_change = True
+        self.use_shape_change = True
         self.use_decimation = True
         self.is_mesh_to_collider = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
-        self.collider_shapes_idx = 0
-        self.collider_shapes = collider_shapes
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -61,10 +56,10 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             return {'PASS_THROUGH'}
 
 
-        elif event.type == 'C' and event.value == 'RELEASE':
+        elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.set_name_suffix()
+            self.shape_suffix = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
             self.update_names()
 
         return {'RUNNING_MODAL'}
@@ -86,7 +81,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         self.original_obj_data = []
-        self.type_suffix = self.prefs.mesh_shape_identifier
+        self.shape_suffix = self.prefs.mesh_shape_identifier
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -118,7 +113,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
 
 class OBJECT_OT_convert_to_mesh(Operator):
-    """Convert existing objects to be a collider"""
+    """Convert selected colliders to mesh objects"""
     bl_idname = "object.convert_to_mesh"
     bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
@@ -142,7 +137,11 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type == 'MESH':
+                count = count + 1
+        return count > 0
 
     def execute(self, context):
         scene = context.scene
@@ -152,7 +151,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = unique_name(self.my_string)
+                obj.name = self.unique_name(self.my_string)
                 obj.display_type = 'TEXTURED'
 
                 # replace collision material

@@ -11,7 +11,7 @@ def register():
     scene = bpy.types.Scene
     scene.convex_decomp_depth = bpy.props.IntProperty(
         name='Depth',
-        description='Split the object into square of this objects',
+        description='The amount of convex hull colliders is the square of this number at the max',
         default=3,
         min=1,
         max=32
@@ -19,7 +19,7 @@ def register():
 
     scene.maxNumVerticesPerCH = bpy.props.IntProperty(
         name='Verts per Piece',
-        description='Maximum number of vertices per convex-hull',
+        description='Maximum number of vertices per convex-hull collider',
         default=16,
         min=4,
         max=64

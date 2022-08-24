@@ -17,7 +17,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     """Create cylindrical bounding collisions based on the selection"""
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylinder"
-    bl_description = 'Create cylindrical bounding collisions based on the selection'
+    bl_description = 'Create cylindrical colliders based on the selection'
 
     def generate_dimensions_WS(self, v_co):
 
@@ -126,7 +126,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.type_suffix = self.prefs.convex_shape_identifier
+        self.shape_suffix = self.prefs.convex_shape_identifier
 
         collider_data = []
         verts_co = []
