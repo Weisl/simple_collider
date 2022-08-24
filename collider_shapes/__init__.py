@@ -8,8 +8,11 @@ from . import add_bounding_sphere
 from . import add_collision_mesh
 from . import add_minimum_bounding_box
 
+from ..groups.user_groups import default_groups_enum
+
 
 def update_display_colliders(self, context):
+    '''Toggle between solid and wireframe displaytype'''
     for obj in bpy.data.objects:
         if obj.get('isCollider'):
             obj.display_type = self.display_type
@@ -25,6 +28,12 @@ classes = (
     add_collision_mesh.OBJECT_OT_add_mesh_collision,
 )
 
+collider_shape_items = [
+    ('BOX', "Box", "Used to descibe boxed shape collision shapes."),
+    ('SHERE', "Sphere", "Used to descibe spherical collision shapes."),
+    ('CONVEX', "CONVEX", "Used to descibe convex shaped collision shapes."),
+    ('MESH', "Triangle Mesh", "Used to descibe complex triangle mesh collisions.")]
+
 
 def register():
     scene = bpy.types.Scene
@@ -32,14 +41,14 @@ def register():
 
     # Display setting of the bounding object in the viewport
     scene.my_hide = bpy.props.BoolProperty(name="Hide After Creation",
-                                           description="Hide Bounding Object After Creation.", default=False)
+                                           description="Hide collider after creation.", default=False)
 
     # Tranformation space to be used for creating the bounding object.
     scene.my_space = bpy.props.EnumProperty(name="Generation Axis",
                                             items=(('LOCAL', "Local",
-                                                    "Generate the collision based on the local space of the object vertices."),
+                                                    "Generate colliders based on the local space of the object."),
                                                    ('GLOBAL', "Global",
-                                                    "Generate the collision based on the global space of the object vertices.")),
+                                                    "Generate the collision based on the global space of the object.")),
                                             default="LOCAL")
 
     scene.display_type = bpy.props.EnumProperty(name="Collider Display",
@@ -52,44 +61,33 @@ def register():
 
     scene.wireframe_mode = bpy.props.EnumProperty(name="Wireframe Mode",
                                                   items=(('OFF', "Off",
-                                                          "There is no wireframe preview on the collision mesh."),
+                                                          "Colliders show no wireframe"),
                                                          ('PREVIEW', "Preview",
-                                                          "The wireframes are only visible during the generation."),
+                                                          "Collider wireframes are only visible during the generation"),
                                                          ('ALWAYS', "Always",
-                                                          "The wireframes remain visible afterwards.")),
-                                                  description="Hide Bounding Object After Creation.", default='PREVIEW')
+                                                          "Collider wireframes are visible during the generation and remain afterwards")),
+                                                  description="Set the display type for collider wireframes",
+                                                  default='PREVIEW')
 
     # OBJECT
-    obj.basename = bpy.props.StringProperty(default='geo', name='Basename',
-                                            description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).')
+    obj.obj_basename = bpy.props.StringProperty(default='',
+                                                name='Object Basename',
+                                                description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).'
+                                                )
 
-    obj.collider_type = bpy.props.EnumProperty(name="Shading",
-                                               items=[('BOX', "Box", "Used to descibe boxed shape collision shapes."),
-                                                      (
-                                                          'SHERE', "Sphere",
-                                                          "Used to descibe spherical collision shapes."),
-                                                      ('CONVEX', "CONVEX",
-                                                       "Used to descibe convex shaped collision shapes."),
-                                                      ('MESH', "Triangle Mesh",
-                                                       "Used to descibe complex triangle mesh collisions.")],
-                                               default='BOX')
+    obj.obj_collider_shape = bpy.props.EnumProperty(name="Shading",
+                                                    items=collider_shape_items,
+                                                    default = 'BOX')
 
-    obj.collider_complexity = bpy.props.EnumProperty(name="collider complexity", items=[
-        ('USER_01', "Simple Complex",
-         "(Simple and Complex) Custom value to distinguish different types of collisions in a game engine."),
-        ('USER_02', "Simple", "(Simple) Custom value to distinguish different types of collisions in a game engine."),
-        (
-            'USER_03', "Complex",
-            "(Complex) Custom value to distinguish different types of collisions in a game engine.")],
-                                                     default="USER_01")
+    obj.obj_collider_group = bpy.props.EnumProperty(name="collider complexity",
+                                                    items=default_groups_enum,
+                                                    default="USER_01")
 
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
 
     scene.visibility_toggle_list = []
-
-
 
 
 def unregister():
@@ -106,6 +104,6 @@ def unregister():
     del scene.my_space
     del scene.my_hide
 
-    del obj.collider_complexity
-    del obj.collider_type
-    del obj.basename
+    del obj.obj_collider_group
+    del obj.obj_collider_shape
+    del obj.obj_basename

@@ -6,37 +6,22 @@ from .material_functions import set_physics_material, remove_materials, create_m
 
 
 class MATERIAL_OT_physics_material_create(bpy.types.Operator):
-    # Creates Master asset structure: a master empty with different sub empties than can be definied by the technical artist in the .... .
-    # Asset Type - Enum defines in AssetName
-    # Asset Location - Enum defined in AssetLocation
-    # Asset Category - Enum defined in AssetCategory
-    # BaseName - Name of the new asset
-    # EmptySize - representation size of the empty
-
     bl_idname = "material.create_physics_material"
     bl_label = "Create Physics Material"
     bl_description = "Create Physics Material"
     bl_options = {'REGISTER', 'UNDO'}
 
     my_baseName: bpy.props.StringProperty(name="Name")
+
     rgb_controller: bpy.props.FloatVectorProperty(name="Color", subtype='COLOR', default=(1, 1, 1, 0.5), size=4, min=0,
                                                   max=1, description="Display Color")
 
     def invoke(self, context, event):
-
-        # get preset Values
-        # Custom addon Props
-        try:
-            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-            # self.my_baseName = prefs.physics_material_name
-        except:
-            pass
-        else:
-            return context.window_manager.invoke_props_dialog(self)
-        return {'CANCELLED'}
+        # Custom addon Props, get preset Values
+        return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        physics_material = create_material(self.my_baseName, self.rgb_controller)
+        create_material(self.my_baseName, self.rgb_controller)
         return {"FINISHED"}
 
 

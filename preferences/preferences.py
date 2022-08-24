@@ -14,6 +14,7 @@ from ..ui.properties_panels import label_multiline
 
 
 def update_panel_category(self, context):
+    '''Update panel tab for collider tools'''
     panelNames = [
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
@@ -41,7 +42,7 @@ def update_panel_category(self, context):
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
-    """Contains the blender addon preferences"""
+    """Addon preferences for Collider Tools"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
@@ -49,9 +50,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "General", "General addon settings."),
+        items=(('SETTINGS', "General", "General addon settings"),
                ('NAMING', "Presets",
-                "Settings related to presets. Settings changed here will be saved and changed with the presets."),
+                "Presets settings: Create, change and modify presets"),
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
                ('VHACD', "Auto Convex", "Settings related to Auto Convex generation.")),
@@ -61,17 +62,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ###################################################################
     # GENERAL
 
-    collider_category: bpy.props.StringProperty(name="Category Name",
-                                                description="Category name used to organize the addon in the properties panel for all the addons.",
+    collider_category: bpy.props.StringProperty(name="Category Tab",
+                                                description="The category name used to organize the addon in the properties panel for all the addons",
                                                 default='Collider Tools',
                                                 update=update_panel_category)  # update = update_panel_position,
     # Collections
-    use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
-                                               description='Link all collision objects to a specific Collection for collisions',
+    use_col_collection: bpy.props.BoolProperty(name="Add Collider Collection",
+                                               description="Link all collision objects to a specific Collection for collisions. It will create a collider collection with the given name if it doesn't already exist",
                                                default=True)
 
     col_collection_name: bpy.props.StringProperty(name='Collection Name',
-                                                  description='Name of the collection newly created collisions get added to',
+                                                  description='Name of the collider collection newly created collisions are added to',
                                                   default='Collisions')
 
     ###################################################################
@@ -84,6 +85,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         default='PREFIX',
         description='Add custom naming as prefix or suffix'
     )
+
     replace_name: bpy.props.BoolProperty(name='Use Replace Name',
                                          description='Replace the name with a new one or use the name of the original object for the newly created collision name',
                                          default=False)
@@ -361,7 +363,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row = boxname.row()
             if self.naming_position == 'PREFIX':
                 row.label(text="Name = Collision Prefix + Shape + Group + Collision Suffix + Basename + Numbering")
-            else: # self.naming_position == 'SUFFIX':
+            else:  # self.naming_position == 'SUFFIX':
                 row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()

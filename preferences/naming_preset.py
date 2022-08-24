@@ -3,7 +3,7 @@ from bpy.types import Operator
 
 
 class COLLISION_preset(AddPresetBase, Operator):
-    '''Naming presets for collisions'''
+    '''Presets for collider creation'''
     bl_idname = "collision.collision_name_preset"
     bl_label = "Collision Naming Presets"
     preset_menu = "OBJECT_MT_collision_presets"

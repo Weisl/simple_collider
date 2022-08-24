@@ -4,7 +4,7 @@ addon_keymaps = []
 
 
 def remove_hotkey():
-    ''' clears addon keymap hotkeys stored in addon_keymaps '''
+    ''' Clears custom hotkeys stored in addon_keymaps '''
 
     # only works for menues and pie menus
     for km, kmi in addon_keymaps:
@@ -17,7 +17,7 @@ def remove_hotkey():
 
 
 def add_hotkey(context=None):
-    '''Add default hotkey konfiguration'''
+    ''' Add default hotkey configuration'''
     if not context:
         context = bpy.context
 
@@ -45,7 +45,7 @@ def add_hotkey(context=None):
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value=None):
-    ''' returns hotkey of specific type, with specific properties.name (keymap is not a dict, so referencing by keys is not enough
+    ''' Returns hotkey of specific type, with specific properties.name (keymap is not a dict, so referencing by keys is not enough
     if there are multiple hotkeys!)'''
     # for menus and pie_menu
     if kmi_value:

@@ -58,11 +58,11 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
-    bl_description = 'Split the object collision into multiple convex hulls using Hierarchical Approximate Convex Decomposition'
+    bl_description = 'Create multiple convex hull colliders to represent any object using Hierarchical Approximate Convex Decomposition'
     bl_options = {'REGISTER', 'PRESET'}
 
-    def set_custom_executable_path(self, path):
-
+    def overwrite_executable_path(self, path):
+        '''Users can overwrite the default executable path. '''
         # Check executable path
         executable_path = bpy.path.abspath(path)
         if os_path.isdir(executable_path):
@@ -80,6 +80,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         return executable_path
 
     def set_default_executable_path(self):
+        '''Set the default exectuable path for the vhacd exe to the addon folder. '''
         path = Path(str(__file__))
         parent = path.parent.parent.absolute()
         print('parent = path.parent.parent.absolute() ' + str(parent))
@@ -103,7 +104,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         return collider_addon_directory
 
-    def set_data_path(self, path):
+    def set_temp_data_path(self, path):
+        '''Set folder to temporarily store the exported data. '''
         # Check data path
         data_path = bpy.path.abspath(path)
 
@@ -164,7 +166,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # if executable_path == {'CANCELLED'}:
         executable_path = self.set_default_executable_path()
 
-        data_path = self.set_data_path(self.prefs.data_path)
+        data_path = self.set_temp_data_path(self.prefs.data_path)
         scene = bpy.context.scene
 
         if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
@@ -233,8 +235,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = bpy.data.objects.new('debug_mesh', me)
             bpy.context.scene.collection.objects.link(new_collider)
-
-            print('Create Debug Mesh')
 
             convex_collision_data['mesh'] = me
             collider_data = [convex_collision_data]

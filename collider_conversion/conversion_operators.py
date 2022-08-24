@@ -4,12 +4,12 @@ from bpy.types import Operator
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
+
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"
     bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
-
 
     def __init__(self):
         super().__init__()
@@ -88,7 +88,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
 
 class OBJECT_OT_convert_to_mesh(Operator):
-    """Convert existing objects to be a collider"""
+    """Convert selected colliders to mesh objects"""
     bl_idname = "object.convert_to_mesh"
     bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
@@ -149,4 +149,3 @@ class OBJECT_OT_convert_to_mesh(Operator):
                                 bpy.context.scene.collection.objects.link(obj)
 
         return {'FINISHED'}
-

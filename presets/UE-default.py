@@ -4,7 +4,7 @@ prefs = bpy.context.preferences.addons['collider_tools'].preferences
 
 prefs.naming_position = 'PREFIX'
 prefs.replace_name = False
-prefs.basename = 'geo'
+prefs.obj_basename = 'geo'
 prefs.separator = '_'
 prefs.collision_string_prefix = ''
 prefs.collision_string_suffix = ''

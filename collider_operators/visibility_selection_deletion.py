@@ -1,19 +1,11 @@
 import bpy
-
-# Enum property.
-mode_items = [
-    ("ALL_COLLIDER", "all", "Show/Hide all collisions", 1),
-    ("USER_01", "simple_and_complex", "Show/Hide all simple-complex collisions", 2),
-    ("USER_02", "simple", "Show/Hide all simple collisions", 4),
-    ("USER_03", "complex", "Show/Hide all complex collisions", 8),
-    ("OBJECTS", "objects", "Show/Hide all complex collisions", 16),
-]
+from ..groups.user_groups import default_groups_enum
 
 class COLLISION_OT_Selection(bpy.types.Operator):
-    """Select/Deselect collision objects"""
+    """Select collider objects"""
     bl_idname = "object.select_collisions"
-    bl_label = "Select Collision Meshes"
-    bl_description = 'Select/Deselect collision objects'
+    bl_label = "Select collider objects"
+    bl_description = 'Select colliders or objects of type: '
     bl_options = {"REGISTER", "UNDO"}
 
     select: bpy.props.BoolProperty(
@@ -21,8 +13,8 @@ class COLLISION_OT_Selection(bpy.types.Operator):
         default=True
     )
 
-    mode: bpy.props.EnumProperty(items=mode_items,
-                                 name='Hide Mode',
+    mode: bpy.props.EnumProperty(items=default_groups_enum,
+                                 name='Collider Group',
                                  default='ALL_COLLIDER'
                                  )
 
@@ -81,13 +73,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
 class COLLISION_OT_simple_select(COLLISION_OT_Selection):
     bl_idname = "object.simple_select_collisions"
     bl_label = "Select Simple Colliders"
-    bl_description = 'Select all objects that are defined as simple colliders'
-
-
-class COLLISION_OT_simple_deselect(COLLISION_OT_Selection):
-    bl_idname = "object.simple_deselect_collisions"
-    bl_label = "Deselect Simple Colliders"
-    bl_description = 'Deselect all objects that are defined as simple colliders'
+    bl_description = 'Select all colliders that are assigned to user group 01'
 
 
 class COLLISION_OT_complex_select(COLLISION_OT_Selection):
@@ -96,22 +82,10 @@ class COLLISION_OT_complex_select(COLLISION_OT_Selection):
     bl_description = 'Select all objects that are defined as complex colliders'
 
 
-class COLLISION_OT_complex_deselect(COLLISION_OT_Selection):
-    bl_idname = "object.complex_deselect_collisions"
-    bl_label = "Deselect Complex Colliders"
-    bl_description = 'Deselect all objects that are defined as complex colliders'
-
-
 class COLLISION_OT_simple_complex_select(COLLISION_OT_Selection):
     bl_idname = "object.simple_complex_select_collisions"
     bl_label = "Select Simple and Complex Colliders"
     bl_description = 'Select all objects that are defined as simple and complex colliders'
-
-
-class COLLISION_OT_simple_complex_deselect(COLLISION_OT_Selection):
-    bl_idname = "object.simple_complex_deselect_collisions"
-    bl_label = "Deselect Simple and Complex Colliders"
-    bl_description = 'Deselect all objects that are defined as simple and complex colliders'
 
 
 class COLLISION_OT_all_select(COLLISION_OT_Selection):
@@ -120,33 +94,21 @@ class COLLISION_OT_all_select(COLLISION_OT_Selection):
     bl_description = 'Select all collider objects: Simple, Complex, Simple and Complex.'
 
 
-class COLLISION_OT_all_deselect(COLLISION_OT_Selection):
-    bl_idname = "object.all_deselect_collisions"
-    bl_label = "Deselect all Colliders"
-    bl_description = 'Deselect all collider objects: Simple, Complex, Simple and Complex.'
-
-
 class COLLISION_OT_non_collider_select(COLLISION_OT_Selection):
     bl_idname = "object.non_collider_select_collisions"
     bl_label = "Select non Colliders"
     bl_description = 'Select all objects that are not colliders.'
 
 
-class COLLISION_OT_non_collider_deselect(COLLISION_OT_Selection):
-    bl_idname = "object.non_collider_deselect_collisions"
-    bl_label = "Deselect non Colliders"
-    bl_description = 'Deselect all objects that are not colliders.'
-
-
 class COLLISION_OT_Deletion(bpy.types.Operator):
-    """Select/Deselect collision objects"""
+    """Delete collider objects"""
     bl_idname = "object.delete_collisions"
-    bl_label = "Delete Collision Meshes"
-    bl_description = 'Delete collision objects'
+    bl_label = "Delete collider objects"
+    bl_description = 'Delete collision objects of type:'
     bl_options = {"REGISTER", "UNDO"}
 
-    mode: bpy.props.EnumProperty(items=mode_items,
-                                 name='Hide Mode',
+    mode: bpy.props.EnumProperty(items=default_groups_enum,
+                                 name='Collider Group',
                                  default='ALL_COLLIDER'
                                  )
 
@@ -206,45 +168,3 @@ class COLLISION_OT_non_collider_delete(COLLISION_OT_Deletion):
     bl_label = "Delete non Colliders"
     bl_description = 'Delete all objects that are not colliders.'
 
-
-class COLLISION_OT_toggle_collider_visibility(bpy.types.Operator):
-    """Toggle visibility of collider group"""
-    bl_idname = "object.group_visibility_toggle"
-    bl_label = "Toggle Visibility"
-    bl_description = "Toggle the visibility"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    state: bpy.props.StringProperty()
-    mode: bpy.props.EnumProperty(items=mode_items,
-                                 name='Hide Mode',
-                                 default='ALL_COLLIDER'
-                                 )
-
-    def execute(self, context):
-        setVisToggle = False
-        scene = context.scene
-
-        if scene.visibility_toggle_all is None or scene.visibility_toggle_all == False:
-            setVisToggle = True
-
-        obList = []
-
-        for ob in bpy.context.view_layer.objects:
-            # if ob.parent in selected_objs:
-            if self.mode == 'ALL_COLLIDER':
-                if ob.get('isCollider') == True:
-                    obList.append(ob)
-
-            elif self.mode == 'OBJECTS':
-                if not ob.get('isCollider'):
-                    obList.append(ob)
-
-            elif ob.get('isCollider') and ob.get('collider_type') == self.mode:
-                obList.append(ob)
-
-        for ob in obList:
-            ob.hide_viewport = False if setVisToggle == True else True
-
-        scene.visibility_toggle_all = not scene.visibility_toggle_all
-
-        return {'FINISHED'}

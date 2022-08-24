@@ -72,7 +72,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
     bl_idname = "mesh.add_bounding_box"
     bl_label = "Add Box"
-    bl_description = 'Create bounding box collisions based on the selection'
+    bl_description = 'Create bounding box colliders based on the selection'
 
     def __init__(self):
         super().__init__()

@@ -211,7 +211,7 @@ class OBJECT_OT_add_bounding_object():
         separator = prefs.separator
 
         if prefs.replace_name:
-            name = prefs.basename
+            name = prefs.obj_basename
         else:
             name = basename
 
