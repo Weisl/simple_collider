@@ -7,3 +7,4 @@ def off_export(mesh, fullpath):
             off.write(str.encode('{:g} {:g} {:g}\n'.format(*vert.co)))
         for face in mesh.polygons:
             off.write(str.encode('3 {} {} {}\n'.format(*face.vertices)))
+    return

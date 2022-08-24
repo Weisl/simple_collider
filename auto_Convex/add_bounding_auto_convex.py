@@ -9,12 +9,13 @@ from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..collider_shapes.add_bounding_primitive import alignObjects
 
+debug = False
+
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
     """ takes as input a list of bm references and outputs a single merged bmesh
     allows an additional 'normal_update=True' to force _normal_ calculations.
     """
-
     bm = bmesh.new()
     add_vert = bm.verts.new
     add_face = bm.faces.new
@@ -50,7 +51,10 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
     if normal_update:
         bm.normal_update()
 
-    return bm
+    me = bpy.data.meshes.new("joined_mesh")
+    bm.to_mesh(me)
+
+    return me
 
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
@@ -161,6 +165,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                print('Entered: INDIVIDUAL')
                 convex_collision_data = {}
                 convex_collision_data['parent'] = obj
                 convex_collision_data['mesh'] = new_mesh
@@ -171,6 +176,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 matrices.append(obj.matrix_world)
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            print('Entered: SELECTION')
+
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
 
@@ -181,25 +188,26 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 bm_new.from_mesh(mesh)
                 bmeshes.append(bm_new)
 
-            bm_out = bmesh.new()
-            bm_out = bmesh_join(bmeshes, matrices)
+            joined_mesh = bmesh_join(bmeshes, matrices)
 
-            me = bpy.data.meshes.new("debug_obj")
-            bm_out.to_mesh(me)
-            bm_out.free()
-
-            new_collider = bpy.data.objects.new('debug_mesh', me)
-            bpy.context.scene.collection.objects.link(new_collider)
-
-            convex_collision_data['mesh'] = me
+            convex_collision_data['mesh'] = joined_mesh
             collider_data = [convex_collision_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
         convex_decomposition_data = []
 
+        print('collider_data: ' + str(collider_data))
+
         for convex_collision_data in collider_data:
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
+
+            if debug:
+                joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
+                bpy.context.scene.collection.objects.link(joined_obj)
+                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
+                joined_obj.select_set(False)
+                print('OBJECT')
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
@@ -207,18 +215,19 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
 
-            print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
-            off_export(mesh, off_filename)
 
             scene = context.scene
-            cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
-                        '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
-                        '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
-                        '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                vhacd_exe, off_filename, self.prefs.resolution, scene.convex_decomp_depth,
-                self.prefs.concavity, self.prefs.planeDownsampling, self.prefs.convexhullDownsampling,
-                self.prefs.alpha, self.prefs.beta, self.prefs.gamma, self.prefs.pca, self.prefs.mode == 'TETRAHEDRON',
-                scene.maxNumVerticesPerCH, self.prefs.minVolumePerCH, outFileName, logFileName)
+
+            print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
+            off_export(mesh, off_filename)
+            cmd_line = ( '"{}" --input "{}" --resolution {} --depth {} '
+                '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
+                '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
+                '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
+                    vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
+                    self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
+                    self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca, self.prefs.vhacd_mode == 'TETRAHEDRON',
+                    scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -242,6 +251,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         context.view_layer.objects.active = self.active_obj
 
+
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
@@ -264,4 +274,5 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         super().reset_to_initial_state(context)
         print("Time elapsed: ", str(self.get_time_elapsed()))
+
         return {'FINISHED'}
