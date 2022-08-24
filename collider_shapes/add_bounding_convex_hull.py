@@ -50,12 +50,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
         # Duplicate original meshes to convert to collider
         for obj in self.selected_objects:
-            # skip if invalid object
-            if obj is None:
-                continue
 
-            # skip non Mesh objects like lamps, curves etc.
-            if obj.type != "MESH":
+            # skip if invalid object
+            if not self.is_valid_object(obj):
                 continue
 
             convex_collision_data = {}

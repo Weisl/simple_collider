@@ -487,6 +487,12 @@ class OBJECT_OT_add_bounding_object():
 
         return mesh
 
+    def is_valid_object(self, obj):
+        # skip if invalid object
+        if obj is None or obj.type != "MESH":
+            return False
+        return True
+
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
 
         self.set_viewport_drawing(context, bounding_object)

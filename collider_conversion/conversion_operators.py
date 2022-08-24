@@ -87,12 +87,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         for obj in self.selected_objects:
 
             # skip if invalid object
-            if obj is None:
+            if not self.is_valid_object(obj):
                 continue
 
-            # skip non Mesh objects like lamps, curves etc.
-            if obj.type != "MESH":
-                continue
             new_collider = obj
 
             self.new_colliders_list.append(new_collider)

@@ -50,11 +50,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         for obj in self.selected_objects:
 
             # skip if invalid object
-            if obj is None:
-                continue
-
-            # skip non Mesh objects like lamps, curves etc.
-            if obj.type != "MESH":
+            if not self.is_valid_object(obj):
                 continue
 
             mesh_collider_data = {}
