@@ -2,9 +2,7 @@ from os import path as os_path
 
 import bmesh
 import bpy
-import os
 from bpy.types import Operator
-from pathlib import Path
 from subprocess import Popen
 
 from .off_eport import off_export
@@ -65,44 +63,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         '''Users can overwrite the default executable path. '''
         # Check executable path
         executable_path = bpy.path.abspath(path)
-        if os_path.isdir(executable_path):
-            executable_path = os_path.join(executable_path, 'testVHACD')
+
+        if os_path.isfile(executable_path):
             return executable_path
-
-        elif not os_path.isfile(executable_path):
-            self.report({'ERROR'}, 'Path to V-HACD executable required')
-            return {'CANCELLED'}
-
-        if not os_path.exists(executable_path):
-            self.report({'ERROR'}, 'Cannot find V-HACD executable at specified path')
-            return {'CANCELLED'}
-
-        return executable_path
-
-    def set_default_executable_path(self):
-        '''Set the default exectuable path for the vhacd exe to the addon folder. '''
-        path = Path(str(__file__))
-        parent = path.parent.parent.absolute()
-        print('parent = path.parent.parent.absolute() ' + str(parent))
-
-        vhacd_app_folder = "v-hacd_app"
-        collider_addon_directory = os.path.join(parent, vhacd_app_folder)
-        print('collider_addon_directory ' + str(collider_addon_directory))
-
-        if os_path.isdir(collider_addon_directory):
-            executable_path = os_path.join(collider_addon_directory, 'VHACD_4_0.exe')
-            print('executable_path ' + str(executable_path))
-            return executable_path
-
-        elif not os_path.isfile(collider_addon_directory):
-            self.report({'ERROR'}, 'Path to V-HACD executable required')
-            return {'CANCELLED'}
-
-        elif not os_path.exists(collider_addon_directory):
-            self.report({'ERROR'}, 'Cannot find V-HACD executable at specified path')
-            return {'CANCELLED'}
-
-        return collider_addon_directory
+        return False
 
     def set_temp_data_path(self, path):
         '''Set folder to temporarily store the exported data. '''
@@ -161,15 +125,18 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         print("enabled", success.bl_info['name'])
 
-        # executable_path = self.set_custom_executable_path(self.prefs.executable_path)
+        overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
+        vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
 
-        # if executable_path == {'CANCELLED'}:
-        executable_path = self.set_default_executable_path()
+        if not vhacd_exe:
+            self.report({'ERROR'},
+                        'V-HACD executable is required for Auto Convex to work. Please follow the installation instructions and try it again.')
+            return {'CANCELLED'}
 
         data_path = self.set_temp_data_path(self.prefs.data_path)
         scene = bpy.context.scene
 
-        if executable_path == {'CANCELLED'} or data_path == {'CANCELLED'}:
+        if vhacd_exe == {'CANCELLED'} or data_path == {'CANCELLED'}:
             self.report({'WARNING'}, 'No executable path found!')
             context.space_data.shading.color_type = self.color_type
             try:
@@ -259,7 +226,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                         '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
                         '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
                         '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                executable_path, off_filename, self.prefs.resolution, scene.convex_decomp_depth,
+                vhacd_exe, off_filename, self.prefs.resolution, scene.convex_decomp_depth,
                 self.prefs.concavity, self.prefs.planeDownsampling, self.prefs.convexhullDownsampling,
                 self.prefs.alpha, self.prefs.beta, self.prefs.gamma, self.prefs.pca, self.prefs.mode == 'TETRAHEDRON',
                 scene.maxNumVerticesPerCH, self.prefs.minVolumePerCH, outFileName, logFileName)

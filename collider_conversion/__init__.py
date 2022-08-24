@@ -3,6 +3,7 @@ from . import conversion_operators
 classes = (
     conversion_operators.OBJECT_OT_convert_to_collider,
     conversion_operators.OBJECT_OT_convert_to_mesh,
+    conversion_operators.OBJECT_OT_regenerate_name,
 )
 
 def register():

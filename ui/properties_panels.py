@@ -55,7 +55,7 @@ def draw_auto_convex(self, context):
 
         row = col.row(align=True)
 
-        if prefs.executable_path:
+        if prefs.executable_path or prefs.default_executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
             op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
@@ -102,15 +102,10 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
     else:
         row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
 
-    op = row.operator("object.all_select_collisions", icon=str(property.selected_icon), text=str(property.selected_text))
+    op = row.operator("object.all_select_collisions", icon=str(property.selected_icon),
+                      text=str(property.selected_text))
     op.select = True
     op.mode = group_identifier
-
-    # SELECTION TOGGLE
-    # if property.selected:
-    #     row.prop(property, 'selected', icon=str(property.selected_icon), text=str(property.selected_text))
-    # else:
-    #     row.prop(property, 'selected', icon=str(property.deselected_icon), text=str(property.deselected_text))
 
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier
@@ -138,9 +133,6 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_user_group_01, col_01, col_02, user_group=True)
         draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
         draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
-
-    # row = layout.row()
-    # row.operator('object.hide_collisions', text='Update Groups', icon="FILE_REFRESH")
 
 
 def draw_naming_presets(self, context):
@@ -278,6 +270,9 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = col.row(align=True)
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
+        row = layout.row(align=True)
+        row.operator('object.regenerate_name', text='Regenerate Name', icon='FILE_REFRESH')
+
         layout.separator()
 
         row = layout.row(align=True)
@@ -357,8 +352,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop(scene, "wireframe_mode")
-        # row = col.row(align=True)
-        # row.prop(scene, "creation_mode")
+
 
         row = col.row(align=True)
         row.prop(scene, "my_space")
@@ -391,6 +385,7 @@ class VIEW3D_MT_collision_creation(Menu):
         row = layout.row(align=True)
         row.label(text='Display as')
         row.prop(scene, 'display_type', text='')
+
 
 class VIEW3D_MT_collision_visibility(Menu):
     bl_label = 'Collision Visibility'
@@ -448,14 +443,6 @@ class VIEW3D_MT_PIE_template(Menu):
         b = split.box()
         column = b.column()
         column.menu_contents("VIEW3D_MT_collision_creation")
-
-        # Additional Boxes in the Pie menu
-        # b = box.box()
-        # column = b.column()
-        # column.menu_contents("VIEW3D_MT_collision_visibility")
-        # b = box.box()
-        # column = b.column()
-        # column.menu_contents("VIEW3D_MT_collision_physics_materials")
 
         # North
         pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')

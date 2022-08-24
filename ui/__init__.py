@@ -32,7 +32,6 @@ def get_preset_folder_path():
 
 def initialize_presets():
     my_presets = collider_presets_folder()
-    print('my_presets ' + my_presets)
 
     # Get a list of all the files in your bundled presets folder
     my_bundled_presets = get_preset_folder_path()

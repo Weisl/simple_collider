@@ -5,6 +5,27 @@ from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_obje
 from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
 
+class OBJECT_OT_regenerate_name(Operator):
+    """Regenerate collider names based on prefab"""
+    bl_idname = "object.regenerate_name"
+    bl_label = "Regenerate Name"
+    bl_description = 'Regenerate collider names based on prefab'
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        for obj in context.selected_objects:
+            if obj.parent:
+                shape_identifier = obj.get('obj_collider_shape')
+                user_group = obj.get('obj_collider_group')
+
+                if shape_identifier and user_group:
+                    obj.name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                                                                                 basename=obj.parent.name)
+
+
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"

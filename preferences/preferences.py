@@ -1,7 +1,10 @@
-import bpy
+import os
 import platform
-import rna_keymap_ui
+from pathlib import Path
 from tempfile import gettempdir
+
+import bpy
+import rna_keymap_ui
 
 from .naming_preset import COLLISION_preset
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -39,6 +42,25 @@ def update_panel_category(self, context):
         panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
         bpy.utils.register_class(panel)
     return
+
+
+def get_default_executable_path(self):
+    '''Set the default exectuable path for the vhacd exe to the addon folder. '''
+    path = Path(str(__file__))
+    parent = path.parent.parent.absolute()
+    print('parent = path.parent.parent.absolute() ' + str(parent))
+
+    vhacd_app_folder = "v-hacd_app"
+    OS_folder = 'Win'
+    collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
+    print('collider_addon_directory ' + str(collider_addon_directory))
+
+    if os.path.isdir(collider_addon_directory):
+        executable_path = os.path.join(collider_addon_directory, 'VHACD_4_0.exe')
+        print('executable_path ' + str(executable_path))
+        return executable_path
+
+    return False
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -204,12 +226,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                               subtype='FILE_PATH'
                                               )
 
+    default_executable_path: bpy.props.StringProperty(name='VHACD exe',
+                                                      description='Path to VHACD executable',
+                                                      default='',
+                                                      subtype='FILE_PATH',
+                                                      get=get_default_executable_path
+                                                      )
+
     data_path: bpy.props.StringProperty(name='Data Path', description='Data path to store V-HACD meshes and logs',
                                         default=gettempdir(), maxlen=1024, subtype='DIR_PATH')
 
     # pre-process options
     remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',
                                            description='Collapse overlapping vertices in generated mesh', default=True)
+
     apply_transforms: bpy.props.EnumProperty(name='Apply', description='Apply Transformations to generated mesh',
                                              items=(('LRS', 'Location + Rotation + Scale',
                                                      'Apply location, rotation and scale'),
@@ -478,7 +508,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 )
 
                 texts = []
-                if not self.executable_path or not self.data_path:
+                if (not self.executable_path and not self.default_executable_path) or not self.data_path:
                     texts.append(
                         "1. Download the V-hacd executable from the link below (Download V-hacd). If you encounter any issues, try using the Chrome browser. Edge requires you to confirm the download for security reasons. (optional) Copy the downloaded executable to another directory on your hard drive.")
                     texts.append(
@@ -501,10 +531,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
 
                 row = layout.row()
-                if self.executable_path:
-                    row.prop(self, 'executable_path', text='2. V-hacd .exe path')
-                else:
-                    row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
+                row.enabled = False
+                row.prop(self, 'default_executable_path', text='Default Executable')
+
+                row = layout.row()
+                row.prop(self, 'executable_path', text='Overwrtie Executable')
 
                 row = layout.row()
                 if self.data_path:
