@@ -15,9 +15,7 @@ def update_hide(self, context):
             if ob.get('isCollider') == True:
                 ob.hide_viewport = self.hide
         elif self.mode == 'OBJECTS':
-            print('0')
             if ob.get('isCollider') == None:
-                print('1')
                 ob.hide_viewport = self.hide
         else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_type') == self.mode:

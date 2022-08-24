@@ -13,7 +13,11 @@ class OBJECT_OT_regenerate_name(Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type == 'MESH':
+                count = count + 1
+        return count > 0
 
     def execute(self, context):
         for obj in context.selected_objects:
@@ -133,7 +137,11 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type == 'MESH':
+                count = count + 1
+        return count > 0
 
     def execute(self, context):
         scene = context.scene

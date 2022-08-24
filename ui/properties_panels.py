@@ -35,7 +35,7 @@ def draw_auto_convex(self, context):
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
-    row.operator("wm.url_open", text="", icon='INFO').url = "https://github.com/kmammou/v-hacd"
+    row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'VHACD'

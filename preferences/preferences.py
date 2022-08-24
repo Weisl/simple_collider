@@ -491,80 +491,68 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
+            texts = []
+
+            text = "Auto convex is only supported for Windows at this moment."
+            texts.append(text)
+
             if platform.system() != 'Windows':
-                text = "Auto convex is only supported for Windows at this moment."
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=layout
+                    )
+                return
+
+            text = "The auto convex collision generation requires the V-hacd library to work. "
+            texts.append(text)
+
+            box = layout.box()
+            row = box.row()
+            row.label(text="Information about the executable: V-Hacd Github")
+            row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
+
+            for text in texts:
                 label_multiline(
                     context=context,
                     text=text,
-                    parent=layout
+                    parent=box
                 )
 
-            else:
-                text = "The auto convex collision generation requires the V-hacd library to work."
+            row = layout.row()
+            row.enabled = False
+            row.prop(self, 'default_executable_path', text='Default Executable')
+
+            row = layout.row()
+            row.prop(self, 'executable_path', text='Overwrtie Executable')
+
+            row = layout.row()
+            if self.data_path:
+                row.prop(self, "data_path", text="Temporary Data Path")
+            else: # temp folder is missing
+                box = layout.box()
+                text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
                 label_multiline(
                     context=context,
                     text=text,
-                    parent=layout
+                    parent=box
                 )
+                row.prop(self, "data_path", text="Temporary Data Path", icon="ERROR")
 
-                texts = []
-                if (not self.executable_path and not self.default_executable_path) or not self.data_path:
-                    texts.append(
-                        "1. Download the V-hacd executable from the link below (Download V-hacd). If you encounter any issues, try using the Chrome browser. Edge requires you to confirm the download for security reasons. (optional) Copy the downloaded executable to another directory on your hard drive.")
-                    texts.append(
-                        "2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
-                    texts.append(
-                        "3. The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
+            if self.executable_path or self.default_executable_path:
 
-                    box = layout.box()
-                    for text in texts:
-                        label_multiline(
-                            context=context,
-                            text=text,
-                            parent=box
-                        )
-
-                row = layout.row(align=True)
-                row.label(text="1. Download V-HACD")
-                row.operator("wm.url_open",
-                             text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/app/TestVHACD.exe"
-                # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
-
-                row = layout.row()
-                row.enabled = False
-                row.prop(self, 'default_executable_path', text='Default Executable')
-
-                row = layout.row()
-                row.prop(self, 'executable_path', text='Overwrtie Executable')
-
-                row = layout.row()
-                if self.data_path:
-                    row.prop(self, "data_path", text="3. Temporary Data Path")
-                else:
-                    row.prop(self, "data_path", text="3. Temporary Data Path", icon="ERROR")
+                layout.separator()
 
                 box = layout.box()
                 row = box.row()
-                row.label(text="Information about the executable: V-Hacd Github")
+                row.label(text="Generation Settings")
                 row = box.row()
-                row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                row.label(text="Parameter Information")
 
-                if self.executable_path:
-
-                    layout.separator()
-
-                    box = layout.box()
+                row.operator("wm.url_open",
+                             text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                for propName in self.vhacd_props_config:
                     row = box.row()
-                    row.label(text="Generation Settings")
-                    row = box.row()
-                    row.label(text="Parameter Information")
+                    row.prop(self, propName)
 
-                    if self.executable_path:
-                        row.operator("wm.url_open",
-                                     text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
-                        for propName in self.vhacd_props_config:
-                            row = box.row()
-                            row.prop(self, propName)
-                    else:
-                        row = box.row()
-                        row.label(text="Install V-HACD", icon="ERROR")
