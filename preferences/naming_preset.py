@@ -3,7 +3,7 @@ from bpy.types import Operator
 
 
 class COLLISION_preset(AddPresetBase, Operator):
-    '''Naming presets for collisions'''
+    '''Presets for collider creation'''
     bl_idname = "collision.collision_name_preset"
     bl_label = "Collision Naming Presets"
     preset_menu = "OBJECT_MT_collision_presets"
@@ -16,19 +16,21 @@ class COLLISION_preset(AddPresetBase, Operator):
     # properties to store in the preset
     preset_values = [
         "prefs.naming_position",
-        "prefs.separator",
-        "prefs.basename",
         "prefs.replace_name",
-        "prefs.colPreSuffix",
-        "prefs.optionalSuffix",
-        "prefs.IgnoreShapeForComplex",
-        "prefs.colSimpleComplex",
-        "prefs.colSimple",
-        "prefs.colComplex",
-        "prefs.boxColSuffix",
-        "prefs.convexColSuffix",
-        "prefs.sphereColSuffix",
-        "prefs.meshColSuffix",
+        "prefs.basename",
+        "prefs.separator",
+        "prefs.collision_string_prefix",
+        "prefs.collision_string_suffix",
+        "prefs.box_shape_identifier",
+        "prefs.sphere_shape_identifier",
+        "prefs.convex_shape_identifier",
+        "prefs.mesh_shape_identifier",
+        "prefs.collider_groups_enabled",
+        "prefs.user_group_01",
+        "prefs.user_group_02",
+        "prefs.user_group_03",
+        "prefs.physics_material_name",
+        "prefs.physics_material_filter",
     ]
 
     # where to store the preset

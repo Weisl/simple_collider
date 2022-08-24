@@ -4,9 +4,15 @@ import bpy
 import numpy
 import time
 
+from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
 
-collider_types = ['SIMPLE_COMPLEX', 'SIMPLE', 'COMPLEX']
+collider_groups = ['USER_01', 'USER_02', 'USER_03']
+
+
+def alignObjects(new, old):
+    """Align two objects"""
+    new.matrix_world = old.matrix_world
 
 
 def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
@@ -26,6 +32,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
 
     # padding bottom
     font_size = self.prefs.modal_font_size
+
     # padding_bottom = self.prefs.padding_bottom
     padding_bottom = 0
 
@@ -114,8 +121,8 @@ def draw_viewport_overlay(self, context):
     label = 'Persistent Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    label = "Collider Complexity"
-    value = str(self.collision_type[self.collision_type_idx])
+    label = "Collider Group"
+    value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
     label = "Creation Mode "
@@ -128,10 +135,10 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(V)',
                             type='enum')
 
-    if self.use_type_change:
+    if self.use_shape_change:
         label = "Collider Shape"
         value = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(Q)',
                             type='enum')
 
     if self.use_cylinder_axis:
@@ -194,14 +201,69 @@ def draw_viewport_overlay(self, context):
 
 
 class OBJECT_OT_add_bounding_object():
-    """Abstract parent class for modal operators contain common methods and properties for all add bounding object operators"""
+    """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding object collider_shapes"""
     bl_options = {'REGISTER', 'UNDO'}
     bm = []
+
+    @classmethod
+    def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
+        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        separator = prefs.separator
+
+        if prefs.replace_name:
+            name = prefs.basename
+        else:
+            name = basename
+
+        if prefs.collider_groups_enabled:
+            pre_suffix_componetns = [
+                prefs.collision_string_prefix,
+                shape_identifier,
+                get_groups_identifier(user_group),
+                prefs.collision_string_suffix
+            ]
+        else:  # prefs.collider_groups_enabled == False:
+            pre_suffix_componetns = [
+                prefs.collision_string_prefix,
+                shape_identifier,
+                prefs.collision_string_suffix
+            ]
+
+        name_pre_suffix = ''
+        if prefs.naming_position == 'SUFFIX':
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + separator + comp
+            new_name = name + name_pre_suffix
+
+        else:  # prefs.naming_position == 'PREFIX'
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + comp + separator
+            new_name = name_pre_suffix + name
+
+        return cls.unique_name(new_name)
+
+    @classmethod
+    def unique_name(cls, name):
+        '''recursive function to find unique name'''
+        count = 0
+        new_name = create_name_number(name, count)
+
+        while new_name in bpy.data.objects:
+            new_name = create_name_number(name, count)
+            count = count + 1
+        return new_name
 
     @classmethod
     def bmesh(cls, bm):
         # append bmesh to class for it not to be deleted
         cls.bm.append(bm)
+
+    def collider_name(self, basename='Basename'):
+        self.basename = basename
+        user_group = self.collision_groups[self.collision_group_idx]
+        return self.class_collider_name(shape_identifier=self.shape_suffix, user_group=user_group, basename=basename)
 
     def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
         dict = {}
@@ -214,13 +276,13 @@ class OBJECT_OT_add_bounding_object():
         return dict
 
     def get_shape_name(self, identifier):
-        if identifier == 'boxColSuffix':
+        if identifier == 'box_shape_identifier':
             return 'BOX'
-        elif identifier == 'sphereColSuffix':
+        elif identifier == 'sphere_shape_identifier':
             return 'SPHERE'
-        elif identifier == 'convexColSuffix':
+        elif identifier == 'convex_shape_identifier':
             return 'CONVEX'
-        else:  # identifier == 'meshColSuffix':
+        else:  # identifier == 'mesh_shape_identifier':
             return 'MESH'
 
     def force_redraw(self):
@@ -447,7 +509,7 @@ class OBJECT_OT_add_bounding_object():
         set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
-        bounding_object['collider_type'] = self.collision_type[self.collision_type_idx]
+        bounding_object['collider_type'] = self.collision_groups[self.collision_group_idx]
 
         scene = context.scene
 
@@ -459,29 +521,10 @@ class OBJECT_OT_add_bounding_object():
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         bounding_object.display_type = 'SOLID'
-        self.set_object_color(bounding_object)
-
-    def set_object_color(self, obj):
-        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            obj.color = self.prefs.my_color_simple_complex
-        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
-            obj.color = self.prefs.my_color_simple
-        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            obj.color = self.prefs.my_color_complex
+        set_groups_object_color(bounding_object, self.collision_groups[self.collision_group_idx])
 
     def set_object_type(self, obj):
-        obj['collider_type'] = self.collision_type[self.collision_type_idx]
-
-    def get_complexity_suffix(self):
-
-        if self.collision_type[self.collision_type_idx] == 'SIMPLE_COMPLEX':
-            suffix = self.prefs.colSimpleComplex
-        elif self.collision_type[self.collision_type_idx] == 'SIMPLE':
-            suffix = self.prefs.colSimple
-        elif self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            suffix = self.prefs.colComplex
-
-        return suffix
+        obj['collider_type'] = self.collision_groups[self.collision_group_idx]
 
     def add_to_collections(self, obj, collection_name):
         if collection_name not in bpy.data.collections:
@@ -513,59 +556,9 @@ class OBJECT_OT_add_bounding_object():
         print(shape)
         print("Time elapsed: ", str(self.get_time_elapsed()))
 
-    def unique_name(self, name):
-        '''recursive function to find unique name'''
-        new_name = create_name_number(name, self.name_count)
-
-        while new_name in bpy.data.objects:
-            self.name_count = self.name_count + 1
-            new_name = create_name_number(name, self.name_count)
-
-        self.name_count = self.name_count + 1
-        return new_name
-
-    def collider_name(self, basename='Basename'):
-        separator = self.prefs.separator
-
-        if self.prefs.replace_name:
-            name = self.prefs.basename
-        else:
-            name = basename
-
-        if self.prefs.IgnoreShapeForComplex and self.collision_type[self.collision_type_idx] == 'COMPLEX':
-            pre_suffix_componetns = [
-                self.prefs.colPreSuffix,
-                self.get_complexity_suffix(),
-                self.prefs.optionalSuffix
-            ]
-
-        else:
-            pre_suffix_componetns = [
-                self.prefs.colPreSuffix,
-                self.type_suffix,
-                self.get_complexity_suffix(),
-                self.prefs.optionalSuffix
-            ]
-
-        name_pre_suffix = ''
-
-        if self.prefs.naming_position == 'SUFFIX':
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + separator + comp
-            new_name = name + name_pre_suffix
-
-        else:  # self.prefs.naming_position == 'PREFIX'
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + comp + separator
-            new_name = name_pre_suffix + name
-
-        return self.unique_name(new_name)
-
     def update_names(self):
         for obj in self.new_colliders_list:
-            obj.name = self.collider_name()
+            obj.name = self.collider_name(basename=self.basename)
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:
@@ -634,8 +627,8 @@ class OBJECT_OT_add_bounding_object():
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
-        self.type_suffix = ''
-        self.use_type_change = False
+        self.shape_suffix = ''
+        self.use_shape_change = False
 
         # UI/UX
         self.ignore_input = False
@@ -649,7 +642,7 @@ class OBJECT_OT_add_bounding_object():
         return count > 0
 
     def invoke(self, context, event):
-        global collider_types
+        global collider_groups
 
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
@@ -708,10 +701,13 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode_idx = 0
 
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
-        self.collision_type_idx = 0
-        self.collision_type = collider_types
+        self.collision_group_idx = 0
+        self.collision_groups = collider_groups
 
-        # Physics Materials
+        self.collider_shapes = ['box_shape_identifier', 'sphere_shape_identifier', 'convex_shape_identifier',
+                                'mesh_shape_identifier']
+        self.collider_shapes_idx = 0
+
         self.new_colliders_list = []
 
         self.name_count = 0
@@ -916,9 +912,9 @@ class OBJECT_OT_add_bounding_object():
 
         elif event.type == 'T' and event.value == 'RELEASE':
             # toggle through display modes
-            self.collision_type_idx = (self.collision_type_idx + 1) % len(self.collision_type)
+            self.collision_group_idx = (self.collision_group_idx + 1) % len(self.collision_groups)
             for obj in self.new_colliders_list:
-                self.set_object_color(obj)
+                set_groups_object_color(obj, self.collision_groups[self.collision_group_idx])
                 self.set_object_type(obj)
                 self.update_names()
 
@@ -964,7 +960,7 @@ class OBJECT_OT_add_bounding_object():
                 for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
-                self.prefs.my_color_simple_complex[3] = color_alpha
+                self.prefs.user_group_01_color[3] = color_alpha
                 self.current_settings_dic['alpha'] = color_alpha
 
             if self.vertex_count_active:

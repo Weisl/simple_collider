@@ -12,6 +12,7 @@ classes = (
 
 
 def update_material_idx_func(self, context):
+    '''Update material idx for physics materials UIList'''
     print("self.material_list_index = " + str(self.material_list_index))
     self.material_list_index = self.material_list_index % len(bpy.data.materials)
 

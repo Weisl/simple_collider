@@ -52,7 +52,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_bounding_sphere"
     bl_label = "Add Sphere Collision"
-    bl_description = 'Create spherical bounding collisions based on the selection'
+    bl_description = 'Create spherical colliders based on the selection'
 
     def calculate_bounding_sphere(self, obj, used_vertices):
         # Get vertices wit min and may values
@@ -158,7 +158,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        self.type_suffix = self.prefs.sphereColSuffix
+        self.shape_suffix = self.prefs.sphere_shape_identifier
 
         collider_data = []
         verts_co = []
