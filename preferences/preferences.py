@@ -1,10 +1,13 @@
-import bpy
+import os
 import platform
-import rna_keymap_ui
+from pathlib import Path
 from tempfile import gettempdir
 
+import bpy
+import rna_keymap_ui
+
 from .naming_preset import COLLISION_preset
-from ..operators.add_bounding_primitive import create_name_number
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
@@ -14,17 +17,18 @@ from ..ui.properties_panels import label_multiline
 
 
 def update_panel_category(self, context):
+    '''Update panel tab for collider tools'''
     panelNames = [
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
-        # 'VIEW3D_PT_collission_settings_panel',
+
     ]
     panels = [
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
         VIEW3D_PT_collission_material_panel,
-        # VIEW3D_PT_collission_settings_panel,
+
     ]
     for panel in panelNames:
         is_panel = hasattr(bpy.types, panel)
@@ -40,8 +44,27 @@ def update_panel_category(self, context):
     return
 
 
+def get_default_executable_path():
+    '''Set the default exectuable path for the vhacd exe to the addon folder. '''
+    path = Path(str(__file__))
+    parent = path.parent.parent.absolute()
+
+    vhacd_app_folder = "v-hacd_app"
+    OS_folder = 'Win'
+    exe_name = 'VHACD.exe'
+
+    collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
+
+    if os.path.isdir(collider_addon_directory):
+        executable_path = os.path.join(collider_addon_directory, exe_name)
+        if os.path.isfile(executable_path):
+            return executable_path
+
+    return False
+
+
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
-    """Contains the blender addon preferences"""
+    """Addon preferences for Collider Tools"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
@@ -49,9 +72,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
-        items=(('SETTINGS', "General", "General addon settings."),
+        items=(('SETTINGS', "General", "General addon settings"),
                ('NAMING', "Presets",
-                "Settings related to presets. Settings changed here will be saved and changed with the presets."),
+                "Presets settings: Create, change and modify presets"),
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
                ('VHACD', "Auto Convex", "Settings related to Auto Convex generation.")),
@@ -61,17 +84,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ###################################################################
     # GENERAL
 
-    collider_category: bpy.props.StringProperty(name="Category Name",
-                                                description="Category name used to organize the addon in the properties panel for all the addons.",
+    collider_category: bpy.props.StringProperty(name="Category Tab",
+                                                description="The category name used to organize the addon in the properties panel for all the addons",
                                                 default='Collider Tools',
                                                 update=update_panel_category)  # update = update_panel_position,
     # Collections
-    use_col_collection: bpy.props.BoolProperty(name='Add Collision Collection',
-                                               description='Link all collision objects to a specific Collection for collisions',
+    use_col_collection: bpy.props.BoolProperty(name="Add Collider Collection",
+                                               description="Link all collision objects to a specific Collection for collisions. It will create a collider collection with the given name if it doesn't already exist",
                                                default=True)
 
     col_collection_name: bpy.props.StringProperty(name='Collection Name',
-                                                  description='Name of the collection newly created collisions get added to',
+                                                  description='Name of the collider collection newly created collisions are added to',
                                                   default='Collisions')
 
     ###################################################################
@@ -84,11 +107,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         default='PREFIX',
         description='Add custom naming as prefix or suffix'
     )
+
     replace_name: bpy.props.BoolProperty(name='Use Replace Name',
                                          description='Replace the name with a new one or use the name of the original object for the newly created collision name',
                                          default=False)
 
-    basename: bpy.props.StringProperty(name="Basename", default="geo",
+    basename: bpy.props.StringProperty(name="Replace Name", default="geo",
                                        description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
 
     separator: bpy.props.StringProperty(name="Separator", default="_",
@@ -97,7 +121,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     collision_string_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
                                                       description='Simple string added to the beginning of the collider suffix/prefix.')
 
-    collision_string_suffix: bpy.props.StringProperty(name="Collision Postfix", default="",
+    collision_string_suffix: bpy.props.StringProperty(name="Collision Suffix", default="",
                                                       description='Simple string added to the end of the collider suffix/prefix.')
 
     # Collider Shapes
@@ -112,16 +136,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
-    collider_groups_naming_use: bpy.props.BoolProperty(name='Ignore Shape Naming for User Groups',
-                                                       description='',
-                                                       default=True)
 
     user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
-                                            description='Naming of User Collider Group 01.')
+                                                 description='Naming of User Collider Group 01.')
     user_group_02_name: bpy.props.StringProperty(name="Name", default="Group 02",
-                                            description='Naming of User Collider Group 02.')
+                                                 description='Naming of User Collider Group 02.')
     user_group_03_name: bpy.props.StringProperty(name="Name", default="Group 03",
-                                            description='Naming of User Collider Group 03.')
+                                                 description='Naming of User Collider Group 03.')
 
     user_group_01: bpy.props.StringProperty(name="Identifier", default="",
                                             description='Naming of User Collider Group 01.')
@@ -129,7 +150,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                             description='Naming of User Collider Group 02.')
     user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
                                             description='Naming of User Collider Group 03.')
-
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
                                                     default='COL_DEFAULT',
@@ -161,8 +181,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        description="Object color and alpha for User Collider Group 03.",
                                                        default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
                                                        size=4)
-
-
 
     # Modal Fonts
     modal_color_default: bpy.props.FloatVectorProperty(name="Default",
@@ -196,9 +214,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size',
-                                           description="Changes the font size in the 3D viewport when calling the modal operators to create different collision shapes",
+                                           description="Changes the font size in the 3D viewport when calling the modal collider_shapes to create different collision shapes",
                                            default=56)
-
 
     ###################################################################
     # VHACD
@@ -209,58 +226,56 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                               subtype='FILE_PATH'
                                               )
 
+    default_executable_path: bpy.props.StringProperty(name='VHACD exe',
+                                                      description='Path to VHACD executable',
+                                                      default=get_default_executable_path(),
+                                                      subtype='FILE_PATH',
+                                                      )
+
     data_path: bpy.props.StringProperty(name='Data Path', description='Data path to store V-HACD meshes and logs',
                                         default=gettempdir(), maxlen=1024, subtype='DIR_PATH')
 
     # pre-process options
     remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',
                                            description='Collapse overlapping vertices in generated mesh', default=True)
-    apply_transforms: bpy.props.EnumProperty(name='Apply', description='Apply Transformations to generated mesh',
-                                             items=(('LRS', 'Location + Rotation + Scale',
-                                                     'Apply location, rotation and scale'),
-                                                    ('RS', 'Rotation + Scale', 'Apply rotation and scale'),
-                                                    ('S', 'Scale', 'Apply scale only'),
-                                                    ('NONE', 'None', 'Do not apply transformations'),
-                                                    ), default='NONE')
 
     # VHACD parameters
-    resolution: bpy.props.IntProperty(name='Voxel Resolution',
-                                      description='Maximum number of voxels generated during the voxelization stage',
-                                      default=100000, min=10000, max=64000000)
-    concavity: bpy.props.FloatProperty(name='Maximum Concavity', description='Maximum concavity', default=0.0015,
-                                       min=0.0, max=1.0, precision=4)
+    vhacd_resolution: bpy.props.IntProperty(name='Voxel Resolution',
+                                            description='Maximum number of voxels generated during the voxelization stage',
+                                            default=100000, min=10000, max=64000000)
+    vhacd_concavity: bpy.props.FloatProperty(name='Maximum Concavity', description='Maximum concavity', default=0.0015,
+                                             min=0.0, max=1.0, precision=4)
 
     # Quality settings
-    planeDownsampling: bpy.props.IntProperty(name='Plane Downsampling',
-                                             description='Granularity of the search for the "best" clipping plane',
-                                             default=4, min=1, max=16)
+    vhacd_planeDownsampling: bpy.props.IntProperty(name='Plane Downsampling',
+                                                   description='Granularity of the search for the "best" clipping plane',
+                                                   default=4, min=1, max=16)
 
     # Quality settings
-    convexhullDownsampling: bpy.props.IntProperty(name='Convex Hull Downsampling',
-                                                  description='Precision of the convex-hull generation process during the clipping plane selection stage',
-                                                  default=4, min=1, max=16)
+    vhacd_convexhullDownsampling: bpy.props.IntProperty(name='Convex Hull Downsampling',
+                                                        description='Precision of the convex-hull generation process during the clipping plane selection stage',
+                                                        default=4, min=1, max=16)
 
-    alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
-                                   default=0.05, min=0.0, max=1.0, precision=4)
+    vhacd_alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
+                                         default=0.05, min=0.0, max=1.0, precision=4)
 
-    beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
-                                  min=0.0, max=1.0, precision=4)
+    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
+                                        min=0.0, max=1.0, precision=4)
 
-    gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
-                                   default=0.00125, min=0.0, max=1.0, precision=5)
+    vhacd_gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
+                                         default=0.00125, min=0.0, max=1.0, precision=5)
 
-    pca: bpy.props.BoolProperty(name='PCA',
-                                description='Enable/disable normalizing the mesh before applying the convex decomposition',
-                                default=False)
+    vhacd_pca: bpy.props.BoolProperty(name='PCA',
+                                      description='Enable/disable normalizing the mesh before applying the convex decomposition',
+                                      default=False)
 
-    mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
-                                 items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
+    vhacd_mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
+                                       items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
                                         ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
 
-    minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
-                                            description='Minimum volume to add vertices to convex-hulls',
-                                            default=0.0001, min=0.0, max=0.01, precision=5)
-
+    vhacd_minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
+                                                  description='Minimum volume to add vertices to convex-hulls',
+                                                  default=0.0001, min=0.0, max=0.01, precision=5)
 
     props = [
         "separator",
@@ -277,7 +292,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     props_collider_groups = [
         "collider_groups_enabled",
-        "collider_groups_naming_use",
     ]
 
     props_collider_groups_identifier = [
@@ -292,7 +306,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "user_group_03_name",
     ]
 
-
     props_physics_materials = [
         "physics_material_name",
         "physics_material_filter",
@@ -301,7 +314,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
-        "useCustomColGroups",
     ]
 
     ui_col_colors = [
@@ -321,49 +333,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     vhacd_props_config = [
-        "resolution",
-        "concavity",
-        "resolution",
-        "concavity",
-        "planeDownsampling",
-        "convexhullDownsampling",
-        "alpha",
-        "beta",
-        "gamma",
-        "pca",
-        "mode",
-        "minVolumePerCH",
+        "vhacd_resolution",
+        "vhacd_concavity",
+        "vhacd_planeDownsampling",
+        "vhacd_convexhullDownsampling",
+        "vhacd_alpha",
+        "vhacd_beta",
+        "vhacd_gamma",
+        "vhacd_pca",
+        "vhacd_mode",
+        "vhacd_minVolumePerCH",
     ]
-
-    def collider_name(self, basename='Basename'):
-        separator = self.separator
-
-        if self.replace_name:
-            name = self.basename
-        else:
-            name = basename
-
-        pre_suffix_componetns = [
-            self.collision_string_prefix,
-            self.box_shape_identifier,
-            self.user_group_01,
-            self.collision_string_suffix,
-        ]
-
-        name_pre_suffix = ''
-        if self.naming_position == 'SUFFIX':
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + separator + comp
-            new_name = name + name_pre_suffix
-
-        else:  # self.naming_position == 'PREFIX'
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + comp + separator
-            new_name = name_pre_suffix + name
-
-        return create_name_number(new_name, nr=1)
 
     # here you specify how they are drawn
     def draw(self, context):
@@ -401,21 +381,23 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = boxname.row()
             if self.naming_position == 'PREFIX':
-                row.label(text="Name = Collision Pre + Shape + Complexity + Collision Post + Basename + Numbering")
-            else:
-                row.label(text="Name = Basename + Collision Pre + Shape + Complexity + Collision Post + Numbering")
+                row.label(text="Name = Collision Prefix + Shape + Group + Collision Suffix + Basename + Numbering")
+            else:  # self.naming_position == 'SUFFIX':
+                row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + self.collider_name(basename='Suzanne'))
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape_identifier,
+                                                                                       'USER_01',
+                                                                                       basename='Suzanne'))
 
             row = box.row()
             row.prop(self, "replace_name")
 
             row = box.row()
-            if self.replace_name:
-                row.prop(self, "basename")
-            else:
-                row.prop(self, "basename", icon="ERROR")
+
+            if not self.replace_name:
+                row.enabled = False
+            row.prop(self, "basename")
 
             for propName in self.props:
                 row = box.row()
@@ -498,79 +480,67 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
 
         elif self.prefs_tabs == 'VHACD':
-            if platform.system() is not 'Windows':
-                text = "Auto convex is only supported for Windows at this moment."
+            texts = []
+
+            text = "Auto convex is only supported for Windows at this moment."
+            texts.append(text)
+
+            if platform.system() != 'Windows':
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=layout
+                    )
+                return
+
+            text = "The auto convex collision generation requires the V-hacd library to work. "
+            texts.append(text)
+
+            box = layout.box()
+            row = box.row()
+            row.label(text="Information about the executable: V-Hacd Github")
+            row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
+
+            for text in texts:
                 label_multiline(
                     context=context,
                     text=text,
-                    parent=layout
+                    parent=box
                 )
 
-            else:
-                text = "The auto convex collision generation requires the V-hacd library to work."
+            row = layout.row()
+            row.enabled = False
+            row.prop(self, 'default_executable_path', text='Default Executable')
+
+            row = layout.row()
+            row.prop(self, 'executable_path', text='Overwrtie Executable')
+
+            row = layout.row()
+            if self.data_path:
+                row.prop(self, "data_path", text="Temporary Data Path")
+            else:  # temp folder is missing
+                box = layout.box()
+                text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
                 label_multiline(
                     context=context,
                     text=text,
-                    parent=layout
+                    parent=box
                 )
+                row.prop(self, "data_path", text="Temporary Data Path", icon="ERROR")
 
-                texts = []
-                if not self.executable_path or not self.data_path:
-                    texts.append(
-                        "1. Download the V-hacd executable from the link below (Download V-hacd). If you encounter any issues, try using the Chrome browser. Edge requires you to confirm the download for security reasons. (optional) Copy the downloaded executable to another directory on your hard drive.")
-                    texts.append(
-                        "2. Press the small folder icon of the 'V-hacd exe' input to open a file browser. Select the V-hacd.exe you have just downloaded before and confirm with 'Accept'.")
-                    texts.append(
-                        "3. The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here.")
+            if self.executable_path or self.default_executable_path:
 
-                    box = layout.box()
-                    for text in texts:
-                        label_multiline(
-                            context=context,
-                            text=text,
-                            parent=box
-                        )
-
-                row = layout.row(align=True)
-                row.label(text="1. Download V-HACD")
-                row.operator("wm.url_open",
-                             text="Win").url = "https://github.com/kmammou/v-hacd/raw/master/app/TestVHACD.exe"
-                # row.operator("wm.url_open", text="OSX (untested)").url = "https://github.com/kmammou/v-hacd/raw/master/bin-no-ocl/osx/testVHACD"
-
-                row = layout.row()
-                if self.executable_path:
-                    row.prop(self, 'executable_path', text='2. V-hacd .exe path')
-                else:
-                    row.prop(self, 'executable_path', text='2. V-hacd .exe path', icon="ERROR")
-
-                row = layout.row()
-                if self.data_path:
-                    row.prop(self, "data_path", text="3. Temporary Data Path")
-                else:
-                    row.prop(self, "data_path", text="3. Temporary Data Path", icon="ERROR")
+                layout.separator()
 
                 box = layout.box()
                 row = box.row()
-                row.label(text="Information about the executable: V-Hacd Github")
+                row.label(text="Generation Settings")
                 row = box.row()
-                row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                row.label(text="Parameter Information")
 
-                if self.executable_path:
-
-                    layout.separator()
-
-                    box = layout.box()
+                row.operator("wm.url_open",
+                             text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+                for propName in self.vhacd_props_config:
                     row = box.row()
-                    row.label(text="Generation Settings")
-                    row = box.row()
-                    row.label(text="Parameter Information")
-
-                    if self.executable_path:
-                        row.operator("wm.url_open",
-                                     text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
-                        for propName in self.vhacd_props_config:
-                            row = box.row()
-                            row.prop(self, propName)
-                    else:
-                        row = box.row()
-                        row.label(text="Install V-HACD", icon="ERROR")
+                    row.prop(self, propName)
