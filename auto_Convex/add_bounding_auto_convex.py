@@ -120,8 +120,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         success = addon_utils.enable(addon_name)
         if not success:
-            msg = str(addon_name, "is not found")
-            self.report({'ERROR'},msg)
+            msg = str(addon_name + "is not found")
+            self.report({'ERROR'}, msg)
             return {'CANCELLED'}
 
         overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
