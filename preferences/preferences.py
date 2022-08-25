@@ -22,8 +22,8 @@ def update_panel_category(self, context):
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
-
     ]
+
     panels = [
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
@@ -127,38 +127,38 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # Collider Shapes
     box_shape_identifier: bpy.props.StringProperty(name="Box Collision", default="UBX",
                                                    description='Naming used to define box colliders')
-    convex_shape_identifier: bpy.props.StringProperty(name="Convex Collision", default="UCX",
-                                                      description='Naming used to define convex colliders')
     sphere_shape_identifier: bpy.props.StringProperty(name="Sphere Collision", default="USP",
                                                       description='Naming used to define sphere colliders')
-    mesh_shape_identifier: bpy.props.StringProperty(name="Mesh Collision", default="Mesh",
+    convex_shape_identifier: bpy.props.StringProperty(name="Convex Collision", default="UCX",
+                                                      description='Naming used to define convex colliders')
+    mesh_shape_identifier: bpy.props.StringProperty(name="Mesh Collision", default="",
                                                     description='Naming used to define triangle mesh colliders')
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
 
-    user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
+    user_group_01_name: bpy.props.StringProperty(name="Name", default="Simple",
                                                  description='Naming of User Collider Group 01.')
-    user_group_02_name: bpy.props.StringProperty(name="Name", default="Group 02",
+    user_group_02_name: bpy.props.StringProperty(name="Name", default="Simple 2",
                                                  description='Naming of User Collider Group 02.')
-    user_group_03_name: bpy.props.StringProperty(name="Name", default="Group 03",
+    user_group_03_name: bpy.props.StringProperty(name="Name", default="Complex",
                                                  description='Naming of User Collider Group 03.')
 
-    user_group_01: bpy.props.StringProperty(name="Identifier", default="",
+    user_group_01: bpy.props.StringProperty(name="Pre/Suffix", default="",
                                             description='Naming of User Collider Group 01.')
-    user_group_02: bpy.props.StringProperty(name="Identifier", default="",
+    user_group_02: bpy.props.StringProperty(name="Pre/Suffix", default="",
                                             description='Naming of User Collider Group 02.')
-    user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
+    user_group_03: bpy.props.StringProperty(name="Pre/Suffix", default="Complex",
                                             description='Naming of User Collider Group 03.')
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
-                                                    default='COL_DEFAULT',
+                                                    default='MI_COL',
                                                     # type=bpy.types.Material,
                                                     # poll=scene_my_collision_material_poll,
                                                     description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
 
     physics_material_filter: bpy.props.StringProperty(name='Physics Material Filter',
-                                                      default="*COL",
+                                                      default="COL",
                                                       description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.', )
 
     ###################################################################
@@ -259,7 +259,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     vhacd_alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
                                          default=0.05, min=0.0, max=1.0, precision=4)
 
-    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
+    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes',
+                                        default=0.05,
                                         min=0.0, max=1.0, precision=4)
 
     vhacd_gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
@@ -271,7 +272,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     vhacd_mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
                                        items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
-                                        ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
+                                              ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
 
     vhacd_minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
                                                   description='Minimum volume to add vertices to convex-hulls',
@@ -420,7 +421,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 split = box.split(align=True, factor=0.1)
                 split.label(text="Group_" + str(count) + ":")
 
-                split = split.split()
+                split = split.split(align=True, factor=0.5)
                 split.prop(self, prop_01)
                 split.prop(self, prop_02)
                 count += 1
