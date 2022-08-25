@@ -35,6 +35,7 @@ def draw_auto_convex(self, context):
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
+    row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
     row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
@@ -209,7 +210,10 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 ############## PRESET ##############################
 
 class OBJECT_MT_collision_presets(Menu):
-    bl_label = "Collider Preset"
+    '''Collider preset dropdown'''
+    
+    bl_label = "Presets"
+    bl_description = "Specify creation preset used for the collider generation"
     preset_subdir = "collider_tools"
     preset_operator = "script.execute_preset"
     subclass = 'PresetMenu'
@@ -229,6 +233,11 @@ class VIEW3D_PT_collission(bpy.types.Panel):
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
     bl_label = "Collider Tools"
+
+    def draw_header(self, context):
+        layout = self.layout
+        row = layout.row(align=True)
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
 
     def draw(self, context):
         layout = self.layout
@@ -298,7 +307,9 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
     def draw_header(self, context):
         layout = self.layout
-        layout.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
+        row = layout.row(align=True)
+        row.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
 
     def draw(self, context):
         layout = self.layout
@@ -317,7 +328,9 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
 
     def draw_header(self, context):
         layout = self.layout
-        layout.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
+        row = layout.row(align=True)
+        row.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
 
     def draw(self, context):
         layout = self.layout
