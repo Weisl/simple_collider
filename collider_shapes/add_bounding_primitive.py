@@ -247,8 +247,8 @@ class OBJECT_OT_add_bounding_object():
     @classmethod
     def unique_name(cls, name):
         '''recursive function to find unique name'''
-        count = 0
-        new_name = create_name_number(name, count)
+        count = 1
+        new_name = name
 
         while new_name in bpy.data.objects:
             new_name = create_name_number(name, count)
