@@ -8,9 +8,6 @@ from . import add_bounding_sphere
 from . import add_collision_mesh
 from . import add_minimum_bounding_box
 
-from ..groups.user_groups import default_groups_enum
-
-
 def update_display_colliders(self, context):
     '''Toggle between solid and wireframe displaytype'''
     for obj in bpy.data.objects:
@@ -27,13 +24,6 @@ classes = (
     add_bounding_convex_hull.OBJECT_OT_add_convex_hull,
     add_collision_mesh.OBJECT_OT_add_mesh_collision,
 )
-
-collider_shape_items = [
-    ('BOX', "Box", "Used to descibe boxed shape collision shapes."),
-    ('SHERE', "Sphere", "Used to descibe spherical collision shapes."),
-    ('CONVEX', "CONVEX", "Used to descibe convex shaped collision shapes."),
-    ('MESH', "Triangle Mesh", "Used to descibe complex triangle mesh collisions.")]
-
 
 def register():
     scene = bpy.types.Scene
@@ -69,19 +59,7 @@ def register():
                                                   description="Set the display type for collider wireframes",
                                                   default='PREVIEW')
 
-    # OBJECT
-    obj.obj_basename = bpy.props.StringProperty(default='',
-                                                name='Object Basename',
-                                                description='Default naming used for collisions when the name is not inherited from a parent (Name from parent is disabled).'
-                                                )
 
-    obj.obj_collider_shape = bpy.props.EnumProperty(name="Shading",
-                                                    items=collider_shape_items,
-                                                    default = 'BOX')
-
-    obj.obj_collider_group = bpy.props.EnumProperty(name="collider complexity",
-                                                    items=default_groups_enum,
-                                                    default="USER_01")
 
     from bpy.utils import register_class
     for cls in classes:

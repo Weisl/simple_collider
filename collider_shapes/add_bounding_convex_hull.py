@@ -16,6 +16,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_decimation = True
         self.use_modifier_stack = True
+        self.shape = 'convex_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -40,9 +41,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
-
-        scene = context.scene
-        self.shape_suffix = self.prefs.convex_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

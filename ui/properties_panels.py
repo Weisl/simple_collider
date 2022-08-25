@@ -282,7 +282,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
         row = layout.row(align=True)
-        row.operator('object.regenerate_name', text='Regenerate Name', icon='FILE_REFRESH')
+        row.operator('object.regenerate_name', icon='FILE_REFRESH')
 
         layout.separator()
 
