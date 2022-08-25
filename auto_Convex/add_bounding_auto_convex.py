@@ -118,7 +118,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        self.shape_suffix = self.prefs.convex_shape_identifier
+        self.shape_suffix = self.prefs.convex_shape
 
         import addon_utils
         addon_name = 'io_scene_x3d'

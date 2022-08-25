@@ -123,6 +123,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_modifier_stack = True
         self.use_sphere_segments = True
+        self.shape = "sphere_shape"
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -157,8 +158,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
-
-        self.shape_suffix = self.prefs.sphere_shape_identifier
 
         collider_data = []
         verts_co = []

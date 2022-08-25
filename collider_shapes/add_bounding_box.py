@@ -79,6 +79,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         self.use_space = True
         self.use_modifier_stack = True
         self.use_global_local_switches = True
+        self.shape = 'box_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -117,7 +118,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.shape_suffix = self.prefs.box_shape_identifier
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []

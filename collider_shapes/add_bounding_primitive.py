@@ -137,7 +137,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_shape_change:
         label = "Collider Shape"
-        value = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
+        value = self.get_shape_name(self.shape)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(Q)',
                             type='enum')
 
@@ -218,14 +218,14 @@ class OBJECT_OT_add_bounding_object():
         if prefs.collider_groups_enabled:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
-                shape_identifier,
+                prefs.get(shape_identifier),
                 get_groups_identifier(user_group),
                 prefs.collision_string_suffix
             ]
         else:  # prefs.collider_groups_enabled == False:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
-                shape_identifier,
+                prefs.get(shape_identifier),
                 prefs.collision_string_suffix
             ]
 
@@ -263,7 +263,7 @@ class OBJECT_OT_add_bounding_object():
     def collider_name(self, basename='Basename'):
         self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx]
-        return self.class_collider_name(shape_identifier=self.shape_suffix, user_group=user_group, basename=basename)
+        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
     def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
         dict = {}
@@ -276,14 +276,17 @@ class OBJECT_OT_add_bounding_object():
         return dict
 
     def get_shape_name(self, identifier):
-        if identifier == 'box_shape_identifier':
+        if identifier == 'box_shape':
             return 'BOX'
-        elif identifier == 'sphere_shape_identifier':
+        elif identifier == 'sphere_shape':
             return 'SPHERE'
-        elif identifier == 'convex_shape_identifier':
+        elif identifier == 'convex_shape':
             return 'CONVEX'
-        else:  # identifier == 'mesh_shape_identifier':
+        else:  # identifier == 'mesh_shape':
             return 'MESH'
+
+    def get_shape_pre_suffix(self, identifier):
+        return self.prefs.get(identifier)
 
     def force_redraw(self):
         bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
@@ -515,7 +518,8 @@ class OBJECT_OT_add_bounding_object():
         set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
-        bounding_object['collider_type'] = self.collision_groups[self.collision_group_idx]
+        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx]
+        bounding_object['collider_shape'] = self.shape
 
         scene = context.scene
 
@@ -529,8 +533,8 @@ class OBJECT_OT_add_bounding_object():
         bounding_object.display_type = 'SOLID'
         set_groups_object_color(bounding_object, self.collision_groups[self.collision_group_idx])
 
-    def set_object_type(self, obj):
-        obj['collider_type'] = self.collision_groups[self.collision_group_idx]
+    def set_object_collider_group(self, obj):
+        obj['collider_group'] = self.collision_groups[self.collision_group_idx]
 
     def add_to_collections(self, obj, collection_name):
         if collection_name not in bpy.data.collections:
@@ -633,7 +637,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
-        self.shape_suffix = ''
+        self.shape = ''
         self.use_shape_change = False
 
         # UI/UX
@@ -709,10 +713,6 @@ class OBJECT_OT_add_bounding_object():
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
         self.collision_group_idx = 0
         self.collision_groups = collider_groups
-
-        self.collider_shapes = ['box_shape_identifier', 'sphere_shape_identifier', 'convex_shape_identifier',
-                                'mesh_shape_identifier']
-        self.collider_shapes_idx = 0
 
         self.new_colliders_list = []
 
@@ -921,7 +921,7 @@ class OBJECT_OT_add_bounding_object():
             self.collision_group_idx = (self.collision_group_idx + 1) % len(self.collision_groups)
             for obj in self.new_colliders_list:
                 set_groups_object_color(obj, self.collision_groups[self.collision_group_idx])
-                self.set_object_type(obj)
+                self.set_object_collider_group(obj)
                 self.update_names()
 
         elif event.type == 'MOUSEMOVE':

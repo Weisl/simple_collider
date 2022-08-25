@@ -125,13 +125,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                       description='Simple string added to the end of the collider suffix/prefix.')
 
     # Collider Shapes
-    box_shape_identifier: bpy.props.StringProperty(name="Box Collision", default="UBX",
+    box_shape: bpy.props.StringProperty(name="Box Collision", default="UBX",
                                                    description='Naming used to define box colliders')
-    sphere_shape_identifier: bpy.props.StringProperty(name="Sphere Collision", default="USP",
+    sphere_shape: bpy.props.StringProperty(name="Sphere Collision", default="USP",
                                                       description='Naming used to define sphere colliders')
-    convex_shape_identifier: bpy.props.StringProperty(name="Convex Collision", default="UCX",
+    convex_shape: bpy.props.StringProperty(name="Convex Collision", default="UCX",
                                                       description='Naming used to define convex colliders')
-    mesh_shape_identifier: bpy.props.StringProperty(name="Mesh Collision", default="",
+    mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
                                                     description='Naming used to define triangle mesh colliders')
 
     # Collider Groups
@@ -285,10 +285,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     props_shapes = [
-        "box_shape_identifier",
-        "sphere_shape_identifier",
-        "convex_shape_identifier",
-        "mesh_shape_identifier",
+        "box_shape",
+        "sphere_shape",
+        "convex_shape",
+        "mesh_shape",
     ]
 
     props_collider_groups = [
@@ -387,7 +387,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape_identifier,
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape,
                                                                                        'USER_01',
                                                                                        basename='Suzanne'))
 

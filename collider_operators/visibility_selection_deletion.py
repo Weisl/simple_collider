@@ -39,7 +39,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                         ob.select_set(not self.select)
 
                 else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-                    if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                    if ob.get('isCollider') and ob.get('collider_group') == self.mode:
                         count += 1
                         ob.select_set(self.select)
                     else:
@@ -56,7 +56,7 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                         count += 1
                         ob.select_set(self.select)
                 else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-                    if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                    if ob.get('isCollider') and ob.get('collider_group') == self.mode:
                         count += 1
                         ob.select_set(self.select)
 
@@ -125,7 +125,7 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
                 if not ob.get('isCollider'):
                     objects_to_remove.append(ob)
 
-            elif ob.get('isCollider') and ob.get('collider_type') == self.mode:
+            elif ob.get('isCollider') and ob.get('collider_group') == self.mode:
                 objects_to_remove.append(ob)
 
         if len(objects_to_remove) == 0:
