@@ -22,8 +22,8 @@ def update_panel_category(self, context):
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
-
     ]
+
     panels = [
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
@@ -259,7 +259,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     vhacd_alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
                                          default=0.05, min=0.0, max=1.0, precision=4)
 
-    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
+    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes',
+                                        default=0.05,
                                         min=0.0, max=1.0, precision=4)
 
     vhacd_gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
@@ -271,7 +272,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     vhacd_mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
                                        items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
-                                        ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
+                                              ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
 
     vhacd_minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
                                                   description='Minimum volume to add vertices to convex-hulls',
