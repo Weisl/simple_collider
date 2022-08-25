@@ -82,10 +82,8 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
 
         row = col_a.row(align=True)
         op = row.operator('object.assign_user_group', text='', icon='FORWARD')
-        # op = row.operator('object.assign_user_group', text='', icon='SORT_ASC')
         op.mode = group_identifier
         row.label(text=group_name)
-        # row.prop(property, 'name', text='')
 
         row = col_b.row(align=True)
         row.enabled = False
@@ -211,7 +209,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 ############## PRESET ##############################
 
 class OBJECT_MT_collision_presets(Menu):
-    bl_label = "Naming Preset"
+    bl_label = "Collider Preset"
     preset_subdir = "collider_tools"
     preset_operator = "script.execute_preset"
     subclass = 'PresetMenu'
@@ -241,6 +239,10 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         # Create Collider
         row = layout.row(align=True)
         row.label(text='Add Collider Shape')
+
+        # Create button for settings
+        # op = row.operator("wm.call_panel", text="", icon='TOOL_SETTINGS')
+        # op.name = 'VIEW3D_PT_collission_settings_panel'
 
         col = self.layout.column(align=True)
         row = col.row(align=True)
@@ -334,30 +336,6 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
 
-class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
-    """Creates a Panel in the Object properties window"""
-
-    bl_label = "Creation Settings"
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-
-        # Choose Naming Preset
-        row = layout.row(align=True)
-        row.label(text='Creation Settings')
-
-        row = layout.row(align=True)
-        row.prop(scene, "my_hide")
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(scene, "wireframe_mode")
-
-
-        row = col.row(align=True)
-        row.prop(scene, "my_space")
-
-
 ############## MENUS ##############################
 
 class VIEW3D_MT_collision_creation(Menu):
@@ -385,37 +363,6 @@ class VIEW3D_MT_collision_creation(Menu):
         row = layout.row(align=True)
         row.label(text='Display as')
         row.prop(scene, 'display_type', text='')
-
-
-class VIEW3D_MT_collision_visibility(Menu):
-    bl_label = 'Collision Visibility'
-
-    def draw(self, context):
-        scene = context.scene
-
-        col = self.layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(scene, 'display_type', text='Display as')
-
-        draw_visibility_selection_menu(context, self.layout)
-
-
-class VIEW3D_MT_collision_physics_materials(Menu):
-    bl_label = 'Physics Materials'
-
-    def draw(self, context):
-        scene = context.scene
-
-        row = self.layout.row(align=True)
-        row.label(text='Physics Materials')
-
-        self.layout.separator()
-
-        col = self.layout.column(align=True)
-        row = col.row()
-        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
-        row = col.row()
-        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
 
 
 ############## PIE ##############################

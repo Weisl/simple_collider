@@ -144,11 +144,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     user_group_03_name: bpy.props.StringProperty(name="Name", default="Complex",
                                                  description='Naming of User Collider Group 03.')
 
-    user_group_01: bpy.props.StringProperty(name="Identifier", default="",
+    user_group_01: bpy.props.StringProperty(name="Pre/Suffix", default="",
                                             description='Naming of User Collider Group 01.')
-    user_group_02: bpy.props.StringProperty(name="Identifier", default="",
+    user_group_02: bpy.props.StringProperty(name="Pre/Suffix", default="",
                                             description='Naming of User Collider Group 02.')
-    user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
+    user_group_03: bpy.props.StringProperty(name="Pre/Suffix", default="Complex",
                                             description='Naming of User Collider Group 03.')
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
@@ -421,7 +421,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 split = box.split(align=True, factor=0.1)
                 split.label(text="Group_" + str(count) + ":")
 
-                split = split.split()
+                split = split.split(align=True, factor=0.5)
                 split.prop(self, prop_01)
                 split.prop(self, prop_02)
                 count += 1
