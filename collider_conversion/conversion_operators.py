@@ -8,10 +8,10 @@ default_shape = 'box_shape'
 default_group = 'USER_01'
 
 class OBJECT_OT_regenerate_name(Operator):
-    """Regenerate collider names based on prefab"""
+    """Regenerate collider names based on preset"""
     bl_idname = "object.regenerate_name"
     bl_label = "Regenerate Name"
-    bl_description = 'Regenerate collider names based on prefab'
+    bl_description = 'Regenerate collider names based on preset'
 
     @classmethod
     def poll(cls, context):

@@ -137,11 +137,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
 
-    user_group_01_name: bpy.props.StringProperty(name="Name", default="Simple",
+    user_group_01_name: bpy.props.StringProperty(name="Display Name", default="Simple",
                                                  description='Naming of User Collider Group 01.')
-    user_group_02_name: bpy.props.StringProperty(name="Name", default="Simple 2",
+    user_group_02_name: bpy.props.StringProperty(name="Display Name", default="Simple 2",
                                                  description='Naming of User Collider Group 02.')
-    user_group_03_name: bpy.props.StringProperty(name="Name", default="Complex",
+    user_group_03_name: bpy.props.StringProperty(name="Display Name", default="Complex",
                                                  description='Naming of User Collider Group 03.')
 
     user_group_01: bpy.props.StringProperty(name="Pre/Suffix", default="",

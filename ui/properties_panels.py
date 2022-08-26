@@ -25,17 +25,15 @@ def get_addon_name():
     return bl_info["name"]
 
 
-def draw_auto_convex(self, context):
+def draw_auto_convex(layout, context):
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
     scene = context.scene
     addon_name = get_addon_name()
 
     # Auto Convex
-    layout = self.layout
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
-    row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
     row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
@@ -133,6 +131,33 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
         draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
 
+def draw_creation_menu(context, layout):
+    scene = context.scene
+
+    layout.separator()
+    row = layout.row(align=True)
+    row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+    layout.separator()
+    draw_auto_convex(layout, context)
+
+    row = layout.row(align=True)
+    row.label(text='Convert')
+
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.operator('object.convert_to_collider', icon='PHYSICS')
+    row = col.row(align=True)
+    row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+
+    row = layout.row(align=True)
+    row.operator('object.regenerate_name', icon='FILE_REFRESH')
+
+    layout.separator()
+
+    row = layout.row(align=True)
+    row.label(text='Display as')
+    row.prop(scene, 'display_type', text='')
 
 def draw_naming_presets(self, context):
     layout = self.layout
@@ -249,10 +274,6 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = layout.row(align=True)
         row.label(text='Add Collider Shape')
 
-        # Create button for settings
-        # op = row.operator("wm.call_panel", text="", icon='TOOL_SETTINGS')
-        # op.name = 'VIEW3D_PT_collission_settings_panel'
-
         col = self.layout.column(align=True)
         row = col.row(align=True)
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
@@ -265,30 +286,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = col.row(align=True)
         row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
-        layout.separator()
-        row = layout.row(align=True)
-        row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
-
-        layout.separator()
-        draw_auto_convex(self, context)
-
-        row = layout.row(align=True)
-        row.label(text='Convert')
-
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.operator('object.convert_to_collider', icon='PHYSICS')
-        row = col.row(align=True)
-        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
-
-        row = layout.row(align=True)
-        row.operator('object.regenerate_name', icon='FILE_REFRESH')
-
-        layout.separator()
-
-        row = layout.row(align=True)
-        row.label(text='Display as')
-        row.prop(scene, 'display_type', text='')
+        draw_creation_menu(context, layout)
 
 
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
@@ -357,26 +355,11 @@ class VIEW3D_MT_collision_creation(Menu):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
 
         row = layout.row(align=True)
         row.label(text='Generation')
 
-        row = layout.row(align=True)
-        row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
-
-        draw_auto_convex(self, context)
-
-        layout.separator()
-        col = layout.column(align=True)
-        col.operator('object.convert_to_collider', icon='PHYSICS')
-        col.operator('object.convert_to_mesh', icon='MESH_MONKEY')
-
-        layout.separator()
-        row = layout.row(align=True)
-        row.label(text='Display as')
-        row.prop(scene, 'display_type', text='')
-
+        draw_creation_menu(context, layout)
 
 ############## PIE ##############################
 
