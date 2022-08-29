@@ -372,7 +372,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
-                         icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
+                         icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
             if platform.system() == 'Windows':
                 op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()

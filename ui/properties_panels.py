@@ -34,7 +34,8 @@ def draw_auto_convex(layout, context):
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
-    row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
+    
+    row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'VHACD'
@@ -262,7 +263,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     def draw_header(self, context):
         layout = self.layout
         row = layout.row(align=True)
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_auto_convex/"
 
     def draw(self, context):
         layout = self.layout
@@ -307,7 +308,7 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         layout = self.layout
         row = layout.row(align=True)
         row.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_groups/"
 
     def draw(self, context):
         layout = self.layout
@@ -328,7 +329,7 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         row = layout.row(align=True)
         row.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://github.com/kmammou/v-hacd"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_physics_materials/"
 
     def draw(self, context):
         layout = self.layout
