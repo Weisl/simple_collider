@@ -126,22 +126,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Collider Shapes
     box_shape: bpy.props.StringProperty(name="Box Collision", default="UBX",
-                                                   description='Naming used to define box colliders')
+                                        description='Naming used to define box colliders')
     sphere_shape: bpy.props.StringProperty(name="Sphere Collision", default="USP",
-                                                      description='Naming used to define sphere colliders')
+                                           description='Naming used to define sphere colliders')
     convex_shape: bpy.props.StringProperty(name="Convex Collision", default="UCX",
-                                                      description='Naming used to define convex colliders')
+                                           description='Naming used to define convex colliders')
     mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
-                                                    description='Naming used to define triangle mesh colliders')
+                                         description='Naming used to define triangle mesh colliders')
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
 
-    user_group_01_name: bpy.props.StringProperty(name="Name", default="Simple",
+    user_group_01_name: bpy.props.StringProperty(name="Display Name", default="Simple",
                                                  description='Naming of User Collider Group 01.')
-    user_group_02_name: bpy.props.StringProperty(name="Name", default="Simple 2",
+    user_group_02_name: bpy.props.StringProperty(name="Display Name", default="Simple 2",
                                                  description='Naming of User Collider Group 02.')
-    user_group_03_name: bpy.props.StringProperty(name="Name", default="Complex",
+    user_group_03_name: bpy.props.StringProperty(name="Display Name", default="Complex",
                                                  description='Naming of User Collider Group 03.')
 
     user_group_01: bpy.props.StringProperty(name="Pre/Suffix", default="",
@@ -220,19 +220,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ###################################################################
     # VHACD
 
-    executable_path: bpy.props.StringProperty(name='VHACD exe',
-                                              description='Path to VHACD executable',
-                                              default='',
-                                              subtype='FILE_PATH'
-                                              )
-
-    default_executable_path: bpy.props.StringProperty(name='VHACD exe',
-                                                      description='Path to VHACD executable',
+    default_executable_path: bpy.props.StringProperty(name='Default Executable',
+                                                      description='Path to the V-Hacd executable distributed with this addon. (read-only)',
                                                       default=get_default_executable_path(),
                                                       subtype='FILE_PATH',
                                                       )
 
-    data_path: bpy.props.StringProperty(name='Data Path', description='Data path to store V-HACD meshes and logs',
+    executable_path: bpy.props.StringProperty(name='Overwrtie Executable',
+                                              description='Specify a path to another V-hacd executable if you want to use a custom build',
+                                              default='',
+                                              subtype='FILE_PATH'
+                                              )
+
+    data_path: bpy.props.StringProperty(name='Temporary Data Path',
+                                        description='Data path to store temporary files like meshes and log files sused by V-HACD to generate Auto Convex colliders',
                                         default=gettempdir(), maxlen=1024, subtype='DIR_PATH')
 
     # pre-process options
@@ -512,14 +513,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = layout.row()
             row.enabled = False
-            row.prop(self, 'default_executable_path', text='Default Executable')
+            row.prop(self, 'default_executable_path')
 
             row = layout.row()
-            row.prop(self, 'executable_path', text='Overwrtie Executable')
+            row.prop(self, 'executable_path')
 
             row = layout.row()
             if self.data_path:
-                row.prop(self, "data_path", text="Temporary Data Path")
+                row.prop(self, "data_path")
             else:  # temp folder is missing
                 box = layout.box()
                 text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
@@ -528,7 +529,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     text=text,
                     parent=box
                 )
-                row.prop(self, "data_path", text="Temporary Data Path", icon="ERROR")
+                row.prop(self, "data_path", icon="ERROR")
 
             if self.executable_path or self.default_executable_path:
 
