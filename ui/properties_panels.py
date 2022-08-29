@@ -39,27 +39,27 @@ def draw_auto_convex(layout, context):
     op.addon_name = addon_name
     op.prefs_tabs = 'VHACD'
 
-    # if platform.system() != 'Windows':
-    #     text = "Auto convex is only supported for Windows at this moment."
-    #     label_multiline(
-    #         context=context,
-    #         text=text,
-    #         parent=layout
-    #     )
-    # else:
-    col = layout.column(align=True)
-    row = col.row(align=True)
-    row.prop(scene, 'convex_decomp_depth')
-    row.prop(scene, 'maxNumVerticesPerCH')
-
-    row = col.row(align=True)
-
-    if prefs.executable_path or prefs.default_executable_path:
-        row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+    if platform.system() != 'Windows':
+        text = "Auto convex is only supported for Windows at this moment."
+        label_multiline(
+            context=context,
+            text=text,
+            parent=layout
+        )
     else:
-        op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
-        op.addon_name = addon_name
-        op.prefs_tabs = 'VHACD'
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(scene, 'convex_decomp_depth')
+        row.prop(scene, 'maxNumVerticesPerCH')
+
+        row = col.row(align=True)
+
+        if prefs.executable_path or prefs.default_executable_path:
+            row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
+        else:
+            op = row.operator("preferences.addon_search", text="Install V-HACD", icon='ERROR')
+            op.addon_name = addon_name
+            op.prefs_tabs = 'VHACD'
 
 
 def label_multiline(context, text, parent):
@@ -167,7 +167,6 @@ def draw_naming_presets(self, context):
 
     addon_name = get_addon_name()
 
-    # Explorer only works in windows and is not essential for the addon to work
     if platform.system() == 'Windows':
         op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
         op.dirpath = collider_presets_folder()

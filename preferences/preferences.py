@@ -385,8 +385,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
                          icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
-
-            # Explorer only works in windows and is not essential for the addon to work
             if platform.system() == 'Windows':
                 op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()
@@ -501,14 +499,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             text = "Auto convex is only supported for Windows at this moment."
             texts.append(text)
 
-            # if platform.system() != 'Windows':
-            #     for text in texts:
-            #         label_multiline(
-            #             context=context,
-            #             text=text,
-            #             parent=layout
-            #         )
-            #     return
+            if platform.system() != 'Windows':
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=layout
+                    )
+                return
 
             text = "The auto convex collision generation requires the V-hacd library to work. "
             texts.append(text)
