@@ -34,8 +34,7 @@ def draw_auto_convex(layout, context):
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
-    
-    row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
+
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'VHACD'
@@ -263,7 +262,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     def draw_header(self, context):
         layout = self.layout
         row = layout.row(align=True)
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_auto_convex/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
 
     def draw(self, context):
         layout = self.layout
