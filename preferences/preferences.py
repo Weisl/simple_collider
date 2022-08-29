@@ -230,6 +230,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     ###################################################################
     # VHACD
+    # if platform.system() == 'Windows':
     default_executable_path: bpy.props.StringProperty(name='Default Executable',
                                                       description='Path to the V-Hacd executable distributed with this addon. (read-only)',
                                                       default= get_default_executable_path(),
@@ -384,9 +385,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
                          icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
-            # if platform.system() == 'Windows':
-            op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-            op.dirpath = collider_presets_folder()
+            if platform.system() == 'Windows':
+                op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+                op.dirpath = collider_presets_folder()
 
             boxname = box.box()
             row = box.row()
