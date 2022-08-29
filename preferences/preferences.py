@@ -50,17 +50,28 @@ def get_default_executable_path():
     parent = path.parent.parent.absolute()
 
     vhacd_app_folder = "v-hacd_app"
-    OS_folder = 'Win'
-    exe_name = 'VHACD.exe'
+
+    if platform.system() == 'Windows':
+        OS_folder = 'Win'
+        app_name = 'VHACD.exe'
+
+    elif platform.system() == 'Darwin':
+        OS_folder = 'OSX'
+        app_name = 'VHACD'
+
+    # Return empty string if the os is linux or unknown
+    else:  # platform.system() == 'Linux':
+        return ''
 
     collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
 
     if os.path.isdir(collider_addon_directory):
-        executable_path = os.path.join(collider_addon_directory, exe_name)
+        executable_path = os.path.join(collider_addon_directory, app_name)
         if os.path.isfile(executable_path):
             return executable_path
 
-    return False
+    # if folder or file does not exist, return empty string
+    return ''
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -219,12 +230,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     ###################################################################
     # VHACD
-
+    # if platform.system() == 'Windows':
     default_executable_path: bpy.props.StringProperty(name='Default Executable',
                                                       description='Path to the V-Hacd executable distributed with this addon. (read-only)',
-                                                      default=get_default_executable_path(),
+                                                      default= get_default_executable_path(),
                                                       subtype='FILE_PATH',
                                                       )
+
 
     executable_path: bpy.props.StringProperty(name='Overwrtie Executable',
                                               description='Specify a path to another V-hacd executable if you want to use a custom build',
