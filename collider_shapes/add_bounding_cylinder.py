@@ -85,6 +85,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         # cylinder specific
         self.use_vertex_count = True
         self.use_cylinder_axis = True
+        self.shape = 'convex_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -126,7 +127,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         scene = context.scene
-        self.shape_suffix = self.prefs.convex_shape_identifier
 
         collider_data = []
         verts_co = []

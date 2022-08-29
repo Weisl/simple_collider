@@ -4,12 +4,14 @@ from bpy.types import Operator
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_physics_material, create_material, remove_materials
 
+default_shape = 'box_shape'
+default_group = 'USER_01'
 
 class OBJECT_OT_regenerate_name(Operator):
-    """Regenerate collider names based on prefab"""
+    """Regenerate collider names based on preset"""
     bl_idname = "object.regenerate_name"
     bl_label = "Regenerate Name"
-    bl_description = 'Regenerate collider names based on prefab'
+    bl_description = 'Regenerate collider names based on preset'
 
     @classmethod
     def poll(cls, context):
@@ -20,14 +22,19 @@ class OBJECT_OT_regenerate_name(Operator):
         return count > 0
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            if obj.parent:
-                shape_identifier = obj.get('obj_collider_shape')
-                user_group = obj.get('obj_collider_group')
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
-                if shape_identifier and user_group:
-                    obj.name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
-                                                                                 basename=obj.parent.name)
+        for obj in context.selected_objects.copy():
+
+            if obj.parent:
+
+                # get collider shape and group and set to default there is no previous data
+                shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
+                user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
+
+                obj.name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                                                                             basename=obj.parent.name)
+        return {'FINISHED'}
 
 
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
@@ -44,6 +51,13 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
+
+        self.collider_shapes_idx = 3
+        self.collider_shapes = ['box_shape', 'sphere_shape', 'convex_shape',
+                                'mesh_shape']
+
+        self.shape = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
+
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -59,7 +73,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.shape_suffix = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
+            self.shape = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
             self.update_names()
 
         return {'RUNNING_MODAL'}
@@ -81,7 +95,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         self.original_obj_data = []
-        self.shape_suffix = self.prefs.mesh_shape_identifier
+        self.shape_suffix = self.prefs.mesh_shape
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -103,7 +117,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             new_collider.data.name = new_name + self.data_suffix
             new_collider.data.name = new_name + self.data_suffix
 
-        # shape = self.get_shape_name(self.collider_shapes[self.collider_shapes_idx])
         label = "Mesh To Collider"
         super().print_generation_time(label)
         return {'RUNNING_MODAL'}

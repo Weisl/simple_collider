@@ -22,8 +22,8 @@ def update_panel_category(self, context):
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
-
     ]
+
     panels = [
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
@@ -125,40 +125,40 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                       description='Simple string added to the end of the collider suffix/prefix.')
 
     # Collider Shapes
-    box_shape_identifier: bpy.props.StringProperty(name="Box Collision", default="UBX",
-                                                   description='Naming used to define box colliders')
-    convex_shape_identifier: bpy.props.StringProperty(name="Convex Collision", default="UCX",
-                                                      description='Naming used to define convex colliders')
-    sphere_shape_identifier: bpy.props.StringProperty(name="Sphere Collision", default="USP",
-                                                      description='Naming used to define sphere colliders')
-    mesh_shape_identifier: bpy.props.StringProperty(name="Mesh Collision", default="Mesh",
-                                                    description='Naming used to define triangle mesh colliders')
+    box_shape: bpy.props.StringProperty(name="Box Collision", default="UBX",
+                                        description='Naming used to define box colliders')
+    sphere_shape: bpy.props.StringProperty(name="Sphere Collision", default="USP",
+                                           description='Naming used to define sphere colliders')
+    convex_shape: bpy.props.StringProperty(name="Convex Collision", default="UCX",
+                                           description='Naming used to define convex colliders')
+    mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
+                                         description='Naming used to define triangle mesh colliders')
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
 
-    user_group_01_name: bpy.props.StringProperty(name="Name", default="Group 01",
+    user_group_01_name: bpy.props.StringProperty(name="Display Name", default="Simple",
                                                  description='Naming of User Collider Group 01.')
-    user_group_02_name: bpy.props.StringProperty(name="Name", default="Group 02",
+    user_group_02_name: bpy.props.StringProperty(name="Display Name", default="Simple 2",
                                                  description='Naming of User Collider Group 02.')
-    user_group_03_name: bpy.props.StringProperty(name="Name", default="Group 03",
+    user_group_03_name: bpy.props.StringProperty(name="Display Name", default="Complex",
                                                  description='Naming of User Collider Group 03.')
 
-    user_group_01: bpy.props.StringProperty(name="Identifier", default="",
+    user_group_01: bpy.props.StringProperty(name="Pre/Suffix", default="",
                                             description='Naming of User Collider Group 01.')
-    user_group_02: bpy.props.StringProperty(name="Identifier", default="",
+    user_group_02: bpy.props.StringProperty(name="Pre/Suffix", default="",
                                             description='Naming of User Collider Group 02.')
-    user_group_03: bpy.props.StringProperty(name="Identifier", default="Complex",
+    user_group_03: bpy.props.StringProperty(name="Pre/Suffix", default="Complex",
                                             description='Naming of User Collider Group 03.')
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
-                                                    default='COL_DEFAULT',
+                                                    default='MI_COL',
                                                     # type=bpy.types.Material,
                                                     # poll=scene_my_collision_material_poll,
                                                     description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
 
     physics_material_filter: bpy.props.StringProperty(name='Physics Material Filter',
-                                                      default="*COL",
+                                                      default="COL",
                                                       description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.', )
 
     ###################################################################
@@ -220,19 +220,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ###################################################################
     # VHACD
 
-    executable_path: bpy.props.StringProperty(name='VHACD exe',
-                                              description='Path to VHACD executable',
-                                              default='',
-                                              subtype='FILE_PATH'
-                                              )
-
-    default_executable_path: bpy.props.StringProperty(name='VHACD exe',
-                                                      description='Path to VHACD executable',
+    default_executable_path: bpy.props.StringProperty(name='Default Executable',
+                                                      description='Path to the V-Hacd executable distributed with this addon. (read-only)',
                                                       default=get_default_executable_path(),
                                                       subtype='FILE_PATH',
                                                       )
 
-    data_path: bpy.props.StringProperty(name='Data Path', description='Data path to store V-HACD meshes and logs',
+    executable_path: bpy.props.StringProperty(name='Overwrtie Executable',
+                                              description='Specify a path to another V-hacd executable if you want to use a custom build',
+                                              default='',
+                                              subtype='FILE_PATH'
+                                              )
+
+    data_path: bpy.props.StringProperty(name='Temporary Data Path',
+                                        description='Data path to store temporary files like meshes and log files sused by V-HACD to generate Auto Convex colliders',
                                         default=gettempdir(), maxlen=1024, subtype='DIR_PATH')
 
     # pre-process options
@@ -259,7 +260,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     vhacd_alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
                                          default=0.05, min=0.0, max=1.0, precision=4)
 
-    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes', default=0.05,
+    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes',
+                                        default=0.05,
                                         min=0.0, max=1.0, precision=4)
 
     vhacd_gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
@@ -271,7 +273,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     vhacd_mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
                                        items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
-                                        ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
+                                              ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
 
     vhacd_minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
                                                   description='Minimum volume to add vertices to convex-hulls',
@@ -284,10 +286,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     props_shapes = [
-        "box_shape_identifier",
-        "sphere_shape_identifier",
-        "convex_shape_identifier",
-        "mesh_shape_identifier",
+        "box_shape",
+        "sphere_shape",
+        "convex_shape",
+        "mesh_shape",
     ]
 
     props_collider_groups = [
@@ -370,7 +372,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
-                         icon='INFO').url = "https://weisl.github.io/collider-tools_import_engines/"
+                         icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
             if platform.system() == 'Windows':
                 op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()
@@ -386,7 +388,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape_identifier,
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape,
                                                                                        'USER_01',
                                                                                        basename='Suzanne'))
 
@@ -420,7 +422,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 split = box.split(align=True, factor=0.1)
                 split.label(text="Group_" + str(count) + ":")
 
-                split = split.split()
+                split = split.split(align=True, factor=0.5)
                 split.prop(self, prop_01)
                 split.prop(self, prop_02)
                 count += 1
@@ -511,14 +513,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = layout.row()
             row.enabled = False
-            row.prop(self, 'default_executable_path', text='Default Executable')
+            row.prop(self, 'default_executable_path')
 
             row = layout.row()
-            row.prop(self, 'executable_path', text='Overwrtie Executable')
+            row.prop(self, 'executable_path')
 
             row = layout.row()
             if self.data_path:
-                row.prop(self, "data_path", text="Temporary Data Path")
+                row.prop(self, "data_path")
             else:  # temp folder is missing
                 box = layout.box()
                 text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
@@ -527,7 +529,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                     text=text,
                     parent=box
                 )
-                row.prop(self, "data_path", text="Temporary Data Path", icon="ERROR")
+                row.prop(self, "data_path", icon="ERROR")
 
             if self.executable_path or self.default_executable_path:
 

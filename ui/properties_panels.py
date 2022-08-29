@@ -25,17 +25,17 @@ def get_addon_name():
     return bl_info["name"]
 
 
-def draw_auto_convex(self, context):
+def draw_auto_convex(layout, context):
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
     scene = context.scene
     addon_name = get_addon_name()
 
     # Auto Convex
-    layout = self.layout
 
     row = layout.row(align=True)
     row.label(text='Auto Convex')
-    row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
+    
+    row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'VHACD'
@@ -82,10 +82,8 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
 
         row = col_a.row(align=True)
         op = row.operator('object.assign_user_group', text='', icon='FORWARD')
-        # op = row.operator('object.assign_user_group', text='', icon='SORT_ASC')
         op.mode = group_identifier
         row.label(text=group_name)
-        # row.prop(property, 'name', text='')
 
         row = col_b.row(align=True)
         row.enabled = False
@@ -134,6 +132,33 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
         draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
 
+def draw_creation_menu(context, layout):
+    scene = context.scene
+
+    layout.separator()
+    row = layout.row(align=True)
+    row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+    layout.separator()
+    draw_auto_convex(layout, context)
+
+    row = layout.row(align=True)
+    row.label(text='Convert')
+
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.operator('object.convert_to_collider', icon='PHYSICS')
+    row = col.row(align=True)
+    row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
+
+    row = layout.row(align=True)
+    row.operator('object.regenerate_name', icon='FILE_REFRESH')
+
+    layout.separator()
+
+    row = layout.row(align=True)
+    row.label(text='Display as')
+    row.prop(scene, 'display_type', text='')
 
 def draw_naming_presets(self, context):
     layout = self.layout
@@ -211,7 +236,10 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 ############## PRESET ##############################
 
 class OBJECT_MT_collision_presets(Menu):
-    bl_label = "Naming Preset"
+    '''Collider preset dropdown'''
+    
+    bl_label = "Presets"
+    bl_description = "Specify creation preset used for the collider generation"
     preset_subdir = "collider_tools"
     preset_operator = "script.execute_preset"
     subclass = 'PresetMenu'
@@ -231,6 +259,11 @@ class VIEW3D_PT_collission(bpy.types.Panel):
 class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
     bl_label = "Collider Tools"
+
+    def draw_header(self, context):
+        layout = self.layout
+        row = layout.row(align=True)
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_auto_convex/"
 
     def draw(self, context):
         layout = self.layout
@@ -254,30 +287,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = col.row(align=True)
         row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
-        layout.separator()
-        row = layout.row(align=True)
-        row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
-
-        layout.separator()
-        draw_auto_convex(self, context)
-
-        row = layout.row(align=True)
-        row.label(text='Convert')
-
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.operator('object.convert_to_collider', icon='PHYSICS')
-        row = col.row(align=True)
-        row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
-
-        row = layout.row(align=True)
-        row.operator('object.regenerate_name', text='Regenerate Name', icon='FILE_REFRESH')
-
-        layout.separator()
-
-        row = layout.row(align=True)
-        row.label(text='Display as')
-        row.prop(scene, 'display_type', text='')
+        draw_creation_menu(context, layout)
 
 
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
@@ -296,7 +306,9 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
     def draw_header(self, context):
         layout = self.layout
-        layout.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
+        row = layout.row(align=True)
+        row.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_groups/"
 
     def draw(self, context):
         layout = self.layout
@@ -315,7 +327,9 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
 
     def draw_header(self, context):
         layout = self.layout
-        layout.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
+        row = layout.row(align=True)
+        row.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_physics_materials/"
 
     def draw(self, context):
         layout = self.layout
@@ -334,30 +348,6 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
 
-class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
-    """Creates a Panel in the Object properties window"""
-
-    bl_label = "Creation Settings"
-
-    def draw(self, context):
-        layout = self.layout
-        scene = context.scene
-
-        # Choose Naming Preset
-        row = layout.row(align=True)
-        row.label(text='Creation Settings')
-
-        row = layout.row(align=True)
-        row.prop(scene, "my_hide")
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(scene, "wireframe_mode")
-
-
-        row = col.row(align=True)
-        row.prop(scene, "my_space")
-
-
 ############## MENUS ##############################
 
 class VIEW3D_MT_collision_creation(Menu):
@@ -366,57 +356,11 @@ class VIEW3D_MT_collision_creation(Menu):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
 
         row = layout.row(align=True)
         row.label(text='Generation')
 
-        row = layout.row(align=True)
-        row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
-
-        draw_auto_convex(self, context)
-
-        layout.separator()
-        col = layout.column(align=True)
-        col.operator('object.convert_to_collider', icon='PHYSICS')
-        col.operator('object.convert_to_mesh', icon='MESH_MONKEY')
-
-        layout.separator()
-        row = layout.row(align=True)
-        row.label(text='Display as')
-        row.prop(scene, 'display_type', text='')
-
-
-class VIEW3D_MT_collision_visibility(Menu):
-    bl_label = 'Collision Visibility'
-
-    def draw(self, context):
-        scene = context.scene
-
-        col = self.layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(scene, 'display_type', text='Display as')
-
-        draw_visibility_selection_menu(context, self.layout)
-
-
-class VIEW3D_MT_collision_physics_materials(Menu):
-    bl_label = 'Physics Materials'
-
-    def draw(self, context):
-        scene = context.scene
-
-        row = self.layout.row(align=True)
-        row.label(text='Physics Materials')
-
-        self.layout.separator()
-
-        col = self.layout.column(align=True)
-        row = col.row()
-        row.operator('material.create_physics_material', icon='PLUS', text="Add Physics Material")
-        row = col.row()
-        row.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
-
+        draw_creation_menu(context, layout)
 
 ############## PIE ##############################
 

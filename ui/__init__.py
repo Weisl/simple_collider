@@ -10,11 +10,8 @@ classes = (
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.OBJECT_MT_collision_presets,
     properties_panels.VIEW3D_MT_collision_creation,
-    properties_panels.VIEW3D_MT_collision_visibility,
-    properties_panels.VIEW3D_MT_collision_physics_materials,
     properties_panels.VIEW3D_PT_collission_panel,
     properties_panels.VIEW3D_PT_collission_visibility_panel,
-    # properties_panels.VIEW3D_PT_collission_settings_panel,
     properties_panels.VIEW3D_PT_collission_material_panel,
     properties_panels.VIEW3D_MT_PIE_template,
 )

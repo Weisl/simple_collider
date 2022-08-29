@@ -18,7 +18,7 @@ def update_hide(self, context):
             if ob.get('isCollider') == None:
                 ob.hide_viewport = self.hide
         else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-            if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+            if ob.get('isCollider') and ob.get('collider_group') == self.mode:
                 ob.hide_viewport = self.hide
 
 
@@ -37,7 +37,7 @@ def update_selected(self, context):
                     ob.select_set(not self.selected)
 
             else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-                if ob.get('isCollider') and ob.get('collider_type') == self.mode:
+                if ob.get('isCollider') and ob.get('collider_group') == self.mode:
                     ob.select_set(not self.selected)
 
 
@@ -173,6 +173,6 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
         for obj in context.selected_objects.copy():
             if obj.type == 'MESH':
                 set_groups_object_color(obj, self.mode)
-                obj['collider_type'] = self.mode
+                obj['collider_group'] = self.mode
 
         return {'FINISHED'}
