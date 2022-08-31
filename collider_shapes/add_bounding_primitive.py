@@ -206,6 +206,30 @@ class OBJECT_OT_add_bounding_object():
     bm = []
 
     @classmethod
+    def set_data_name(cls, obj, new_name, data_suffix):
+        data_name = new_name + data_suffix
+        if data_name in bpy.data.meshes:
+            bpy.data.meshes[data_name].name = 'deprecated_' + data_name
+
+        obj.data.name = data_name
+
+    @classmethod
+    def unique_name(cls, name):
+        '''recursive function to find unique name'''
+        count = 1
+        new_name = name
+
+        while new_name in bpy.data.objects:
+            new_name = create_name_number(name, count)
+            count = count + 1
+        return new_name
+
+    @classmethod
+    def bmesh(cls, bm):
+        # append bmesh to class for it not to be deleted
+        cls.bm.append(bm)
+
+    @classmethod
     def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
         prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
         separator = prefs.separator
@@ -243,27 +267,6 @@ class OBJECT_OT_add_bounding_object():
             new_name = name_pre_suffix + name
 
         return cls.unique_name(new_name)
-
-    @classmethod
-    def unique_name(cls, name):
-        '''recursive function to find unique name'''
-        count = 1
-        new_name = name
-
-        while new_name in bpy.data.objects:
-            new_name = create_name_number(name, count)
-            count = count + 1
-        return new_name
-
-    @classmethod
-    def bmesh(cls, bm):
-        # append bmesh to class for it not to be deleted
-        cls.bm.append(bm)
-
-    def set_collider_name(self, new_collider, parent_name):
-        new_name = self.collider_name(basename=parent_name)
-        new_collider.name = new_name
-        new_collider.data.name = new_name + self.data_suffix
 
     def collider_name(self, basename='Basename'):
         self.basename = basename
@@ -571,11 +574,16 @@ class OBJECT_OT_add_bounding_object():
         print(shape)
         print("Time elapsed: ", str(self.get_time_elapsed()))
 
+    def set_collider_name(self, new_collider, parent_name):
+        new_name = self.collider_name(basename=parent_name)
+        new_collider.name = new_name
+        self.set_data_name(new_collider, new_name, self.data_suffix)
+
     def update_names(self):
         for obj in self.new_colliders_list:
             new_name = self.collider_name(basename=self.basename)
             obj.name = new_name
-            obj.data.name = new_name + self.data_suffix
+            self.set_data_name(obj, new_name, self.data_suffix)
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:

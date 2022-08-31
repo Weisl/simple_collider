@@ -8,10 +8,10 @@ default_shape = 'box_shape'
 default_group = 'USER_01'
 
 class OBJECT_OT_regenerate_name(Operator):
-    """Regenerate collider names based on preset"""
+    """Regenerate selected collider names based on preset"""
     bl_idname = "object.regenerate_name"
     bl_label = "Regenerate Name"
-    bl_description = 'Regenerate collider names based on preset'
+    bl_description = 'Regenerate selected collider names based on preset'
 
     @classmethod
     def poll(cls, context):
@@ -27,13 +27,14 @@ class OBJECT_OT_regenerate_name(Operator):
         for obj in context.selected_objects.copy():
 
             if obj.parent:
-
                 # get collider shape and group and set to default there is no previous data
                 shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
                 user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
 
-                obj.name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
                                                                              basename=obj.parent.name)
+                obj.name = new_name
+                obj.data.name = OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
         return {'FINISHED'}
 
 
@@ -112,10 +113,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             collections = new_collider.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_name = super().collider_name(basename=obj.name)
-            new_collider.name = new_name
-            new_collider.data.name = new_name + self.data_suffix
-            new_collider.data.name = new_name + self.data_suffix
+            super().set_collider_name(new_collider, obj.name)
 
         label = "Mesh To Collider"
         super().print_generation_time(label)
@@ -161,7 +159,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = self.unique_name(self.my_string)
+                obj.name = OBJECT_OT_add_bounding_object.unique_name(self.my_string)
                 obj.display_type = 'TEXTURED'
 
                 # replace collision material
