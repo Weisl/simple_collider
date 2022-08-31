@@ -46,11 +46,20 @@ def create_default_material():
 
     return default_material
 
+def create_physics_material(physics_material_name):
+    '''Create a default material'''
+    if physics_material_name and physics_material_name in bpy.data.materials:
+        physic_material = bpy.data.materials[physics_material_name]
+    else:
+        physic_material = create_default_material()
+
+    return physic_material
+
 
 # Materials
 def set_physics_material(bounding_object, physics_material_name):
     '''Remove existing materials from an object and assign the physics material'''
     remove_materials(bounding_object)
 
-    mat = create_default_material()
+    mat = create_physics_material(physics_material_name)
     set_material(bounding_object, mat)

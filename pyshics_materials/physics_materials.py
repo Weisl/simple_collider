@@ -76,7 +76,7 @@ class MATERIAL_UL_physics_materials(UIList):
 
                 self.set_initial_state = False
 
-            if mat:
+            if mat and mat.is_grease_pencil == False:
                 if self.layout_type in {'DEFAULT','COMPACT'}:
                     # split_left = layout.split(factor=0.65, align=True)
                     # col_01 = split_left.column(align=True)
