@@ -203,10 +203,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_name = super().collider_name(basename=parent.name)
-            new_collider.name = new_name
-            new_collider.data.name = new_name + self.data_suffix
-            new_collider.data.name = new_name + self.data_suffix
+            super().set_collider_name(new_collider, parent.name)
 
             self.custom_set_parent(context, parent, new_collider)
 

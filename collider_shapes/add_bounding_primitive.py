@@ -260,6 +260,11 @@ class OBJECT_OT_add_bounding_object():
         # append bmesh to class for it not to be deleted
         cls.bm.append(bm)
 
+    def set_collider_name(self, new_collider, parent_name):
+        new_name = self.collider_name(basename=parent_name)
+        new_collider.name = new_name
+        new_collider.data.name = new_name + self.data_suffix
+
     def collider_name(self, basename='Basename'):
         self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx]
@@ -568,7 +573,9 @@ class OBJECT_OT_add_bounding_object():
 
     def update_names(self):
         for obj in self.new_colliders_list:
-            obj.name = self.collider_name(basename=self.basename)
+            new_name = self.collider_name(basename=self.basename)
+            obj.name = new_name
+            obj.data.name = new_name + self.data_suffix
 
     def reset_to_initial_state(self, context):
         for obj in bpy.data.objects:

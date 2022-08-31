@@ -225,7 +225,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
-            new_collider.name = super().collider_name(basename=parent.name)
+            super().set_collider_name(new_collider, parent.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
