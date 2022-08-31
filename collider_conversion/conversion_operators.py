@@ -34,7 +34,8 @@ class OBJECT_OT_regenerate_name(Operator):
                 new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
                                                                              basename=obj.parent.name)
                 obj.name = new_name
-                obj.data.name = OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+                OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+                
         return {'FINISHED'}
 
 
