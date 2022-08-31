@@ -76,26 +76,17 @@ class MATERIAL_UL_physics_materials(UIList):
 
                 self.set_initial_state = False
 
-            if mat and mat.is_grease_pencil == False:
+            if mat:
                 if self.layout_type in {'DEFAULT','COMPACT'}:
-                    # split_left = layout.split(factor=0.65, align=True)
-                    # col_01 = split_left.column(align=True)
-                    # col_02 = split_left.column(align=True)
-                    #
-                    # col_01.prop(mat, "name", text="",  emboss=False, icon_value=icon)
-                    # # col_01.label(text=mat.name)
-                    # row = col_02.row(align=True)
-                    # row.operator('material.set_physics_material', text='',
-                    #              icon='MATERIAL').physics_material_name = mat.name
-                    # # row.prop(mat, "diffuse_color", text='')
-
-                    row = layout.row(align=True)
-                    row.operator('material.set_physics_material', text='',
-                                 icon='FORWARD').physics_material_name = mat.name
-                    row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
-                    # row.operator('material.set_physics_material', text='',
-                    #              icon='MATERIAL').physics_material_name = mat.name
-
+                    if mat.is_grease_pencil == False:
+                        row = layout.row(align=True)
+                        row.operator('material.set_physics_material', text='',
+                                     icon='FORWARD').physics_material_name = mat.name
+                        row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
+                    else:
+                        row = layout.row(align=True)
+                        row.enabled = False
+                        row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
 
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
