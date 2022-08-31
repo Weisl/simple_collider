@@ -4,7 +4,7 @@ prefs = bpy.context.preferences.addons['collider_tools'].preferences
 
 prefs.naming_position = 'SUFFIX'
 prefs.replace_name = True
-prefs.obj_basename = 'collider'
+prefs.obj_basename = 'Collider'
 prefs.separator = '_'
 prefs.collision_string_prefix = ''
 prefs.collision_string_suffix = ''

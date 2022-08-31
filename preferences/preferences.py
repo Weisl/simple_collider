@@ -123,8 +123,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                          description='Replace the name with a new one or use the name of the original object for the newly created collision name',
                                          default=False)
 
-    basename: bpy.props.StringProperty(name="Replace Name", default="geo",
-                                       description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
+    obj_basename: bpy.props.StringProperty(name="Replace Name", default="geo",
+                                           description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
 
     separator: bpy.props.StringProperty(name="Separator", default="_",
                                         description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
@@ -233,10 +233,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # if platform.system() == 'Windows':
     default_executable_path: bpy.props.StringProperty(name='Default Executable',
                                                       description='Path to the V-Hacd executable distributed with this addon. (read-only)',
-                                                      default= get_default_executable_path(),
+                                                      default=get_default_executable_path(),
                                                       subtype='FILE_PATH',
                                                       )
-
 
     executable_path: bpy.props.StringProperty(name='Overwrtie Executable',
                                               description='Specify a path to another V-hacd executable if you want to use a custom build',
@@ -400,7 +399,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape,
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name('box_shape',
                                                                                        'USER_01',
                                                                                        basename='Suzanne'))
 
@@ -411,7 +410,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             if not self.replace_name:
                 row.enabled = False
-            row.prop(self, "basename")
+            row.prop(self, "obj_basename")
 
             for propName in self.props:
                 row = box.row()
