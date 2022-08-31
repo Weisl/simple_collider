@@ -198,10 +198,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
 
-            new_name = super().collider_name(basename=parent_name)
-            new_collider.name = new_name
-            new_collider.data.name = new_name + self.data_suffix
-            new_collider.data.name = new_name + self.data_suffix
+            super().set_collider_name(new_collider, parent_name)
+
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

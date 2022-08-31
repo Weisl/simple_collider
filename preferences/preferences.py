@@ -50,17 +50,28 @@ def get_default_executable_path():
     parent = path.parent.parent.absolute()
 
     vhacd_app_folder = "v-hacd_app"
-    OS_folder = 'Win'
-    exe_name = 'VHACD.exe'
+
+    if platform.system() == 'Windows':
+        OS_folder = 'Win'
+        app_name = 'VHACD.exe'
+
+    elif platform.system() == 'Darwin':
+        OS_folder = 'OSX'
+        app_name = 'VHACD'
+
+    # Return empty string if the os is linux or unknown
+    else:  # platform.system() == 'Linux':
+        return ''
 
     collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
 
     if os.path.isdir(collider_addon_directory):
-        executable_path = os.path.join(collider_addon_directory, exe_name)
+        executable_path = os.path.join(collider_addon_directory, app_name)
         if os.path.isfile(executable_path):
             return executable_path
 
-    return False
+    # if folder or file does not exist, return empty string
+    return ''
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -112,8 +123,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                          description='Replace the name with a new one or use the name of the original object for the newly created collision name',
                                          default=False)
 
-    basename: bpy.props.StringProperty(name="Replace Name", default="geo",
-                                       description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
+    obj_basename: bpy.props.StringProperty(name="Replace Name", default="geo",
+                                           description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
 
     separator: bpy.props.StringProperty(name="Separator", default="_",
                                         description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
@@ -219,7 +230,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     ###################################################################
     # VHACD
-
+    # if platform.system() == 'Windows':
     default_executable_path: bpy.props.StringProperty(name='Default Executable',
                                                       description='Path to the V-Hacd executable distributed with this addon. (read-only)',
                                                       default=get_default_executable_path(),
@@ -388,7 +399,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(self.box_shape,
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name('box_shape',
                                                                                        'USER_01',
                                                                                        basename='Suzanne'))
 
@@ -399,7 +410,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             if not self.replace_name:
                 row.enabled = False
-            row.prop(self, "basename")
+            row.prop(self, "obj_basename")
 
             for propName in self.props:
                 row = box.row()
