@@ -58,7 +58,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.collider_shapes = ['box_shape', 'sphere_shape', 'convex_shape',
                                 'mesh_shape']
 
-        self.shape = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
+        self.shape = self.collider_shapes[self.collider_shapes_idx]
 
         return {'RUNNING_MODAL'}
 
@@ -75,7 +75,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.shape = self.prefs[self.collider_shapes[self.collider_shapes_idx]]
+            self.shape = self.collider_shapes[self.collider_shapes_idx]
             self.update_names()
 
         return {'RUNNING_MODAL'}
