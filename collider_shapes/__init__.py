@@ -80,8 +80,6 @@ def unregister():
     # delete custom properties on unregister
     del scene.wireframe_mode
     del scene.my_space
+    del scene.display_type
     del scene.my_hide
 
-    del obj.obj_collider_group
-    del obj.obj_collider_shape
-    del obj.obj_basename
