@@ -114,11 +114,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             new_collider = bpy.data.objects.new('asd', me)
             context.scene.collection.objects.link(new_collider)
 
-            new_collider.parent = parent
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                new_collider.parent = parent
 
             if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-                identityMatrix = np.identity(4)
-                new_collider.matrix_world = identityMatrix
+                self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
