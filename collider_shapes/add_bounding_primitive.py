@@ -329,7 +329,7 @@ class OBJECT_OT_add_bounding_object():
 
     def set_origin_to_center(self, object):
         # super slow and ugly. There should be a better way
-        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME', center='MEDIAN')
+        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
 
     def split_coordinates_xyz(self, v_co):
         positionsX = []
@@ -576,9 +576,10 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def print_generation_time(self, shape):
+
+    def print_generation_time(self, shape, time):
         print(shape)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        print("Time elapsed: ", str(time))
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
