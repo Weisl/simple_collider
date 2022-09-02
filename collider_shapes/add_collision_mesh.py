@@ -112,6 +112,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        super().print_generation_time("Mesh Collider")
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Mesh Collider", elapsed_time)
+        self.report({'INFO'}, "Elapsed time: %d " % (elapsed_time))
 
         return {'RUNNING_MODAL'}

@@ -208,5 +208,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.custom_set_parent(context, parent, new_collider)
 
         super().reset_to_initial_state(context)
-        super().print_generation_time("Convex Cylindrical Collider")
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Convex Cylindrical Collider", elapsed_time)
+        self.report({'INFO'}, "Elapsed time: %d " % (elapsed_time))
+
         return {'RUNNING_MODAL'}
