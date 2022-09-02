@@ -4,7 +4,6 @@ from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .add_bounding_primitive import alignObjects
 
 tmp_name = 'box_collider'
 
@@ -186,7 +185,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             if scene.my_space == 'LOCAL':
                 new_collider.parent = parent
-                alignObjects(new_collider, parent)
+                #align collider with parent
+                new_collider.matrix_world = parent.matrix_world
 
             else: #scene.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
