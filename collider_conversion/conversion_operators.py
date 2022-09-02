@@ -116,8 +116,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             super().set_collider_name(new_collider, obj.name)
 
-        label = "Mesh To Collider"
-        super().print_generation_time(label)
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Mesh Collider", elapsed_time)
+        self.report({'INFO'}, "Elapsed time: %d " % (elapsed_time))
         return {'RUNNING_MODAL'}
 
 
