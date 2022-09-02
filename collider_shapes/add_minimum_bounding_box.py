@@ -3,9 +3,10 @@ import bpy
 import math
 import numpy as np
 from bpy.types import Operator
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -34,6 +35,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         min_bb_min = None
         min_bb_max = None
         min_vol = math.inf
+
         for basis in bases:
             rot_points = hull_points.dot(np.linalg.inv(basis))
             # Equivalent to: rot_points = hull_points.dot(np.linalg.inv(np.transpose(basis)).T)
@@ -203,8 +205,13 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             new_collider.parent = parent
             new_collider.matrix_world = parent.matrix_world
 
+            # set origin
+            center = self.calculate_center_of_mass(new_collider)
+            self.set_origin_to_center(new_collider, center)
+
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
+
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 

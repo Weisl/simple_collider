@@ -290,6 +290,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                   description='Minimum volume to add vertices to convex-hulls',
                                                   default=0.0001, min=0.0, max=0.01, precision=5)
 
+    # DEBUG
+    debug: bpy.props.BoolProperty(name="Debug Mode",
+                                  description="Developer mode used for debuging",
+                                  default=True)
+
     props = [
         "separator",
         "collision_string_prefix",

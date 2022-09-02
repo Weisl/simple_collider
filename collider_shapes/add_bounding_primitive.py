@@ -345,9 +345,20 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
+    @staticmethod
+    def calculate_center_of_mass(obj):
+        # calculate centre
+        x, y, z = [sum([(obj.matrix_world.inverted() @ v.co)[i] for v in obj.data.vertices]) for i
+                   in range(3)]
+        count = float(len(obj.data.vertices))
+        center = obj.matrix_world @ (Vector((x, y, z)) / count)
+
+        return center
+
     def set_origin_to_center(self, obj, center_point):
+        # https://blender.stackexchange.com/questions/35825/changing-object-origin-to-arbitrary-point-without-origin-set
         obj.data.transform(mathutils.Matrix.Translation(-center_point))
-        obj.matrix_world.translation += center_point
+        obj.location += center_point
 
     @staticmethod
     def apply_scale(obj):
@@ -362,7 +373,8 @@ class OBJECT_OT_add_bounding_object():
 
         obj.data.transform(meshmx)
 
-    def split_coordinates_xyz(self, v_co):
+    @classmethod
+    def split_coordinates_xyz(cls, v_co):
         positionsX = []
         positionsY = []
         positionsZ = []
@@ -375,10 +387,11 @@ class OBJECT_OT_add_bounding_object():
 
         return positionsX, positionsY, positionsZ
 
-    def generate_bounding_box(self, v_co):
+    @classmethod
+    def generate_bounding_box(cls, v_co):
         '''get the min and max coordinates for the bounding box'''
 
-        positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
+        positionsX, positionsY, positionsZ = cls.split_coordinates_xyz(v_co)
 
         minX = min(positionsX)
         minY = min(positionsY)
