@@ -146,11 +146,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, scene.my_space, used_vertices)
-                verts_loc = self.generate_bounding_box(co)
+                verts_loc, center_point = self.generate_bounding_box(co)
 
                 # store data needed to generate a bounding box in a dictionary
                 bounding_box_data['parent'] = obj
                 bounding_box_data['verts_loc'] = verts_loc
+                bounding_box_data['center_point'] = center_point
 
                 collider_data.append(bounding_box_data)
 
@@ -165,11 +166,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = verts_co
                 verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
-            bbox_verts = self.generate_bounding_box(verts_co)
+            bbox_verts, center_point = self.generate_bounding_box(verts_co)
 
             bounding_box_data = {}
             bounding_box_data['parent'] = self.active_obj
             bounding_box_data['verts_loc'] = bbox_verts
+            bounding_box_data['center_point'] = center_point
             collider_data = [bounding_box_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -178,6 +180,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             # get data from dictionary
             parent = bounding_box_data['parent']
             verts_loc = bounding_box_data['verts_loc']
+            center_point = bounding_box_data['center_point']
 
             global face_order
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
@@ -190,7 +193,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             else: #scene.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
-                self.set_origin_to_center(new_collider)
+                self.set_origin_to_center(new_collider, center_point)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

@@ -148,7 +148,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 v_co = self.get_point_positions(obj, scene.my_space, used_vertices)
 
                 dimensions = self.generate_dimensions_WS(v_co)
-                bounding_box = self.generate_bounding_box(v_co)
+                bounding_box, center_point = self.generate_bounding_box(v_co)
 
                 radius, depth = self.generate_radius_depth(dimensions)
 
@@ -169,7 +169,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
             dimensions = self.generate_dimensions_WS(verts_co)
-            bounding_box = self.generate_bounding_box(verts_co)
+            bounding_box, center_point = self.generate_bounding_box(verts_co)
             radius, depth = self.generate_radius_depth(dimensions)
 
             bounding_cylinder_data['parent'] = self.active_obj

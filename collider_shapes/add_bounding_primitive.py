@@ -3,6 +3,9 @@ import bmesh
 import bpy
 import numpy
 import time
+import mathutils
+
+from mathutils import Vector
 
 from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
@@ -327,9 +330,10 @@ class OBJECT_OT_add_bounding_object():
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 
-    def set_origin_to_center(self, object):
-        # super slow and ugly. There should be a better way
-        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
+    def set_origin_to_center(self, obj, center_point):
+        obj.data.transform(mathutils.Matrix.Translation(-center_point))
+        obj.matrix_world.translation += center_point
+
 
     def split_coordinates_xyz(self, v_co):
         positionsX = []
@@ -349,17 +353,28 @@ class OBJECT_OT_add_bounding_object():
 
         positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
 
+        minX = min(positionsX)
+        minY = min(positionsY)
+        minZ = min(positionsZ)
+
+        maxX = max(positionsX)
+        maxY = max(positionsY)
+        maxZ = max(positionsZ)
+
         verts = [
-            (max(positionsX), max(positionsY), min(positionsZ)),
-            (max(positionsX), min(positionsY), min(positionsZ)),
-            (min(positionsX), min(positionsY), min(positionsZ)),
-            (min(positionsX), max(positionsY), min(positionsZ)),
-            (max(positionsX), max(positionsY), max(positionsZ)),
-            (max(positionsX), min(positionsY), max(positionsZ)),
-            (min(positionsX), min(positionsY), max(positionsZ)),
-            (min(positionsX), max(positionsY), max(positionsZ)),
+            (maxX, maxY, minZ),
+            (maxX, minY, minZ),
+            (minX, minY, minZ),
+            (minX, maxY, minZ),
+            (maxX, maxY, maxZ),
+            (maxX, minY, maxZ),
+            (minX, minY, maxZ),
+            (minX, maxY, maxZ),
         ]
-        return verts
+
+        center_point = Vector(((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2))
+
+        return verts, center_point
 
     def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
 
@@ -575,7 +590,6 @@ class OBJECT_OT_add_bounding_object():
         for col in old_collection:
             if col not in collections:
                 col.objects.unlink(obj)
-
 
     def print_generation_time(self, shape, time):
         print(shape)
