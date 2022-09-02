@@ -42,7 +42,7 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
     """Create box collider for selected mesh area in edit mode"""
 
     global tmp_name
-    root_collection = context.scene.collection
+
 
     # add new mesh
     mesh = bpy.data.meshes.new(tmp_name)
@@ -63,6 +63,8 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
 
     # create new object from mesh and link it to collection
     new_collider = bpy.data.objects.new(tmp_name, mesh)
+
+    root_collection = context.scene.collection
     root_collection.objects.link(new_collider)
 
     return new_collider
@@ -186,10 +188,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.parent = parent
                 alignObjects(new_collider, parent)
 
-            else:
-                matrix = new_collider.matrix_world
-                new_collider.parent = parent
-                new_collider.matrix_world = matrix
+            else: #scene.my_space == 'GLOBAL':
+                self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
@@ -197,7 +197,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
 
             parent_name = parent.name
-
             super().set_collider_name(new_collider, parent_name)
 
 

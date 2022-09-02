@@ -318,12 +318,18 @@ class OBJECT_OT_add_bounding_object():
 
     def custom_set_parent(self, context, parent, child):
         '''Custom set parent'''
-        bpy.ops.object.select_all(action='DESELECT')
+        for obj in context.selected_objects.copy():
+            obj.select_set(False)
+
         context.view_layer.objects.active = parent
         parent.select_set(True)
         child.select_set(True)
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+
+    def set_origin_to_center(self, object):
+        # super slow and ugly. There should be a better way
+        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME', center='MEDIAN')
 
     def split_coordinates_xyz(self, v_co):
         positionsX = []
