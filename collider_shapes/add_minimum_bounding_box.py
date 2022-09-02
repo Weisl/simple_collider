@@ -198,20 +198,26 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             bm.to_mesh(me)
             bm.free()
 
-            temp_obj = bpy.data.objects.new('asd', me)
+            temp_obj = bpy.data.objects.new('temp_debug_objects', me)
+            temp_obj.matrix_world = parent.matrix_world
+
+            if self.prefs.debug:
+                root_collection = context.scene.collection
+                root_collection.objects.link(temp_obj)
+
             self.apply_scale(temp_obj)
+
             new_collider = self.obj_rotating_calipers(temp_obj)
+            root_collection.objects.link(new_collider)
 
-            new_collider.parent = parent
-            new_collider.matrix_world = parent.matrix_world
+            self.custom_set_parent(context, parent, new_collider)
 
-            # set origin
-            center = self.calculate_center_of_mass(new_collider)
-            self.set_origin_to_center(new_collider, center)
+            # set origin causes issues. Does not work properly
+            # center = self.calculate_center_of_mass(new_collider)
+            # self.set_origin_to_center(new_collider, center)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 

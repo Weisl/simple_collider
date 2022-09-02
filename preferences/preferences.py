@@ -293,7 +293,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Developer mode used for debuging",
-                                  default=True)
+                                  default=False)
 
     props = [
         "separator",
