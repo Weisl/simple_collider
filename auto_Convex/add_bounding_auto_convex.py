@@ -7,7 +7,6 @@ from bpy.types import Operator
 
 from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..collider_shapes.add_bounding_primitive import alignObjects
 
 debug = False
 
@@ -262,7 +261,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 self.custom_set_parent(context, parent, new_collider)
 
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                    alignObjects(new_collider, parent)
+                    new_collider.matrix_world = parent.matrix_world
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections)

@@ -6,7 +6,6 @@ from bpy.types import Operator
 from mathutils import Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .add_bounding_primitive import alignObjects
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -97,6 +96,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         bb_mesh.validate()
         bb_mesh.transform(mat)
         bb_mesh.update()
+
         bb_obj = bpy.data.objects.new(bb_mesh.name, bb_mesh)
         bb_obj.display_type = "WIRE"
         bb_obj.matrix_world = obj.matrix_world
@@ -196,11 +196,12 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             bm.to_mesh(me)
             bm.free()
 
-            new_collider = bpy.data.objects.new('asd', me)
-            new_collider = self.obj_rotating_calipers(new_collider)
+            temp_obj = bpy.data.objects.new('asd', me)
+            self.apply_scale(temp_obj)
+            new_collider = self.obj_rotating_calipers(temp_obj)
 
             new_collider.parent = parent
-            alignObjects(new_collider, parent)
+            new_collider.matrix_world = parent.matrix_world
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
@@ -211,6 +212,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        super().print_generation_time("Aligned Box Collider")
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Aligned Box Collider", elapsed_time)
+        self.report({'INFO'}, "Elapsed time: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}

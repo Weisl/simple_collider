@@ -3,6 +3,9 @@ import bmesh
 import bpy
 import numpy
 import time
+import mathutils
+
+from mathutils import Vector, Matrix
 
 from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
@@ -200,6 +203,21 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
 
+def get_loc_matrix(location):
+    return Matrix.Translation(location)
+
+
+def get_rot_matrix(rotation):
+    return rotation.to_matrix().to_4x4()
+
+
+def get_sca_matrix(scale):
+    scale_mx = Matrix()
+    for i in range(3):
+        scale_mx[i][i] = scale[i]
+    return scale_mx
+
+
 class OBJECT_OT_add_bounding_object():
     """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding object collider_shapes"""
     bl_options = {'REGISTER', 'UNDO'}
@@ -318,12 +336,31 @@ class OBJECT_OT_add_bounding_object():
 
     def custom_set_parent(self, context, parent, child):
         '''Custom set parent'''
-        bpy.ops.object.select_all(action='DESELECT')
+        for obj in context.selected_objects.copy():
+            obj.select_set(False)
+
         context.view_layer.objects.active = parent
         parent.select_set(True)
         child.select_set(True)
 
         bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+
+    def set_origin_to_center(self, obj, center_point):
+        obj.data.transform(mathutils.Matrix.Translation(-center_point))
+        obj.matrix_world.translation += center_point
+
+    @staticmethod
+    def apply_scale(obj):
+        mx = obj.matrix_world
+        loc, rot, sca = mx.decompose()
+
+        # apply the current transformations on the mesh level
+        meshmx = get_sca_matrix(sca)
+
+        applymx = get_loc_matrix(loc) @ get_rot_matrix(rot) @ get_sca_matrix(Vector.Fill(3, 1))
+        obj.matrix_world = applymx
+
+        obj.data.transform(meshmx)
 
     def split_coordinates_xyz(self, v_co):
         positionsX = []
@@ -343,17 +380,28 @@ class OBJECT_OT_add_bounding_object():
 
         positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
 
+        minX = min(positionsX)
+        minY = min(positionsY)
+        minZ = min(positionsZ)
+
+        maxX = max(positionsX)
+        maxY = max(positionsY)
+        maxZ = max(positionsZ)
+
         verts = [
-            (max(positionsX), max(positionsY), min(positionsZ)),
-            (max(positionsX), min(positionsY), min(positionsZ)),
-            (min(positionsX), min(positionsY), min(positionsZ)),
-            (min(positionsX), max(positionsY), min(positionsZ)),
-            (max(positionsX), max(positionsY), max(positionsZ)),
-            (max(positionsX), min(positionsY), max(positionsZ)),
-            (min(positionsX), min(positionsY), max(positionsZ)),
-            (min(positionsX), max(positionsY), max(positionsZ)),
+            (maxX, maxY, minZ),
+            (maxX, minY, minZ),
+            (minX, minY, minZ),
+            (minX, maxY, minZ),
+            (maxX, maxY, maxZ),
+            (maxX, minY, maxZ),
+            (minX, minY, maxZ),
+            (minX, maxY, maxZ),
         ]
-        return verts
+
+        center_point = Vector(((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2))
+
+        return verts, center_point
 
     def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
 
@@ -570,9 +618,9 @@ class OBJECT_OT_add_bounding_object():
             if col not in collections:
                 col.objects.unlink(obj)
 
-    def print_generation_time(self, shape):
+    def print_generation_time(self, shape, time):
         print(shape)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        print("Time elapsed: ", str(time))
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
