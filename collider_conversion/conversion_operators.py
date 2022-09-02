@@ -7,6 +7,7 @@ from ..pyshics_materials.material_functions import set_physics_material, create_
 default_shape = 'box_shape'
 default_group = 'USER_01'
 
+
 class OBJECT_OT_regenerate_name(Operator):
     """Regenerate selected collider names based on preset"""
     bl_idname = "object.regenerate_name"
@@ -35,7 +36,7 @@ class OBJECT_OT_regenerate_name(Operator):
                                                                              basename=obj.parent.name)
                 obj.name = new_name
                 OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
-                
+
         return {'FINISHED'}
 
 
@@ -119,6 +120,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Mesh Collider", elapsed_time)
         self.report({'INFO'}, "Elapsed time: %d " % (elapsed_time))
+
         return {'RUNNING_MODAL'}
 
 

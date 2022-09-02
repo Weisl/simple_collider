@@ -42,7 +42,6 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
 
     global tmp_name
 
-
     # add new mesh
     mesh = bpy.data.meshes.new(tmp_name)
     bm = bmesh.new()
@@ -188,11 +187,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             if scene.my_space == 'LOCAL':
                 new_collider.parent = parent
-                #align collider with parent
+                # align collider with parent
                 new_collider.matrix_world = parent.matrix_world
                 self.set_origin_to_center(new_collider, center_point)
 
-            else: #scene.my_space == 'GLOBAL':
+            else:  # scene.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
                 self.set_origin_to_center(new_collider, center_point)
 
@@ -203,7 +202,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             super().set_collider_name(new_collider, parent_name)
-
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

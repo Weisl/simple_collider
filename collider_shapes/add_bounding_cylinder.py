@@ -125,7 +125,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
-
         scene = context.scene
 
         collider_data = []

@@ -10,6 +10,7 @@ classes = (
     physics_materials.MATERIAL_UL_physics_materials,
 )
 
+
 def get_int(self):
     if self.on_load:
         prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
@@ -23,9 +24,9 @@ def get_int(self):
 
     return self["material_list_index"]
 
+
 def set_int(self, value):
     self["material_list_index"] = value
-
 
 
 def register():

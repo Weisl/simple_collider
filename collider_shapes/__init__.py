@@ -8,6 +8,7 @@ from . import add_bounding_sphere
 from . import add_collision_mesh
 from . import add_minimum_bounding_box
 
+
 def update_display_colliders(self, context):
     '''Toggle between solid and wireframe displaytype'''
     for obj in bpy.data.objects:
@@ -24,6 +25,7 @@ classes = (
     add_bounding_convex_hull.OBJECT_OT_add_convex_hull,
     add_collision_mesh.OBJECT_OT_add_mesh_collision,
 )
+
 
 def register():
     scene = bpy.types.Scene
@@ -59,8 +61,6 @@ def register():
                                                   description="Set the display type for collider wireframes",
                                                   default='PREVIEW')
 
-
-
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
@@ -82,4 +82,3 @@ def unregister():
     del scene.my_space
     del scene.display_type
     del scene.my_hide
-

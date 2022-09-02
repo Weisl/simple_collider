@@ -7,7 +7,6 @@ from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
     (2, 3, 7, 6),

@@ -77,16 +77,16 @@ class MATERIAL_UL_physics_materials(UIList):
                 self.set_initial_state = False
 
             if mat:
-                if self.layout_type in {'DEFAULT','COMPACT'}:
+                if self.layout_type in {'DEFAULT', 'COMPACT'}:
                     if mat.is_grease_pencil == False:
                         row = layout.row(align=True)
                         row.operator('material.set_physics_material', text='',
                                      icon='FORWARD').physics_material_name = mat.name
-                        row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
+                        row.prop(mat, "name", text="", emboss=False, icon_value=icon)
                     else:
                         row = layout.row(align=True)
                         row.enabled = False
-                        row.prop(mat, "name", text="",  emboss=False, icon_value=icon)
+                        row.prop(mat, "name", text="", emboss=False, icon_value=icon)
 
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
