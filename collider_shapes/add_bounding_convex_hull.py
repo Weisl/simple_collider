@@ -111,7 +111,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bm.to_mesh(me)
             bm.free()
 
-            new_collider = bpy.data.objects.new('asd', me)
+            new_collider = bpy.data.objects.new('colliders', me)
             context.scene.collection.objects.link(new_collider)
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
