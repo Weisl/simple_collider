@@ -144,7 +144,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             else:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
+            if not used_vertices or len(used_vertices) < 3:
+                continue
+
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+
                 v_co = self.get_point_positions(obj, scene.my_space, used_vertices)
 
                 dimensions = self.generate_dimensions_WS(v_co)
@@ -156,6 +160,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 bounding_cylinder_data['radius'] = radius
                 bounding_cylinder_data['depth'] = depth
                 bounding_cylinder_data['bbox'] = bounding_box
+                bounding_cylinder_data['center_point'] = center_point
                 collider_data.append(bounding_cylinder_data)
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
@@ -176,6 +181,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bounding_cylinder_data['radius'] = radius
             bounding_cylinder_data['depth'] = depth
             bounding_cylinder_data['bbox'] = bounding_box
+            bounding_cylinder_data['center_point'] = center_point
             collider_data = [bounding_cylinder_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -187,6 +193,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             radius = bounding_cylinder_data['radius']
             depth = bounding_cylinder_data['depth']
             bbox = bounding_cylinder_data['bbox']
+
+            # self.apply_scale(bbox)
+
+            # currently not used
+            center_point = bounding_cylinder_data['center_point']
 
             if scene.my_space == 'LOCAL':
                 matrix_WS = parent.matrix_world

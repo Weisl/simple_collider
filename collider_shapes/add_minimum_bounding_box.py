@@ -3,7 +3,7 @@ import bpy
 import math
 import numpy as np
 from bpy.types import Operator
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
@@ -17,39 +17,11 @@ CUBE_FACE_INDICES = (
 )
 
 
-def get_loc_matrix(location):
-    return Matrix.Translation(location)
-
-
-def get_rot_matrix(rotation):
-    return rotation.to_matrix().to_4x4()
-
-
-def get_sca_matrix(scale):
-    scale_mx = Matrix()
-    for i in range(3):
-        scale_mx[i][i] = scale[i]
-    return scale_mx
-
-
 class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
     bl_idname = "mesh.add_minimum_bounding_box"
     bl_label = "Oriented Minimum BBox"
     bl_description = 'Create oriented minimum bounding box colliders based on the selection'
-
-    @staticmethod
-    def apply_scale(obj):
-        mx = obj.matrix_world
-        loc, rot, sca = mx.decompose()
-
-        # apply the current transformations on the mesh level
-        meshmx = get_sca_matrix(sca)
-
-        applymx = get_loc_matrix(loc) @ get_rot_matrix(rot) @ get_sca_matrix(Vector.Fill(3, 1))
-        obj.matrix_world = applymx
-
-        obj.data.transform(meshmx)
 
     def gen_cube_verts(self):
         for x in range(-1, 2, 2):

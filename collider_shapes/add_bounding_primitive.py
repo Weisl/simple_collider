@@ -5,7 +5,7 @@ import numpy
 import time
 import mathutils
 
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
@@ -203,6 +203,21 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
 
 
+def get_loc_matrix(location):
+    return Matrix.Translation(location)
+
+
+def get_rot_matrix(rotation):
+    return rotation.to_matrix().to_4x4()
+
+
+def get_sca_matrix(scale):
+    scale_mx = Matrix()
+    for i in range(3):
+        scale_mx[i][i] = scale[i]
+    return scale_mx
+
+
 class OBJECT_OT_add_bounding_object():
     """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding object collider_shapes"""
     bl_options = {'REGISTER', 'UNDO'}
@@ -334,6 +349,18 @@ class OBJECT_OT_add_bounding_object():
         obj.data.transform(mathutils.Matrix.Translation(-center_point))
         obj.matrix_world.translation += center_point
 
+    @staticmethod
+    def apply_scale(obj):
+        mx = obj.matrix_world
+        loc, rot, sca = mx.decompose()
+
+        # apply the current transformations on the mesh level
+        meshmx = get_sca_matrix(sca)
+
+        applymx = get_loc_matrix(loc) @ get_rot_matrix(rot) @ get_sca_matrix(Vector.Fill(3, 1))
+        obj.matrix_world = applymx
+
+        obj.data.transform(meshmx)
 
     def split_coordinates_xyz(self, v_co):
         positionsX = []
