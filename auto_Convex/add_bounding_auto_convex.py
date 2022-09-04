@@ -8,8 +8,6 @@ from bpy.types import Operator
 from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-debug = False
-
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
     """ takes as input a list of bm references and outputs a single merged bmesh
@@ -195,18 +193,15 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         convex_decomposition_data = []
 
-        print('collider_data: ' + str(collider_data))
-
         for convex_collision_data in collider_data:
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
 
-            if debug:
+            if self.prefs.debug:
                 joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
                 bpy.context.scene.collection.objects.link(joined_obj)
                 joined_obj.color = (1.0, 0.1, 0.1, 1.0)
                 joined_obj.select_set(False)
-                print('OBJECT')
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
@@ -214,19 +209,19 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
 
-
             scene = context.scene
 
             print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
             off_export(mesh, off_filename)
-            cmd_line = ( '"{}" --input "{}" --resolution {} --depth {} '
-                '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
-                '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
-                '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                    vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
-                    self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
-                    self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca, self.prefs.vhacd_mode == 'TETRAHEDRON',
-                    scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
+            cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
+                        '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
+                        '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
+                        '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
+                vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
+                self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
+                self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca,
+                self.prefs.vhacd_mode == 'TETRAHEDRON',
+                scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -250,7 +245,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         context.view_layer.objects.active = self.active_obj
 
-
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
@@ -272,6 +266,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
 
         super().reset_to_initial_state(context)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Auto Convex Colliders", elapsed_time)
+        self.report({'INFO'}, "Auto Convex Colliders: " + str(float(elapsed_time)))
 
         return {'FINISHED'}

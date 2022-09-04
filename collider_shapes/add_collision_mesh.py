@@ -114,6 +114,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Mesh Collider", elapsed_time)
-        self.report({'INFO'}, "Elapsed time: %d " % (elapsed_time))
+        self.report({'INFO'}, "Mesh Collider: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}

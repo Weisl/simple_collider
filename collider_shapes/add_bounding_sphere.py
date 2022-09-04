@@ -231,6 +231,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Sphere Collider", elapsed_time)
-        self.report({'INFO'}, "Elapsed time: %d " % (elapsed_time))
+        self.report({'INFO'}, "Sphere Collider: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}

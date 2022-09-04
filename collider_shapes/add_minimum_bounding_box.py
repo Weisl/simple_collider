@@ -207,6 +207,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.apply_scale(temp_obj)
 
             new_collider = self.obj_rotating_calipers(temp_obj)
+
+            root_collection = context.scene.collection
             root_collection.objects.link(new_collider)
 
             self.custom_set_parent(context, parent, new_collider)
@@ -226,6 +228,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Aligned Box Collider", elapsed_time)
-        self.report({'INFO'}, "Elapsed time: " + str(float(elapsed_time)))
+        self.report({'INFO'}, "Aligned Box Collider: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}
