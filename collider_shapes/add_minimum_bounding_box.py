@@ -88,21 +88,22 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         bb_dim = bb_max - bb_min
         bb_center = (bb_max + bb_min) / 2
+        rotation_matrix = Matrix(bb_basis_mat).to_4x4()
 
-        mat = Matrix.Translation(bb_center.dot(bb_basis)) @ Matrix(bb_basis_mat).to_4x4() @ Matrix(
+        mesh_matrix = Matrix.Translation(bb_center.dot(bb_basis)) @ rotation_matrix @ Matrix(
             np.identity(3) * bb_dim / 2).to_4x4()
 
         bb_mesh = bpy.data.meshes.new(obj.name + "_minimum_bounding_box")
         bb_mesh.from_pydata(vertices=list(self.gen_cube_verts()), edges=[], faces=CUBE_FACE_INDICES)
         bb_mesh.validate()
-        bb_mesh.transform(mat)
+        bb_mesh.transform(mesh_matrix)
         bb_mesh.update()
 
         bb_obj = bpy.data.objects.new(bb_mesh.name, bb_mesh)
         bb_obj.display_type = "WIRE"
         bb_obj.matrix_world = obj.matrix_world
 
-        return bb_obj
+        return bb_obj, rotation_matrix
 
     def __init__(self):
         super().__init__()
@@ -204,9 +205,9 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                 root_collection = context.scene.collection
                 root_collection.objects.link(temp_obj)
 
-            self.apply_scale(temp_obj)
+            self.apply_transform(temp_obj, rotation=True, scale=True)
 
-            new_collider = self.obj_rotating_calipers(temp_obj)
+            new_collider, rotation_matrix = self.obj_rotating_calipers(temp_obj)
 
             root_collection = context.scene.collection
             root_collection.objects.link(new_collider)
@@ -214,8 +215,9 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.custom_set_parent(context, parent, new_collider)
 
             # set origin causes issues. Does not work properly
-            # center = self.calculate_center_of_mass(new_collider)
-            # self.set_origin_to_center(new_collider, center)
+            center = self.calculate_center_of_mass(new_collider)
+            self.set_origin_to_center(new_collider, center)
+            self.set_custom_rotation(new_collider, rotation_matrix)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

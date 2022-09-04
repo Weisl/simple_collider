@@ -5,7 +5,7 @@ import numpy
 import time
 import mathutils
 
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 
 from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
 from ..pyshics_materials.material_functions import remove_materials, set_physics_material
@@ -355,23 +355,44 @@ class OBJECT_OT_add_bounding_object():
 
         return center
 
-    def set_origin_to_center(self, obj, center_point):
+    @staticmethod
+    def set_origin_to_center(obj, center_point):
         # https://blender.stackexchange.com/questions/35825/changing-object-origin-to-arbitrary-point-without-origin-set
         obj.data.transform(mathutils.Matrix.Translation(-center_point))
         obj.location += center_point
 
     @staticmethod
-    def apply_scale(obj):
+    def apply_transform(obj, rotation=False, scale=True):
         mx = obj.matrix_world
         loc, rot, sca = mx.decompose()
 
         # apply the current transformations on the mesh level
-        meshmx = get_sca_matrix(sca)
-
-        applymx = get_loc_matrix(loc) @ get_rot_matrix(rot) @ get_sca_matrix(Vector.Fill(3, 1))
-        obj.matrix_world = applymx
+        if scale and rotation:
+            meshmx = get_rot_matrix(rot) @ get_sca_matrix(sca)
+            applymx = get_loc_matrix(loc) @ get_rot_matrix(Quaternion()) @ get_sca_matrix(Vector.Fill(3, 1))
+        elif rotation:
+            meshmx = get_rot_matrix(rot)
+            applymx = get_loc_matrix(loc) @ get_rot_matrix(Quaternion()) @ get_sca_matrix(sca)
+        elif scale:
+            meshmx = get_sca_matrix(sca)
+            applymx = get_loc_matrix(loc) @ get_rot_matrix(rot) @ get_sca_matrix(Vector.Fill(3, 1))
 
         obj.data.transform(meshmx)
+        obj.matrix_world = applymx
+
+    @staticmethod
+    def set_custom_rotation(obj, rotation_matrix):
+        ob_loc = obj.location.copy()
+        mx = obj.matrix_world
+        loc, rot, sca = mx.decompose()
+
+        # apply the current transformations on the mesh level
+        meshmx = rotation_matrix.inverted()
+        applymx = get_loc_matrix(loc) @ rotation_matrix @ get_sca_matrix(sca)
+
+        obj.data.transform(meshmx)
+        obj.matrix_world = applymx
+        obj.location = ob_loc
 
     @classmethod
     def split_coordinates_xyz(cls, v_co):
