@@ -46,6 +46,7 @@ def create_default_material():
 
     return default_material
 
+
 def create_physics_material(physics_material_name):
     '''Create a default material'''
     if physics_material_name and physics_material_name in bpy.data.materials:

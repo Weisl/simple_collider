@@ -6,6 +6,7 @@ classes = (
     user_groups.COLLISION_OT_assign_user_group,
 )
 
+
 def register():
     scene = bpy.types.Scene
 

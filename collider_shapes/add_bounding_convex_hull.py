@@ -17,6 +17,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.use_modifier_stack = True
         self.shape = 'convex_shape'
+        self.use_recenter_origin = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -111,24 +112,25 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             bm.to_mesh(me)
             bm.free()
 
-            new_collider = bpy.data.objects.new('asd', me)
+            new_collider = bpy.data.objects.new('colliders', me)
             context.scene.collection.objects.link(new_collider)
 
-            new_collider.parent = parent
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                new_collider.parent = parent
 
             if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-                identityMatrix = np.identity(4)
-                new_collider.matrix_world = identityMatrix
+                self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
-
             super().set_collider_name(new_collider, parent.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        super().print_generation_time("Convex Collider")
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Convex Collider", elapsed_time)
+        self.report({'INFO'}, "Convex Collider: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}

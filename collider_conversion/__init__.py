@@ -6,6 +6,7 @@ classes = (
     conversion_operators.OBJECT_OT_regenerate_name,
 )
 
+
 def register():
     from bpy.utils import register_class
     for cls in classes:

@@ -3,10 +3,9 @@ import bpy
 import math
 import numpy as np
 from bpy.types import Operator
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .add_bounding_primitive import alignObjects
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -24,17 +23,20 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
     bl_label = "Oriented Minimum BBox"
     bl_description = 'Create oriented minimum bounding box colliders based on the selection'
 
-    def gen_cube_verts(self):
+    @staticmethod
+    def gen_cube_verts():
         for x in range(-1, 2, 2):
             for y in range(-1, 2, 2):
                 for z in range(-1, 2, 2):
                     yield x, y, z
 
-    def rotating_calipers(self, hull_points: np.ndarray, bases):
+    @staticmethod
+    def rotating_calipers(hull_points: np.ndarray, bases):
         min_bb_basis = None
         min_bb_min = None
         min_bb_max = None
         min_vol = math.inf
+
         for basis in bases:
             rot_points = hull_points.dot(np.linalg.inv(basis))
             # Equivalent to: rot_points = hull_points.dot(np.linalg.inv(np.transpose(basis)).T)
@@ -51,7 +53,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         return np.array(min_bb_basis), min_bb_max, min_bb_min
 
-    def obj_rotating_calipers(self, obj):
+    @classmethod
+    def obj_rotating_calipers(cls, obj):
 
         bm = bmesh.new()
         dg = bpy.context.evaluated_depsgraph_get()
@@ -80,7 +83,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                 basis = (edge_vec, co_tangent, face_normal)
                 bases.append(basis)
 
-        bb_basis, bb_max, bb_min = self.rotating_calipers(chull_points, bases)
+        bb_basis, bb_max, bb_min = cls.rotating_calipers(chull_points, bases)
 
         bm.free()
 
@@ -88,26 +91,30 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         bb_dim = bb_max - bb_min
         bb_center = (bb_max + bb_min) / 2
+        rotation_matrix = Matrix(bb_basis_mat).to_4x4()
 
-        mat = Matrix.Translation(bb_center.dot(bb_basis)) @ Matrix(bb_basis_mat).to_4x4() @ Matrix(
+        mesh_matrix = Matrix.Translation(bb_center.dot(bb_basis)) @ rotation_matrix @ Matrix(
             np.identity(3) * bb_dim / 2).to_4x4()
 
         bb_mesh = bpy.data.meshes.new(obj.name + "_minimum_bounding_box")
-        bb_mesh.from_pydata(vertices=list(self.gen_cube_verts()), edges=[], faces=CUBE_FACE_INDICES)
+        bb_mesh.from_pydata(vertices=list(cls.gen_cube_verts()), edges=[], faces=CUBE_FACE_INDICES)
         bb_mesh.validate()
-        bb_mesh.transform(mat)
+        bb_mesh.transform(mesh_matrix)
         bb_mesh.update()
+
         bb_obj = bpy.data.objects.new(bb_mesh.name, bb_mesh)
         bb_obj.display_type = "WIRE"
         bb_obj.matrix_world = obj.matrix_world
 
-        return bb_obj
+        return bb_obj, rotation_matrix
 
     def __init__(self):
         super().__init__()
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = "box_shape"
+        self.use_recenter_origin = True
+        self.use_custom_rotation = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -196,14 +203,26 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             bm.to_mesh(me)
             bm.free()
 
-            new_collider = bpy.data.objects.new('asd', me)
-            new_collider = self.obj_rotating_calipers(new_collider)
+            temp_obj = bpy.data.objects.new('temp_debug_objects', me)
+            temp_obj.matrix_world = parent.matrix_world
 
-            new_collider.parent = parent
-            alignObjects(new_collider, parent)
+            if self.prefs.debug:
+                root_collection = context.scene.collection
+                root_collection.objects.link(temp_obj)
+
+            self.apply_transform(temp_obj, rotation=True, scale=True)
+
+            new_collider, rotation_matrix = self.obj_rotating_calipers(temp_obj)
+
+            root_collection = context.scene.collection
+            root_collection.objects.link(new_collider)
+
+            self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
+            self.col_rotation_matrix_list.append(rotation_matrix)
+
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
@@ -211,6 +230,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        super().print_generation_time("Aligned Box Collider")
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Aligned Box Collider", elapsed_time)
+        self.report({'INFO'}, "Aligned Box Collider: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}

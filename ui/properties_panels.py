@@ -131,6 +131,7 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
         draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
 
+
 def draw_creation_menu(context, layout):
     scene = context.scene
 
@@ -158,6 +159,7 @@ def draw_creation_menu(context, layout):
     row = layout.row(align=True)
     row.label(text='Display as')
     row.prop(scene, 'display_type', text='')
+
 
 def draw_naming_presets(self, context):
     layout = self.layout
@@ -236,7 +238,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 
 class OBJECT_MT_collision_presets(Menu):
     '''Collider preset dropdown'''
-    
+
     bl_label = "Presets"
     bl_description = "Specify creation preset used for the collider generation"
     preset_subdir = "collider_tools"
@@ -328,7 +330,8 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         layout = self.layout
         row = layout.row(align=True)
         row.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_physics_materials/"
+        row.operator("wm.url_open", text="",
+                     icon='HELP').url = "https://weisl.github.io/collider-tools_physics_materials/"
 
     def draw(self, context):
         layout = self.layout
@@ -360,6 +363,7 @@ class VIEW3D_MT_collision_creation(Menu):
         row.label(text='Generation')
 
         draw_creation_menu(context, layout)
+
 
 ############## PIE ##############################
 

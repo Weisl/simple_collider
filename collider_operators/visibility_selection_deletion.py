@@ -1,6 +1,7 @@
 import bpy
 from ..groups.user_groups import default_groups_enum
 
+
 class COLLISION_OT_Selection(bpy.types.Operator):
     """Select collider objects"""
     bl_idname = "object.select_collisions"
@@ -167,4 +168,3 @@ class COLLISION_OT_non_collider_delete(COLLISION_OT_Deletion):
     bl_idname = "object.non_collider_delete_collisions"
     bl_label = "Delete non Colliders"
     bl_description = 'Delete all objects that are not colliders.'
-

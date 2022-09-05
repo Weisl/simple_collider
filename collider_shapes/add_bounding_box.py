@@ -4,7 +4,6 @@ from bpy.types import Operator
 from bpy_extras.object_utils import object_data_add
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .add_bounding_primitive import alignObjects
 
 tmp_name = 'box_collider'
 
@@ -42,7 +41,6 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
     """Create box collider for selected mesh area in edit mode"""
 
     global tmp_name
-    root_collection = context.scene.collection
 
     # add new mesh
     mesh = bpy.data.meshes.new(tmp_name)
@@ -63,6 +61,8 @@ def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
 
     # create new object from mesh and link it to collection
     new_collider = bpy.data.objects.new(tmp_name, mesh)
+
+    root_collection = context.scene.collection
     root_collection.objects.link(new_collider)
 
     return new_collider
@@ -80,6 +80,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = 'box_shape'
+
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -145,11 +146,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, scene.my_space, used_vertices)
-                verts_loc = self.generate_bounding_box(co)
+                verts_loc, center_point = self.generate_bounding_box(co)
 
                 # store data needed to generate a bounding box in a dictionary
                 bounding_box_data['parent'] = obj
                 bounding_box_data['verts_loc'] = verts_loc
+                bounding_box_data['center_point'] = center_point
 
                 collider_data.append(bounding_box_data)
 
@@ -164,11 +166,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = verts_co
                 verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
-            bbox_verts = self.generate_bounding_box(verts_co)
+            bbox_verts, center_point = self.generate_bounding_box(verts_co)
 
             bounding_box_data = {}
             bounding_box_data['parent'] = self.active_obj
             bounding_box_data['verts_loc'] = bbox_verts
+            bounding_box_data['center_point'] = center_point
             collider_data = [bounding_box_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -177,6 +180,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             # get data from dictionary
             parent = bounding_box_data['parent']
             verts_loc = bounding_box_data['verts_loc']
+            center_point = bounding_box_data['center_point']
 
             global face_order
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
@@ -184,12 +188,15 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             if scene.my_space == 'LOCAL':
                 new_collider.parent = parent
-                alignObjects(new_collider, parent)
+                # align collider with parent
+                new_collider.matrix_world = parent.matrix_world
+                self.use_recenter_origin = False
 
-            else:
-                matrix = new_collider.matrix_world
-                new_collider.parent = parent
-                new_collider.matrix_world = matrix
+            else:  # scene.my_space == 'GLOBAL':
+                self.custom_set_parent(context, parent, new_collider)
+
+                self.use_recenter_origin = True
+                self.col_center_loc_list.append(center_point)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
@@ -197,12 +204,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
 
             parent_name = parent.name
-
             super().set_collider_name(new_collider, parent_name)
-
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
-        super().print_generation_time("Box Collider")
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Box Collider", elapsed_time)
+        self.report({'INFO'}, "Box Collider: " + str(float(elapsed_time)))
 
         return {'RUNNING_MODAL'}

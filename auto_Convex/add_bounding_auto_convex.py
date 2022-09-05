@@ -7,9 +7,6 @@ from bpy.types import Operator
 
 from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..collider_shapes.add_bounding_primitive import alignObjects
-
-debug = False
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
@@ -63,7 +60,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Create multiple convex hull colliders to represent any object using Hierarchical Approximate Convex Decomposition'
     bl_options = {'REGISTER', 'PRESET'}
 
-    def overwrite_executable_path(self, path):
+    @staticmethod
+    def overwrite_executable_path(path):
         '''Users can overwrite the default executable path. '''
         # Check executable path
         executable_path = bpy.path.abspath(path)
@@ -72,7 +70,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return executable_path
         return False
 
-    def set_temp_data_path(self, path):
+    @staticmethod
+    def set_temp_data_path(path):
         '''Set folder to temporarily store the exported data. '''
         # Check data path
         data_path = bpy.path.abspath(path)
@@ -85,6 +84,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_decimation = True
         self.use_modifier_stack = True
+        self.use_recenter_origin = True
+        self.shape = 'convex_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -118,7 +119,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        self.shape_suffix = self.prefs.convex_shape
+
 
         import addon_utils
         addon_name = 'io_scene_x3d'
@@ -196,18 +197,15 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         convex_decomposition_data = []
 
-        print('collider_data: ' + str(collider_data))
-
         for convex_collision_data in collider_data:
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
 
-            if debug:
+            if self.prefs.debug:
                 joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
                 bpy.context.scene.collection.objects.link(joined_obj)
                 joined_obj.color = (1.0, 0.1, 0.1, 1.0)
                 joined_obj.select_set(False)
-                print('OBJECT')
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
@@ -215,19 +213,19 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
 
-
             scene = context.scene
 
             print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
             off_export(mesh, off_filename)
-            cmd_line = ( '"{}" --input "{}" --resolution {} --depth {} '
-                '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
-                '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
-                '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                    vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
-                    self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
-                    self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca, self.prefs.vhacd_mode == 'TETRAHEDRON',
-                    scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
+            cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
+                        '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
+                        '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
+                        '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
+                vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
+                self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
+                self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca,
+                self.prefs.vhacd_mode == 'TETRAHEDRON',
+                scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -251,7 +249,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         context.view_layer.objects.active = self.active_obj
 
-
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
@@ -262,7 +259,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 self.custom_set_parent(context, parent, new_collider)
 
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                    alignObjects(new_collider, parent)
+                    new_collider.matrix_world = parent.matrix_world
+                    # Apply rotation and scale for custom origin to work.
+                    self.apply_transform(new_collider, rotation=True, scale=True)
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections)
@@ -273,6 +272,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
 
         super().reset_to_initial_state(context)
-        print("Time elapsed: ", str(self.get_time_elapsed()))
+        elapsed_time = self.get_time_elapsed()
+        super().print_generation_time("Auto Convex Colliders", elapsed_time)
+        self.report({'INFO'}, "Auto Convex Colliders: " + str(float(elapsed_time)))
 
         return {'FINISHED'}
