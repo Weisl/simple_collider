@@ -378,14 +378,14 @@ class OBJECT_OT_add_bounding_object():
         if prefs.collider_groups_enabled:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
-                prefs.get(shape_identifier),
+                cls.get_shape_pre_suffix(prefs, shape_identifier),
                 get_groups_identifier(user_group),
                 prefs.collision_string_suffix
             ]
         else:  # prefs.collider_groups_enabled == False:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
-                prefs.get(shape_identifier),
+                cls.get_shape_pre_suffix(prefs, shape_identifier),
                 prefs.collision_string_suffix
             ]
 
@@ -430,8 +430,17 @@ class OBJECT_OT_add_bounding_object():
         else:  # identifier == 'mesh_shape':
             return 'MESH'
 
-    def get_shape_pre_suffix(self):
-        return self.prefs.get(self.shape)
+    @staticmethod
+    def get_shape_pre_suffix(prefs, identifier):
+        # Hack. prefs.get('box_shape') does not work before the value is once changed.
+        if identifier == 'box_shape':
+            return prefs.box_shape
+        elif identifier == 'sphere_shape':
+            return prefs.sphere_shape
+        elif identifier == 'convex_shape':
+            return prefs.convex_shape
+        else:  # identifier == 'mesh_shape':
+            return prefs.mesh_shape
 
     @staticmethod
     def force_redraw():

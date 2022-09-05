@@ -74,12 +74,14 @@ def get_default_executable_path():
     return ''
 
 
+
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Addon preferences for Collider Tools"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
     bl_idname = __package__.split('.')[0]  ### __package__ works on multifile and __name__ not
+    bl_options = {'REGISTER'}
 
     prefs_tabs: bpy.props.EnumProperty(
         name='Collision Settings',
@@ -404,8 +406,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name('box_shape',
-                                                                                       'USER_01',
+            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier='box_shape',
+                                                                                       user_group='USER_01',
                                                                                        basename='Suzanne'))
 
             row = box.row()
