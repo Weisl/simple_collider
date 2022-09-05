@@ -17,6 +17,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.use_modifier_stack = True
         self.shape = 'convex_shape'
+        self.use_recenter_origin = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -119,14 +120,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 self.custom_set_parent(context, parent, new_collider)
-                center = self.calculate_center_of_mass(new_collider)
-                self.set_custom_origin_location(new_collider, center)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
-
             super().set_collider_name(new_collider, parent.name)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters

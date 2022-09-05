@@ -609,7 +609,7 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def is_valid_object(obj):
-        # skip if invalid object
+        """Is the object valid to be used as a base mesh for collider generation"""
         if obj is None or obj.type != "MESH":
             return False
         return True
@@ -617,6 +617,7 @@ class OBJECT_OT_add_bounding_object():
     # Collections
     @staticmethod
     def add_to_collections(obj, collection_name):
+        """Add an object to a collection"""
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
             bpy.context.scene.collection.children.link(collection)
@@ -627,10 +628,10 @@ class OBJECT_OT_add_bounding_object():
             col.objects.link(obj)
         except RuntimeError as err:
             pass
-            # print("RuntimeError: {0}".format(err))
 
     @staticmethod
     def set_collections(obj, collections):
+        """link an object to a collection"""
         old_collection = obj.users_collection
 
         for col in collections:
@@ -646,25 +647,29 @@ class OBJECT_OT_add_bounding_object():
     # Modifiers
     @staticmethod
     def apply_all_modifiers(context, obj):
+        """apply all modifiers to an object"""
         context.view_layer.objects.active = obj
         for mod in obj.modifiers:
             bpy.ops.object.modifier_apply(modifier=mod.name)
 
     @staticmethod
     def remove_all_modifiers(context, obj):
+        """Remove all modifiers of an object"""
         context.view_layer.objects.active = obj
         if obj:
             for mod in obj.modifiers:
                 obj.modifiers.remove(mod)
 
     @staticmethod
-    def del_displace_modifier(context, bounding_object):
+    def del_displace_modifier(bounding_object):
+        """Delete displace modifiers called 'Collision_displace'"""
         if bounding_object.modifiers.get('Collision_displace'):
             mod = bounding_object.modifiers['Collision_displace']
             bounding_object.modifiers.remove(mod)
 
     @staticmethod
-    def del_decimate_modifier(context, bounding_object):
+    def del_decimate_modifier(bounding_object):
+        """Delete modifiers called 'Collision_decimate'"""
         if bounding_object.modifiers.get('Collision_decimate'):
             mod = bounding_object.modifiers['Collision_decimate']
             bounding_object.modifiers.remove(mod)
@@ -676,7 +681,6 @@ class OBJECT_OT_add_bounding_object():
         print("Time elapsed: ", str(time))
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
-
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
         self.set_collections(bounding_object, base_object_collections)
@@ -714,7 +718,6 @@ class OBJECT_OT_add_bounding_object():
 
     def set_object_collider_group(self, obj):
         obj['collider_group'] = self.collision_groups[self.collision_group_idx]
-
 
 
     def set_collider_name(self, new_collider, parent_name):
@@ -775,6 +778,9 @@ class OBJECT_OT_add_bounding_object():
 
         # UI/UX
         self.ignore_input = False
+
+        self.use_recenter_origin = False
+        self.use_custom_rotation = False
 
     @classmethod
     def poll(cls, context):
@@ -848,6 +854,8 @@ class OBJECT_OT_add_bounding_object():
         self.collision_groups = collider_groups
 
         self.new_colliders_list = []
+        self.col_rotation_matrix_list = []
+        self.col_center_loc_list = []
 
         self.name_count = 0
 
@@ -918,8 +926,8 @@ class OBJECT_OT_add_bounding_object():
                         for mat in data['material_slots']:
                             set_physics_material(obj, mat)
 
-                        self.del_displace_modifier(context, obj)
-                        self.del_decimate_modifier(context, obj)
+                        self.del_displace_modifier(obj)
+                        self.del_decimate_modifier(obj)
 
             context.space_data.shading.color_type = self.color_type
 
@@ -936,12 +944,22 @@ class OBJECT_OT_add_bounding_object():
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
-            for obj in self.new_colliders_list:
+            for i, obj in enumerate(self.new_colliders_list):
+                if self.use_recenter_origin:
+
+                    # set origin causes issues. Does not work properly
+                    center = self.calculate_center_of_mass(obj)
+                    self.set_custom_origin_location(obj, center)
+
+                if self.use_custom_rotation:
+                    if len(self.col_rotation_matrix_list) > 0:
+                        self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
+
                 # remove modifiers if they have the default value
                 if self.current_settings_dic['discplace_offset'] == 0.0:
-                    self.del_displace_modifier(context, obj)
+                    self.del_displace_modifier(obj)
                 if self.current_settings_dic['decimate'] == 1.0:
-                    self.del_decimate_modifier(context, obj)
+                    self.del_decimate_modifier(obj)
 
                 # set the display settings for the collider objects
                 obj.display_type = scene.display_type

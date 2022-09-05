@@ -113,6 +113,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = "box_shape"
+        self.use_recenter_origin = True
+        self.use_custom_rotation = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -217,13 +219,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             self.custom_set_parent(context, parent, new_collider)
 
-            # set origin causes issues. Does not work properly
-            center = self.calculate_center_of_mass(new_collider)
-            self.set_custom_origin_location(new_collider, center)
-            self.set_custom_rotation(new_collider, rotation_matrix)
-
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
+            self.col_rotation_matrix_list.append(rotation_matrix)
+
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
