@@ -81,6 +81,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         self.use_global_local_switches = True
         self.shape = 'box_shape'
 
+
     def invoke(self, context, event):
         super().invoke(context, event)
         return {'RUNNING_MODAL'}
@@ -189,11 +190,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.parent = parent
                 # align collider with parent
                 new_collider.matrix_world = parent.matrix_world
-                self.set_origin_to_center(new_collider, center_point)
+                self.use_recenter_origin = False
 
             else:  # scene.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
-                self.set_origin_to_center(new_collider, center_point)
+
+                self.use_recenter_origin = True
+                self.col_center_loc_list.append(center_point)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

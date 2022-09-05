@@ -54,7 +54,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Sphere Collision"
     bl_description = 'Create spherical colliders based on the selection'
 
-    def calculate_bounding_sphere(self, obj, used_vertices):
+    @staticmethod
+    def calculate_bounding_sphere(obj, used_vertices):
         # Get vertices wit min and may values
         for i, vertex in enumerate(used_vertices):
 

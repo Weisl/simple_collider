@@ -140,7 +140,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_shape_change:
         label = "Collider Shape"
-        value = self.get_shape_name(self.shape)
+        value = self.get_shape_name()
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(Q)',
                             type='enum')
 
@@ -204,14 +204,17 @@ def draw_viewport_overlay(self, context):
 
 
 def get_loc_matrix(location):
+    """get location matrix"""
     return Matrix.Translation(location)
 
 
 def get_rot_matrix(rotation):
+    """get rotation matrix"""
     return rotation.to_matrix().to_4x4()
 
 
 def get_sca_matrix(scale):
+    """get scale matrix"""
     scale_mx = Matrix()
     for i in range(3):
         scale_mx[i][i] = scale[i]
@@ -223,131 +226,9 @@ class OBJECT_OT_add_bounding_object():
     bl_options = {'REGISTER', 'UNDO'}
     bm = []
 
-    @classmethod
-    def set_data_name(cls, obj, new_name, data_suffix):
-        data_name = new_name + data_suffix
-        if data_name in bpy.data.meshes:
-            bpy.data.meshes[data_name].name = 'deprecated_' + data_name
-
-        obj.data.name = data_name
-
-    @classmethod
-    def unique_name(cls, name):
-        '''recursive function to find unique name'''
-        count = 1
-        new_name = name
-
-        while new_name in bpy.data.objects:
-            new_name = create_name_number(name, count)
-            count = count + 1
-        return new_name
-
-    @classmethod
-    def bmesh(cls, bm):
-        # append bmesh to class for it not to be deleted
-        cls.bm.append(bm)
-
-    @classmethod
-    def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
-        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-        separator = prefs.separator
-
-        if prefs.replace_name:
-            name = prefs.obj_basename
-        else:
-            name = basename
-
-        if prefs.collider_groups_enabled:
-            pre_suffix_componetns = [
-                prefs.collision_string_prefix,
-                prefs.get(shape_identifier),
-                get_groups_identifier(user_group),
-                prefs.collision_string_suffix
-            ]
-        else:  # prefs.collider_groups_enabled == False:
-            pre_suffix_componetns = [
-                prefs.collision_string_prefix,
-                prefs.get(shape_identifier),
-                prefs.collision_string_suffix
-            ]
-
-        name_pre_suffix = ''
-        if prefs.naming_position == 'SUFFIX':
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + separator + comp
-            new_name = name + name_pre_suffix
-
-        else:  # prefs.naming_position == 'PREFIX'
-            for comp in pre_suffix_componetns:
-                if comp:
-                    name_pre_suffix = name_pre_suffix + comp + separator
-            new_name = name_pre_suffix + name
-
-        return cls.unique_name(new_name)
-
-    def collider_name(self, basename='Basename'):
-        self.basename = basename
-        user_group = self.collision_groups[self.collision_group_idx]
-        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
-
-    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
-        dict = {}
-        dict['alpha'] = alpha
-        dict['discplace_offset'] = offset
-        dict['decimate'] = decimate
-        dict['sphere_segments'] = sphere_segments
-        dict['cylinder_segments'] = cylinder_segments
-
-        return dict
-
-    def get_shape_name(self, identifier):
-        if identifier == 'box_shape':
-            return 'BOX'
-        elif identifier == 'sphere_shape':
-            return 'SPHERE'
-        elif identifier == 'convex_shape':
-            return 'CONVEX'
-        else:  # identifier == 'mesh_shape':
-            return 'MESH'
-
-    def get_shape_pre_suffix(self, identifier):
-        return self.prefs.get(identifier)
-
-    def force_redraw(self):
-        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
-        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
-        pass
-
-    def set_collisions_wire_preview(self, mode):
-        if mode in ['PREVIEW', 'ALWAYS']:
-            for obj in self.new_colliders_list:
-                obj.show_wire = True
-        else:
-            for obj in self.new_colliders_list:
-                obj.show_wire = False
-
-    def remove_objects(self, list):
-        '''Remove previously created collisions'''
-        if len(list) > 0:
-            for ob in list:
-                objs = bpy.data.objects
-                objs.remove(ob, do_unlink=True)
-
-    def custom_set_parent(self, context, parent, child):
-        '''Custom set parent'''
-        for obj in context.selected_objects.copy():
-            obj.select_set(False)
-
-        context.view_layer.objects.active = parent
-        parent.select_set(True)
-        child.select_set(True)
-
-        bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
-
     @staticmethod
     def calculate_center_of_mass(obj):
-        # calculate centre
+        """calculate center of mass. """
         x, y, z = [sum([(obj.matrix_world.inverted() @ v.co)[i] for v in obj.data.vertices]) for i
                    in range(3)]
         count = float(len(obj.data.vertices))
@@ -356,13 +237,15 @@ class OBJECT_OT_add_bounding_object():
         return center
 
     @staticmethod
-    def set_origin_to_center(obj, center_point):
+    def set_custom_origin_location(obj, center_point):
+        """Set the origin of an object to the custom origin location. Only works if the object is not rotated or scalced at the moment"""
         # https://blender.stackexchange.com/questions/35825/changing-object-origin-to-arbitrary-point-without-origin-set
         obj.data.transform(mathutils.Matrix.Translation(-center_point))
         obj.location += center_point
 
     @staticmethod
     def apply_transform(obj, rotation=False, scale=True):
+        """Apply transformations to object"""
         mx = obj.matrix_world
         loc, rot, sca = mx.decompose()
 
@@ -382,7 +265,11 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def set_custom_rotation(obj, rotation_matrix):
+        """Rotate the origin based on a custom rotation matrix"""
+        #
         ob_loc = obj.location.copy()
+
+        # decompose the object matrix into it's location, rotation, scale components
         mx = obj.matrix_world
         loc, rot, sca = mx.decompose()
 
@@ -390,18 +277,22 @@ class OBJECT_OT_add_bounding_object():
         meshmx = rotation_matrix.inverted()
         applymx = get_loc_matrix(loc) @ rotation_matrix @ get_sca_matrix(sca)
 
+        # Apply matrices to mesh and object
         obj.data.transform(meshmx)
         obj.matrix_world = applymx
+
+        # set the location back to the old location
         obj.location = ob_loc
 
     @classmethod
-    def split_coordinates_xyz(cls, v_co):
+    def split_coordinates_xyz(cls, v_co_list):
+        """Split a list of vertex locations into lists for the X Y Z component """
         positionsX = []
         positionsY = []
         positionsZ = []
 
         # generate a lists of all x, y and z coordinates to find the mins and max
-        for co in v_co:
+        for co in v_co_list:
             positionsX.append(co[0])
             positionsY.append(co[1])
             positionsZ.append(co[2])
@@ -437,7 +328,146 @@ class OBJECT_OT_add_bounding_object():
 
         return verts, center_point
 
-    def get_delta_value(self, delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
+    @staticmethod
+    def set_data_name(obj, new_name, data_suffix):
+        """name object data based on object name"""
+        data_name = new_name + data_suffix
+        if data_name in bpy.data.meshes:
+            bpy.data.meshes[data_name].name = 'deprecated_' + data_name
+
+        obj.data.name = data_name
+
+    @staticmethod
+    def unique_name(name):
+        '''recursive function to find unique name'''
+        count = 1
+        new_name = name
+
+        while new_name in bpy.data.objects:
+            new_name = create_name_number(name, count)
+            count = count + 1
+        return new_name
+
+    @staticmethod
+    def custom_set_parent(context, parent, child):
+        '''Custom set parent'''
+        for obj in context.selected_objects.copy():
+            obj.select_set(False)
+
+        context.view_layer.objects.active = parent
+        parent.select_set(True)
+        child.select_set(True)
+
+        bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+
+    @classmethod
+    def bmesh(cls, bm):
+        # append bmesh to class for it not to be deleted
+        cls.bm.append(bm)
+
+    @classmethod
+    def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
+        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        separator = prefs.separator
+
+        if prefs.replace_name:
+            name = prefs.obj_basename
+        else:
+            name = basename
+
+        if prefs.collider_groups_enabled:
+            pre_suffix_componetns = [
+                prefs.collision_string_prefix,
+                cls.get_shape_pre_suffix(prefs, shape_identifier),
+                get_groups_identifier(user_group),
+                prefs.collision_string_suffix
+            ]
+        else:  # prefs.collider_groups_enabled == False:
+            pre_suffix_componetns = [
+                prefs.collision_string_prefix,
+                cls.get_shape_pre_suffix(prefs, shape_identifier),
+                prefs.collision_string_suffix
+            ]
+
+        name_pre_suffix = ''
+        if prefs.naming_position == 'SUFFIX':
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + separator + comp
+            new_name = name + name_pre_suffix
+
+        else:  # prefs.naming_position == 'PREFIX'
+            for comp in pre_suffix_componetns:
+                if comp:
+                    name_pre_suffix = name_pre_suffix + comp + separator
+            new_name = name_pre_suffix + name
+
+        return cls.unique_name(new_name)
+
+    def collider_name(self, basename='Basename'):
+        self.basename = basename
+        user_group = self.collision_groups[self.collision_group_idx]
+        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
+
+    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
+        dict = {}
+        dict['alpha'] = alpha
+        dict['discplace_offset'] = offset
+        dict['decimate'] = decimate
+        dict['sphere_segments'] = sphere_segments
+        dict['cylinder_segments'] = cylinder_segments
+
+        return dict
+
+    def get_shape_name(self):
+        """ Return Shape String """
+        if self.shape == 'box_shape':
+            return 'BOX'
+        elif self.shape == 'sphere_shape':
+            return 'SPHERE'
+        elif self.shape == 'convex_shape':
+            return 'CONVEX'
+        else:  # identifier == 'mesh_shape':
+            return 'MESH'
+
+    @staticmethod
+    def get_shape_pre_suffix(prefs, identifier):
+        # Hack. prefs.get('box_shape') does not work before the value is once changed.
+        if identifier == 'box_shape':
+            return prefs.box_shape
+        elif identifier == 'sphere_shape':
+            return prefs.sphere_shape
+        elif identifier == 'convex_shape':
+            return prefs.convex_shape
+        else:  # identifier == 'mesh_shape':
+            return prefs.mesh_shape
+
+    @staticmethod
+    def force_redraw():
+        """Hack to redraw UI"""
+        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
+        bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
+        pass
+
+    def set_collisions_wire_preview(self, mode):
+        """Show wireframe for colliders"""
+        if mode in ['PREVIEW', 'ALWAYS']:
+            for obj in self.new_colliders_list:
+                obj.show_wire = True
+        else:
+            for obj in self.new_colliders_list:
+                obj.show_wire = False
+
+    @staticmethod
+    def remove_objects(list):
+        '''Remove previously created collisions'''
+        if len(list) > 0:
+            for ob in list:
+                objs = bpy.data.objects
+                objs.remove(ob, do_unlink=True)
+
+    @staticmethod
+    def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
 
         delta = delta * sensibility
 
@@ -448,7 +478,8 @@ class OBJECT_OT_add_bounding_object():
 
         return delta
 
-    def get_mesh_Edit(self, obj, use_modifiers=False):
+    @staticmethod
+    def get_mesh_Edit(obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
@@ -477,7 +508,8 @@ class OBJECT_OT_add_bounding_object():
 
         return new_mesh
 
-    def get_vertices_Edit(self, obj, use_modifiers=False):
+    @staticmethod
+    def get_vertices_Edit(obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
@@ -502,7 +534,8 @@ class OBJECT_OT_add_bounding_object():
         OBJECT_OT_add_bounding_object.bmesh(bm)
         return used_vertices
 
-    def get_vertices_Object(self, obj, use_modifiers=False):
+    @staticmethod
+    def get_vertices_Object(obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         # bpy.ops.object.mode_set(mode='EDIT')
         me = obj.data
@@ -528,7 +561,8 @@ class OBJECT_OT_add_bounding_object():
 
         return used_vertices
 
-    def transform_vertex_space(self, vertex_co, obj):
+    @staticmethod
+    def transform_vertex_space(vertex_co, obj):
         # iterate over vertex coordinates to transform the positions to the appropriate space
         ws_vertex_co = []
         for i in range(len(vertex_co)):
@@ -537,7 +571,8 @@ class OBJECT_OT_add_bounding_object():
 
         return ws_vertex_co
 
-    def get_point_positions(self, obj, space, used_vertices):
+    @staticmethod
+    def get_point_positions(obj, space, used_vertices):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
 
         # Modify the BMesh, can do anything here...
@@ -557,7 +592,8 @@ class OBJECT_OT_add_bounding_object():
 
         return co
 
-    def mesh_from_selection(self, obj, use_modifiers=False):
+    @staticmethod
+    def mesh_from_selection(obj, use_modifiers=False):
         mesh = obj.data.copy()
         mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
@@ -580,14 +616,80 @@ class OBJECT_OT_add_bounding_object():
 
         return mesh
 
-    def is_valid_object(self, obj):
-        # skip if invalid object
+    @staticmethod
+    def is_valid_object(obj):
+        """Is the object valid to be used as a base mesh for collider generation"""
         if obj is None or obj.type != "MESH":
             return False
         return True
 
-    def primitive_postprocessing(self, context, bounding_object, base_object_collections):
+    # Collections
+    @staticmethod
+    def add_to_collections(obj, collection_name):
+        """Add an object to a collection"""
+        if collection_name not in bpy.data.collections:
+            collection = bpy.data.collections.new(collection_name)
+            bpy.context.scene.collection.children.link(collection)
 
+        col = bpy.data.collections[collection_name]
+
+        try:
+            col.objects.link(obj)
+        except RuntimeError as err:
+            pass
+
+    @staticmethod
+    def set_collections(obj, collections):
+        """link an object to a collection"""
+        old_collection = obj.users_collection
+
+        for col in collections:
+            try:
+                col.objects.link(obj)
+            except RuntimeError:
+                pass
+
+        for col in old_collection:
+            if col not in collections:
+                col.objects.unlink(obj)
+
+    # Modifiers
+    @staticmethod
+    def apply_all_modifiers(context, obj):
+        """apply all modifiers to an object"""
+        context.view_layer.objects.active = obj
+        for mod in obj.modifiers:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    @staticmethod
+    def remove_all_modifiers(context, obj):
+        """Remove all modifiers of an object"""
+        context.view_layer.objects.active = obj
+        if obj:
+            for mod in obj.modifiers:
+                obj.modifiers.remove(mod)
+
+    @staticmethod
+    def del_displace_modifier(bounding_object):
+        """Delete displace modifiers called 'Collision_displace'"""
+        if bounding_object.modifiers.get('Collision_displace'):
+            mod = bounding_object.modifiers['Collision_displace']
+            bounding_object.modifiers.remove(mod)
+
+    @staticmethod
+    def del_decimate_modifier(bounding_object):
+        """Delete modifiers called 'Collision_decimate'"""
+        if bounding_object.modifiers.get('Collision_decimate'):
+            mod = bounding_object.modifiers['Collision_decimate']
+            bounding_object.modifiers.remove(mod)
+
+    # Time classes
+    @staticmethod
+    def print_generation_time(shape, time):
+        print(shape)
+        print("Time elapsed: ", str(time))
+
+    def primitive_postprocessing(self, context, bounding_object, base_object_collections):
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
         self.set_collections(bounding_object, base_object_collections)
@@ -626,35 +728,6 @@ class OBJECT_OT_add_bounding_object():
     def set_object_collider_group(self, obj):
         obj['collider_group'] = self.collision_groups[self.collision_group_idx]
 
-    def add_to_collections(self, obj, collection_name):
-        if collection_name not in bpy.data.collections:
-            collection = bpy.data.collections.new(collection_name)
-            bpy.context.scene.collection.children.link(collection)
-
-        col = bpy.data.collections[collection_name]
-
-        try:
-            col.objects.link(obj)
-        except RuntimeError as err:
-            pass
-            # print("RuntimeError: {0}".format(err))
-
-    def set_collections(self, obj, collections):
-        old_collection = obj.users_collection
-
-        for col in collections:
-            try:
-                col.objects.link(obj)
-            except RuntimeError:
-                pass
-
-        for col in old_collection:
-            if col not in collections:
-                col.objects.unlink(obj)
-
-    def print_generation_time(self, shape, time):
-        print(shape)
-        print("Time elapsed: ", str(time))
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
@@ -675,21 +748,6 @@ class OBJECT_OT_add_bounding_object():
         context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
-        # infomessage = 'Generated collisions %d/%d' % (i, obj_amount)
-        # self.report({'INFO'}, infomessage)
-
-    # Modifiers
-    def apply_all_modifiers(self, context, obj):
-        context.view_layer.objects.active = obj
-        for mod in obj.modifiers:
-            bpy.ops.object.modifier_apply(modifier=mod.name)
-
-    def remove_all_modifiers(self, context, obj):
-        context.view_layer.objects.active = obj
-        if obj:
-            for mod in obj.modifiers:
-                obj.modifiers.remove(mod)
-
     def add_displacement_modifier(self, context, bounding_object):
         scene = context.scene
 
@@ -699,11 +757,6 @@ class OBJECT_OT_add_bounding_object():
 
         self.displace_modifiers.append(modifier)
 
-    def del_displace_modifier(self, context, bounding_object):
-        if bounding_object.modifiers.get('Collision_displace'):
-            mod = bounding_object.modifiers['Collision_displace']
-            bounding_object.modifiers.remove(mod)
-
     def add_decimate_modifier(self, context, bounding_object):
         scene = context.scene
 
@@ -711,11 +764,6 @@ class OBJECT_OT_add_bounding_object():
         modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
-
-    def del_decimate_modifier(self, context, bounding_object):
-        if bounding_object.modifiers.get('Collision_decimate'):
-            mod = bounding_object.modifiers['Collision_decimate']
-            bounding_object.modifiers.remove(mod)
 
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
@@ -739,6 +787,9 @@ class OBJECT_OT_add_bounding_object():
 
         # UI/UX
         self.ignore_input = False
+
+        self.use_recenter_origin = False
+        self.use_custom_rotation = False
 
     @classmethod
     def poll(cls, context):
@@ -812,6 +863,8 @@ class OBJECT_OT_add_bounding_object():
         self.collision_groups = collider_groups
 
         self.new_colliders_list = []
+        self.col_rotation_matrix_list = []
+        self.col_center_loc_list = []
 
         self.name_count = 0
 
@@ -882,8 +935,8 @@ class OBJECT_OT_add_bounding_object():
                         for mat in data['material_slots']:
                             set_physics_material(obj, mat)
 
-                        self.del_displace_modifier(context, obj)
-                        self.del_decimate_modifier(context, obj)
+                        self.del_displace_modifier(obj)
+                        self.del_decimate_modifier(obj)
 
             context.space_data.shading.color_type = self.color_type
 
@@ -900,12 +953,22 @@ class OBJECT_OT_add_bounding_object():
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
-            for obj in self.new_colliders_list:
+            for i, obj in enumerate(self.new_colliders_list):
+                if self.use_recenter_origin:
+
+                    # set origin causes issues. Does not work properly
+                    center = self.calculate_center_of_mass(obj)
+                    self.set_custom_origin_location(obj, center)
+
+                if self.use_custom_rotation:
+                    if len(self.col_rotation_matrix_list) > 0:
+                        self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
+
                 # remove modifiers if they have the default value
                 if self.current_settings_dic['discplace_offset'] == 0.0:
-                    self.del_displace_modifier(context, obj)
+                    self.del_displace_modifier(obj)
                 if self.current_settings_dic['decimate'] == 1.0:
-                    self.del_decimate_modifier(context, obj)
+                    self.del_decimate_modifier(obj)
 
                 # set the display settings for the collider objects
                 obj.display_type = scene.display_type
