@@ -189,11 +189,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.parent = parent
                 # align collider with parent
                 new_collider.matrix_world = parent.matrix_world
-                self.set_origin_to_center(new_collider, center_point)
+                self.set_custom_origin_location(new_collider, center_point)
 
             else:  # scene.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
-                self.set_origin_to_center(new_collider, center_point)
+                self.set_custom_origin_location(new_collider, center_point)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

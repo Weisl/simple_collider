@@ -120,7 +120,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 self.custom_set_parent(context, parent, new_collider)
                 center = self.calculate_center_of_mass(new_collider)
-                self.set_origin_to_center(new_collider, center)
+                self.set_custom_origin_location(new_collider, center)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)

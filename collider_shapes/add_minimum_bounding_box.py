@@ -23,13 +23,15 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
     bl_label = "Oriented Minimum BBox"
     bl_description = 'Create oriented minimum bounding box colliders based on the selection'
 
-    def gen_cube_verts(self):
+    @staticmethod
+    def gen_cube_verts():
         for x in range(-1, 2, 2):
             for y in range(-1, 2, 2):
                 for z in range(-1, 2, 2):
                     yield x, y, z
 
-    def rotating_calipers(self, hull_points: np.ndarray, bases):
+    @staticmethod
+    def rotating_calipers(hull_points: np.ndarray, bases):
         min_bb_basis = None
         min_bb_min = None
         min_bb_max = None
@@ -51,7 +53,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         return np.array(min_bb_basis), min_bb_max, min_bb_min
 
-    def obj_rotating_calipers(self, obj):
+    @classmethod
+    def obj_rotating_calipers(cls, obj):
 
         bm = bmesh.new()
         dg = bpy.context.evaluated_depsgraph_get()
@@ -80,7 +83,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                 basis = (edge_vec, co_tangent, face_normal)
                 bases.append(basis)
 
-        bb_basis, bb_max, bb_min = self.rotating_calipers(chull_points, bases)
+        bb_basis, bb_max, bb_min = cls.rotating_calipers(chull_points, bases)
 
         bm.free()
 
@@ -94,7 +97,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             np.identity(3) * bb_dim / 2).to_4x4()
 
         bb_mesh = bpy.data.meshes.new(obj.name + "_minimum_bounding_box")
-        bb_mesh.from_pydata(vertices=list(self.gen_cube_verts()), edges=[], faces=CUBE_FACE_INDICES)
+        bb_mesh.from_pydata(vertices=list(cls.gen_cube_verts()), edges=[], faces=CUBE_FACE_INDICES)
         bb_mesh.validate()
         bb_mesh.transform(mesh_matrix)
         bb_mesh.update()
@@ -216,7 +219,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             # set origin causes issues. Does not work properly
             center = self.calculate_center_of_mass(new_collider)
-            self.set_origin_to_center(new_collider, center)
+            self.set_custom_origin_location(new_collider, center)
             self.set_custom_rotation(new_collider, rotation_matrix)
 
             # save collision objects to delete when canceling the operation
