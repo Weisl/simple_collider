@@ -60,7 +60,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Create multiple convex hull colliders to represent any object using Hierarchical Approximate Convex Decomposition'
     bl_options = {'REGISTER', 'PRESET'}
 
-    def overwrite_executable_path(self, path):
+    @staticmethod
+    def overwrite_executable_path(path):
         '''Users can overwrite the default executable path. '''
         # Check executable path
         executable_path = bpy.path.abspath(path)
@@ -69,7 +70,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return executable_path
         return False
 
-    def set_temp_data_path(self, path):
+    @staticmethod
+    def set_temp_data_path(path):
         '''Set folder to temporarily store the exported data. '''
         # Check data path
         data_path = bpy.path.abspath(path)
@@ -82,6 +84,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_decimation = True
         self.use_modifier_stack = True
+        self.use_recenter_origin = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -256,6 +259,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                     new_collider.matrix_world = parent.matrix_world
+                    # Apply rotation and scale for custom origin to work.
+                    self.apply_transform(new_collider, rotation=True, scale=True)
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(context, new_collider, collections)
