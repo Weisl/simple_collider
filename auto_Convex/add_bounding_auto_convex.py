@@ -85,6 +85,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.use_modifier_stack = True
         self.use_recenter_origin = True
+        self.shape = 'convex_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -118,7 +119,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        self.shape_suffix = self.prefs.convex_shape
+
 
         import addon_utils
         addon_name = 'io_scene_x3d'
