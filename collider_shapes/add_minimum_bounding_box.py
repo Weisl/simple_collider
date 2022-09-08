@@ -84,10 +84,11 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                 bases.append(basis)
 
         bb_basis, bb_max, bb_min = cls.rotating_calipers(chull_points, bases)
-
         bm.free()
-
         bb_basis_mat = bb_basis.T
+
+        if bb_min is None or bb_max is None:
+            return None, None
 
         bb_dim = bb_max - bb_min
         bb_center = (bb_max + bb_min) / 2
@@ -213,6 +214,11 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.apply_transform(temp_obj, rotation=True, scale=True)
 
             new_collider, rotation_matrix = self.obj_rotating_calipers(temp_obj)
+
+            if new_collider is None:
+                self.cancel_cleanup(context)
+                self.report({'ERROR'}, "Aligned Box Collider requires at least 3 vertices to work")
+                return {'CANCELLED'}
 
             root_collection = context.scene.collection
             root_collection.objects.link(new_collider)
