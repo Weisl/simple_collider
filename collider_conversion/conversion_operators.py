@@ -27,15 +27,25 @@ class OBJECT_OT_regenerate_name(Operator):
 
         for obj in context.selected_objects.copy():
 
-            if obj.parent:
-                # get collider shape and group and set to default there is no previous data
-                shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
-                user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
+            # skip if invalid object
+            if obj is None or obj.type != "MESH":
+                continue
 
-                new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
-                                                                             basename=obj.parent.name)
-                obj.name = new_name
-                OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+            if prefs.replace_name:
+                basename = prefs.obj_basename
+            elif obj.parent:
+                basename = obj.parent.name
+            else:
+                basename = obj.name
+
+            # get collider shape and group and set to default there is no previous data
+            shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
+            user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
+
+            new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                                                                         basename=basename)
+            obj.name = new_name
+            OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
         return {'FINISHED'}
 
