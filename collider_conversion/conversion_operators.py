@@ -52,6 +52,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.is_mesh_to_collider = True
         self.use_creation_mode = False
+        self.shape = 'mesh_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -78,6 +79,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
             self.shape = self.collider_shapes[self.collider_shapes_idx]
+            for collider in self.new_colliders_list:
+                if collider:
+                    collider['collider_shape'] = self.shape
             self.update_names()
 
         return {'RUNNING_MODAL'}
@@ -98,7 +102,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         self.original_obj_data = []
-        self.shape_suffix = self.prefs.mesh_shape
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
