@@ -143,7 +143,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             else:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if not used_vertices or len(used_vertices) < 3:
+            if not used_vertices:
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
