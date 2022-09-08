@@ -167,6 +167,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                # Don't add object if it consists of less than 3 vertices
+                if len(used_vertices) < 3:
+                    continue
+
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'LOCAL', used_vertices)
 
@@ -186,10 +190,12 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             ws_vtx_co = verts_co
             verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
-            bounding_box_data = {}
-            bounding_box_data['parent'] = self.active_obj
-            bounding_box_data['verts_loc'] = verts_co
-            collider_data = [bounding_box_data]
+            # Don't add object if it consists of less than 3 vertices
+            if len(ws_vtx_co) > 2:
+                bounding_box_data = {}
+                bounding_box_data['parent'] = self.active_obj
+                bounding_box_data['verts_loc'] = verts_co
+                collider_data = [bounding_box_data]
 
         for bounding_box_data in collider_data:
             # get data from dictionary
@@ -214,11 +220,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.apply_transform(temp_obj, rotation=True, scale=True)
 
             new_collider, rotation_matrix = self.obj_rotating_calipers(temp_obj)
-
-            if new_collider is None:
-                self.cancel_cleanup(context)
-                self.report({'ERROR'}, "Aligned Box Collider requires at least 3 vertices to work")
-                return {'CANCELLED'}
 
             root_collection = context.scene.collection
             root_collection.objects.link(new_collider)

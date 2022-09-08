@@ -32,6 +32,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
     color_modal = self.prefs.modal_color_modal
     color_bool = self.prefs.modal_color_bool
     color_highlight = self.prefs.modal_color_highlight
+    color_error = self.prefs.modal_color_error
 
     # padding bottom
     font_size = self.prefs.modal_font_size
@@ -41,7 +42,9 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
 
     blf.size(font_id, 20, font_size)
 
-    if type == 'key_title':
+    if type == 'error':
+        blf.color(font_id, color_error[0], color_error[1], color_error[2], color_error[3])
+    elif type == 'key_title':
         if self.ignore_input or self.navigation:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
     elif self.ignore_input or self.navigation:
@@ -106,6 +109,8 @@ def draw_viewport_overlay(self, context):
     vertical_px_offset = 30 / 72 * font_size
     left_margin = bpy.context.area.width / 2 - 190 / 72 * font_size
     i = 1
+
+    self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
 
     if self.use_space:
         label = "Global/Local"
@@ -194,13 +199,20 @@ def draw_viewport_overlay(self, context):
     label = 'Operator Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
 
-    if self.navigation:
-        label = 'VIEWPORT NAVIGATION'
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
+    if self.valid_input_selection:
+        if self.navigation:
+            label = 'VIEWPORT NAVIGATION'
+            i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title',
+                                highlight=True)
 
-    elif self.ignore_input:
-        label = 'IGNORE INPUT (ALT)'
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title', highlight=True)
+        elif self.ignore_input:
+            label = 'IGNORE INPUT (ALT)'
+            i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title',
+                                highlight=True)
+
+    else:  # Invalid selection (No colliders to be generated)
+        label = 'Selection Invalid'
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='error')
 
 
 def get_loc_matrix(location):
@@ -859,6 +871,7 @@ class OBJECT_OT_add_bounding_object():
         self.obj_mode = context.object.mode
         self.prev_decimate_time = time.time()
         self.data_suffix = "_data"
+        self.valid_input_selection = True
 
         # Mouse
         self.mouse_initial_x = event.mouse_x
