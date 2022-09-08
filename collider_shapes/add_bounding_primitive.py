@@ -543,8 +543,6 @@ class OBJECT_OT_add_bounding_object():
             bm = bmesh.from_edit_mesh(me)
 
         used_vertices = [v for v in bm.verts if v.select]
-        print('used_vertices: ' + str(used_vertices))
-
         if len(used_vertices) == 0:
             return None
 
@@ -975,9 +973,6 @@ class OBJECT_OT_add_bounding_object():
             # self.execute(context)
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
-
-            print('LEN LIST: ' + str(len(self.new_colliders_list)))
-            print('LIST: ' + str(self.new_colliders_list))
 
             if len(self.new_colliders_list) == 0:
                 self.report({'WARNING'}, "No Colliders generated")
