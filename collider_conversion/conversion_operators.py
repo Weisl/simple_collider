@@ -82,16 +82,15 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
         return {'RUNNING_MODAL'}
 
-    def store_initial_obj_state(self, obj):
+    def store_initial_obj_state(self, obj, collections):
         dic = {}
-        dic['name'] = obj.name
-        dic['material_slots'] = []
+        col_list = []
 
-        for mat in obj.material_slots:
-            dic['material_slots'].append(mat.name)
+        dic['obj'] = obj
+        for col in collections:
+            col_list.append(col.name)
+        dic['users_collection'] = col_list
 
-        dic['color'] = [obj.color[0], obj.color[1], obj.color[2], obj.color[3]]
-        dic['show_wire'] = obj.show_wire
         return dic
 
     def execute(self, context):
@@ -110,12 +109,15 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
+            user_collections = obj.users_collection
 
             self.new_colliders_list.append(new_collider)
-            self.original_obj_data.append(self.store_initial_obj_state(obj))
+            self.original_obj_data.append(self.store_initial_obj_state(obj, user_collections))
 
-            collections = new_collider.users_collection
-            self.primitive_postprocessing(context, new_collider, collections)
+            for collection in obj.users_collection:
+                collection.objects.unlink(obj)
+
+            self.primitive_postprocessing(context, new_collider, user_collections)
 
             super().set_collider_name(new_collider, obj.name)
 

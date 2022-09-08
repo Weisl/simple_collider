@@ -787,33 +787,28 @@ class OBJECT_OT_add_bounding_object():
         return t1
 
     def cancel_cleanup(self, context):
-        if not self.is_mesh_to_collider:
+        if self.is_mesh_to_collider:
+            if self.new_colliders_list:
+                for collider_obj, data in zip(self.new_colliders_list, self.original_obj_data):
+                    # Remove previously created collisions
+                    if collider_obj:
+                        objs = bpy.data.objects
+                        objs.remove(collider_obj, do_unlink=True)
+
+                    # Assign unlinked data to user groups
+                    original_obj = data['obj']
+                    original_user_groups = data['users_collection']
+                    for col in original_user_groups:
+                        self.add_to_collections(original_obj, col)
+
+        # All other operators
+        else:
             # Remove previously created collisions
-            if self.new_colliders_list != None:
+            if self.new_colliders_list:
                 for obj in self.new_colliders_list:
                     if obj:
                         objs = bpy.data.objects
                         objs.remove(obj, do_unlink=True)
-
-        # Reset Convert Mesh to Collider
-        else:
-            if self.new_colliders_list != None:
-                for obj, data in zip(self.new_colliders_list, self.original_obj_data):
-                    if self.prefs.col_collection_name in bpy.data.collections:
-                        col = bpy.data.collections[self.prefs.col_collection_name]
-                        if obj.name in col.objects:
-                            col.objects.unlink(obj)
-
-                    obj.color = data['color']
-                    obj.show_wire = data['show_wire']
-                    obj.name = data['name']
-
-                    remove_materials(obj)
-                    for mat in data['material_slots']:
-                        set_physics_material(obj, mat)
-
-                    self.del_displace_modifier(obj)
-                    self.del_decimate_modifier(obj)
 
         context.space_data.shading.color_type = self.color_type
 
@@ -923,6 +918,9 @@ class OBJECT_OT_add_bounding_object():
 
         self.name_count = 0
 
+        # Mesh to Collider
+        self.original_obj_data = []
+
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
             context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
@@ -1013,7 +1011,8 @@ class OBJECT_OT_add_bounding_object():
             except ValueError:
                 pass
 
-            bpy.ops.object.mode_set(mode='OBJECT')
+            if self.is_mesh_to_collider == False:
+                bpy.ops.object.mode_set(mode='OBJECT')
 
             return {'FINISHED'}
 
