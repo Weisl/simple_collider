@@ -514,7 +514,9 @@ class OBJECT_OT_add_bounding_object():
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        if use_modifiers:  # self.my_use_modifier_stack == True
+        # len(obj.modifiers) has to be bigger than 0. If there are no modifiers are assigned to the object the simple mesh can be used.
+        # If len(obj.modifiers) == 0, the vertices are not selected and used_vertices is empty for some reason.
+        if use_modifiers and len(obj.modifiers) > 0:
             # Get mesh information with the modifiers applied
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
@@ -526,6 +528,7 @@ class OBJECT_OT_add_bounding_object():
             bm = bmesh.from_edit_mesh(me)
 
         used_vertices = [v for v in bm.verts if v.select]
+        print('used_vertices: ' + str(used_vertices))
 
         if len(used_vertices) == 0:
             return None
@@ -727,7 +730,6 @@ class OBJECT_OT_add_bounding_object():
 
     def set_object_collider_group(self, obj):
         obj['collider_group'] = self.collision_groups[self.collision_group_idx]
-
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
@@ -956,7 +958,6 @@ class OBJECT_OT_add_bounding_object():
 
             for i, obj in enumerate(self.new_colliders_list):
                 if self.use_recenter_origin:
-
                     # set origin causes issues. Does not work properly
                     center = self.calculate_center_of_mass(obj)
                     self.set_custom_origin_location(obj, center)
