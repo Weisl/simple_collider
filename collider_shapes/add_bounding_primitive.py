@@ -475,8 +475,9 @@ class OBJECT_OT_add_bounding_object():
         '''Remove previously created collisions'''
         if len(list) > 0:
             for ob in list:
-                objs = bpy.data.objects
-                objs.remove(ob, do_unlink=True)
+                if ob:
+                    objs = bpy.data.objects
+                    objs.remove(ob, do_unlink=True)
 
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
