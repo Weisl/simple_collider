@@ -769,6 +769,41 @@ class OBJECT_OT_add_bounding_object():
         t1 = time.time() - self.t0
         return t1
 
+    def cancel_cleanup(self, context):
+        if not self.is_mesh_to_collider:
+            # Remove previously created collisions
+            if self.new_colliders_list != None:
+                for obj in self.new_colliders_list:
+                    objs = bpy.data.objects
+                    objs.remove(obj, do_unlink=True)
+
+        # Reset Convert Mesh to Collider
+        else:
+            if self.new_colliders_list != None:
+                for obj, data in zip(self.new_colliders_list, self.original_obj_data):
+                    if self.prefs.col_collection_name in bpy.data.collections:
+                        col = bpy.data.collections[self.prefs.col_collection_name]
+                        if obj.name in col.objects:
+                            col.objects.unlink(obj)
+
+                    obj.color = data['color']
+                    obj.show_wire = data['show_wire']
+                    obj.name = data['name']
+
+                    remove_materials(obj)
+                    for mat in data['material_slots']:
+                        set_physics_material(obj, mat)
+
+                    self.del_displace_modifier(obj)
+                    self.del_decimate_modifier(obj)
+
+        context.space_data.shading.color_type = self.color_type
+
+        try:
+            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+        except ValueError:
+            pass
+
     def __init__(self):
         # has to be in --init
         self.is_mesh_to_collider = False
@@ -910,41 +945,7 @@ class OBJECT_OT_add_bounding_object():
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
-
-            if not self.is_mesh_to_collider:
-                # Remove previously created collisions
-                if self.new_colliders_list != None:
-                    for obj in self.new_colliders_list:
-                        objs = bpy.data.objects
-                        objs.remove(obj, do_unlink=True)
-
-            # Reset Convert Mesh to Collider
-            else:
-                if self.new_colliders_list != None:
-                    for obj, data in zip(self.new_colliders_list, self.original_obj_data):
-                        if self.prefs.col_collection_name in bpy.data.collections:
-                            col = bpy.data.collections[self.prefs.col_collection_name]
-                            if obj.name in col.objects:
-                                col.objects.unlink(obj)
-
-                        obj.color = data['color']
-                        obj.show_wire = data['show_wire']
-                        obj.name = data['name']
-
-                        remove_materials(obj)
-                        for mat in data['material_slots']:
-                            set_physics_material(obj, mat)
-
-                        self.del_displace_modifier(obj)
-                        self.del_decimate_modifier(obj)
-
-            context.space_data.shading.color_type = self.color_type
-
-            try:
-                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            except ValueError:
-                pass
-
+            self.cancel_cleanup(context)
             return {'CANCELLED'}
 
         # apply operator
