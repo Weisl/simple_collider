@@ -27,15 +27,25 @@ class OBJECT_OT_regenerate_name(Operator):
 
         for obj in context.selected_objects.copy():
 
-            if obj.parent:
-                # get collider shape and group and set to default there is no previous data
-                shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
-                user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
+            # skip if invalid object
+            if obj is None or obj.type != "MESH":
+                continue
 
-                new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
-                                                                             basename=obj.parent.name)
-                obj.name = new_name
-                OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+            if prefs.replace_name:
+                basename = prefs.obj_basename
+            elif obj.parent:
+                basename = obj.parent.name
+            else:
+                basename = obj.name
+
+            # get collider shape and group and set to default there is no previous data
+            shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
+            user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
+
+            new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                                                                         basename=basename)
+            obj.name = new_name
+            OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
         return {'FINISHED'}
 
@@ -52,6 +62,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.is_mesh_to_collider = True
         self.use_creation_mode = False
+        self.shape = 'mesh_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -78,20 +89,22 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
             self.shape = self.collider_shapes[self.collider_shapes_idx]
+            for collider in self.new_colliders_list:
+                if collider:
+                    collider['collider_shape'] = self.shape
             self.update_names()
 
         return {'RUNNING_MODAL'}
 
-    def store_initial_obj_state(self, obj):
+    def store_initial_obj_state(self, obj, collections):
         dic = {}
-        dic['name'] = obj.name
-        dic['material_slots'] = []
+        col_list = []
 
-        for mat in obj.material_slots:
-            dic['material_slots'].append(mat.name)
+        dic['obj'] = obj
+        for col in collections:
+            col_list.append(col.name)
+        dic['users_collection'] = col_list
 
-        dic['color'] = [obj.color[0], obj.color[1], obj.color[2], obj.color[3]]
-        dic['show_wire'] = obj.show_wire
         return dic
 
     def execute(self, context):
@@ -99,7 +112,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         self.original_obj_data = []
-        self.shape_suffix = self.prefs.mesh_shape
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -110,12 +122,15 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
+            user_collections = obj.users_collection
 
             self.new_colliders_list.append(new_collider)
-            self.original_obj_data.append(self.store_initial_obj_state(obj))
+            self.original_obj_data.append(self.store_initial_obj_state(obj, user_collections))
 
-            collections = new_collider.users_collection
-            self.primitive_postprocessing(context, new_collider, collections)
+            for collection in obj.users_collection:
+                collection.objects.unlink(obj)
+
+            self.primitive_postprocessing(context, new_collider, user_collections)
 
             super().set_collider_name(new_collider, obj.name)
 
