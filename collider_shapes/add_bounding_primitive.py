@@ -481,7 +481,7 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
-
+        '''Get delta of input movement'''
         delta = delta * sensibility
 
         if event.ctrl:  # snap
@@ -557,7 +557,7 @@ class OBJECT_OT_add_bounding_object():
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        if use_modifiers:
+        if use_modifiers and len(obj.modifiers) > 0:
             # Get mesh information with the modifiers applied
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
@@ -688,16 +688,18 @@ class OBJECT_OT_add_bounding_object():
     @staticmethod
     def del_displace_modifier(bounding_object):
         """Delete displace modifiers called 'Collision_displace'"""
-        if bounding_object.modifiers.get('Collision_displace'):
-            mod = bounding_object.modifiers['Collision_displace']
-            bounding_object.modifiers.remove(mod)
+        if bounding_object:
+            if bounding_object.modifiers.get('Collision_displace'):
+                mod = bounding_object.modifiers['Collision_displace']
+                bounding_object.modifiers.remove(mod)
 
     @staticmethod
     def del_decimate_modifier(bounding_object):
         """Delete modifiers called 'Collision_decimate'"""
-        if bounding_object.modifiers.get('Collision_decimate'):
-            mod = bounding_object.modifiers['Collision_decimate']
-            bounding_object.modifiers.remove(mod)
+        if bounding_object:
+            if bounding_object.modifiers.get('Collision_decimate'):
+                mod = bounding_object.modifiers['Collision_decimate']
+                bounding_object.modifiers.remove(mod)
 
     # Time classes
     @staticmethod
@@ -789,8 +791,9 @@ class OBJECT_OT_add_bounding_object():
             # Remove previously created collisions
             if self.new_colliders_list != None:
                 for obj in self.new_colliders_list:
-                    objs = bpy.data.objects
-                    objs.remove(obj, do_unlink=True)
+                    if obj:
+                        objs = bpy.data.objects
+                        objs.remove(obj, do_unlink=True)
 
         # Reset Convert Mesh to Collider
         else:
@@ -970,7 +973,16 @@ class OBJECT_OT_add_bounding_object():
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
+            print('LEN LIST: ' + str(len(self.new_colliders_list)))
+            print('LIST: ' + str(self.new_colliders_list))
+
+            if len(self.new_colliders_list) == 0:
+                self.report({'WARNING'}, "No Colliders generated")
+
             for i, obj in enumerate(self.new_colliders_list):
+                if not obj:
+                    continue
+
                 if self.use_recenter_origin:
                     # set origin causes issues. Does not work properly
                     center = self.calculate_center_of_mass(obj)
