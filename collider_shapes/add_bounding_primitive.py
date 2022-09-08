@@ -514,9 +514,7 @@ class OBJECT_OT_add_bounding_object():
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        # len(obj.modifiers) has to be bigger than 0. If there are no modifiers are assigned to the object the simple mesh can be used.
-        # If len(obj.modifiers) == 0, the vertices are not selected and used_vertices is empty for some reason.
-        if use_modifiers and len(obj.modifiers) > 0:
+        if use_modifiers:  # self.my_use_modifier_stack == True
             # Get mesh information with the modifiers applied
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
@@ -528,7 +526,6 @@ class OBJECT_OT_add_bounding_object():
             bm = bmesh.from_edit_mesh(me)
 
         used_vertices = [v for v in bm.verts if v.select]
-        print('used_vertices: ' + str(used_vertices))
 
         if len(used_vertices) == 0:
             return None
@@ -731,6 +728,7 @@ class OBJECT_OT_add_bounding_object():
     def set_object_collider_group(self, obj):
         obj['collider_group'] = self.collision_groups[self.collision_group_idx]
 
+
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
         new_collider.name = new_name
@@ -770,41 +768,6 @@ class OBJECT_OT_add_bounding_object():
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
         return t1
-
-    def cancel_cleanup(self, context):
-        if not self.is_mesh_to_collider:
-            # Remove previously created collisions
-            if self.new_colliders_list != None:
-                for obj in self.new_colliders_list:
-                    objs = bpy.data.objects
-                    objs.remove(obj, do_unlink=True)
-
-        # Reset Convert Mesh to Collider
-        else:
-            if self.new_colliders_list != None:
-                for obj, data in zip(self.new_colliders_list, self.original_obj_data):
-                    if self.prefs.col_collection_name in bpy.data.collections:
-                        col = bpy.data.collections[self.prefs.col_collection_name]
-                        if obj.name in col.objects:
-                            col.objects.unlink(obj)
-
-                    obj.color = data['color']
-                    obj.show_wire = data['show_wire']
-                    obj.name = data['name']
-
-                    remove_materials(obj)
-                    for mat in data['material_slots']:
-                        set_physics_material(obj, mat)
-
-                    self.del_displace_modifier(obj)
-                    self.del_decimate_modifier(obj)
-
-        context.space_data.shading.color_type = self.color_type
-
-        try:
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-        except ValueError:
-            pass
 
     def __init__(self):
         # has to be in --init
@@ -947,7 +910,41 @@ class OBJECT_OT_add_bounding_object():
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
-            self.cancel_cleanup(context)
+
+            if not self.is_mesh_to_collider:
+                # Remove previously created collisions
+                if self.new_colliders_list != None:
+                    for obj in self.new_colliders_list:
+                        objs = bpy.data.objects
+                        objs.remove(obj, do_unlink=True)
+
+            # Reset Convert Mesh to Collider
+            else:
+                if self.new_colliders_list != None:
+                    for obj, data in zip(self.new_colliders_list, self.original_obj_data):
+                        if self.prefs.col_collection_name in bpy.data.collections:
+                            col = bpy.data.collections[self.prefs.col_collection_name]
+                            if obj.name in col.objects:
+                                col.objects.unlink(obj)
+
+                        obj.color = data['color']
+                        obj.show_wire = data['show_wire']
+                        obj.name = data['name']
+
+                        remove_materials(obj)
+                        for mat in data['material_slots']:
+                            set_physics_material(obj, mat)
+
+                        self.del_displace_modifier(obj)
+                        self.del_decimate_modifier(obj)
+
+            context.space_data.shading.color_type = self.color_type
+
+            try:
+                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            except ValueError:
+                pass
+
             return {'CANCELLED'}
 
         # apply operator
@@ -958,6 +955,7 @@ class OBJECT_OT_add_bounding_object():
 
             for i, obj in enumerate(self.new_colliders_list):
                 if self.use_recenter_origin:
+
                     # set origin causes issues. Does not work properly
                     center = self.calculate_center_of_mass(obj)
                     self.set_custom_origin_location(obj, center)
