@@ -133,9 +133,11 @@ def draw_viewport_overlay(self, context):
     value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
-    label = "Creation Mode "
-    value = self.creation_mode[self.creation_mode_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)', type='enum')
+    if self.use_creation_mode:
+        label = "Creation Mode "
+        value = self.creation_mode[self.creation_mode_idx]
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)',
+                            type='enum')
 
     if context.space_data.shading.type == 'SOLID':
         label = "Preview View "
@@ -837,6 +839,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_sphere_segments = False
         self.shape = ''
         self.use_shape_change = False
+        self.use_creation_mode = True
 
         # UI/UX
         self.ignore_input = False
@@ -1062,8 +1065,7 @@ class OBJECT_OT_add_bounding_object():
             # Another function needs to be called for the modal UI to update :(
             self.set_collisions_wire_preview(scene.wireframe_mode)
 
-        elif event.type == 'M' and event.value == 'RELEASE':
-
+        elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
