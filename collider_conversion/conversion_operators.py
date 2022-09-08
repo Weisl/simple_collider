@@ -51,6 +51,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_shape_change = True
         self.use_decimation = True
         self.is_mesh_to_collider = True
+        self.use_creation_mode = False
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -107,7 +108,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             if not self.is_valid_object(obj):
                 continue
 
-            new_collider = obj
+            new_collider = obj.copy()
+            new_collider.data = obj.data.copy()
 
             self.new_colliders_list.append(new_collider)
             self.original_obj_data.append(self.store_initial_obj_state(obj))

@@ -133,9 +133,11 @@ def draw_viewport_overlay(self, context):
     value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
-    label = "Creation Mode "
-    value = self.creation_mode[self.creation_mode_idx]
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)', type='enum')
+    if self.use_creation_mode:
+        label = "Creation Mode "
+        value = self.creation_mode[self.creation_mode_idx]
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)',
+                            type='enum')
 
     if context.space_data.shading.type == 'SOLID':
         label = "Preview View "
@@ -475,12 +477,13 @@ class OBJECT_OT_add_bounding_object():
         '''Remove previously created collisions'''
         if len(list) > 0:
             for ob in list:
-                objs = bpy.data.objects
-                objs.remove(ob, do_unlink=True)
+                if ob:
+                    objs = bpy.data.objects
+                    objs.remove(ob, do_unlink=True)
 
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
-
+        '''Get delta of input movement'''
         delta = delta * sensibility
 
         if event.ctrl:  # snap
@@ -540,8 +543,6 @@ class OBJECT_OT_add_bounding_object():
             bm = bmesh.from_edit_mesh(me)
 
         used_vertices = [v for v in bm.verts if v.select]
-        print('used_vertices: ' + str(used_vertices))
-
         if len(used_vertices) == 0:
             return None
 
@@ -556,7 +557,7 @@ class OBJECT_OT_add_bounding_object():
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
-        if use_modifiers:
+        if use_modifiers and len(obj.modifiers) > 0:
             # Get mesh information with the modifiers applied
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
@@ -687,16 +688,18 @@ class OBJECT_OT_add_bounding_object():
     @staticmethod
     def del_displace_modifier(bounding_object):
         """Delete displace modifiers called 'Collision_displace'"""
-        if bounding_object.modifiers.get('Collision_displace'):
-            mod = bounding_object.modifiers['Collision_displace']
-            bounding_object.modifiers.remove(mod)
+        if bounding_object:
+            if bounding_object.modifiers.get('Collision_displace'):
+                mod = bounding_object.modifiers['Collision_displace']
+                bounding_object.modifiers.remove(mod)
 
     @staticmethod
     def del_decimate_modifier(bounding_object):
         """Delete modifiers called 'Collision_decimate'"""
-        if bounding_object.modifiers.get('Collision_decimate'):
-            mod = bounding_object.modifiers['Collision_decimate']
-            bounding_object.modifiers.remove(mod)
+        if bounding_object:
+            if bounding_object.modifiers.get('Collision_decimate'):
+                mod = bounding_object.modifiers['Collision_decimate']
+                bounding_object.modifiers.remove(mod)
 
     # Time classes
     @staticmethod
@@ -788,8 +791,9 @@ class OBJECT_OT_add_bounding_object():
             # Remove previously created collisions
             if self.new_colliders_list != None:
                 for obj in self.new_colliders_list:
-                    objs = bpy.data.objects
-                    objs.remove(obj, do_unlink=True)
+                    if obj:
+                        objs = bpy.data.objects
+                        objs.remove(obj, do_unlink=True)
 
         # Reset Convert Mesh to Collider
         else:
@@ -833,6 +837,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_sphere_segments = False
         self.shape = ''
         self.use_shape_change = False
+        self.use_creation_mode = True
 
         # UI/UX
         self.ignore_input = False
@@ -969,7 +974,13 @@ class OBJECT_OT_add_bounding_object():
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
+            if len(self.new_colliders_list) == 0:
+                self.report({'WARNING'}, "No Colliders generated")
+
             for i, obj in enumerate(self.new_colliders_list):
+                if not obj:
+                    continue
+
                 if self.use_recenter_origin:
                     # set origin causes issues. Does not work properly
                     center = self.calculate_center_of_mass(obj)
@@ -1049,8 +1060,7 @@ class OBJECT_OT_add_bounding_object():
             # Another function needs to be called for the modal UI to update :(
             self.set_collisions_wire_preview(scene.wireframe_mode)
 
-        elif event.type == 'M' and event.value == 'RELEASE':
-
+        elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 

@@ -100,15 +100,20 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         # Merge all collider objects
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             bpy.ops.object.select_all(action='DESELECT')
-            new_collider = None
+            last_selected = None
 
             for obj in self.new_colliders_list:
-                obj.select_set(True)
-                context.view_layer.objects.active = obj
-                new_collider = obj
+                if obj:
+                    obj.select_set(True)
+                    context.view_layer.objects.active = obj
+                    last_selected = obj
 
             bpy.ops.object.join()
-            self.new_colliders_list = [new_collider]
+
+            if last_selected:
+                self.new_colliders_list = [last_selected]
+            else:
+                self.new_colliders_list = []
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
