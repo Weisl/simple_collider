@@ -65,21 +65,18 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                # update mesh when changing selection in edit mode etc.
-                obj.update_from_editmode()
+            ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
+            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # duplicate object
                 convex_collision_data['parent'] = obj
-
-                verts_loc = [v.co for v in used_vertices]
-                convex_collision_data['verts_loc'] = verts_loc
+                convex_collision_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(convex_collision_data)
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
@@ -115,11 +112,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             new_collider = bpy.data.objects.new('colliders', me)
             context.scene.collection.objects.link(new_collider)
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                new_collider.parent = parent
-
-            if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-                self.custom_set_parent(context, parent, new_collider)
+            self.custom_set_parent(context, parent, new_collider)
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
