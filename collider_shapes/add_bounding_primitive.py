@@ -497,11 +497,15 @@ class OBJECT_OT_add_bounding_object():
     def get_mesh_Edit(obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
-        me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
-
         new_mesh = bpy.data.meshes.new('')
 
         if use_modifiers:  # self.my_use_modifier_stack == True
+            # Bug: #249
+            for mod in obj.modifiers:
+                mod.show_on_cage = True
+                mod.show_in_editmode = True
+            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+
             # Get mesh information with the modifiers applied
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
@@ -509,6 +513,7 @@ class OBJECT_OT_add_bounding_object():
 
         else:  # use_modifiers == False
             # Get a BMesh representation
+            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
             bm_orig = bmesh.from_edit_mesh(me)
             bm = bm_orig.copy()
 
@@ -527,12 +532,18 @@ class OBJECT_OT_add_bounding_object():
     def get_vertices_Edit(obj, use_modifiers=False):
         ''' Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return '''
         me = obj.data
-        me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
         # len(obj.modifiers) has to be bigger than 0. If there are no modifiers are assigned to the object the simple mesh can be used.
         # If len(obj.modifiers) == 0, the vertices are not selected and used_vertices is empty for some reason.
         if use_modifiers and len(obj.modifiers) > 0:
             # Get mesh information with the modifiers applied
+
+            # Bug: #249
+            for mod in obj.modifiers:
+                mod.show_on_cage = True
+                mod.show_in_editmode = True
+
+            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
             bm.from_object(obj, depsgraph)
@@ -540,6 +551,7 @@ class OBJECT_OT_add_bounding_object():
 
         else:  # use_modifiers == False
             # Get a BMesh representation
+            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
             bm = bmesh.from_edit_mesh(me)
 
         used_vertices = [v for v in bm.verts if v.select]
