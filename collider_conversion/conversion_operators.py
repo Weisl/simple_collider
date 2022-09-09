@@ -174,9 +174,11 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     def execute(self, context):
         scene = context.scene
+        count = 0
 
         for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
+                count += 1
                 # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
@@ -205,5 +207,10 @@ class OBJECT_OT_convert_to_mesh(Operator):
                             # add to default scene collection if the object is not part of any collection anymore
                             if len(obj.users_collection) == 0:
                                 bpy.context.scene.collection.objects.link(obj)
+
+        if count == 0:
+            self.report({'WARNING'}, 'No collider selected for conversion')
+        else:
+            self.report({'INFO'}, "{} colliders have been converted".format(count))
 
         return {'FINISHED'}
