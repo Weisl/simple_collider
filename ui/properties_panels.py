@@ -49,8 +49,8 @@ def draw_auto_convex(layout, context):
     else:
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.prop(scene, 'convex_decomp_depth')
-        row.prop(scene, 'maxNumVerticesPerCH')
+        row.prop(scene, 'maxHullAmount')
+        row.prop(scene, 'maxHullVertCount')
 
         row = col.row(align=True)
 

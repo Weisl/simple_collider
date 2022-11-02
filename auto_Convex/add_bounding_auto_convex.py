@@ -5,7 +5,7 @@ import bmesh
 import bpy
 from bpy.types import Operator
 
-from .off_eport import off_export
+# from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
@@ -119,8 +119,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-
-
         import addon_utils
         addon_name = 'io_scene_x3d'
         addon_utils.check(addon_name)
@@ -201,6 +199,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
 
+            joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
+            bpy.context.scene.collection.objects.link(joined_obj)
+
             if self.prefs.debug:
                 joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
                 bpy.context.scene.collection.objects.link(joined_obj)
@@ -209,23 +210,19 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-            off_filename = os.path.join(data_path, '{}.off'.format(filename))
+            obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
             outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
             logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
 
             scene = context.scene
 
-            print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
-            off_export(mesh, off_filename)
-            cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
-                        '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
-                        '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
-                        '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
-                self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
-                self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca,
-                self.prefs.vhacd_mode == 'TETRAHEDRON',
-                scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
+            print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
+
+            joined_obj.select_set(True)
+            bpy.ops.export_scene.obj(filepath=obj_filename, use_selection=True)
+
+
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g{:b}').format(vhacd_exe, obj_filename, scene.maxHullAmount, scene.maxHullVertCount, 'stl', True)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
