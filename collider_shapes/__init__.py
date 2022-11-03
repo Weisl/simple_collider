@@ -14,8 +14,6 @@ def update_display_colliders(self, context):
     for obj in bpy.data.objects:
         if obj.get('isCollider'):
             obj.display_type = self.display_type
-    return {'FINISHED'}
-
 
 classes = (
     add_bounding_box.OBJECT_OT_add_bounding_box,
