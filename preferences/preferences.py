@@ -255,29 +255,24 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # VHACD parameters
 
-    # # -r
-    # vhacd_voxelresolution: bpy.props.IntProperty(name='Voxel Resolution',
-    #                                              description=' Total number of voxels to use. Default is 100000',
-    #                                              default=100000, min=10000, max=64000000)
-    #
-    # # -e
-    # vhacd_volumneErrorPercent: bpy.props.FloatProperty(name='Volumne Error Percentage',
-    #                                                    description=' Volume error allowed as a percentage. Default is 1%. Valid range is 0.001 to 10',
-    #                                                    default=0.01, min=0.001, max=10)
-    #
-    # # -d
-    # vhacd_maxRecursionDepth: bpy.props.IntProperty(name='Maximum recursion depth',
-    #                                                default=10
-    #                                                )
-    # # -s
-    # vhacd_shrinkwrap: bpy.props.BoolProperty(name='Shrinkwrap', default=True,
-    #                                          description='Whether or not to shrinkwrap output to source mesh. Default is true.')
-    #
-    # # -f
-    # vhacd_fillMode: bpy.props.EnumProperty(name='Fill Mode',
-    #                                        items=(('flood', 'flood', 'flood'), ('surface', 'surface', 'surface'),
-    #                                               ('raycast', 'raycast', 'raycast')),
-    #                                        default='flood')
+    # -e
+    vhacd_volumneErrorPercent: bpy.props.FloatProperty(name='Volumne Error Percentage',
+                                                       description=' Volume error allowed as a percentage. Default is 1%. Valid range is 0.001 to 10',
+                                                       default=0.01, min=0.001, max=10)
+
+    # -d
+    vhacd_maxRecursionDepth: bpy.props.IntProperty(name='Maximum recursion depth',
+                                                   default=10
+                                                   )
+    # -s
+    vhacd_shrinkwrap: bpy.props.BoolProperty(name='Shrinkwrap', default=True,
+                                             description='Whether or not to shrinkwrap output to source mesh. Default is true.')
+
+    # -f
+    vhacd_fillMode: bpy.props.EnumProperty(name='Fill Mode',
+                                           items=(('flood', 'flood', 'flood'), ('surface', 'surface', 'surface'),
+                                                  ('raycast', 'raycast', 'raycast')),
+                                           default='flood')
 
     # -a description = "Whether or not to run asynchronously. Default is 'true'"
     # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.

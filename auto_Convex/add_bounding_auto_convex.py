@@ -212,7 +212,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
             obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
             outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
-            logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
+
 
             scene = context.scene
 
@@ -220,9 +220,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             joined_obj.select_set(True)
             bpy.ops.export_scene.obj(filepath=obj_filename, use_selection=True)
+            filesInDirectory = os.listdir(data_path)
 
-
-            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g{:b}').format(vhacd_exe, obj_filename, scene.maxHullAmount, scene.maxHullVertCount, 'stl', True)
+            shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe, obj_filename, scene.maxHullAmount, scene.maxHullVertCount, 'obj', 1, scene.voxelresolution, self.prefs.vhacd_volumneErrorPercent, self.prefs.vhacd_maxRecursionDepth, shrinkwrap, self.prefs.vhacd_fillMode)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -230,10 +231,23 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
-            if not os.path.exists(outFileName):
-                continue
+            # if not os.path.exists(outFileName):
+            #     continue
 
-            bpy.ops.import_scene.x3d(filepath=outFileName, axis_forward='Y', axis_up='Z')
+            #List of new files
+            newfilesInDirectory = os.listdir(data_path)
+            print('111111111111111111111111111111111111111111111111111111111111111111111111111111111')
+
+            print('FILES: ' + str(newfilesInDirectory))
+            for oldFile in filesInDirectory:
+                newfilesInDirectory.remove(oldFile)
+
+            print('NEW FILES: ' + str(newfilesInDirectory))
+            for obj_file in newfilesInDirectory:
+                objFilePath = os.path.join(data_path, obj_file)
+                if objFilePath.endswith('.obj'):
+                    bpy.ops.import_scene.obj(filepath=objFilePath)
+
             imported = bpy.context.selected_objects
 
             for ob in imported:

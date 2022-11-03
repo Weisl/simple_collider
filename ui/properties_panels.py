@@ -51,6 +51,8 @@ def draw_auto_convex(layout, context):
         row = col.row(align=True)
         row.prop(scene, 'maxHullAmount')
         row.prop(scene, 'maxHullVertCount')
+        row = col.row(align=True)
+        row.prop(scene, 'voxelresolution')
 
         row = col.row(align=True)
 

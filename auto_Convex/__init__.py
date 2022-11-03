@@ -20,7 +20,10 @@ def register():
                                                    default=16,
                                                    min=4,
                                                    max=64)
-
+    # -r
+    scene.voxelresolution = bpy.props.IntProperty(name="Voxel Resolution",
+                                                  description=' Total number of voxels to use. Default is 100000',
+                                                  default=100000, min=10000, max=64000000)
 
     from bpy.utils import register_class
 
