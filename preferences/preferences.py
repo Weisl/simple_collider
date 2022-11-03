@@ -342,6 +342,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     vhacd_props_config = [
+        "vhacd_volumneErrorPercent",
+        "vhacd_maxRecursionDepth",
+        "vhacd_fillMode",
+        "vhacd_shrinkwrap",
     ]
 
     # here you specify how they are drawn
