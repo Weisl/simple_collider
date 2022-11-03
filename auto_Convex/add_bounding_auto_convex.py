@@ -119,19 +119,11 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        import addon_utils
-        addon_name = 'io_scene_x3d'
-        addon_utils.check(addon_name)
-
-        success = addon_utils.enable(addon_name)
-
         overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
         vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
         data_path = self.set_temp_data_path(self.prefs.data_path)
 
-        if not success or not vhacd_exe or not data_path:
-            if not success:
-                self.report({'ERROR'}, "The X3d export addon needed for the auto convex to work was not found")
+        if not vhacd_exe or not data_path:
             if not vhacd_exe:
                 self.report({'ERROR'},
                             'V-HACD executable is required for Auto Convex to work. Please follow the installation instructions and try it again')
@@ -219,7 +211,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
 
             joined_obj.select_set(True)
-            bpy.ops.export_scene.obj(filepath=obj_filename, use_selection=True)
+            bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True)
             filesInDirectory = os.listdir(data_path)
 
             shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
@@ -246,7 +238,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             for obj_file in newfilesInDirectory:
                 objFilePath = os.path.join(data_path, obj_file)
                 if objFilePath.endswith('.obj'):
-                    bpy.ops.import_scene.obj(filepath=objFilePath)
+                    bpy.ops.wm.obj_import(filepath=objFilePath)
 
             imported = bpy.context.selected_objects
 
