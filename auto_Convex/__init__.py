@@ -11,8 +11,8 @@ def register():
     scene = bpy.types.Scene
 
     # -h
-    scene.maxHullAmount = bpy.props.IntProperty(name='Amount', description='Maximum number of output convex hulls.',
-                                                default=3, min=1, max=32)
+    scene.maxHullAmount = bpy.props.IntProperty(name='Hulls', description='Maximum number of output convex hulls.',
+                                                default=8, min=1, max=256)
 
     # -v
     scene.maxHullVertCount = bpy.props.IntProperty(name='Verts per Piece',
