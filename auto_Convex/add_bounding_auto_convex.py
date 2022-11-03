@@ -3,10 +3,19 @@ from subprocess import Popen
 
 import bmesh
 import bpy
+import string
+import random
+
 from bpy.types import Operator
 
 # from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
+
+def randomString(stringLength=10):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
@@ -202,20 +211,30 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-            obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
-            outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
 
+            obj_filename = os.path.join(data_path, '{}_{}.obj'.format(filename, randomString(6)))
 
             scene = context.scene
 
             print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
 
             joined_obj.select_set(True)
-            bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True)
+            bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True, export_materials=False,
+                                  export_uv=False, export_normals=False)
+
             filesInDirectory = os.listdir(data_path)
 
             shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
-            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe, obj_filename, scene.maxHullAmount, scene.maxHullVertCount, 'obj', 1, scene.voxelresolution, self.prefs.vhacd_volumneErrorPercent, self.prefs.vhacd_maxRecursionDepth, shrinkwrap, self.prefs.vhacd_fillMode)
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe,
+                                                                                                  obj_filename,
+                                                                                                  scene.maxHullAmount,
+                                                                                                  scene.maxHullVertCount,
+                                                                                                  'obj', 1,
+                                                                                                  scene.voxelresolution,
+                                                                                                  self.prefs.vhacd_volumneErrorPercent,
+                                                                                                  self.prefs.vhacd_maxRecursionDepth,
+                                                                                                  shrinkwrap,
+                                                                                                  self.prefs.vhacd_fillMode)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -223,12 +242,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
-            # if not os.path.exists(outFileName):
-            #     continue
-
-            #List of new files
+            # List of new files
             newfilesInDirectory = os.listdir(data_path)
-            print('111111111111111111111111111111111111111111111111111111111111111111111111111111111')
+
+            imported = []
 
             print('FILES: ' + str(newfilesInDirectory))
             for oldFile in filesInDirectory:
@@ -239,8 +256,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 objFilePath = os.path.join(data_path, obj_file)
                 if objFilePath.endswith('.obj'):
                     bpy.ops.wm.obj_import(filepath=objFilePath)
+                    imported.append(bpy.context.selected_objects)
 
-            imported = bpy.context.selected_objects
+            # flatten list
+            imported = [item for sublist in imported for item in sublist]
 
             for ob in imported:
                 ob.select_set(False)
