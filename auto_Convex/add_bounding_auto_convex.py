@@ -163,7 +163,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                print('Entered: INDIVIDUAL')
                 convex_collision_data = {}
                 convex_collision_data['parent'] = obj
                 convex_collision_data['mesh'] = new_mesh
@@ -174,8 +173,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 matrices.append(obj.matrix_world)
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            print('Entered: SELECTION')
-
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
 
@@ -201,12 +198,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
             bpy.context.scene.collection.objects.link(joined_obj)
 
-            if self.prefs.debug:
-                joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
-                bpy.context.scene.collection.objects.link(joined_obj)
-                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
-                joined_obj.select_set(False)
-
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
 
@@ -219,6 +210,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             joined_obj.select_set(True)
             bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True, export_materials=False,
                                   export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
+
+            if self.prefs.debug:
+                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
+                joined_obj.select_set(False)
+            else: #remove debug mesh
+                bpy.data.objects.remove(joined_obj)
 
             filesInDirectory = os.listdir(data_path)
 
@@ -245,11 +242,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             imported = []
 
-            print('FILES: ' + str(newfilesInDirectory))
             for oldFile in filesInDirectory:
                 newfilesInDirectory.remove(oldFile)
 
-            print('NEW FILES: ' + str(newfilesInDirectory))
             for obj_file in newfilesInDirectory:
                 objFilePath = os.path.join(data_path, obj_file)
                 if objFilePath.endswith('.obj'):
