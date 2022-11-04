@@ -7,8 +7,6 @@ import string
 import random
 
 from bpy.types import Operator
-
-# from .off_eport import off_export
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
@@ -220,7 +218,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             joined_obj.select_set(True)
             bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True, export_materials=False,
-                                  export_uv=False, export_normals=False)
+                                  export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
 
             filesInDirectory = os.listdir(data_path)
 
@@ -255,7 +253,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             for obj_file in newfilesInDirectory:
                 objFilePath = os.path.join(data_path, obj_file)
                 if objFilePath.endswith('.obj'):
-                    bpy.ops.wm.obj_import(filepath=objFilePath)
+                    bpy.ops.wm.obj_import(filepath=objFilePath,forward_axis='Y', up_axis='Z')
                     imported.append(bpy.context.selected_objects)
 
             # flatten list
