@@ -15,6 +15,18 @@ from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
 
+def setDefaultTemp():
+    system_temp_dir = gettempdir()
+    path = os.path.join(system_temp_dir, "collider_tools")
+
+    # Check whether the specified path exists or not
+    if not os.path.exists(path):
+        # Create a new directory because it does not exist
+        os.makedirs(path)
+
+    return path
+
+
 
 def update_panel_category(self, context):
     '''Update panel tab for collider tools'''
@@ -251,7 +263,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     data_path: bpy.props.StringProperty(name='Temporary Data Path',
                                         description='Data path to store temporary files like meshes and log files sused by V-HACD to generate Auto Convex colliders',
-                                        default=gettempdir(), maxlen=1024, subtype='DIR_PATH')
+                                        default=setDefaultTemp(), maxlen=1024, subtype='DIR_PATH')
 
     # VHACD parameters
 
