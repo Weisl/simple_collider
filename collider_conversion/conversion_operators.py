@@ -16,6 +16,11 @@ class OBJECT_OT_regenerate_name(Operator):
 
     @classmethod
     def poll(cls, context):
+
+        # Convert is only supported in object mode
+        if context.mode != 'OBJECT':
+            return False
+
         count = 0
         for obj in context.selected_objects:
             if obj.type == 'MESH':
@@ -55,6 +60,13 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "object.convert_to_collider"
     bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
+
+    @classmethod
+    def poll(cls, context):
+        # Convert is only supported in object mode
+        if context.mode != 'OBJECT':
+            return False
+        return super().poll(cls, context)
 
     def __init__(self):
         super().__init__()
@@ -166,6 +178,12 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
+
+        # Convert is only supported in object mode
+        if context.mode != 'OBJECT':
+            return False
+
+        # Objects need to be selected
         count = 0
         for obj in context.selected_objects:
             if obj.type == 'MESH':
