@@ -3,10 +3,17 @@ from subprocess import Popen
 
 import bmesh
 import bpy
-from bpy.types import Operator
+import string
+import random
 
-from .off_eport import off_export
+from bpy.types import Operator
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
+
+def randomString(stringLength=10):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
@@ -119,21 +126,11 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-
-
-        import addon_utils
-        addon_name = 'io_scene_x3d'
-        addon_utils.check(addon_name)
-
-        success = addon_utils.enable(addon_name)
-
         overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
         vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
         data_path = self.set_temp_data_path(self.prefs.data_path)
 
-        if not success or not vhacd_exe or not data_path:
-            if not success:
-                self.report({'ERROR'}, "The X3d export addon needed for the auto convex to work was not found")
+        if not vhacd_exe or not data_path:
             if not vhacd_exe:
                 self.report({'ERROR'},
                             'V-HACD executable is required for Auto Convex to work. Please follow the installation instructions and try it again')
@@ -166,7 +163,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                print('Entered: INDIVIDUAL')
                 convex_collision_data = {}
                 convex_collision_data['parent'] = obj
                 convex_collision_data['mesh'] = new_mesh
@@ -177,8 +173,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 matrices.append(obj.matrix_world)
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            print('Entered: SELECTION')
-
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
 
@@ -201,31 +195,41 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
 
-            if self.prefs.debug:
-                joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
-                bpy.context.scene.collection.objects.link(joined_obj)
-                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
-                joined_obj.select_set(False)
+            joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
+            bpy.context.scene.collection.objects.link(joined_obj)
 
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-            off_filename = os.path.join(data_path, '{}.off'.format(filename))
-            outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
-            logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
+
+            obj_filename = os.path.join(data_path, '{}_{}.obj'.format(filename, randomString(6)))
 
             scene = context.scene
 
-            print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
-            off_export(mesh, off_filename)
-            cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
-                        '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
-                        '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
-                        '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
-                self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
-                self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca,
-                self.prefs.vhacd_mode == 'TETRAHEDRON',
-                scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
+            print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
+
+            joined_obj.select_set(True)
+            bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True, export_materials=False,
+                                  export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
+
+            if self.prefs.debug:
+                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
+                joined_obj.select_set(False)
+            else: #remove debug mesh
+                bpy.data.objects.remove(joined_obj)
+
+            filesInDirectory = os.listdir(data_path)
+
+            shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe,
+                                                                                                  obj_filename,
+                                                                                                  scene.maxHullAmount,
+                                                                                                  scene.maxHullVertCount,
+                                                                                                  'obj', 1,
+                                                                                                  scene.voxelresolution,
+                                                                                                  self.prefs.vhacd_volumneErrorPercent,
+                                                                                                  self.prefs.vhacd_maxRecursionDepth,
+                                                                                                  shrinkwrap,
+                                                                                                  self.prefs.vhacd_fillMode)
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -233,11 +237,22 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
-            if not os.path.exists(outFileName):
-                continue
+            # List of new files
+            newfilesInDirectory = os.listdir(data_path)
 
-            bpy.ops.import_scene.x3d(filepath=outFileName, axis_forward='Y', axis_up='Z')
-            imported = bpy.context.selected_objects
+            imported = []
+
+            for oldFile in filesInDirectory:
+                newfilesInDirectory.remove(oldFile)
+
+            for obj_file in newfilesInDirectory:
+                objFilePath = os.path.join(data_path, obj_file)
+                if objFilePath.endswith('.obj'):
+                    bpy.ops.wm.obj_import(filepath=objFilePath,forward_axis='Y', up_axis='Z')
+                    imported.append(bpy.context.selected_objects)
+
+            # flatten list
+            imported = [item for sublist in imported for item in sublist]
 
             for ob in imported:
                 ob.select_set(False)

@@ -53,11 +53,11 @@ def get_default_executable_path():
 
     if platform.system() == 'Windows':
         OS_folder = 'Win'
-        app_name = 'VHACD.exe'
+        app_name = 'VHACD-4_1.exe'
 
-    elif platform.system() == 'Darwin':
-        OS_folder = 'OSX'
-        app_name = 'VHACD'
+    # elif platform.system() == 'Darwin':
+    #     OS_folder = 'OSX'
+    #     app_name = 'VHACD'
 
     # Return empty string if the os is linux or unknown
     else:  # platform.system() == 'Linux':
@@ -253,48 +253,32 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                         description='Data path to store temporary files like meshes and log files sused by V-HACD to generate Auto Convex colliders',
                                         default=gettempdir(), maxlen=1024, subtype='DIR_PATH')
 
-    # pre-process options
-    remove_doubles: bpy.props.BoolProperty(name='Remove Doubles',
-                                           description='Collapse overlapping vertices in generated mesh', default=True)
-
     # VHACD parameters
-    vhacd_resolution: bpy.props.IntProperty(name='Voxel Resolution',
-                                            description='Maximum number of voxels generated during the voxelization stage',
-                                            default=100000, min=10000, max=64000000)
-    vhacd_concavity: bpy.props.FloatProperty(name='Maximum Concavity', description='Maximum concavity', default=0.0015,
-                                             min=0.0, max=1.0, precision=4)
 
-    # Quality settings
-    vhacd_planeDownsampling: bpy.props.IntProperty(name='Plane Downsampling',
-                                                   description='Granularity of the search for the "best" clipping plane',
-                                                   default=4, min=1, max=16)
+    # -e
+    vhacd_volumneErrorPercent: bpy.props.FloatProperty(name='Volumne Error Percentage',
+                                                       description=' Volume error allowed as a percentage. Default is 1%. Valid range is 0.001 to 10',
+                                                       default=0.01, min=0.001, max=10)
 
-    # Quality settings
-    vhacd_convexhullDownsampling: bpy.props.IntProperty(name='Convex Hull Downsampling',
-                                                        description='Precision of the convex-hull generation process during the clipping plane selection stage',
-                                                        default=4, min=1, max=16)
+    # -d
+    vhacd_maxRecursionDepth: bpy.props.IntProperty(name='Maximum recursion depth',
+                                                   default=10
+                                                   )
+    # -s
+    vhacd_shrinkwrap: bpy.props.BoolProperty(name='Shrinkwrap', default=True,
+                                             description='Whether or not to shrinkwrap output to source mesh. Default is true.')
 
-    vhacd_alpha: bpy.props.FloatProperty(name='Alpha', description='Bias toward clipping along symmetry planes',
-                                         default=0.05, min=0.0, max=1.0, precision=4)
+    # -f
+    vhacd_fillMode: bpy.props.EnumProperty(name='Fill Mode',
+                                           items=(('flood', 'flood', 'flood'), ('surface', 'surface', 'surface'),
+                                                  ('raycast', 'raycast', 'raycast')),
+                                           default='flood')
 
-    vhacd_beta: bpy.props.FloatProperty(name='Beta', description='Bias toward clipping along revolution axes',
-                                        default=0.05,
-                                        min=0.0, max=1.0, precision=4)
-
-    vhacd_gamma: bpy.props.FloatProperty(name='Gamma', description='Maximum allowed concavity during the merge stage',
-                                         default=0.00125, min=0.0, max=1.0, precision=5)
-
-    vhacd_pca: bpy.props.BoolProperty(name='PCA',
-                                      description='Enable/disable normalizing the mesh before applying the convex decomposition',
-                                      default=False)
-
-    vhacd_mode: bpy.props.EnumProperty(name='ACD Mode', description='Approximate convex decomposition mode',
-                                       items=(('VOXEL', 'Voxel', 'Voxel ACD Mode'),
-                                              ('TETRAHEDRON', 'Tetrahedron', 'Tetrahedron ACD Mode')), default='VOXEL')
-
-    vhacd_minVolumePerCH: bpy.props.FloatProperty(name='Minimum Volume Per CH',
-                                                  description='Minimum volume to add vertices to convex-hulls',
-                                                  default=0.0001, min=0.0, max=0.01, precision=5)
+    # -a description = "Whether or not to run asynchronously. Default is 'true'"
+    # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.
+    # -p <true/false>         : If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default.
+    # -o <obj/stl/usda>       : Export the convex hulls as a series of wavefront OBJ files, STL files, or a single USDA.
+    # -g <true/false>         : If set to false, no logging will be displayed.
 
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
@@ -358,16 +342,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     vhacd_props_config = [
-        "vhacd_resolution",
-        "vhacd_concavity",
-        "vhacd_planeDownsampling",
-        "vhacd_convexhullDownsampling",
-        "vhacd_alpha",
-        "vhacd_beta",
-        "vhacd_gamma",
-        "vhacd_pca",
-        "vhacd_mode",
-        "vhacd_minVolumePerCH",
+        "vhacd_volumneErrorPercent",
+        "vhacd_maxRecursionDepth",
+        "vhacd_fillMode",
+        "vhacd_shrinkwrap",
     ]
 
     # here you specify how they are drawn
