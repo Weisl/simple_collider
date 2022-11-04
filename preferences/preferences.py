@@ -53,11 +53,11 @@ def get_default_executable_path():
 
     if platform.system() == 'Windows':
         OS_folder = 'Win'
-        app_name = 'VHACD.exe'
+        app_name = 'VHACD-4_1.exe'
 
-    elif platform.system() == 'Darwin':
-        OS_folder = 'OSX'
-        app_name = 'VHACD'
+    # elif platform.system() == 'Darwin':
+    #     OS_folder = 'OSX'
+    #     app_name = 'VHACD'
 
     # Return empty string if the os is linux or unknown
     else:  # platform.system() == 'Linux':
