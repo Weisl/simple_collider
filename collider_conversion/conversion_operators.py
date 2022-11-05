@@ -66,7 +66,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # Convert is only supported in object mode
         if context.mode != 'OBJECT':
             return False
-        return super().poll(cls, context)
+        return super().poll(context)
 
     def __init__(self):
         super().__init__()

@@ -5,6 +5,7 @@ import bmesh
 import bpy
 import string
 import random
+import time
 
 from bpy.types import Operator
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -201,23 +202,24 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             # Base filename is object name with invalid characters removed
             filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
 
-            obj_filename = os.path.join(data_path, '{}_{}.obj'.format(filename, randomString(6)))
+            obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
 
             scene = context.scene
 
             print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
 
             joined_obj.select_set(True)
-            bpy.ops.wm.obj_export(filepath=obj_filename, export_selected_objects=True, export_materials=False,
+
+            bpy.ops.wm.obj_export(filepath=obj_filename,  check_existing=False, export_selected_objects=True, export_materials=False,
                                   export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
 
             if self.prefs.debug:
                 joined_obj.color = (1.0, 0.1, 0.1, 1.0)
                 joined_obj.select_set(False)
-            else: #remove debug mesh
+            else: #remove debug meshes
                 bpy.data.objects.remove(joined_obj)
 
-            filesInDirectory = os.listdir(data_path)
+            exportTime = time.time()
 
             shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
             cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe,
@@ -238,18 +240,23 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             vhacd_process.wait()
 
             # List of new files
-            newfilesInDirectory = os.listdir(data_path)
+            dir_files = os.listdir(data_path)
+            obj_list = []
+            for file in dir_files:
+                if file.endswith('.obj'):
+                    obj_path = os.path.join(data_path, file)
+                    fileTime = os.path.getmtime(obj_path)
 
+                    # check if file was modified after export
+                    if fileTime > exportTime:
+                        obj_list.append(obj_path)
+
+            # List of imported objects
             imported = []
+            for obj_path in obj_list:
+                bpy.ops.wm.obj_import(filepath=obj_path, forward_axis='Y', up_axis='Z')
+                imported.append(bpy.context.selected_objects)
 
-            for oldFile in filesInDirectory:
-                newfilesInDirectory.remove(oldFile)
-
-            for obj_file in newfilesInDirectory:
-                objFilePath = os.path.join(data_path, obj_file)
-                if objFilePath.endswith('.obj'):
-                    bpy.ops.wm.obj_import(filepath=objFilePath,forward_axis='Y', up_axis='Z')
-                    imported.append(bpy.context.selected_objects)
 
             # flatten list
             imported = [item for sublist in imported for item in sublist]
