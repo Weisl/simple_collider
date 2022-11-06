@@ -3,8 +3,6 @@ from subprocess import Popen
 
 import bmesh
 import bpy
-import string
-import random
 import time
 
 from bpy.types import Operator
