@@ -15,6 +15,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     def __init__(self):
         super().__init__()
         self.use_decimation = True
+        self.use_geo_nodes_hull = True
         self.use_modifier_stack = True
         self.shape = 'convex_shape'
         self.use_recenter_origin = True
