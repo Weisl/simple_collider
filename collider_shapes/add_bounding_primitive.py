@@ -17,6 +17,23 @@ def alignObjects(new, old):
     """Align two objects"""
     new.matrix_world = old.matrix_world
 
+def geometry_node_group_empty_new():
+    group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
+    group.inputs.new('NodeSocketGeometry', "Geometry")
+    group.outputs.new('NodeSocketGeometry', "Geometry")
+    input_node = group.nodes.new('NodeGroupInput')
+    output_node = group.nodes.new('NodeGroupOutput')
+    output_node.is_active_output = True
+
+    input_node.select = False
+    output_node.select = False
+
+    input_node.location.x = -200 - input_node.width
+    output_node.location.x = 200
+
+    group.links.new(output_node.inputs[0], input_node.outputs[0])
+
+    return group
 
 def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
                     highlight=False):
@@ -731,6 +748,9 @@ class OBJECT_OT_add_bounding_object():
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
+        if self.use_geo_nodes_hull:
+            self.add_geo_nodes_hull(context, bounding_object)
+
         mat_name = ''
         if bpy.data.materials[context.scene.material_list_index]:
             mat_name = bpy.data.materials[context.scene.material_list_index].name
@@ -794,6 +814,26 @@ class OBJECT_OT_add_bounding_object():
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
+
+    def add_geo_nodes_hull(self, context, bounding_object):
+
+        if bpy.data.node_groups.get('Convex_Hull'):
+            group = bpy.data.node_groups['Convex_Hull']
+
+        else: # Create Convex Hull Geometry Node Setup
+            group = geometry_node_group_empty_new()
+            nodes = group.nodes
+
+            geom_in = nodes.get('Group Input')
+            geom_out = nodes.get('Group Output')
+            hull_node = nodes.new('GeometryNodeConvexHull')
+
+            group.links.new(geom_in.outputs[0], hull_node.inputs[0])
+            group.links.new(hull_node.outputs[0], geom_out.inputs[0])
+
+        modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
+        modifier.node_group = group
+
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
         return t1
@@ -833,6 +873,7 @@ class OBJECT_OT_add_bounding_object():
         # has to be in --init
         self.is_mesh_to_collider = False
         self.use_decimation = False
+        self.use_geo_nodes_hull = False
 
         self.use_vertex_count = False
         self.vertex_count = 8
