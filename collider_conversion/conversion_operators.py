@@ -191,7 +191,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
         return count > 0
 
     def execute(self, context):
-        scene = context.scene
+        colSettings = context.scene.collider_tools
         count = 0
 
         for obj in bpy.context.selected_objects.copy():
@@ -205,11 +205,11 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
                 # replace collision material
                 remove_materials(obj)
-                if scene.DefaultMeshMaterial:
-                    set_physics_material(obj, scene.DefaultMeshMaterial.name)
+                if colSettings.defaultMeshMaterial:
+                    set_physics_material(obj, colSettings.defaultMeshMaterial.name)
                 else:
                     default_material = create_material('Material', (1, 1, 1, 1))
-                    bpy.context.scene.DefaultMeshMaterial = default_material
+                    bpy.context.wm.collider_tools.defaultMeshMaterial = default_material
                     set_physics_material(obj, default_material.name)
 
                 # remove from collision collection

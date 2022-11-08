@@ -196,7 +196,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
 
-            scene = context.scene
+            colSettings = context.scene.collider_tools
 
             print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
 
@@ -216,10 +216,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
             cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe,
                                                                                                   obj_filename,
-                                                                                                  scene.maxHullAmount,
-                                                                                                  scene.maxHullVertCount,
+                                                                                                  colSettings.maxHullAmount,
+                                                                                                  colSettings.maxHullVertCount,
                                                                                                   'obj', 1,
-                                                                                                  scene.voxelresolution,
+                                                                                                  colSettings.voxelResolution,
                                                                                                   self.prefs.vhacd_volumneErrorPercent,
                                                                                                   self.prefs.vhacd_maxRecursionDepth,
                                                                                                   shrinkwrap,
