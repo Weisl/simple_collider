@@ -119,7 +119,7 @@ def create_name_number(name, nr):
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
-    scene = context.scene
+    colSettings = context.scene.collider_tools
 
     font_id = 0  # XXX, need to find out how best to get this.
     font_size = self.prefs.modal_font_size
@@ -131,16 +131,16 @@ def draw_viewport_overlay(self, context):
 
     if self.use_space:
         label = "Global/Local"
-        value = "GLOBAL" if scene.my_space == 'GLOBAL' else "LOCAL"
+        value = "GLOBAL" if colSettings.my_space == 'GLOBAL' else "LOCAL"
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(G/L)',
                             type='enum')
 
     label = "Display Wireframe "
-    value = str(scene.wireframe_mode)
+    value = str(colSettings.wireframe_mode)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(W)', type='enum')
 
     label = "Hide After Creation "
-    value = str(scene.my_hide)
+    value = str(colSettings.my_hide)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(H)', type='bool')
 
     label = 'Persistent Settings'
@@ -737,6 +737,8 @@ class OBJECT_OT_add_bounding_object():
         print("Time elapsed: ", str(time))
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
+        colSettings = context.scene.collider_tools
+
         self.set_viewport_drawing(context, bounding_object)
         self.add_displacement_modifier(context, bounding_object)
         self.set_collections(bounding_object, base_object_collections)
@@ -752,8 +754,8 @@ class OBJECT_OT_add_bounding_object():
             self.add_geo_nodes_hull(context, bounding_object)
 
         mat_name = ''
-        if bpy.data.materials[context.scene.material_list_index]:
-            mat_name = bpy.data.materials[context.scene.material_list_index].name
+        if bpy.data.materials[colSettings.material_list_index]:
+            mat_name = bpy.data.materials[colSettings.material_list_index].name
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
@@ -765,7 +767,7 @@ class OBJECT_OT_add_bounding_object():
 
         scene = context.scene
 
-        if scene.wireframe_mode in ['PREVIEW', 'ALWAYS']:
+        if colSettings.wireframe_mode in ['PREVIEW', 'ALWAYS']:
             bounding_object.show_wire = True
         else:
             bounding_object.show_wire = False
@@ -992,7 +994,7 @@ class OBJECT_OT_add_bounding_object():
         self.execute(context)
 
     def modal(self, context, event):
-        scene = context.scene
+        colSettings = context.scene.collider_tools
         self.navigation = False
 
         # Ignore if Alt is pressed
@@ -1048,13 +1050,13 @@ class OBJECT_OT_add_bounding_object():
                     self.del_decimate_modifier(obj)
 
                 # set the display settings for the collider objects
-                obj.display_type = scene.display_type
+                obj.display_type = colSettings.display_type
                 obj.hide_render = True
 
-                if scene.my_hide:
-                    obj.hide_viewport = scene.my_hide
+                if colSettings.my_hide:
+                    obj.hide_viewport = colSettings.my_hide
 
-                if scene.wireframe_mode == 'ALWAYS':
+                if colSettings.wireframe_mode == 'ALWAYS':
                     obj.show_wire = True
                 else:
                     obj.show_wire = False
@@ -1094,23 +1096,23 @@ class OBJECT_OT_add_bounding_object():
 
         # hide after creation
         elif event.type == 'H' and event.value == 'RELEASE':
-            scene.my_hide = not scene.my_hide
+            colSettings.my_hide = not colSettings.my_hide
             # Another function needs to be called for the modal UI to update :(
-            self.set_collisions_wire_preview(scene.wireframe_mode)
+            self.set_collisions_wire_preview(colSettings.wireframe_mode)
 
         elif event.type == 'W' and event.value == 'RELEASE':
             self.wireframe_idx = (self.wireframe_idx + 1) % len(
                 bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items)
-            scene.wireframe_mode = bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items[
+            colSettings.wireframe_mode = bpy.types.Scene.bl_rna.properties['wireframe_mode'].enum_items[
                 self.wireframe_idx].identifier
             # Another function needs to be called for the modal UI to update :(
-            self.set_collisions_wire_preview(scene.wireframe_mode)
+            self.set_collisions_wire_preview(colSettings.wireframe_mode)
 
         elif event.type == 'C' and event.value == 'RELEASE':
             self.x_ray = not self.x_ray
             context.space_data.shading.show_xray = self.x_ray
             # Another function needs to be called for the modal UI to update :(
-            self.set_collisions_wire_preview(scene.wireframe_mode)
+            self.set_collisions_wire_preview(colSettings.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)

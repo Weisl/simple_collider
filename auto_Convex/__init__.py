@@ -8,23 +8,6 @@ classes = (
 
 
 def register():
-    scene = bpy.types.Scene
-
-    # -h
-    scene.maxHullAmount = bpy.props.IntProperty(name='Hulls', description='Maximum number of output convex hulls.',
-                                                default=8, min=1, max=256)
-
-    # -v
-    scene.maxHullVertCount = bpy.props.IntProperty(name='Verts per Piece',
-                                                   description='Maximum number of vertices in the output convex hull. Default value is 64',
-                                                   default=16,
-                                                   min=4,
-                                                   max=64)
-    # -r
-    scene.voxelresolution = bpy.props.IntProperty(name="Voxel Resolution",
-                                                  description=' Total number of voxels to use. Default is 100000',
-                                                  default=100000, min=10000, max=64000000)
-
     from bpy.utils import register_class
 
     for cls in classes:
