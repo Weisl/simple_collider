@@ -65,7 +65,8 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     # Display setting of the bounding object in the viewport
     toggle_wireframe: bpy.props.BoolProperty(name="Toggle Wireframe",
-                                             description="Toggle wireframe display for collider objects.", default=False,
+                                             description="Toggle wireframe display for collider objects.",
+                                             default=False,
                                              update=update_wireframe)
 
     # Tranformation space to be used for creating the bounding object.
@@ -93,6 +94,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    "Collider wireframes are visible during the generation and remain afterwards")),
                                            description="Set the display type for collider wireframes",
                                            default='PREVIEW')
+    
     on_load: bpy.props.BoolProperty(name='On Load',
                                     default=True)
 

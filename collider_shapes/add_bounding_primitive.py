@@ -740,6 +740,9 @@ class OBJECT_OT_add_bounding_object():
         colSettings = context.scene.collider_tools
 
         self.set_viewport_drawing(context, bounding_object)
+        if self.use_weld_modifier:
+            self.add_weld_modifier(context, bounding_object)
+        
         self.add_displacement_modifier(context, bounding_object)
         self.set_collections(bounding_object, base_object_collections)
 
@@ -800,17 +803,17 @@ class OBJECT_OT_add_bounding_object():
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
     def add_displacement_modifier(self, context, bounding_object):
-        scene = context.scene
-
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_displace", type='DISPLACE')
         modifier.strength = self.current_settings_dic['discplace_offset']
 
         self.displace_modifiers.append(modifier)
 
-    def add_decimate_modifier(self, context, bounding_object):
-        scene = context.scene
+    def add_weld_modifier(self, context, bounding_object):
+        # add displacement modifier and safe it to manipulate the strenght in the modal operator
+        modifier = bounding_object.modifiers.new(name="Collision_weld", type='WELD')
 
+    def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
@@ -880,6 +883,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_vertex_count = False
         self.vertex_count = 8
         self.use_modifier_stack = False
+        self.use_weld_modifier = False
 
         self.use_space = False
         self.use_cylinder_axis = False
