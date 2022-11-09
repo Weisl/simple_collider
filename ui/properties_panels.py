@@ -161,6 +161,7 @@ def draw_creation_menu(context, layout):
     row = layout.row(align=True)
     row.label(text='Display as')
     row.prop(colSettings, 'display_type', text='')
+    row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
 
 
 def draw_naming_presets(self, context):
@@ -348,7 +349,8 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
         col_02.prop(mat, "diffuse_color", text='')
 
         col = layout.column(align=True)
-        col.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings, "material_list_index")
+        col.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings,
+                          "material_list_index")
         col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
 
