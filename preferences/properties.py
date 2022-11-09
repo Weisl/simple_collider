@@ -94,7 +94,28 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    "Collider wireframes are visible during the generation and remain afterwards")),
                                            description="Set the display type for collider wireframes",
                                            default='PREVIEW')
-    
+
+    default_modifier_stack: bpy.props.BoolProperty(name="Use Modifier Stack",
+                                                   default=False,
+                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+
+    default_user_group: bpy.props.EnumProperty(name="Default User Group",
+                                               items=(('USER_01', "User Group 01",
+                                                       "Show/Hide all objects that are part of User Group 01", '', 4),
+                                                      ('USER_02', "User Group 02",
+                                                       "Show/Hide all objects that are part of User Group 02", '', 8),
+                                                      ('USER_03', "User Group 03",
+                                                       "Show/Hide all objects that are part of User Group 03", '', 16)),
+                                               default='USER_01')
+
+    default_creation_mode: bpy.props.EnumProperty(name="Creation Mode",
+                                                  items=(('INDIVIDUAL', "Individual",
+                                                          "Colliders are created per individual object."),
+                                                         ('SELECTION', "Selection",
+                                                          "Colliders are created for the entire selection.")),
+                                                  description="Colliders are generated per individual object or bounding the entire selection.",
+                                                  default='INDIVIDUAL')
+
     on_load: bpy.props.BoolProperty(name='On Load',
                                     default=True)
 

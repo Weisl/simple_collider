@@ -557,7 +557,7 @@ class OBJECT_OT_add_bounding_object():
         if use_modifiers and len(obj.modifiers) > 0:
             # Get mesh information with the modifiers applied
 
-            # Bug: #249
+            # Fix for Bug: #249
             for mod in obj.modifiers:
                 mod.show_on_cage = True
                 mod.show_in_editmode = True
@@ -908,6 +908,7 @@ class OBJECT_OT_add_bounding_object():
 
     def invoke(self, context, event):
         global collider_groups
+        colSettings = context.scene.collider_tools
 
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
@@ -915,7 +916,6 @@ class OBJECT_OT_add_bounding_object():
 
         # get collision suffix from preferences
         self.prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-        scene = context.scene
 
         # Active object
         if context.object is None:
@@ -935,7 +935,7 @@ class OBJECT_OT_add_bounding_object():
         self.mouse_initial_x = event.mouse_x
 
         # Modal Settings
-        self.my_use_modifier_stack = False
+        self.my_use_modifier_stack = colSettings.default_modifier_stack
         self.x_ray = context.space_data.shading.show_xray
 
         # Modal MODIFIERS
@@ -964,11 +964,11 @@ class OBJECT_OT_add_bounding_object():
         self.wireframe_idx = 1
 
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
-        self.creation_mode_idx = 0
+        self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
         # self.wireframe_mode = ['OFF', 'PREVIEW', 'ALWAYS']
-        self.collision_group_idx = 0
         self.collision_groups = collider_groups
+        self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
 
         self.new_colliders_list = []
         self.col_rotation_matrix_list = []

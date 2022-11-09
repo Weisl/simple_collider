@@ -163,6 +163,24 @@ def draw_creation_menu(context, layout):
     row.prop(colSettings, 'display_type', text='')
     row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
 
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.prop(colSettings, 'wireframe_mode')
+    row = col.row(align=True)
+    row.prop(colSettings, 'display_type')
+
+    layout.separator()
+
+    row = layout.row(align=True)
+    row.label(text='Settings', icon='TOOL_SETTINGS')
+    row = layout.row(align=True)
+    row.prop(colSettings, "default_modifier_stack")
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.prop(colSettings, "default_creation_mode")
+    row = col.row(align=True)
+    row.prop(colSettings, "default_user_group")
+
 
 def draw_naming_presets(self, context):
     layout = self.layout
