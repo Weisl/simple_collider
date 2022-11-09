@@ -20,7 +20,6 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                                  )
 
     def execute(self, context):
-        scene = context.scene
         count = 0
 
         if self.select:

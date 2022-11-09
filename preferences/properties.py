@@ -2,6 +2,7 @@ import bpy
 from ..groups import user_groups
 from ..pyshics_materials import material_functions
 
+
 def update_display_colliders(self, context):
     '''Toggle between solid and wireframe displaytype'''
     for obj in bpy.data.objects:
@@ -26,8 +27,15 @@ def get_int(self):
 def set_int(self, value):
     self["material_list_index"] = value
 
-class ColliderTools_Properties(bpy.types.PropertyGroup):
 
+def update_wireframe(self, context):
+    for ob in bpy.data.objects:
+        if ob.get('isCollider') and ob.type == 'MESH':
+            ob.show_wire = self.toggle_wireframe
+    self.toggle_wireframe != self.toggle_wireframe
+
+
+class ColliderTools_Properties(bpy.types.PropertyGroup):
     visibility_toggle_all: bpy.props.PointerProperty(type=user_groups.ColliderGroup)
     visibility_toggle_obj: bpy.props.PointerProperty(type=user_groups.ColliderGroup)
     visibility_toggle_user_group_01: bpy.props.PointerProperty(type=user_groups.ColliderGroup)
@@ -52,7 +60,13 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     # Display setting of the bounding object in the viewport
     my_hide: bpy.props.BoolProperty(name="Hide After Creation",
-                                    description="Hide collider after creation.", default=False)
+                                    description="Hide collider after creation.",
+                                    default=False)
+
+    # Display setting of the bounding object in the viewport
+    toggle_wireframe: bpy.props.BoolProperty(name="Toggle Wireframe",
+                                             description="Toggle wireframe display for collider objects.", default=False,
+                                             update=update_wireframe)
 
     # Tranformation space to be used for creating the bounding object.
     my_space: bpy.props.EnumProperty(name="Generation Axis",
