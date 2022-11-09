@@ -14,6 +14,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         super().__init__()
         self.use_decimation = True
         self.use_modifier_stack = True
+        self.use_weld_modifier = True
         self.shape = "mesh_shape"
 
     def invoke(self, context, event):
