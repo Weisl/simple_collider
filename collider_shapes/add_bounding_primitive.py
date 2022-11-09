@@ -17,6 +17,7 @@ def alignObjects(new, old):
     """Align two objects"""
     new.matrix_world = old.matrix_world
 
+
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
     group.inputs.new('NodeSocketGeometry', "Geometry")
@@ -34,6 +35,7 @@ def geometry_node_group_empty_new():
     group.links.new(output_node.inputs[0], input_node.outputs[0])
 
     return group
+
 
 def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
                     highlight=False):
@@ -742,7 +744,7 @@ class OBJECT_OT_add_bounding_object():
         self.set_viewport_drawing(context, bounding_object)
         if self.use_weld_modifier:
             self.add_weld_modifier(context, bounding_object)
-        
+
         self.add_displacement_modifier(context, bounding_object)
         self.set_collections(bounding_object, base_object_collections)
 
@@ -767,8 +769,6 @@ class OBJECT_OT_add_bounding_object():
         bounding_object['isCollider'] = True
         bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx]
         bounding_object['collider_shape'] = self.shape
-
-        scene = context.scene
 
         if colSettings.wireframe_mode in ['PREVIEW', 'ALWAYS']:
             bounding_object.show_wire = True
@@ -819,13 +819,12 @@ class OBJECT_OT_add_bounding_object():
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
-
     def add_geo_nodes_hull(self, context, bounding_object):
 
         if bpy.data.node_groups.get('Convex_Hull'):
             group = bpy.data.node_groups['Convex_Hull']
 
-        else: # Create Convex Hull Geometry Node Setup
+        else:  # Create Convex Hull Geometry Node Setup
             group = geometry_node_group_empty_new()
             nodes = group.nodes
 
