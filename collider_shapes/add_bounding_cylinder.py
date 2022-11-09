@@ -103,11 +103,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'G' and event.value == 'RELEASE':
-            colSettings.my_space = 'GLOBAL'
+            self.my_space = 'GLOBAL'
             self.execute(context)
 
         elif event.type == 'L' and event.value == 'RELEASE':
-            colSettings.my_space = 'LOCAL'
+            self.my_space = 'LOCAL'
             self.execute(context)
 
         # define cylinder axis
@@ -148,7 +148,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
 
-                v_co = self.get_point_positions(obj, colSettings.my_space, used_vertices)
+                v_co = self.get_point_positions(obj, self.my_space, used_vertices)
 
                 dimensions = self.generate_dimensions_WS(v_co)
                 bounding_box, center_point = self.generate_bounding_box(v_co)
@@ -168,7 +168,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            if colSettings.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 ws_vtx_co = verts_co
                 verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
@@ -198,7 +198,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             # currently not used
             center_point = bounding_cylinder_data['center_point']
 
-            if colSettings.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 matrix_WS = parent.matrix_world
                 center = sum((Vector(matrix_WS @ Vector(b)) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,

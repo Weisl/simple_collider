@@ -100,11 +100,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'G' and event.value == 'RELEASE':
-            colSettings.my_space = 'GLOBAL'
+            self.my_space = 'GLOBAL'
             self.execute(context)
 
         elif event.type == 'L' and event.value == 'RELEASE':
-            colSettings.my_space = 'LOCAL'
+            self.my_space = 'LOCAL'
             self.execute(context)
 
         # change bounding object settings
@@ -145,7 +145,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
-                co = self.get_point_positions(obj, colSettings.my_space, used_vertices)
+                co = self.get_point_positions(obj, self.my_space, used_vertices)
                 verts_loc, center_point = self.generate_bounding_box(co)
 
                 # store data needed to generate a bounding box in a dictionary
@@ -162,7 +162,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
 
-            if colSettings.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 ws_vtx_co = verts_co
                 verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
@@ -186,13 +186,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
             scene = context.scene
 
-            if colSettings.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 new_collider.parent = parent
                 # align collider with parent
                 new_collider.matrix_world = parent.matrix_world
                 self.use_recenter_origin = False
 
-            else:  # wm.collider_tools.my_space == 'GLOBAL':
+            else:  # self.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
 
                 self.use_recenter_origin = True

@@ -344,6 +344,8 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(colSettings, "default_modifier_stack")
         col = layout.column(align=True)
         row = col.row(align=True)
+        row.prop(colSettings, "default_space")
+        row = col.row(align=True)
         row.prop(colSettings, "default_creation_mode")
         row = col.row(align=True)
         row.prop(colSettings, "default_user_group")

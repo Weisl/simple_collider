@@ -25,16 +25,8 @@ def register():
 
 
 def unregister():
-    wm = bpy.types.WindowManager
-    obj = bpy.types.Object
-
     from bpy.utils import unregister_class
 
     for cls in reversed(classes):
         unregister_class(cls)
 
-    # delete custom properties on unregister
-    del wm.collider_tools.wireframe_mode
-    del wm.collider_tools.my_space
-    del wm.collider_tools.display_type
-    del wm.collider_tools.my_hide
