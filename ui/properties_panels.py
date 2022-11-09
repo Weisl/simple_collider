@@ -163,24 +163,6 @@ def draw_creation_menu(context, layout):
     row.prop(colSettings, 'display_type', text='')
     row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
 
-    col = layout.column(align=True)
-    row = col.row(align=True)
-    row.prop(colSettings, 'wireframe_mode')
-    row = col.row(align=True)
-    row.prop(colSettings, 'display_type')
-
-    layout.separator()
-
-    row = layout.row(align=True)
-    row.label(text='Settings', icon='TOOL_SETTINGS')
-    row = layout.row(align=True)
-    row.prop(colSettings, "default_modifier_stack")
-    col = layout.column(align=True)
-    row = col.row(align=True)
-    row.prop(colSettings, "default_creation_mode")
-    row = col.row(align=True)
-    row.prop(colSettings, "default_user_group")
-
 
 def draw_naming_presets(self, context):
     layout = self.layout
@@ -339,6 +321,32 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         draw_visibility_selection_menu(context, layout)
 
         layout.separator()
+
+class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Settings"
+
+    def draw(self, context):
+        layout = self.layout
+        colSettings = context.scene.collider_tools
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, 'wireframe_mode')
+        row = col.row(align=True)
+        row.prop(colSettings, 'display_type')
+
+        row = layout.row(align=True)
+        row.label(text="Defaults")
+
+        row = layout.row(align=True)
+        row.prop(colSettings, "default_modifier_stack")
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, "default_creation_mode")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_user_group")
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):

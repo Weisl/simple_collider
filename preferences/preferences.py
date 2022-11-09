@@ -10,6 +10,7 @@ from .naming_preset import COLLISION_preset
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
+from ..ui.properties_panels import VIEW3D_PT_collission_settings_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
@@ -34,13 +35,14 @@ def update_panel_category(self, context):
         'VIEW3D_PT_collission_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
+        'VIEW3D_PT_collission_settings_panel',
     ]
 
     panels = [
         VIEW3D_PT_collission_panel,
         VIEW3D_PT_collission_visibility_panel,
         VIEW3D_PT_collission_material_panel,
-
+        VIEW3D_PT_collission_settings_panel,
     ]
     for panel in panelNames:
         is_panel = hasattr(bpy.types, panel)
