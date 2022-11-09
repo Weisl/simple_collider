@@ -133,7 +133,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_space:
         label = "Global/Local"
-        value = "GLOBAL" if colSettings.my_space == 'GLOBAL' else "LOCAL"
+        value = "GLOBAL" if self.my_space == 'GLOBAL' else "LOCAL"
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(G/L)',
                             type='enum')
 
@@ -933,6 +933,7 @@ class OBJECT_OT_add_bounding_object():
 
         # Mouse
         self.mouse_initial_x = event.mouse_x
+        self.my_space = colSettings.default_space
 
         # Modal Settings
         self.my_use_modifier_stack = colSettings.default_modifier_stack

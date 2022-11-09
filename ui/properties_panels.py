@@ -331,12 +331,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         layout = self.layout
         colSettings = context.scene.collider_tools
 
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(colSettings, 'wireframe_mode')
-        row = col.row(align=True)
-        row.prop(colSettings, 'display_type')
-
         row = layout.row(align=True)
         row.label(text="Defaults")
 
@@ -344,9 +338,22 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(colSettings, "default_modifier_stack")
         col = layout.column(align=True)
         row = col.row(align=True)
+        row.prop(colSettings, "default_space")
+        row = col.row(align=True)
         row.prop(colSettings, "default_creation_mode")
         row = col.row(align=True)
         row.prop(colSettings, "default_user_group")
+
+        row = layout.row(align=True)
+        row.label(text="Display")
+
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, 'wireframe_mode')
+        row = col.row(align=True)
+        row.prop(colSettings, 'display_type')
+
+
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):

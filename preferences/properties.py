@@ -69,14 +69,6 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                              default=False,
                                              update=update_wireframe)
 
-    # Tranformation space to be used for creating the bounding object.
-    my_space: bpy.props.EnumProperty(name="Generation Axis",
-                                     items=(('LOCAL', "Local",
-                                             "Generate colliders based on the local space of the object."),
-                                            ('GLOBAL', "Global",
-                                             "Generate the collision based on the global space of the object.")),
-                                     default="LOCAL")
-
     display_type: bpy.props.EnumProperty(name="Collider Display",
                                          items=(
                                              ('SOLID', "Solid", "Display the colliders as solid"),
@@ -94,6 +86,23 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    "Collider wireframes are visible during the generation and remain afterwards")),
                                            description="Set the display type for collider wireframes",
                                            default='PREVIEW')
+
+    # Tranformation space to be used for creating the bounding object.
+    my_space: bpy.props.EnumProperty(name="Generation Space",
+                                     items=(('LOCAL', "Local",
+                                             "Generate colliders based on the local space of the object."),
+                                            ('GLOBAL', "Global",
+                                             "Generate the collision based on the global space of the object.")),
+                                     default="LOCAL")
+
+    # Tranformation space to be used for creating the bounding object.
+    default_space: bpy.props.EnumProperty(name="Transform Space",
+                                     items=(('LOCAL', "Local",
+                                             "Generate colliders based on the local or object transform space."),
+                                            ('GLOBAL', "Global",
+                                             "Generate the collision based on the global space of the object.")),
+                                     default="LOCAL")
+
 
     default_modifier_stack: bpy.props.BoolProperty(name="Use Modifier Stack",
                                                    default=False,
