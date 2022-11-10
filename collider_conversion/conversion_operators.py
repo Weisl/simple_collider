@@ -144,7 +144,16 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             self.primitive_postprocessing(context, new_collider, user_collections)
 
-            super().set_collider_name(new_collider, obj.name)
+            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
+            if prefs.replace_name:
+                basename = prefs.obj_basename
+            elif obj.parent:
+                basename = obj.parent.name
+            else:
+                basename = obj.name
+
+            super().set_collider_name(new_collider, basename)
 
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convert to Collider", elapsed_time)
