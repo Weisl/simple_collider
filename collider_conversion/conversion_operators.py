@@ -209,7 +209,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                     set_physics_material(obj, colSettings.defaultMeshMaterial.name)
                 else:
                     default_material = create_material('Material', (1, 1, 1, 1))
-                    bpy.context.wm.collider_tools.defaultMeshMaterial = default_material
+                    colSettings.defaultMeshMaterial = default_material
                     set_physics_material(obj, default_material.name)
 
                 # remove from collision collection

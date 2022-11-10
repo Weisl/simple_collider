@@ -7,6 +7,9 @@ default_groups_enum = [
     ('USER_02', "User Group 02", "Show/Hide all objects that are part of User Group 02", '', 8),
     ('USER_03', "User Group 03", "Show/Hide all objects that are part of User Group 03", '', 16)]
 
+default_shape = 'box_shape'
+default_group = 'USER_01'
+
 
 def update_hide(self, context):
     print("self.hide = " + str(self.hide))
@@ -42,14 +45,10 @@ def update_selected(self, context):
 
 
 class ColliderGroup(bpy.types.PropertyGroup):
-
     def get_groups_enum(self):
         '''Set name and description according to type'''
         for group in default_groups_enum:
             if group[4] == self["mode"]:
-                from .user_groups import get_groups_name
-                from .user_groups import get_groups_identifier
-                from .user_groups import get_groups_color
                 # self.identifier = get_complexity_suffix(group[0])
                 self.name = get_groups_name(group[0])
                 self.identifier = get_groups_identifier(group[0])
@@ -169,10 +168,49 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
                                  default='ALL_COLLIDER'
                                  )
 
-    def execute(self, context):
-        for obj in context.selected_objects.copy():
+    @classmethod
+    def poll(cls, context):
+        count = 0
+        for obj in context.selected_objects:
             if obj.type == 'MESH':
-                set_groups_object_color(obj, self.mode)
-                obj['collider_group'] = self.mode
+                count += 1
+        return count > 0
+
+    def execute(self, context):
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
+        count = 0
+        for obj in context.selected_objects.copy():
+            # skip if invalid object
+            if obj is None or obj.type != "MESH" or not obj.get('isCollider'):
+                continue
+            count += 1
+
+            set_groups_object_color(obj, self.mode)
+            obj['collider_group'] = self.mode
+
+            if prefs.replace_name:
+                basename = prefs.obj_basename
+            elif obj.parent:
+                basename = obj.parent.name
+            else:
+                basename = obj.name
+
+            # get collider shape and group and set to default there is no previous data
+            shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
+            user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
+
+            from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
+            new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+                                                                         basename=basename)
+            data_name = OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+
+            obj.name = new_name
+            obj.data.name = data_name
+
+        if count == 0:
+            self.report({'WARNING'}, "No collider found to change the user group.")
+            return {'CANCELLED'}
 
         return {'FINISHED'}

@@ -369,6 +369,7 @@ class OBJECT_OT_add_bounding_object():
             bpy.data.meshes[data_name].name = 'deprecated_' + data_name
 
         obj.data.name = data_name
+        return data_name
 
     @staticmethod
     def unique_name(name):
