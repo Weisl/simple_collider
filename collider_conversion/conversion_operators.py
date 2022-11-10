@@ -64,9 +64,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     @classmethod
     def poll(cls, context):
         # Convert is only supported in object mode
-        if context.mode != 'OBJECT':
-            return False
-        return super().poll(context)
+        return False if context.mode != 'OBJECT' else super().poll(context)
 
     def __init__(self):
         super().__init__()
@@ -109,12 +107,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def store_initial_obj_state(self, obj, collections):
-        dic = {}
-        col_list = []
-
-        dic['obj'] = obj
-        for col in collections:
-            col_list.append(col.name)
+        dic = {'obj': obj}
+        col_list = [col.name for col in collections]
         dic['users_collection'] = col_list
 
         return dic
@@ -157,7 +151,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convert to Collider", elapsed_time)
-        self.report({'INFO'}, "Convert to Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Convert to Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
 
@@ -238,6 +232,6 @@ class OBJECT_OT_convert_to_mesh(Operator):
         if count == 0:
             self.report({'WARNING'}, 'No collider selected for conversion')
         else:
-            self.report({'INFO'}, "{} colliders have been converted".format(count))
+            self.report({'INFO'}, f"{count} colliders have been converted")
 
         return {'FINISHED'}

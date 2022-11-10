@@ -44,7 +44,7 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
                 set_physics_material(obj, self.physics_material_name)
 
             except Exception as e:
-                print('ERROR assigning physics material: ' + str(e))
+                print(f'ERROR assigning physics material: {str(e)}')
 
         return {'FINISHED'}
 
@@ -76,18 +76,15 @@ class MATERIAL_UL_physics_materials(UIList):
 
                 self.set_initial_state = False
 
-            if mat:
-                if self.layout_type in {'DEFAULT', 'COMPACT'}:
-                    if mat.is_grease_pencil == False:
-                        row = layout.row(align=True)
-                        row.operator('material.set_physics_material', text='',
-                                     icon='FORWARD').physics_material_name = mat.name
-                        row.prop(mat, "name", text="", emboss=False, icon_value=icon)
-                    else:
-                        row = layout.row(align=True)
-                        row.enabled = False
-                        row.prop(mat, "name", text="", emboss=False, icon_value=icon)
-
+            if mat and self.layout_type in {'DEFAULT', 'COMPACT'}:
+                if mat.is_grease_pencil == False:
+                    row = layout.row(align=True)
+                    row.operator('material.set_physics_material', text='',
+                                 icon='FORWARD').physics_material_name = mat.name
+                else:
+                    row = layout.row(align=True)
+                    row.enabled = False
+                row.prop(mat, "name", text="", emboss=False, icon_value=icon)
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)

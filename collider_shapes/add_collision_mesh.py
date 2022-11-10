@@ -65,7 +65,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 new_collider = obj.copy()
                 new_collider.data = new_mesh
 
-            if new_mesh == None:
+            if new_mesh is None:
                 continue
 
             scene = context.scene
@@ -111,15 +111,12 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             bpy.ops.object.join()
 
-            if last_selected:
-                self.new_colliders_list = [last_selected]
-            else:
-                self.new_colliders_list = []
+            self.new_colliders_list = [last_selected] if last_selected else []
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Mesh Collider", elapsed_time)
-        self.report({'INFO'}, "Mesh Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Mesh Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}

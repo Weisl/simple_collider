@@ -70,11 +70,10 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
         blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
     elif type == 'title':
         blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
-    else:  # type == 'default'
-        if highlight:
-            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
-        else:
-            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+    elif highlight:
+        blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+    else:
+        blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
     blf.position(font_id, left_margin, padding_bottom + (i * vertical_px_offset), 0)
     blf.draw(font_id, label)

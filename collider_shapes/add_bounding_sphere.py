@@ -103,7 +103,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             radius = dz / 2
 
         # second pass
-        for i, vertex in enumerate(used_vertices):
+        for vertex in used_vertices:
             # convert to global space
             v = obj.matrix_world @ vertex.co
 
@@ -142,19 +142,23 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.sphere_segments_active = not self.sphere_segments_active
-            self.displace_active = False
-            self.opacity_active = False
-            self.decimate_active = False
-            self.vertex_count_active = False
-            self.execute(context)
-
+            self.set_modal_sphere_segments_active(context)
+            
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
         return {'RUNNING_MODAL'}
+
+
+    def set_modal_sphere_segments_active(self, context):
+        self.sphere_segments_active = not self.sphere_segments_active
+        self.displace_active = False
+        self.opacity_active = False
+        self.decimate_active = False
+        self.vertex_count_active = False
+        self.execute(context)
 
     def execute(self, context):
         # CLEANUP
@@ -180,7 +184,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             else:  # mode == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
+            if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
             bounding_sphere_data = {}
@@ -232,6 +236,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Sphere Collider", elapsed_time)
-        self.report({'INFO'}, "Sphere Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Sphere Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}

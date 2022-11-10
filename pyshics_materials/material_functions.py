@@ -27,7 +27,7 @@ def set_material(ob, mat):
 
 def remove_materials(obj):
     '''Remove all materials from object'''
-    if obj.type == 'MESH' or obj.type == 'CURVE' or obj.type == 'SURFACE' or obj.type == 'FONT' or obj.type == 'META':
+    if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
         obj.data.materials.clear()
 
 

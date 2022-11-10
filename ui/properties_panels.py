@@ -12,9 +12,8 @@ def collider_presets_folder():
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
     collider_preset_paths = bpy.utils.preset_paths(collider_presets)
 
-    if (collider_preset_directory not in collider_preset_paths):
-        if (not os.path.exists(collider_preset_directory)):
-            os.makedirs(collider_preset_directory)
+    if (collider_preset_directory not in collider_preset_paths) and (not os.path.exists(collider_preset_directory)):
+        os.makedirs(collider_preset_directory)
 
     return collider_preset_directory
 
