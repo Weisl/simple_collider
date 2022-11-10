@@ -201,22 +201,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            bounding_sphere_data = {}
-
-            verts_co = self.transform_vertex_space(verts_co, self.active_obj)
-
-            bm = bmesh.new()
-            for v in verts_co:
-                bm.verts.new(v)  # add a new vert
-            me = bpy.data.meshes.new("mesh")
-            bm.to_mesh(me)
-            bm.free()
-
-            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(
-                self.active_obj, me.vertices)
-            bounding_sphere_data['parent'] = self.active_obj
-            collider_data = [bounding_sphere_data]
-
+            collider_data = self.bounding_sphere_data_selection(verts_co)
+            
         for bounding_sphere_data in collider_data:
             mid_point = bounding_sphere_data['mid_point']
             radius = bounding_sphere_data['radius']
@@ -239,3 +225,20 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         self.report({'INFO'}, f"Sphere Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
+
+    def bounding_sphere_data_selection(self, verts_co):
+        bounding_sphere_data = {}
+
+        verts_co = self.transform_vertex_space(verts_co, self.active_obj)
+
+        bm = bmesh.new()
+        for v in verts_co:
+            bm.verts.new(v)  # add a new vert
+        me = bpy.data.meshes.new("mesh")
+        bm.to_mesh(me)
+        bm.free()
+
+        bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(
+            self.active_obj, me.vertices)
+        bounding_sphere_data['parent'] = self.active_obj
+        return [bounding_sphere_data]

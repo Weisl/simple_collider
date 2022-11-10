@@ -63,7 +63,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             else:  # self.obj_mode  == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
+            if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
             ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
@@ -125,6 +125,6 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convex Collider", elapsed_time)
-        self.report({'INFO'}, "Convex Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Convex Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}

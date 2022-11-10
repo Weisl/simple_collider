@@ -20,16 +20,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Create cylindrical colliders based on the selection'
 
     def generate_dimensions_WS(self, v_co):
-
         positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
 
         """Generate the dimenstions based on the 3 lists of positions (X,Y,Z)"""
-        dimensions = []
-        dimensions.append(abs(max(positionsX) - min(positionsX)))
-        dimensions.append(max(positionsY) - min(positionsY))
-        dimensions.append(abs(max(positionsZ) - min(positionsZ)))
-
-        return dimensions
+        return [abs(max(positionsX) - min(positionsX)), max(positionsY) - min(positionsY), abs(max(positionsZ) - min(positionsZ))]
 
     def generate_radius_depth(self, dimensions):
         """Calculate a radiuse based on dimensions and orientations."""
@@ -220,6 +214,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convex Cylindrical Collider", elapsed_time)
-        self.report({'INFO'}, "Convex Cylindrical Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Convex Cylindrical Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
