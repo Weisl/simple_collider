@@ -132,6 +132,22 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                   description="Colliders are generated per individual object or bounding the entire selection.",
                                                   default='INDIVIDUAL')
 
+    default_cylinder_axis:bpy.props.EnumProperty(name="Cylinder Orientation",
+                                                  items=(('X', "X", "Cylinder gets aligned to the X axis."),
+                                                         ('Y', "Y", "Cylinder gets aligned to the Y axis."),
+                                                         ('Z', "Z", "Cylinder gets aligned to the Z axis.")),
+                                                  description="Orientation of the cylindrical collider object",
+                                                  default='Z')
+    
+    default_sphere_segments: bpy.props.IntProperty(name="Sphere Segments", 
+                                                   description="Amount of sphere segments.",
+                                                   default=16,
+                                                   )
+    default_cylinder_segments: bpy.props.IntProperty(name="Cylinder Segments", 
+                                                   description="Amount of cylinder segments.",
+                                                   default=12,
+                                                   )
+    
     on_load: bpy.props.BoolProperty(name='On Load',
                                     default=True)
 

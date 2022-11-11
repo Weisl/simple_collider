@@ -197,7 +197,7 @@ def draw_viewport_overlay(self, context):
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(E)',
-                            type='modal', highlight=self.vertex_count_active)
+                            type='modal', highlight=self.cylinder_segments_active)
 
     label = 'Operator Settings'
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
@@ -863,7 +863,6 @@ class OBJECT_OT_add_bounding_object():
         self.use_geo_nodes_hull = False
 
         self.use_vertex_count = False
-        self.vertex_count = 8
         self.use_modifier_stack = False
         self.use_weld_modifier = False
 
@@ -935,12 +934,11 @@ class OBJECT_OT_add_bounding_object():
         self.opacity_active = False
         self.opacity_ref = 0.5
 
-        self.cylinder_axis = 'Z'
+        self.cylinder_axis = colSettings.default_cylinder_axis
 
-        self.vertex_count_active = False
+        self.cylinder_segments_active = False
 
         self.sphere_segments_active = False
-        segments = 16
 
         self.color_type = context.space_data.shading.color_type
 
@@ -963,7 +961,7 @@ class OBJECT_OT_add_bounding_object():
         if context.space_data.shading.type == 'SOLID':
             context.space_data.shading.color_type = colSettings.shading_mode
 
-        dict = self.collision_dictionary(0.5, 0, 1.0, segments, self.vertex_count)
+        dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments ,colSettings.default_cylinder_segments)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -993,7 +991,7 @@ class OBJECT_OT_add_bounding_object():
             self.opacity_active = False
             self.displace_active = False
             self.decimate_active = False
-            self.vertex_count_active = False
+            self.cylinder_segments_active = False
             self.sphere_segments_active = False
 
             return {'PASS_THROUGH'}
@@ -1091,7 +1089,7 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = not self.displace_active
             self.opacity_active = False
             self.decimate_active = False
-            self.vertex_count_active = False
+            self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.mouse_initial_x = event.mouse_x
 
@@ -1099,7 +1097,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = not self.decimate_active
             self.opacity_active = False
             self.displace_active = False
-            self.vertex_count_active = False
+            self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.mouse_initial_x = event.mouse_x
 
@@ -1107,12 +1105,12 @@ class OBJECT_OT_add_bounding_object():
             self.opacity_active = not self.opacity_active
             self.displace_active = False
             self.decimate_active = False
-            self.vertex_count_active = False
+            self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'E' and event.value == 'RELEASE':
-            self.vertex_count_active = not self.vertex_count_active
+            self.cylinder_segments_active = not self.cylinder_segments_active
             self.displace_active = False
             self.decimate_active = False
             self.opacity_active = False
@@ -1172,14 +1170,13 @@ class OBJECT_OT_add_bounding_object():
                 self.prefs.user_group_01_color[3] = color_alpha
                 self.current_settings_dic['alpha'] = color_alpha
 
-            if self.vertex_count_active:
+            if self.cylinder_segments_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
-                vertex_count = int(abs(self.ref_settings_dic['cylinder_segments'] - delta))
+                segment_count = int(abs(self.ref_settings_dic['cylinder_segments'] - delta))
 
                 # check if value changed to avoid regenerating collisions for the same value
-                if vertex_count != int(round(self.vertex_count)):
-                    self.vertex_count = vertex_count
-                    self.current_settings_dic['cylinder_segments'] = vertex_count
+                if segment_count != int(round(self.current_settings_dic['cylinder_segments'])):
+                    self.current_settings_dic['cylinder_segments'] = segment_count
                     self.execute(context)
 
             if self.sphere_segments_active:

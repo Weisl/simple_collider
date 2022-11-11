@@ -157,7 +157,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         self.displace_active = False
         self.opacity_active = False
         self.decimate_active = False
-        self.vertex_count_active = False
+        self.cylinder_segments_active = False
         self.execute(context)
 
     def execute(self, context):

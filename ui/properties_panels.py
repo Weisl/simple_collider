@@ -331,7 +331,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         colSettings = context.scene.collider_tools
 
         row = layout.row(align=True)
-        row.label(text="Defaults")
+        row.label(text="Operator Defaults")
 
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
@@ -342,6 +342,15 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(colSettings, "default_creation_mode")
         row = col.row(align=True)
         row.prop(colSettings, "default_user_group")
+        
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, "default_cylinder_axis")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_cylinder_segments")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_sphere_segments")
+        
 
         row = layout.row(align=True)
         row.label(text="Display")
