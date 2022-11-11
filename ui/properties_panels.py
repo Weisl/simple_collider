@@ -352,18 +352,6 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(colSettings, "default_sphere_segments")
         
 
-        row = layout.row(align=True)
-        row.label(text="Display")
-
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(colSettings, 'my_hide')
-        row = col.row(align=True)
-        row.prop(colSettings, 'wireframe_mode')
-        row = col.row(align=True)
-        row.prop(colSettings, 'shading_mode')
-
-
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""

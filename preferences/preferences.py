@@ -294,6 +294,27 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # -o <obj/stl/usda>       : Export the convex hulls as a series of wavefront OBJ files, STL files, or a single USDA.
     # -g <true/false>         : If set to false, no logging will be displayed.
 
+    wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
+                                           items=(('OFF', "Off",
+                                                   "Colliders show no wireframes"),
+                                                  ('PREVIEW', "Preview",
+                                                   "Collider wireframes are only visible during the generation"),
+                                                  ('ALWAYS', "Always",
+                                                   "Collider wireframes are visible during the generation and remain afterwards")),
+                                           description="Set the display type for collider wireframes",
+                                           default='PREVIEW')
+    
+    shading_mode: bpy.props.EnumProperty(name="Color Type",
+                                         items=(('OBJECT', 'Object', 'Color Type: Object'),
+                                             ('MATERIAL', 'Material', 'Color Type: Material'),
+                                             ('SINGLE', 'Single', 'Color Type: Single')),
+                                         description="Set Color Type",
+                                         default='OBJECT')
+
+    my_hide: bpy.props.BoolProperty(name="Hide After Creation",
+                                    description="Hide collider after creation.",
+                                    default=False)
+    
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Developer mode used for debuging",
@@ -361,6 +382,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "vhacd_fillMode",
         "vhacd_shrinkwrap",
     ]
+    
+    display_config = [
+        "my_hide",
+        "wireframe_mode",
+        "shading_mode",
+    ]
+
+    
 
     # here you specify how they are drawn
     def draw(self, context):
@@ -371,11 +400,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         if self.prefs_tabs == 'SETTINGS':
 
-            row = layout.row()
+            box = layout.box()
+            row = box.row()
             row.label(text='Collections')
 
             for propName in self.col_props:
-                row = layout.row()
+                row = box.row()
+                row.prop(self, propName)
+                
+            box = layout.box()
+            row = box.row(align=True)
+            row.label(text="Display")
+            
+            for propName in self.display_config:
+                row = box.row()
                 row.prop(self, propName)
 
         if self.prefs_tabs == 'NAMING':

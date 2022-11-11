@@ -58,10 +58,6 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                            description=' Total number of voxels to use. Default is 100000',
                                            default=100000, min=10000, max=64000000)
 
-    # Display setting of the bounding object in the viewport
-    my_hide: bpy.props.BoolProperty(name="Hide After Creation",
-                                    description="Hide collider after creation.",
-                                    default=False)
 
     # Display setting of the bounding object in the viewport
     toggle_wireframe: bpy.props.BoolProperty(name="Toggle Wireframe",
@@ -77,23 +73,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                          default="SOLID",
                                          update=update_display_colliders)
 
-    wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
-                                           items=(('OFF', "Off",
-                                                   "Colliders show no wireframes"),
-                                                  ('PREVIEW', "Preview",
-                                                   "Collider wireframes are only visible during the generation"),
-                                                  ('ALWAYS', "Always",
-                                                   "Collider wireframes are visible during the generation and remain afterwards")),
-                                           description="Set the display type for collider wireframes",
-                                           default='PREVIEW')
     
-    shading_mode: bpy.props.EnumProperty(name="Color Type",
-                                         items=(('OBJECT', 'Object', 'Color Type: Object'),
-                                             ('MATERIAL', 'Material', 'Color Type: Material'),
-                                             ('SINGLE', 'Single', 'Color Type: Single')),
-                                         description="Set Color Type",
-                                         default='OBJECT')
-
     # Tranformation space to be used for creating the bounding object.
     my_space: bpy.props.EnumProperty(name="Generation Space",
                                      items=(('LOCAL', "Local",
@@ -138,15 +118,17 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                          ('Z', "Z", "Cylinder gets aligned to the Z axis.")),
                                                   description="Orientation of the cylindrical collider object",
                                                   default='Z')
+
+    default_cylinder_segments: bpy.props.IntProperty(name="Cylinder Segments", 
+                                                   description="Amount of cylinder segments.",
+                                                   default=12,
+                                                   )
     
     default_sphere_segments: bpy.props.IntProperty(name="Sphere Segments", 
                                                    description="Amount of sphere segments.",
                                                    default=16,
                                                    )
-    default_cylinder_segments: bpy.props.IntProperty(name="Cylinder Segments", 
-                                                   description="Amount of cylinder segments.",
-                                                   default=12,
-                                                   )
+
     
     on_load: bpy.props.BoolProperty(name='On Load',
                                     default=True)
