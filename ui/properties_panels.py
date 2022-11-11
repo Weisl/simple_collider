@@ -348,11 +348,13 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
 
         col = layout.column(align=True)
         row = col.row(align=True)
+        row.prop(colSettings, 'my_hide')
+        row = col.row(align=True)
         row.prop(colSettings, 'wireframe_mode')
         row = col.row(align=True)
+        row.prop(colSettings, 'shading_mode')
+        row = col.row(align=True)
         row.prop(colSettings, 'display_type')
-
-
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):

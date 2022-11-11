@@ -79,13 +79,20 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
                                            items=(('OFF', "Off",
-                                                   "Colliders show no wireframe"),
+                                                   "Colliders show no wireframes"),
                                                   ('PREVIEW', "Preview",
                                                    "Collider wireframes are only visible during the generation"),
                                                   ('ALWAYS', "Always",
                                                    "Collider wireframes are visible during the generation and remain afterwards")),
                                            description="Set the display type for collider wireframes",
                                            default='PREVIEW')
+    
+    shading_mode: bpy.props.EnumProperty(name="Color Type",
+                                         items=(('OBJECT', 'Object', 'Color Type: Object'),
+                                             ('MATERIAL', 'Material', 'Color Type: Material'),
+                                             ('SINGLE', 'Single', 'Color Type: Single')),
+                                         description="Set Color Type",
+                                         default='OBJECT')
 
     # Tranformation space to be used for creating the bounding object.
     my_space: bpy.props.EnumProperty(name="Generation Space",
