@@ -913,6 +913,13 @@ class OBJECT_OT_add_bounding_object():
         self.data_suffix = "_data"
         self.valid_input_selection = True
 
+        # General init settings
+        self.new_colliders_list = []
+        self.col_rotation_matrix_list = []
+        self.col_center_loc_list = []
+
+        self.name_count = 0
+
         # Mouse
         self.mouse_initial_x = event.mouse_x
         self.my_space = colSettings.default_space
@@ -934,12 +941,12 @@ class OBJECT_OT_add_bounding_object():
         self.opacity_active = False
         self.opacity_ref = 0.5
 
+        # Sphere and Cylinder specific settings
         self.cylinder_axis = colSettings.default_cylinder_axis
-
         self.cylinder_segments_active = False
-
         self.sphere_segments_active = False
 
+        # Display settings
         self.color_type = context.space_data.shading.color_type
 
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
@@ -947,12 +954,6 @@ class OBJECT_OT_add_bounding_object():
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
-
-        self.new_colliders_list = []
-        self.col_rotation_matrix_list = []
-        self.col_center_loc_list = []
-
-        self.name_count = 0
 
         # Mesh to Collider
         self.original_obj_data = []
@@ -972,6 +973,7 @@ class OBJECT_OT_add_bounding_object():
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
         # add modal handler
         context.window_manager.modal_handler_add(self)
+        
         self.execute(context)
 
     def modal(self, context, event):
