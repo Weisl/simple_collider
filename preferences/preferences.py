@@ -410,7 +410,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 
             box = layout.box()
             row = box.row(align=True)
-            row.label(text="Display")
+            row.label(text="Collision Display")
             
             for propName in self.display_config:
                 row = box.row()
