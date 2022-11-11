@@ -239,6 +239,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Aligned Box Collider", elapsed_time)
-        self.report({'INFO'}, "Aligned Box Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Aligned Box Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}

@@ -1,14 +1,17 @@
 import os
+import time
 from subprocess import Popen
 
 import bmesh
 import bpy
-import time
-
 from bpy.types import Operator
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
+from ..collider_shapes.add_bounding_primitive import \
+    OBJECT_OT_add_bounding_object
+
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
+    # sourcery skip: use-contextlib-suppress
     """ takes as input a list of bm references and outputs a single merged bmesh
     allows an additional 'normal_update=True' to force _normal_ calculations.
     """
@@ -65,9 +68,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # Check executable path
         executable_path = bpy.path.abspath(path)
 
-        if os.path.isfile(executable_path):
-            return executable_path
-        return False
+        return executable_path if os.path.isfile(executable_path) else False
 
     @staticmethod
     def set_temp_data_path(path):
@@ -75,9 +76,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # Check data path
         data_path = bpy.path.abspath(path)
 
-        if os.path.isdir(data_path):
-            return data_path
-        return False
+        return data_path if os.path.isdir(data_path) else False
 
     def __init__(self):
         super().__init__()

@@ -12,9 +12,8 @@ def collider_presets_folder():
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
     collider_preset_paths = bpy.utils.preset_paths(collider_presets)
 
-    if (collider_preset_directory not in collider_preset_paths):
-        if (not os.path.exists(collider_preset_directory)):
-            os.makedirs(collider_preset_directory)
+    if (collider_preset_directory not in collider_preset_paths) and (not os.path.exists(collider_preset_directory)):
+        os.makedirs(collider_preset_directory)
 
     return collider_preset_directory
 
@@ -332,7 +331,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         colSettings = context.scene.collider_tools
 
         row = layout.row(align=True)
-        row.label(text="Defaults")
+        row.label(text="Operator Defaults")
 
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
@@ -343,17 +342,28 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         row.prop(colSettings, "default_creation_mode")
         row = col.row(align=True)
         row.prop(colSettings, "default_user_group")
+        
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, "default_cylinder_axis")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_cylinder_segments")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_sphere_segments")
+        
 
         row = layout.row(align=True)
         row.label(text="Display")
 
         col = layout.column(align=True)
         row = col.row(align=True)
+        row.prop(colSettings, 'my_hide')
+        row = col.row(align=True)
         row.prop(colSettings, 'wireframe_mode')
         row = col.row(align=True)
+        row.prop(colSettings, 'shading_mode')
+        row = col.row(align=True)
         row.prop(colSettings, 'display_type')
-
-
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):

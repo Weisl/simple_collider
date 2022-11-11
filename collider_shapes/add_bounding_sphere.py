@@ -103,7 +103,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             radius = dz / 2
 
         # second pass
-        for i, vertex in enumerate(used_vertices):
+        for vertex in used_vertices:
             # convert to global space
             v = obj.matrix_world @ vertex.co
 
@@ -142,19 +142,23 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.sphere_segments_active = not self.sphere_segments_active
-            self.displace_active = False
-            self.opacity_active = False
-            self.decimate_active = False
-            self.vertex_count_active = False
-            self.execute(context)
-
+            self.set_modal_sphere_segments_active(context)
+            
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
         return {'RUNNING_MODAL'}
+
+
+    def set_modal_sphere_segments_active(self, context):
+        self.sphere_segments_active = not self.sphere_segments_active
+        self.displace_active = False
+        self.opacity_active = False
+        self.decimate_active = False
+        self.cylinder_segments_active = False
+        self.execute(context)
 
     def execute(self, context):
         # CLEANUP
@@ -180,7 +184,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             else:  # mode == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
+            if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
             bounding_sphere_data = {}
@@ -197,22 +201,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            bounding_sphere_data = {}
-
-            verts_co = self.transform_vertex_space(verts_co, self.active_obj)
-
-            bm = bmesh.new()
-            for v in verts_co:
-                bm.verts.new(v)  # add a new vert
-            me = bpy.data.meshes.new("mesh")
-            bm.to_mesh(me)
-            bm.free()
-
-            bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(
-                self.active_obj, me.vertices)
-            bounding_sphere_data['parent'] = self.active_obj
-            collider_data = [bounding_sphere_data]
-
+            collider_data = self.bounding_sphere_data_selection(verts_co)
+            
         for bounding_sphere_data in collider_data:
             mid_point = bounding_sphere_data['mid_point']
             radius = bounding_sphere_data['radius']
@@ -232,6 +222,23 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Sphere Collider", elapsed_time)
-        self.report({'INFO'}, "Sphere Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Sphere Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
+
+    def bounding_sphere_data_selection(self, verts_co):
+        bounding_sphere_data = {}
+
+        verts_co = self.transform_vertex_space(verts_co, self.active_obj)
+
+        bm = bmesh.new()
+        for v in verts_co:
+            bm.verts.new(v)  # add a new vert
+        me = bpy.data.meshes.new("mesh")
+        bm.to_mesh(me)
+        bm.free()
+
+        bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(
+            self.active_obj, me.vertices)
+        bounding_sphere_data['parent'] = self.active_obj
+        return [bounding_sphere_data]
