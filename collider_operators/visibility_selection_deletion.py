@@ -20,7 +20,6 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                                  )
 
     def execute(self, context):
-        scene = context.scene
         count = 0
 
         if self.select:
@@ -33,18 +32,19 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                         ob.select_set(not self.select)
 
                 elif self.mode == 'OBJECTS':
-                    if not ob.get('isCollider'):
-                        count += 1
-                        ob.select_set(self.select)
-                    else:
+                    if ob.get('isCollider'):
                         ob.select_set(not self.select)
 
-                else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-                    if ob.get('isCollider') and ob.get('collider_group') == self.mode:
+                    else:
                         count += 1
                         ob.select_set(self.select)
-                    else:
-                        ob.select_set(not self.select)
+
+                elif ob.get('isCollider') and ob.get('collider_group') == self.mode:
+                    count += 1
+                    ob.select_set(self.select)
+
+                else:
+                    ob.select_set(not self.select)
 
         else:  # self.select = False
             for ob in bpy.context.view_layer.objects:
@@ -56,10 +56,9 @@ class COLLISION_OT_Selection(bpy.types.Operator):
                     if not ob.get('isCollider'):
                         count += 1
                         ob.select_set(self.select)
-                else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
-                    if ob.get('isCollider') and ob.get('collider_group') == self.mode:
-                        count += 1
-                        ob.select_set(self.select)
+                elif ob.get('isCollider') and ob.get('collider_group') == self.mode:
+                    count += 1
+                    ob.select_set(self.select)
 
         if count == 0:
             if self.select:
@@ -129,10 +128,9 @@ class COLLISION_OT_Deletion(bpy.types.Operator):
             elif ob.get('isCollider') and ob.get('collider_group') == self.mode:
                 objects_to_remove.append(ob)
 
-        if len(objects_to_remove) == 0:
+        if not objects_to_remove:
             self.report({'INFO'}, 'No objects to delete.')
 
-        # Call the delete oparator
         else:
             for obj in objects_to_remove:
                 bpy.data.objects.remove(obj, do_unlink=True)

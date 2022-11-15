@@ -11,6 +11,7 @@ classes = (
     properties_panels.OBJECT_MT_collision_presets,
     properties_panels.VIEW3D_MT_collision_creation,
     properties_panels.VIEW3D_PT_collission_panel,
+    properties_panels.VIEW3D_PT_collission_settings_panel,
     properties_panels.VIEW3D_PT_collission_visibility_panel,
     properties_panels.VIEW3D_PT_collission_material_panel,
     properties_panels.VIEW3D_MT_PIE_template,
@@ -22,9 +23,7 @@ def get_preset_folder_path():
     parent = path.parent.parent.parent.absolute()
 
     collider_presets = str(__package__.split('.')[0])
-    collider_addon_directory = os.path.join(parent, collider_presets, "presets")
-
-    return collider_addon_directory
+    return os.path.join(parent, collider_presets, "presets")
 
 
 def initialize_presets():

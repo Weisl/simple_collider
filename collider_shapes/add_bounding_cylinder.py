@@ -20,16 +20,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Create cylindrical colliders based on the selection'
 
     def generate_dimensions_WS(self, v_co):
-
         positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
 
         """Generate the dimenstions based on the 3 lists of positions (X,Y,Z)"""
-        dimensions = []
-        dimensions.append(abs(max(positionsX) - min(positionsX)))
-        dimensions.append(max(positionsY) - min(positionsY))
-        dimensions.append(abs(max(positionsZ) - min(positionsZ)))
-
-        return dimensions
+        return [abs(max(positionsX) - min(positionsX)), max(positionsY) - min(positionsY), abs(max(positionsZ) - min(positionsZ))]
 
     def generate_radius_depth(self, dimensions):
         """Calculate a radiuse based on dimensions and orientations."""
@@ -99,15 +93,15 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
-        scene = context.scene
+        colSettings = context.scene.collider_tools
 
         # change bounding object settings
         if event.type == 'G' and event.value == 'RELEASE':
-            scene.my_space = 'GLOBAL'
+            self.my_space = 'GLOBAL'
             self.execute(context)
 
         elif event.type == 'L' and event.value == 'RELEASE':
-            scene.my_space = 'LOCAL'
+            self.my_space = 'LOCAL'
             self.execute(context)
 
         # define cylinder axis
@@ -125,7 +119,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
-        scene = context.scene
+        colSettings = context.scene.collider_tools
 
         collider_data = []
         verts_co = []
@@ -148,7 +142,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
 
-                v_co = self.get_point_positions(obj, scene.my_space, used_vertices)
+                v_co = self.get_point_positions(obj, self.my_space, used_vertices)
 
                 dimensions = self.generate_dimensions_WS(v_co)
                 bounding_box, center_point = self.generate_bounding_box(v_co)
@@ -168,7 +162,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            if scene.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 ws_vtx_co = verts_co
                 verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
@@ -198,14 +192,14 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             # currently not used
             center_point = bounding_cylinder_data['center_point']
 
-            if scene.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 matrix_WS = parent.matrix_world
                 center = sum((Vector(matrix_WS @ Vector(b)) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,
                                                              rotation_euler=parent.rotation_euler)
                 new_collider.scale = parent.scale
 
-            else:  # scene.my_space == 'GLOBAL'
+            else:  # wm.collider_tools.my_space == 'GLOBAL'
                 center = sum((Vector(b) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center)
 
@@ -220,6 +214,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convex Cylindrical Collider", elapsed_time)
-        self.report({'INFO'}, "Convex Cylindrical Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Convex Cylindrical Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}

@@ -12,9 +12,8 @@ def collider_presets_folder():
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
     collider_preset_paths = bpy.utils.preset_paths(collider_presets)
 
-    if (collider_preset_directory not in collider_preset_paths):
-        if (not os.path.exists(collider_preset_directory)):
-            os.makedirs(collider_preset_directory)
+    if (collider_preset_directory not in collider_preset_paths) and (not os.path.exists(collider_preset_directory)):
+        os.makedirs(collider_preset_directory)
 
     return collider_preset_directory
 
@@ -25,9 +24,9 @@ def get_addon_name():
     return bl_info["name"]
 
 
-def draw_auto_convex(layout, context):
+def draw_auto_convex(layout, context, settings):
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-    scene = context.scene
+    colSettings = context.scene.collider_tools
     addon_name = get_addon_name()
 
     # Auto Convex
@@ -48,12 +47,17 @@ def draw_auto_convex(layout, context):
         )
     else:
         col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(scene, 'convex_decomp_depth')
-        row.prop(scene, 'maxNumVerticesPerCH')
+        
+        if settings:
+            row = col.row(align=True)
+            row.prop(colSettings, 'vhacd_shrinkwrap')        
+            row = col.row(align=True)
+            row.prop(colSettings, 'maxHullAmount')
+            row.prop(colSettings, 'maxHullVertCount')
+            row = col.row(align=True)
+            row.prop(colSettings, 'voxelResolution')
 
         row = col.row(align=True)
-
         if prefs.executable_path or prefs.default_executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
@@ -115,10 +119,10 @@ def draw_visibility_selection_menu(context, layout):
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
-    scene = context.scene
+    colSettings = context.scene.collider_tools
 
-    draw_group_properties(context, scene.visibility_toggle_all, col_01, col_02)
-    draw_group_properties(context, scene.visibility_toggle_obj, col_01, col_02)
+    draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02)
+    draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02)
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
@@ -127,20 +131,20 @@ def draw_visibility_selection_menu(context, layout):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, scene.visibility_toggle_user_group_01, col_01, col_02, user_group=True)
-        draw_group_properties(context, scene.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
-        draw_group_properties(context, scene.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_01, col_01, col_02, user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
 
 
-def draw_creation_menu(context, layout):
-    scene = context.scene
+def draw_creation_menu(context, layout, settings=False):
+    colSettings = context.scene.collider_tools
 
     layout.separator()
     row = layout.row(align=True)
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
     layout.separator()
-    draw_auto_convex(layout, context)
+    draw_auto_convex(layout, context, settings)
 
     row = layout.row(align=True)
     row.label(text='Convert')
@@ -158,7 +162,8 @@ def draw_creation_menu(context, layout):
 
     row = layout.row(align=True)
     row.label(text='Display as')
-    row.prop(scene, 'display_type', text='')
+    row.prop(colSettings, 'display_type', text='')
+    row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
 
 
 def draw_naming_presets(self, context):
@@ -288,7 +293,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = col.row(align=True)
         row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
-        draw_creation_menu(context, layout)
+        draw_creation_menu(context, layout, settings=True)
 
 
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
@@ -298,12 +303,12 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
     bl_label = ""
 
     def __init__(self):
-        bpy.context.scene.visibility_toggle_all.mode = 'ALL_COLLIDER'
-        bpy.context.scene.visibility_toggle_obj.mode = 'OBJECTS'
+        bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
+        bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
 
-        bpy.context.scene.visibility_toggle_user_group_01.mode = 'USER_01'
-        bpy.context.scene.visibility_toggle_user_group_02.mode = 'USER_02'
-        bpy.context.scene.visibility_toggle_user_group_03.mode = 'USER_03'
+        bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
+        bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
+        bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
 
     def draw_header(self, context):
         layout = self.layout
@@ -318,6 +323,39 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
         draw_visibility_selection_menu(context, layout)
 
         layout.separator()
+
+class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Tool Defaults"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(icon='TOOL_SETTINGS')
+
+    def draw(self, context):
+        layout = self.layout
+        colSettings = context.scene.collider_tools
+
+        row = layout.row(align=True)
+        row.prop(colSettings, "default_modifier_stack")
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, "default_space")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_creation_mode")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_user_group")
+        
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, "default_cylinder_axis")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_cylinder_segments")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_sphere_segments")
+        
 
 
 class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
@@ -335,18 +373,19 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
+        colSettings = context.scene.collider_tools
 
         split_left = layout.split(factor=0.75, align=True)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        mat = bpy.data.materials[scene.material_list_index]
+        mat = bpy.data.materials[colSettings.material_list_index]
         col_01.prop(mat, "name", text="")
         col_02.prop(mat, "diffuse_color", text='')
 
         col = layout.column(align=True)
-        col.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", scene, "material_list_index")
+        col.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings,
+                          "material_list_index")
         col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
 
@@ -354,7 +393,6 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
 
 class VIEW3D_MT_collision_creation(Menu):
     bl_label = 'Collision Creation'
-    bl_ui_units_x = 45
 
     def draw(self, context):
         layout = self.layout
@@ -372,6 +410,7 @@ class VIEW3D_MT_PIE_template(Menu):
     bl_label = "Collision Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
+
     def draw(self, context):
         layout = self.layout
 
@@ -386,6 +425,7 @@ class VIEW3D_MT_PIE_template(Menu):
 
         # South
         split = pie.split()
+        split.scale_x = 1.5
 
         b = split.box()
         column = b.column()

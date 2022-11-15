@@ -30,11 +30,7 @@ def add_box_object(context, vertices):
     mesh = bpy.data.meshes.new(name=tmp_name)
     mesh.from_pydata(verts, edges, faces)
 
-    # useful for development when the mesh may be invalid.
-    # mesh.validate(verbose=True)
-    newObj = object_data_add(context, mesh, operator=None, name=None)  # links to object instance
-
-    return newObj
+    return object_data_add(context, mesh, operator=None, name=None)
 
 
 def verts_faces_to_bbox_collider(self, context, verts_loc, faces):
@@ -96,15 +92,15 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
 
-        scene = context.scene
+        colSettings = context.scene.collider_tools
 
         # change bounding object settings
         if event.type == 'G' and event.value == 'RELEASE':
-            scene.my_space = 'GLOBAL'
+            self.my_space = 'GLOBAL'
             self.execute(context)
 
         elif event.type == 'L' and event.value == 'RELEASE':
-            scene.my_space = 'LOCAL'
+            self.my_space = 'LOCAL'
             self.execute(context)
 
         # change bounding object settings
@@ -118,7 +114,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
-        scene = context.scene
+        colSettings = context.scene.collider_tools
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
@@ -140,12 +136,12 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             else:  # self.obj_mode  == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
-            if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
+            if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
-                co = self.get_point_positions(obj, scene.my_space, used_vertices)
+                co = self.get_point_positions(obj, self.my_space, used_vertices)
                 verts_loc, center_point = self.generate_bounding_box(co)
 
                 # store data needed to generate a bounding box in a dictionary
@@ -161,19 +157,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-
-            if scene.my_space == 'LOCAL':
-                ws_vtx_co = verts_co
-                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
-
-            bbox_verts, center_point = self.generate_bounding_box(verts_co)
-
-            bounding_box_data = {}
-            bounding_box_data['parent'] = self.active_obj
-            bounding_box_data['verts_loc'] = bbox_verts
-            bounding_box_data['center_point'] = center_point
-            collider_data = [bounding_box_data]
-
+            collider_data = self.selection_bbox_data(verts_co)
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for bounding_box_data in collider_data:
@@ -186,13 +170,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc, face_order)
             scene = context.scene
 
-            if scene.my_space == 'LOCAL':
+            if self.my_space == 'LOCAL':
                 new_collider.parent = parent
                 # align collider with parent
                 new_collider.matrix_world = parent.matrix_world
                 self.use_recenter_origin = False
 
-            else:  # scene.my_space == 'GLOBAL':
+            else:  # self.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
 
                 self.use_recenter_origin = True
@@ -210,6 +194,17 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Box Collider", elapsed_time)
-        self.report({'INFO'}, "Box Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Box Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
+
+    def selection_bbox_data(self, verts_co):
+        if self.my_space == 'LOCAL':
+            ws_vtx_co = verts_co
+            verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+
+        bbox_verts, center_point = self.generate_bounding_box(verts_co)
+
+        bounding_box_data = {'parent': self.active_obj, 'verts_loc': bbox_verts, 'center_point': center_point}
+
+        return [bounding_box_data]

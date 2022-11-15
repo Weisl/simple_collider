@@ -16,6 +16,11 @@ class OBJECT_OT_regenerate_name(Operator):
 
     @classmethod
     def poll(cls, context):
+
+        # Convert is only supported in object mode
+        if context.mode != 'OBJECT':
+            return False
+
         count = 0
         for obj in context.selected_objects:
             if obj.type == 'MESH':
@@ -55,6 +60,11 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "object.convert_to_collider"
     bl_label = "Mesh to Collider"
     bl_description = 'Convert selected meshes to colliders'
+
+    @classmethod
+    def poll(cls, context):
+        # Convert is only supported in object mode
+        return False if context.mode != 'OBJECT' else super().poll(context)
 
     def __init__(self):
         super().__init__()
@@ -97,12 +107,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def store_initial_obj_state(self, obj, collections):
-        dic = {}
-        col_list = []
-
-        dic['obj'] = obj
-        for col in collections:
-            col_list.append(col.name)
+        dic = {'obj': obj}
+        col_list = [col.name for col in collections]
         dic['users_collection'] = col_list
 
         return dic
@@ -132,11 +138,20 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             self.primitive_postprocessing(context, new_collider, user_collections)
 
-            super().set_collider_name(new_collider, obj.name)
+            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+
+            if prefs.replace_name:
+                basename = prefs.obj_basename
+            elif obj.parent:
+                basename = obj.parent.name
+            else:
+                basename = obj.name
+
+            super().set_collider_name(new_collider, basename)
 
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convert to Collider", elapsed_time)
-        self.report({'INFO'}, "Convert to Collider: " + str(float(elapsed_time)))
+        self.report({'INFO'}, f"Convert to Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
 
@@ -166,6 +181,12 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
+
+        # Convert is only supported in object mode
+        if context.mode != 'OBJECT':
+            return False
+
+        # Objects need to be selected
         count = 0
         for obj in context.selected_objects:
             if obj.type == 'MESH':
@@ -173,7 +194,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
         return count > 0
 
     def execute(self, context):
-        scene = context.scene
+        colSettings = context.scene.collider_tools
         count = 0
 
         for obj in bpy.context.selected_objects.copy():
@@ -187,11 +208,11 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
                 # replace collision material
                 remove_materials(obj)
-                if scene.DefaultMeshMaterial:
-                    set_physics_material(obj, scene.DefaultMeshMaterial.name)
+                if colSettings.defaultMeshMaterial:
+                    set_physics_material(obj, colSettings.defaultMeshMaterial.name)
                 else:
                     default_material = create_material('Material', (1, 1, 1, 1))
-                    bpy.context.scene.DefaultMeshMaterial = default_material
+                    colSettings.defaultMeshMaterial = default_material
                     set_physics_material(obj, default_material.name)
 
                 # remove from collision collection
@@ -211,6 +232,6 @@ class OBJECT_OT_convert_to_mesh(Operator):
         if count == 0:
             self.report({'WARNING'}, 'No collider selected for conversion')
         else:
-            self.report({'INFO'}, "{} colliders have been converted".format(count))
+            self.report({'INFO'}, f"{count} colliders have been converted")
 
         return {'FINISHED'}

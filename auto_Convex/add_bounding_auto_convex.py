@@ -1,15 +1,17 @@
 import os
+import time
 from subprocess import Popen
 
 import bmesh
 import bpy
 from bpy.types import Operator
 
-from .off_eport import off_export
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import \
+    OBJECT_OT_add_bounding_object
 
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
+    # sourcery skip: use-contextlib-suppress
     """ takes as input a list of bm references and outputs a single merged bmesh
     allows an additional 'normal_update=True' to force _normal_ calculations.
     """
@@ -37,7 +39,8 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
 
         if bm_to_add.edges:
             for edge in bm_to_add.edges:
-                edge_seq = tuple(bm.verts[i.index + offset] for i in edge.verts)
+                edge_seq = tuple(bm.verts[i.index + offset]
+                                 for i in edge.verts)
                 try:
                     add_edge(edge_seq)
                 except ValueError:
@@ -66,9 +69,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # Check executable path
         executable_path = bpy.path.abspath(path)
 
-        if os.path.isfile(executable_path):
-            return executable_path
-        return False
+        return executable_path if os.path.isfile(executable_path) else False
 
     @staticmethod
     def set_temp_data_path(path):
@@ -76,13 +77,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # Check data path
         data_path = bpy.path.abspath(path)
 
-        if os.path.isdir(data_path):
-            return data_path
-        return False
+        return data_path if os.path.isdir(data_path) else False
 
     def __init__(self):
         super().__init__()
         self.use_decimation = True
+        self.use_geo_nodes_hull = True
         self.use_modifier_stack = True
         self.use_recenter_origin = True
         self.shape = 'convex_shape'
@@ -119,21 +119,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-
-
-        import addon_utils
-        addon_name = 'io_scene_x3d'
-        addon_utils.check(addon_name)
-
-        success = addon_utils.enable(addon_name)
-
-        overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
+        overwrite_path = self.overwrite_executable_path(
+            self.prefs.executable_path)
         vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
         data_path = self.set_temp_data_path(self.prefs.data_path)
 
-        if not success or not vhacd_exe or not data_path:
-            if not success:
-                self.report({'ERROR'}, "The X3d export addon needed for the auto convex to work was not found")
+        if not vhacd_exe or not data_path:
             if not vhacd_exe:
                 self.report({'ERROR'},
                             'V-HACD executable is required for Auto Convex to work. Please follow the installation instructions and try it again')
@@ -158,27 +149,27 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
 
             if self.obj_mode == "EDIT":
-                new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                new_mesh = self.get_mesh_Edit(
+                    obj, use_modifiers=self.my_use_modifier_stack)
             else:  # mode == "OBJECT":
-                new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+                new_mesh = self.mesh_from_selection(
+                    obj, use_modifiers=self.my_use_modifier_stack)
 
             if new_mesh == None:
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                print('Entered: INDIVIDUAL')
                 convex_collision_data = {}
                 convex_collision_data['parent'] = obj
                 convex_collision_data['mesh'] = new_mesh
                 collider_data.append(convex_collision_data)
 
-            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            else:
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            print('Entered: SELECTION')
-
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
 
@@ -201,43 +192,74 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
 
-            if self.prefs.debug:
-                joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
-                bpy.context.scene.collection.objects.link(joined_obj)
-                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
-                joined_obj.select_set(False)
+            joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
+            bpy.context.scene.collection.objects.link(joined_obj)
 
             # Base filename is object name with invalid characters removed
-            filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-            off_filename = os.path.join(data_path, '{}.off'.format(filename))
-            outFileName = os.path.join(data_path, '{}.wrl'.format(filename))
-            logFileName = os.path.join(data_path, '{}_log.txt'.format(filename))
+            filename = ''.join(
+                c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
 
-            scene = context.scene
+            obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
 
-            print('\nExporting mesh for V-HACD: {}...'.format(off_filename))
-            off_export(mesh, off_filename)
-            cmd_line = ('"{}" --input "{}" --resolution {} --depth {} '
-                        '--concavity {:g} --planeDownsampling {} --convexhullDownsampling {} '
-                        '--alpha {:g} --beta {:g} --gamma {:g} --pca {:b} --mode {:b} '
-                        '--maxNumVerticesPerCH {} --minVolumePerCH {:g} --output "{}" --log "{}"').format(
-                vhacd_exe, off_filename, self.prefs.vhacd_resolution, scene.convex_decomp_depth,
-                self.prefs.vhacd_concavity, self.prefs.vhacd_planeDownsampling, self.prefs.vhacd_convexhullDownsampling,
-                self.prefs.vhacd_alpha, self.prefs.vhacd_beta, self.prefs.vhacd_gamma, self.prefs.vhacd_pca,
-                self.prefs.vhacd_mode == 'TETRAHEDRON',
-                scene.maxNumVerticesPerCH, self.prefs.vhacd_minVolumePerCH, outFileName, logFileName)
+            colSettings = context.scene.collider_tools
+
+            print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
+
+            joined_obj.select_set(True)
+
+            bpy.ops.wm.obj_export(filepath=obj_filename,  check_existing=False, export_selected_objects=True, export_materials=False,
+                                  export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
+
+            if self.prefs.debug:
+                joined_obj.color = (1.0, 0.1, 0.1, 1.0)
+                joined_obj.select_set(False)
+            else:  # remove debug meshes
+                bpy.data.objects.remove(joined_obj)
+
+            exportTime = time.time()
+
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}').format(vhacd_exe,
+                                                                                                                    obj_filename,
+                                                                                                                    colSettings.maxHullAmount,
+                                                                                                                    colSettings.maxHullVertCount,
+                                                                                                                    'obj', 1,
+                                                                                                                    colSettings.voxelResolution,
+                                                                                                                    self.prefs.vhacd_volumneErrorPercent,
+                                                                                                                    self.prefs.vhacd_maxRecursionDepth,
+                                                                                                                    "true" if colSettings.vhacd_shrinkwrap else "false",
+                                                                                                                    self.prefs.vhacd_fillMode,
+                                                                                                                    self.prefs.vhacd_minEdgeLength,
+                                                                                                                    "true" if self.prefs.vhacd_optimalSplitPlane else "false",
+                                                                                                                    "true")
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
-            vhacd_process = Popen(cmd_line, bufsize=-1, close_fds=True, shell=True)
+            vhacd_process = Popen(cmd_line, bufsize=-1,
+                                  close_fds=True, shell=True)
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
-            if not os.path.exists(outFileName):
-                continue
+            # List of new files
+            dir_files = os.listdir(data_path)
+            obj_list = []
+            for file in dir_files:
+                if file.endswith('.obj'):
+                    obj_path = os.path.join(data_path, file)
+                    fileTime = os.path.getmtime(obj_path)
 
-            bpy.ops.import_scene.x3d(filepath=outFileName, axis_forward='Y', axis_up='Z')
-            imported = bpy.context.selected_objects
+                    # check if file was modified after export
+                    if fileTime > exportTime:
+                        obj_list.append(obj_path)
+
+            # List of imported objects
+            imported = []
+            for obj_path in obj_list:
+                bpy.ops.wm.obj_import(
+                    filepath=obj_path, forward_axis='Y', up_axis='Z')
+                imported.append(bpy.context.selected_objects)
+
+            # flatten list
+            imported = [item for sublist in imported for item in sublist]
 
             for ob in imported:
                 ob.select_set(False)
@@ -261,10 +283,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                     new_collider.matrix_world = parent.matrix_world
                     # Apply rotation and scale for custom origin to work.
-                    self.apply_transform(new_collider, rotation=True, scale=True)
+                    self.apply_transform(
+                        new_collider, rotation=True, scale=True)
 
                 collections = parent.users_collection
-                self.primitive_postprocessing(context, new_collider, collections)
+                self.primitive_postprocessing(
+                    context, new_collider, collections)
                 self.new_colliders_list.append(new_collider)
 
         if len(self.new_colliders_list) < 1:
@@ -274,6 +298,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Auto Convex Colliders", elapsed_time)
-        self.report({'INFO'}, "Auto Convex Colliders: " + str(float(elapsed_time)))
+        self.report({'INFO'}, "Auto Convex Colliders: " +
+                    str(float(elapsed_time)))
 
         return {'FINISHED'}
