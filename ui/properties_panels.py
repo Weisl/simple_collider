@@ -328,10 +328,12 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Tool Defaults"
+    bl_options = {'DEFAULT_CLOSED'}
+
     def draw_header(self, context):
         layout = self.layout
         layout.label(icon='TOOL_SETTINGS')
-        
+
     def draw(self, context):
         layout = self.layout
         colSettings = context.scene.collider_tools
