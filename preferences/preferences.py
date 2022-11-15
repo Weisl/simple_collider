@@ -16,6 +16,7 @@ from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
 
+
 def setDefaultTemp():
     system_temp_dir = gettempdir()
     path = os.path.join(system_temp_dir, "collider_tools")
@@ -26,7 +27,6 @@ def setDefaultTemp():
         os.makedirs(path)
 
     return path
-
 
 
 def update_panel_category(self, context):
@@ -53,7 +53,8 @@ def update_panel_category(self, context):
         except:
             pass
 
-        panel.bl_category = context.preferences.addons[__package__.split('.')[0]].preferences.collider_category
+        panel.bl_category = context.preferences.addons[__package__.split(
+            '.')[0]].preferences.collider_category
         bpy.utils.register_class(panel)
     return
 
@@ -65,21 +66,16 @@ def get_default_executable_path():
 
     vhacd_app_folder = "v-hacd_app"
 
-    if platform.system() == 'Windows':
-        OS_folder = 'Win'
-        app_name = 'VHACD-4_1.exe'
-
-    # elif platform.system() == 'Darwin':
-    #     OS_folder = 'OSX'
-    #     app_name = 'VHACD'
-
-    # Return empty string if the os is linux or unknown
-    else:  # platform.system() == 'Linux':
+    if platform.system() != 'Windows':
         return ''
 
-    collider_addon_directory = os.path.join(parent, vhacd_app_folder, OS_folder)
+    OS_folder = 'Win'
+    collider_addon_directory = os.path.join(
+        parent, vhacd_app_folder, OS_folder)
 
     if os.path.isdir(collider_addon_directory):
+        app_name = 'VHACD-4_1.exe'
+
         executable_path = os.path.join(collider_addon_directory, app_name)
         if os.path.isfile(executable_path):
             return executable_path
@@ -93,7 +89,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
-    bl_idname = __package__.split('.')[0]  ### __package__ works on multifile and __name__ not
+    # __package__ works on multifile and __name__ not
+    bl_idname = __package__.split('.')[0]
     bl_options = {'REGISTER'}
 
     prefs_tabs: bpy.props.EnumProperty(
@@ -101,7 +98,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         items=(('SETTINGS', "General", "General addon settings"),
                ('NAMING', "Presets",
                 "Presets settings: Create, change and modify presets"),
-               ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
+               ('KEYMAP', "Keymap",
+                "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
                ('VHACD', "Auto Convex", "Settings related to Auto Convex generation.")),
         default='SETTINGS',
@@ -139,16 +137,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                          default=False)
 
     obj_basename: bpy.props.StringProperty(name="Replace Name", default="geo",
-                                           description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled.')
+                                           description='The basename is used instead of the collider parent name when "Use Replace Name" is enabled')
 
     separator: bpy.props.StringProperty(name="Separator", default="_",
                                         description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
 
     collision_string_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
-                                                      description='Simple string added to the beginning of the collider suffix/prefix.')
+                                                      description='Simple string added to the beginning of the collider suffix/prefix')
 
     collision_string_suffix: bpy.props.StringProperty(name="Collision Suffix", default="",
-                                                      description='Simple string added to the end of the collider suffix/prefix.')
+                                                      description='Simple string added to the end of the collider suffix/prefix')
 
     # Collider Shapes
     box_shape: bpy.props.StringProperty(name="Box Collision", default="UBX",
@@ -161,31 +159,32 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                          description='Naming used to define triangle mesh colliders')
 
     # Collider Groups
-    collider_groups_enabled: bpy.props.BoolProperty(name='Enable Collider Groups', description='', default=True)
+    collider_groups_enabled: bpy.props.BoolProperty(
+        name='Enable Collider Groups', description='', default=True)
 
     user_group_01_name: bpy.props.StringProperty(name="Display Name", default="Simple",
-                                                 description='Naming of User Collider Group 01.')
+                                                 description='Naming of User Collider Group 01')
     user_group_02_name: bpy.props.StringProperty(name="Display Name", default="Simple 2",
-                                                 description='Naming of User Collider Group 02.')
+                                                 description='Naming of User Collider Group 02')
     user_group_03_name: bpy.props.StringProperty(name="Display Name", default="Complex",
-                                                 description='Naming of User Collider Group 03.')
+                                                 description='Naming of User Collider Group 03')
 
     user_group_01: bpy.props.StringProperty(name="Pre/Suffix", default="",
-                                            description='Naming of User Collider Group 01.')
+                                            description='Naming of User Collider Group 01')
     user_group_02: bpy.props.StringProperty(name="Pre/Suffix", default="",
-                                            description='Naming of User Collider Group 02.')
+                                            description='Naming of User Collider Group 02')
     user_group_03: bpy.props.StringProperty(name="Pre/Suffix", default="Complex",
-                                            description='Naming of User Collider Group 03.')
+                                            description='Naming of User Collider Group 03')
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
                                                     default='MI_COL',
                                                     # type=bpy.types.Material,
                                                     # poll=scene_my_collision_material_poll,
-                                                    description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned.')
+                                                    description='Physical Materials are used in game enginges to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned')
 
     physics_material_filter: bpy.props.StringProperty(name='Physics Material Filter',
                                                       default="COL",
-                                                      description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection.', )
+                                                      description='By default, the Physics Material input shows all materials of the blender scene. Use the filter to only display materials that contain the filter characters in their name. E.g.,  Using the filter "COL", all materials that do not have "COL" in their name will be hidden from the physics material selection', )
 
     ###################################################################
     # UI
@@ -225,7 +224,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                          subtype='COLOR', size=4)
 
     modal_color_error: bpy.props.FloatVectorProperty(name="Invalid Input",
-                                                     description="Font color in the 3D viewport the title when an error occurs.",
+                                                     description="Font color in the 3D viewport the title when an error occurs",
                                                      default=(1.0, 0.0, 0.0, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
 
@@ -278,9 +277,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     vhacd_maxRecursionDepth: bpy.props.IntProperty(name='Maximum recursion depth',
                                                    default=10
                                                    )
-    # -s
-    vhacd_shrinkwrap: bpy.props.BoolProperty(name='Shrinkwrap', default=True,
-                                             description='Whether or not to shrinkwrap output to source mesh. Default is true.')
 
     # -f
     vhacd_fillMode: bpy.props.EnumProperty(name='Fill Mode',
@@ -288,11 +284,24 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                   ('raycast', 'raycast', 'raycast')),
                                            default='flood')
 
-    # -a description = "Whether or not to run asynchronously. Default is 'true'"
     # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.
+    vhacd_minEdgeLength: bpy.props.FloatProperty(name="Min Voxel Edge Size",
+                                                 description="Minimum size of a voxel edge. Default value is 2 voxels",
+                                                 default=2,
+                                                 min=0)
+
     # -p <true/false>         : If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default.
-    # -o <obj/stl/usda>       : Export the convex hulls as a series of wavefront OBJ files, STL files, or a single USDA.
+    vhacd_optimalSplitPlane: bpy.props.BoolProperty(name="Optimal Split Plane",
+                                                    default=False,
+                                                    description="If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default")
+
+    # Not exposed VHACD values.
     # -g <true/false>         : If set to false, no logging will be displayed.
+    # vhacd_displayLogging: bpy.props.BoolProperty(name="Show Log",
+    #                                              description="If set to false, no logging will be displayed.",
+    #                                              default=True)
+    # -a description = "Whether or not to run asynchronously. Default is 'true'"
+    # -o <obj/stl/usda>       : Export the convex hulls as a series of wavefront OBJ files, STL files, or a single USDA.
 
     wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
                                            items=(('OFF', "Off",
@@ -303,18 +312,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                    "Collider wireframes are visible during the generation and remain afterwards")),
                                            description="Set the display type for collider wireframes",
                                            default='PREVIEW')
-    
+
     shading_mode: bpy.props.EnumProperty(name="Color Type",
                                          items=(('OBJECT', 'Object', 'Color Type: Object'),
-                                             ('MATERIAL', 'Material', 'Color Type: Material'),
-                                             ('SINGLE', 'Single', 'Color Type: Single')),
+                                                ('MATERIAL', 'Material',
+                                                 'Color Type: Material'),
+                                                ('SINGLE', 'Single', 'Color Type: Single')),
                                          description="Set Color Type",
                                          default='OBJECT')
 
     my_hide: bpy.props.BoolProperty(name="Hide After Creation",
                                     description="Hide collider after creation.",
                                     default=False)
-    
+
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Developer mode used for debuging",
@@ -380,18 +390,18 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "vhacd_volumneErrorPercent",
         "vhacd_maxRecursionDepth",
         "vhacd_fillMode",
-        "vhacd_shrinkwrap",
+        "vhacd_optimalSplitPlane",
+        "vhacd_minEdgeLength",
     ]
-    
+
     display_config = [
         "my_hide",
         "wireframe_mode",
         "shading_mode",
     ]
 
-    
-
     # here you specify how they are drawn
+
     def draw(self, context):
         layout = self.layout
 
@@ -407,11 +417,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             for propName in self.col_props:
                 row = box.row()
                 row.prop(self, propName)
-                
+
             box = layout.box()
             row = box.row(align=True)
             row.label(text="Collision Display")
-            
+
             for propName in self.display_config:
                 row = box.row()
                 row.prop(self, propName)
@@ -421,13 +431,16 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = box.row(align=True)
             row.label(text="Presets")
-            row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+            row.menu(OBJECT_MT_collision_presets.__name__,
+                     text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
-            row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
+            row.operator(COLLISION_preset.bl_idname, text="",
+                         icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
                          icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
             if platform.system() == 'Windows':
-                op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+                op = row.operator("explorer.open_in_explorer",
+                                  text="", icon='FILE_FOLDER')
                 op.dirpath = collider_presets_folder()
 
             boxname = box.box()
@@ -436,9 +449,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             row = boxname.row()
             if self.naming_position == 'PREFIX':
-                row.label(text="Name = Collision Prefix + Shape + Group + Collision Suffix + Basename + Numbering")
+                row.label(
+                    text="Name = Collision Prefix + Shape + Group + Collision Suffix + Basename + Numbering")
             else:  # self.naming_position == 'SUFFIX':
-                row.label(text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
+                row.label(
+                    text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
 
             row = boxname.row()
             row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier='box_shape',
@@ -470,22 +485,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.prop(self, propName)
 
-            count = 1
-            for prop_01, prop_02 in zip(self.props_collider_groups_name, self.props_collider_groups_identifier):
+            for count, (prop_01, prop_02) in enumerate(zip(self.props_collider_groups_name, self.props_collider_groups_identifier), start=1):
                 split = box.split(align=True, factor=0.1)
-                split.label(text="Group_" + str(count) + ":")
+                split.label(text=f"Group_{str(count)}:")
 
                 split = split.split(align=True, factor=0.5)
                 split.prop(self, prop_01)
                 split.prop(self, prop_02)
-                count += 1
 
             box = layout.box()
             box.label(text="Physics Materials")
             for propName in self.props_physics_materials:
                 row = box.row()
                 row.prop(self, propName)
-
 
         elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()
@@ -496,13 +508,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             kc = wm.keyconfigs.addon
             km = kc.keymaps['3D View']
 
-            kmis = []
-
             from .keymap import get_hotkey_entry_item
-            # Menus and Pies
-            kmis.append(get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu'))
-            kmis.append(get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel'))
-            kmis.append(get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel'))
+            kmis = [get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu'), get_hotkey_entry_item(
+                km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel'), get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')]
 
             for kmi in kmis:
                 if kmi:
@@ -511,7 +519,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
                 else:
                     col.label(text="No hotkey entry found")
-                    col.operator("cam_manager.add_hotkey", text="Add hotkey entry", icon='ADD')
+                    col.operator("cam_manager.add_hotkey",
+                                 text="Add hotkey entry", icon='ADD')
 
         elif self.prefs_tabs == 'UI':
 
@@ -533,13 +542,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = layout.row()
                 row.prop(self, propName)
 
-
         elif self.prefs_tabs == 'VHACD':
-            texts = []
-
             text = "Auto convex is only supported for Windows at this moment."
-            texts.append(text)
-
+            texts = [text]
             if platform.system() != 'Windows':
                 for text in texts:
                     label_multiline(
@@ -555,7 +560,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             box = layout.box()
             row = box.row()
             row.label(text="Information about the executable: V-Hacd Github")
-            row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
+            row.operator("wm.url_open", text="",
+                         icon='URL').url = "https://github.com/kmammou/v-hacd"
 
             for text in texts:
                 label_multiline(

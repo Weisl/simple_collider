@@ -39,7 +39,8 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
 
         if bm_to_add.edges:
             for edge in bm_to_add.edges:
-                edge_seq = tuple(bm.verts[i.index + offset] for i in edge.verts)
+                edge_seq = tuple(bm.verts[i.index + offset]
+                                 for i in edge.verts)
                 try:
                     add_edge(edge_seq)
                 except ValueError:
@@ -118,7 +119,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
+        overwrite_path = self.overwrite_executable_path(
+            self.prefs.executable_path)
         vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
         data_path = self.set_temp_data_path(self.prefs.data_path)
 
@@ -147,9 +149,11 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
 
             if self.obj_mode == "EDIT":
-                new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                new_mesh = self.get_mesh_Edit(
+                    obj, use_modifiers=self.my_use_modifier_stack)
             else:  # mode == "OBJECT":
-                new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+                new_mesh = self.mesh_from_selection(
+                    obj, use_modifiers=self.my_use_modifier_stack)
 
             if new_mesh == None:
                 continue
@@ -160,7 +164,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 convex_collision_data['mesh'] = new_mesh
                 collider_data.append(convex_collision_data)
 
-            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            else:
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
@@ -191,7 +196,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             bpy.context.scene.collection.objects.link(joined_obj)
 
             # Base filename is object name with invalid characters removed
-            filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
+            filename = ''.join(
+                c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
 
             obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
 
@@ -207,26 +213,29 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if self.prefs.debug:
                 joined_obj.color = (1.0, 0.1, 0.1, 1.0)
                 joined_obj.select_set(False)
-            else: #remove debug meshes
+            else:  # remove debug meshes
                 bpy.data.objects.remove(joined_obj)
 
             exportTime = time.time()
 
-            shrinkwrap = 1 if self.prefs.vhacd_shrinkwrap else 0
-            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {}').format(vhacd_exe,
-                                                                                                  obj_filename,
-                                                                                                  colSettings.maxHullAmount,
-                                                                                                  colSettings.maxHullVertCount,
-                                                                                                  'obj', 1,
-                                                                                                  colSettings.voxelResolution,
-                                                                                                  self.prefs.vhacd_volumneErrorPercent,
-                                                                                                  self.prefs.vhacd_maxRecursionDepth,
-                                                                                                  shrinkwrap,
-                                                                                                  self.prefs.vhacd_fillMode)
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}').format(vhacd_exe,
+                                                                                                                    obj_filename,
+                                                                                                                    colSettings.maxHullAmount,
+                                                                                                                    colSettings.maxHullVertCount,
+                                                                                                                    'obj', 1,
+                                                                                                                    colSettings.voxelResolution,
+                                                                                                                    self.prefs.vhacd_volumneErrorPercent,
+                                                                                                                    self.prefs.vhacd_maxRecursionDepth,
+                                                                                                                    "true" if colSettings.vhacd_shrinkwrap else "false",
+                                                                                                                    self.prefs.vhacd_fillMode,
+                                                                                                                    self.prefs.vhacd_minEdgeLength,
+                                                                                                                    "true" if self.prefs.vhacd_optimalSplitPlane else "false",
+                                                                                                                    "true")
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
-            vhacd_process = Popen(cmd_line, bufsize=-1, close_fds=True, shell=True)
+            vhacd_process = Popen(cmd_line, bufsize=-1,
+                                  close_fds=True, shell=True)
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
@@ -245,9 +254,9 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             # List of imported objects
             imported = []
             for obj_path in obj_list:
-                bpy.ops.wm.obj_import(filepath=obj_path, forward_axis='Y', up_axis='Z')
+                bpy.ops.wm.obj_import(
+                    filepath=obj_path, forward_axis='Y', up_axis='Z')
                 imported.append(bpy.context.selected_objects)
-
 
             # flatten list
             imported = [item for sublist in imported for item in sublist]
@@ -274,10 +283,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                     new_collider.matrix_world = parent.matrix_world
                     # Apply rotation and scale for custom origin to work.
-                    self.apply_transform(new_collider, rotation=True, scale=True)
+                    self.apply_transform(
+                        new_collider, rotation=True, scale=True)
 
                 collections = parent.users_collection
-                self.primitive_postprocessing(context, new_collider, collections)
+                self.primitive_postprocessing(
+                    context, new_collider, collections)
                 self.new_colliders_list.append(new_collider)
 
         if len(self.new_colliders_list) < 1:
@@ -287,6 +298,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Auto Convex Colliders", elapsed_time)
-        self.report({'INFO'}, "Auto Convex Colliders: " + str(float(elapsed_time)))
+        self.report({'INFO'}, "Auto Convex Colliders: " +
+                    str(float(elapsed_time)))
 
         return {'FINISHED'}
