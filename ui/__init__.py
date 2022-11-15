@@ -11,9 +11,9 @@ classes = (
     properties_panels.OBJECT_MT_collision_presets,
     properties_panels.VIEW3D_MT_collision_creation,
     properties_panels.VIEW3D_PT_collission_panel,
+    properties_panels.VIEW3D_PT_collission_settings_panel,
     properties_panels.VIEW3D_PT_collission_visibility_panel,
     properties_panels.VIEW3D_PT_collission_material_panel,
-    properties_panels.VIEW3D_PT_collission_settings_panel,
     properties_panels.VIEW3D_MT_PIE_template,
 )
 
