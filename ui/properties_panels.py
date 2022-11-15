@@ -48,6 +48,8 @@ def draw_auto_convex(layout, context):
     else:
         col = layout.column(align=True)
         row = col.row(align=True)
+        row.prop(colSettings, 'vhacd_shrinkwrap')        
+        row = col.row(align=True)
         row.prop(colSettings, 'maxHullAmount')
         row.prop(colSettings, 'maxHullVertCount')
         row = col.row(align=True)
