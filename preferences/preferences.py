@@ -33,16 +33,16 @@ def update_panel_category(self, context):
     '''Update panel tab for collider tools'''
     panelNames = [
         'VIEW3D_PT_collission_panel',
+        'VIEW3D_PT_collission_settings_panel',
         'VIEW3D_PT_collission_visibility_panel',
         'VIEW3D_PT_collission_material_panel',
-        'VIEW3D_PT_collission_settings_panel',
     ]
 
     panels = [
         VIEW3D_PT_collission_panel,
+        VIEW3D_PT_collission_settings_panel,
         VIEW3D_PT_collission_visibility_panel,
         VIEW3D_PT_collission_material_panel,
-        VIEW3D_PT_collission_settings_panel,
     ]
     for panel in panelNames:
         is_panel = hasattr(bpy.types, panel)
@@ -273,6 +273,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        description=' Volume error allowed as a percentage. Default is 1%. Valid range is 0.001 to 10',
                                                        default=0.01, min=0.001, max=10)
 
+        # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.
+    vhacd_minEdgeLength: bpy.props.FloatProperty(name="Min Voxel Edge Size",
+                                                 description="Minimum size of a voxel edge. Default value is 2 voxels",
+                                                 default=2,
+                                                 min=0)
+    
     # -d
     vhacd_maxRecursionDepth: bpy.props.IntProperty(name='Maximum recursion depth',
                                                    default=10
@@ -284,11 +290,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                   ('raycast', 'raycast', 'raycast')),
                                            default='flood')
 
-    # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.
-    vhacd_minEdgeLength: bpy.props.FloatProperty(name="Min Voxel Edge Size",
-                                                 description="Minimum size of a voxel edge. Default value is 2 voxels",
-                                                 default=2,
-                                                 min=0)
+
 
     # -p <true/false>         : If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default.
     vhacd_optimalSplitPlane: bpy.props.BoolProperty(name="Optimal Split Plane",
@@ -388,10 +390,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     vhacd_props_config = [
         "vhacd_volumneErrorPercent",
+        "vhacd_minEdgeLength",
         "vhacd_maxRecursionDepth",
         "vhacd_fillMode",
         "vhacd_optimalSplitPlane",
-        "vhacd_minEdgeLength",
     ]
 
     display_config = [
@@ -420,7 +422,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             box = layout.box()
             row = box.row(align=True)
-            row.label(text="Collision Display")
+            row.label(text="Collider Display")
 
             for propName in self.display_config:
                 row = box.row()

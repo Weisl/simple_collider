@@ -32,6 +32,3 @@ def unregister():
 
     # delete variables saved in the scenes file
     del material.edit
-    del wm.collider_tools.defaultMeshMaterial
-    del wm.collider_tools.material_list_index
-    del wm.collider_tools.on_load
