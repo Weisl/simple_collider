@@ -24,7 +24,7 @@ def get_addon_name():
     return bl_info["name"]
 
 
-def draw_auto_convex(layout, context):
+def draw_auto_convex(layout, context, settings):
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
     colSettings = context.scene.collider_tools
     addon_name = get_addon_name()
@@ -47,16 +47,17 @@ def draw_auto_convex(layout, context):
         )
     else:
         col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(colSettings, 'vhacd_shrinkwrap')        
-        row = col.row(align=True)
-        row.prop(colSettings, 'maxHullAmount')
-        row.prop(colSettings, 'maxHullVertCount')
-        row = col.row(align=True)
-        row.prop(colSettings, 'voxelResolution')
+        
+        if settings:
+            row = col.row(align=True)
+            row.prop(colSettings, 'vhacd_shrinkwrap')        
+            row = col.row(align=True)
+            row.prop(colSettings, 'maxHullAmount')
+            row.prop(colSettings, 'maxHullVertCount')
+            row = col.row(align=True)
+            row.prop(colSettings, 'voxelResolution')
 
         row = col.row(align=True)
-
         if prefs.executable_path or prefs.default_executable_path:
             row.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
         else:
@@ -135,7 +136,7 @@ def draw_visibility_selection_menu(context, layout):
         draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
 
 
-def draw_creation_menu(context, layout):
+def draw_creation_menu(context, layout, settings=False):
     colSettings = context.scene.collider_tools
 
     layout.separator()
@@ -143,7 +144,7 @@ def draw_creation_menu(context, layout):
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
     layout.separator()
-    draw_auto_convex(layout, context)
+    draw_auto_convex(layout, context, settings)
 
     row = layout.row(align=True)
     row.label(text='Convert')
@@ -292,7 +293,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         row = col.row(align=True)
         row.operator("mesh.add_mesh_collision", icon='MESH_MONKEY')
 
-        draw_creation_menu(context, layout)
+        draw_creation_menu(context, layout, settings=True)
 
 
 class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
@@ -326,14 +327,16 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
     """Creates a Panel in the Object properties window"""
 
-    bl_label = "Settings"
+    bl_label = "Tool Defaults"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_header(self, context):
+        layout = self.layout
+        layout.label(icon='TOOL_SETTINGS')
 
     def draw(self, context):
         layout = self.layout
         colSettings = context.scene.collider_tools
-
-        row = layout.row(align=True)
-        row.label(text="Operator Defaults")
 
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
@@ -390,7 +393,6 @@ class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
 
 class VIEW3D_MT_collision_creation(Menu):
     bl_label = 'Collision Creation'
-    bl_ui_units_x = 45
 
     def draw(self, context):
         layout = self.layout
@@ -408,6 +410,7 @@ class VIEW3D_MT_PIE_template(Menu):
     bl_label = "Collision Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
+
     def draw(self, context):
         layout = self.layout
 
@@ -422,6 +425,7 @@ class VIEW3D_MT_PIE_template(Menu):
 
         # South
         split = pie.split()
+        split.scale_x = 1.5
 
         b = split.box()
         column = b.column()

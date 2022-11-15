@@ -11,16 +11,16 @@ def update_display_colliders(self, context):
 
 
 def get_int(self):
-    if self.on_load:
-        prefs = bpy.context.preferences.addons[__package__.split('.')[
-            0]].preferences
-        default_mat_name = prefs.physics_material_name
+    if not self.on_load:
+        return self.get("material_list_index", 0)
 
-        if not bpy.data.materials.get(default_mat_name):
-            mat = material_functions.create_default_material()
-            self["material_list_index"] = list(bpy.data.materials).index(mat)
-            self['on_load'] = False
-            return self["material_list_index"]
+    prefs = bpy.context.preferences.addons[__package__.split('.')[
+        0]].preferences
+    default_mat_name = prefs.physics_material_name
+
+    self["material_list_index"] = list(bpy.data.materials).index(material_functions.create_default_material(
+    )) if bpy.data.materials.get(default_mat_name) else bpy.data.materials[default_mat_name]
+    self['on_load'] = False
 
     return self["material_list_index"]
 
@@ -144,6 +144,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     material_list_index: bpy.props.IntProperty(name="Index for material list",
                                                min=0,
+                                               default=0,
                                                get=get_int,
                                                set=set_int,
                                                )
