@@ -14,9 +14,7 @@ def get_int(self):
     if not self.on_load and self.get("material_list_index"):
         return self.get("material_list_index")
 
-    print("On Load")
-    prefs = bpy.context.preferences.addons[__package__.split('.')[
-        0]].preferences
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
     default_mat_name = prefs.physics_material_name
   
     mat = bpy.data.materials.get(default_mat_name, material_functions.create_default_material())
@@ -52,18 +50,22 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     # -h
     maxHullAmount: bpy.props.IntProperty(name='Hulls',
                                          description='Maximum number of output convex hulls',
-                                         default=8, min=1, max=256)
+                                         default=8, 
+                                         min=1, 
+                                         soft_max =128,
+                                         max=4096)
 
     # -v
     maxHullVertCount: bpy.props.IntProperty(name='Verts per Piece',
-                                            description='Maximum number of vertices in the output convex hull. Default value is 64',
+                                            description='Maximum number of vertices in the output convex hull',
                                             default=16,
-                                            min=4,
-                                            max=64)
+                                            min=8,
+                                            max=4096,
+                                            soft_max=128)
     # -r
     voxelResolution: bpy.props.IntProperty(name="Voxel Resolution",
                                            description=' Total number of voxels to use. Default is 100000',
-                                           default=100000, min=10000, max=64000000)
+                                           default=100000, min=100000, max=10000000)
 
     # -s
     vhacd_shrinkwrap: bpy.props.BoolProperty(name='Shrinkwrap',
