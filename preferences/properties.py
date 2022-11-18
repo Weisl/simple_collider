@@ -134,6 +134,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     default_cylinder_segments: bpy.props.IntProperty(name="Cylinder Segments",
                                                      description="Amount of cylinder segments.",
+                                                     min=3,
                                                      default=12,
                                                      )
 
