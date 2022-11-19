@@ -19,6 +19,16 @@ def get_sca_matrix(scale):
     return scale_mx
 
 
+def get_loc_matrix(location):
+    """get location matrix"""
+    return Matrix.Translation(location)
+
+
+def get_rot_matrix(rotation):
+    """get rotation matrix"""
+    return rotation.to_matrix().to_4x4()
+
+
 class ProjectorStack:
     """
     Stack of points that are shifted / projected to put first one at origin.
@@ -293,17 +303,23 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 matrix_WS = obj.matrix_world
                 loc, rot, sca = matrix_WS.decompose()
 
-                v = used_vertices[0].co 
-                minV = v
-                maxV = v
+                co = self.get_point_positions(
+                    obj, self.my_space, used_vertices)
+                bounding_box, center = self.generate_bounding_box(co)
 
                 for vertex in used_vertices:
-                    # Ignore Scale
-                    v = vertex.co @ get_sca_matrix(sca)
 
-                    v_ws = vertex.co
-                    minV = v_ws if v_ws < minV else minV
-                    maxV = v_ws if v_ws > maxV else maxV
+                    # Ignore Scale
+                    if self.my_space == 'LOCAL':
+                        v = vertex.co @ get_sca_matrix(sca)
+                        center = sum((Vector(matrix_WS @ Vector(b))
+                                     for b in bounding_box), Vector()) / 8.0
+                    else:
+                        # Scale has to be applied before location
+                        v = vertex.co @ get_sca_matrix(
+                            sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                        center = sum((Vector(b)
+                                     for b in bounding_box), Vector()) / 8.0
 
                     if self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z])
@@ -319,42 +335,61 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqradius)
-                
-                co = self.get_point_positions(obj, self.my_space, used_vertices)
-                bounding_box, center = self.generate_bounding_box(co)
-                center = sum((Vector(matrix_WS @ Vector(b)) for b in bounding_box), Vector()) / 8.0
-                print("center point = {}".format(center))
-                
+
                 bounding_cylinder_data['parent'] = obj
                 bounding_cylinder_data['radius'] = radius
                 bounding_cylinder_data['depth'] = depth
-                bounding_cylinder_data['center_point'] = [center[0],center[1],center[2]]
+                bounding_cylinder_data['center_point'] = [
+                    center[0], center[1], center[2]]
                 collider_data.append(bounding_cylinder_data)
 
-            # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            else:
+            else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(
                     obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            pass
-            # if self.my_space == 'LOCAL':
-            #     ws_vtx_co = verts_co
-            #     verts_co = self.transform_vertex_space(
-            #         ws_vtx_co, self.active_obj)
+            coordinates = []
+            height = []
 
-            # dimensions = self.generate_dimensions_WS(verts_co)
-            # bounding_box, center_point = self.generate_bounding_box(verts_co)
-            # radius, depth = self.generate_radius_depth(dimensions)
+            if self.my_space == 'LOCAL':
+                ws_vtx_co = verts_co
+                verts_co = self.transform_vertex_space(
+                    ws_vtx_co, self.active_obj)
 
-            # bounding_cylinder_data['parent'] = self.active_obj
-            # bounding_cylinder_data['radius'] = radius
-            # bounding_cylinder_data['depth'] = depth
-            # bounding_cylinder_data['bbox'] = bounding_box
-            # bounding_cylinder_data['center_point'] = center_point
-            # collider_data = [bounding_cylinder_data]
+            bounding_box, center = self.generate_bounding_box(ws_vtx_co)
+
+            # Scale has to be applied before location
+            # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+            center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+
+            for vertex in used_vertices:
+                v = vertex.co
+                # Scale has to be applied before location
+                center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+
+                if self.cylinder_axis == 'X':
+                    coordinates.append([v.y, v.z])
+                    height.append(v.x)
+                elif self.cylinder_axis == 'Y':
+                    coordinates.append([v.x, v.z])
+                    height.append(v.y)
+                elif self.cylinder_axis == 'Z':
+                    coordinates.append([v.x, v.y])
+                    height.append(v.z)
+
+            depth = abs(max(height) - min(height))
+
+            nsphere = welzl(np.array(coordinates))
+            radius = np.sqrt(nsphere.sqradius)
+
+            bounding_cylinder_data['parent'] = obj
+            bounding_cylinder_data['radius'] = radius
+            bounding_cylinder_data['depth'] = depth
+            bounding_cylinder_data['center_point'] = [
+                center[0], center[1], center[2]]
+            collider_data = [bounding_cylinder_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
