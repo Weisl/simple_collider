@@ -275,7 +275,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         colSettings = context.scene.collider_tools
 
         collider_data = []
-        verts_co = []
+        target_vertices = []
 
         for obj in context.selected_objects.copy():
 
@@ -345,29 +345,26 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(
+                ws_vertices = self.get_point_positions(
                     obj, 'GLOBAL', used_vertices)
-                verts_co = verts_co + ws_vtx_co
+                target_vertices = target_vertices + ws_vertices
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             coordinates = []
             height = []
 
+            target_vertices_ws = target_vertices
             if self.my_space == 'LOCAL':
-                ws_vtx_co = verts_co
-                verts_co = self.transform_vertex_space(
-                    ws_vtx_co, self.active_obj)
-
-            bounding_box, center = self.generate_bounding_box(ws_vtx_co)
+                target_vertices = self.transform_vertex_space(
+                    target_vertices, self.active_obj)
 
             # Scale has to be applied before location
             # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+            bounding_box, center = self.generate_bounding_box(target_vertices_ws)
             center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
-            for vertex in used_vertices:
-                v = vertex.co
-                # Scale has to be applied before location
-                center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+            for vertex in target_vertices:
+                v = vertex
 
                 if self.cylinder_axis == 'X':
                     coordinates.append([v.y, v.z])
