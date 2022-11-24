@@ -1,16 +1,191 @@
 import bpy
-from bpy.types import Operator
+import numpy as np
+
 from math import sqrt, radians
-from mathutils import Vector
+
+from bpy.types import Operator
+from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'cylindrical_collider'
 
 
-def calc_hypothenuse(a, b):
-    """calculate the hypothenuse"""
-    return sqrt((a * 0.5) ** 2 + (b * 0.5) ** 2)
+def get_sca_matrix(scale):
+    """get scale matrix"""
+    scale_mx = Matrix()
+    for i in range(3):
+        scale_mx[i][i] = scale[i]
+    return scale_mx
+
+
+def get_loc_matrix(location):
+    """get location matrix"""
+    return Matrix.Translation(location)
+
+
+def get_rot_matrix(rotation):
+    """get rotation matrix"""
+    return rotation.to_matrix().to_4x4()
+
+
+class ProjectorStack:
+    """
+    Stack of points that are shifted / projected to put first one at origin.
+    """
+
+    def __init__(self, vec):
+        self.vs = np.array(vec)
+
+    def push(self, v):
+        if len(self.vs) == 0:
+            self.vs = np.array([v])
+        else:
+            self.vs = np.append(self.vs, [v], axis=0)
+        return self
+
+    def pop(self):
+        if len(self.vs) > 0:
+            ret, self.vs = self.vs[-1], self.vs[:-1]
+            return ret
+
+    def __mul__(self, v):
+        s = np.zeros(len(v))
+        for vi in self.vs:
+            s = s + vi * np.dot(vi, v)
+        return s
+
+
+class GaertnerBoundary:
+    """
+        GärtnerBoundary
+
+    See the passage regarding M_B in Section 4 of Gärtner's paper.
+    """
+
+    def __init__(self, pts):
+        self.projector = ProjectorStack([])
+        self.centers, self.square_radii = np.array([]), np.array([])
+        self.empty_center = np.array([np.NaN for _ in pts[0]])
+
+
+def push_if_stable(bound, pt):
+    if len(bound.centers) == 0:
+        bound.square_radii = np.append(bound.square_radii, 0.0)
+        bound.centers = np.array([pt])
+        return True
+    q0, center = bound.centers[0], bound.centers[-1]
+    C, r2 = center - q0, bound.square_radii[-1]
+    Qm, M = pt - q0, bound.projector
+    Qm_bar = M * Qm
+    residue, e = Qm - Qm_bar, sqdist(Qm, C) - r2
+    z, tol = 2 * sqnorm(residue), np.finfo(float).eps * max(r2, 1.0)
+    isstable = np.abs(z) > tol
+    if isstable:
+        center_new = center + (e / z) * residue
+        r2new = r2 + (e * e) / (2 * z)
+        bound.projector.push(residue / np.linalg.norm(residue))
+        bound.centers = np.append(
+            bound.centers, np.array([center_new]), axis=0)
+        bound.square_radii = np.append(bound.square_radii, r2new)
+    return isstable
+
+
+def pop(bound):
+    n = len(bound.centers)
+    bound.centers = bound.centers[:-1]
+    bound.square_radii = bound.square_radii[:-1]
+    if n >= 2:
+        bound.projector.pop()
+    return bound
+
+
+class NSphere:
+    def __init__(self, c, sqr):
+        self.center = np.array(c)
+        self.sqradius = sqr
+
+
+def isinside(pt, nsphere, atol=1e-6, rtol=0.0):
+    r2, R2 = sqdist(pt, nsphere.center), nsphere.sqradius
+    return r2 <= R2 or np.isclose(r2, R2, atol=atol**2, rtol=rtol**2)
+
+
+def allinside(pts, nsphere, atol=1e-6, rtol=0.0):
+    return all(isinside(p, nsphere, atol, rtol) for p in pts)
+
+
+def move_to_front(pts, i):
+    pt = pts[i]
+    for j in range(len(pts)):
+        pts[j], pt = pt, np.array(pts[j])
+        if j == i:
+            break
+    return pts
+
+
+def dist(p1, p2):
+    return np.linalg.norm(p1 - p2)
+
+
+def sqdist(p1, p2):
+    return sqnorm(p1 - p2)
+
+
+def sqnorm(p):
+    return np.sum(np.array([x * x for x in p]))
+
+
+def ismaxlength(bound):
+    len(bound.centers) == len(bound.empty_center) + 1
+
+
+def makeNSphere(bound):
+    if len(bound.centers) == 0:
+        return NSphere(bound.empty_center, 0.0)
+    return NSphere(bound.centers[-1], bound.square_radii[-1])
+
+
+def _welzl(pts, pos, bdry):
+    support_count, nsphere = 0, makeNSphere(bdry)
+    if ismaxlength(bdry):
+        return nsphere, 0
+    for i in range(pos):
+        if not isinside(pts[i], nsphere):
+            isstable = push_if_stable(bdry, pts[i])
+            if isstable:
+                nsphere, s = _welzl(pts, i, bdry)
+                pop(bdry)
+                move_to_front(pts, i)
+                support_count = s + 1
+    return nsphere, support_count
+
+
+def find_max_excess(nsphere, pts, k1):
+    err_max, k_max = -np.Inf, k1 - 1
+    for (k, pt) in enumerate(pts[k_max:]):
+        err = sqdist(pt, nsphere.center) - nsphere.sqradius
+        if err > err_max:
+            err_max, k_max = err, k + k1
+    return err_max, k_max - 1
+
+
+def welzl(points, maxiterations=2000):
+    pts, eps = np.array(points, copy=True), np.finfo(float).eps
+    bdry, t = GaertnerBoundary(pts), 1
+    nsphere, s = _welzl(pts, t, bdry)
+    for i in range(maxiterations):
+        e, k = find_max_excess(nsphere, pts, t + 1)
+        if e <= eps:
+            break
+        pt = pts[k]
+        push_if_stable(bdry, pt)
+        nsphere_new, s_new = _welzl(pts, s, bdry)
+        pop(bdry)
+        move_to_front(pts, k)
+        nsphere = nsphere_new
+        t, s = s + 1, s_new + 1
+    return nsphere
 
 
 class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
@@ -18,28 +193,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = "mesh.add_bounding_cylinder"
     bl_label = "Add Cylinder"
     bl_description = 'Create cylindrical colliders based on the selection'
-
-    def generate_dimensions_WS(self, v_co):
-        positionsX, positionsY, positionsZ = self.split_coordinates_xyz(v_co)
-
-        """Generate the dimenstions based on the 3 lists of positions (X,Y,Z)"""
-        return [abs(max(positionsX) - min(positionsX)), max(positionsY) - min(positionsY), abs(max(positionsZ) - min(positionsZ))]
-
-    def generate_radius_depth(self, dimensions):
-        """Calculate a radiuse based on dimensions and orientations."""
-        if self.cylinder_axis == 'X':
-            radius = calc_hypothenuse(dimensions[1], dimensions[2])
-            depth = dimensions[0]
-
-        elif self.cylinder_axis == 'Y':
-            radius = calc_hypothenuse(dimensions[0], dimensions[2])
-            depth = dimensions[1]
-
-        else:
-            radius = calc_hypothenuse(dimensions[0], dimensions[1])
-            depth = dimensions[2]
-
-        return radius, depth
 
     def generate_cylinder_object(self, context, radius, depth, location, rotation_euler=False):
         """Create cylindrical collider for every selected object in object mode
@@ -122,7 +275,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         colSettings = context.scene.collider_tools
 
         collider_data = []
-        verts_co = []
+        target_vertices = []
 
         for obj in context.selected_objects.copy():
 
@@ -133,48 +286,106 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bounding_cylinder_data = {}
 
             if self.obj_mode == 'EDIT':
-                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_vertices_Edit(
+                    obj, use_modifiers=self.my_use_modifier_stack)
             else:
-                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_vertices_Object(
+                    obj, use_modifiers=self.my_use_modifier_stack)
 
             if not used_vertices:
                 continue
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
 
-                v_co = self.get_point_positions(obj, self.my_space, used_vertices)
+                coordinates = []
+                height = []
 
-                dimensions = self.generate_dimensions_WS(v_co)
-                bounding_box, center_point = self.generate_bounding_box(v_co)
+                matrix_WS = obj.matrix_world
+                loc, rot, sca = matrix_WS.decompose()
 
-                radius, depth = self.generate_radius_depth(dimensions)
+                co = self.get_point_positions(
+                    obj, self.my_space, used_vertices)
+                bounding_box, center = self.generate_bounding_box(co)
+
+                for vertex in used_vertices:
+
+                    # Ignore Scale
+                    if self.my_space == 'LOCAL':
+                        v = vertex.co @ get_sca_matrix(sca)
+                        center = sum((Vector(matrix_WS @ Vector(b))
+                                     for b in bounding_box), Vector()) / 8.0
+                    else:
+                        # Scale has to be applied before location
+                        v = vertex.co @ get_sca_matrix(
+                            sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                        center = sum((Vector(b)
+                                     for b in bounding_box), Vector()) / 8.0
+
+                    if self.cylinder_axis == 'X':
+                        coordinates.append([v.y, v.z])
+                        height.append(v.x)
+                    elif self.cylinder_axis == 'Y':
+                        coordinates.append([v.x, v.z])
+                        height.append(v.y)
+                    elif self.cylinder_axis == 'Z':
+                        coordinates.append([v.x, v.y])
+                        height.append(v.z)
+
+                depth = abs(max(height) - min(height))
+
+                nsphere = welzl(np.array(coordinates))
+                radius = np.sqrt(nsphere.sqradius)
 
                 bounding_cylinder_data['parent'] = obj
                 bounding_cylinder_data['radius'] = radius
                 bounding_cylinder_data['depth'] = depth
-                bounding_cylinder_data['bbox'] = bounding_box
-                bounding_cylinder_data['center_point'] = center_point
+                bounding_cylinder_data['center_point'] = [
+                    center[0], center[1], center[2]]
                 collider_data.append(bounding_cylinder_data)
 
-            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
-                verts_co = verts_co + ws_vtx_co
+                ws_vertices = self.get_point_positions(
+                    obj, 'GLOBAL', used_vertices)
+                target_vertices = target_vertices + ws_vertices
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            coordinates = []
+            height = []
+
+            target_vertices_ws = target_vertices
             if self.my_space == 'LOCAL':
-                ws_vtx_co = verts_co
-                verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
+                target_vertices = self.transform_vertex_space(
+                    target_vertices, self.active_obj)
 
-            dimensions = self.generate_dimensions_WS(verts_co)
-            bounding_box, center_point = self.generate_bounding_box(verts_co)
-            radius, depth = self.generate_radius_depth(dimensions)
+            # Scale has to be applied before location
+            # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+            bounding_box, center = self.generate_bounding_box(target_vertices_ws)
+            center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
-            bounding_cylinder_data['parent'] = self.active_obj
+            for vertex in target_vertices:
+                v = vertex
+
+                if self.cylinder_axis == 'X':
+                    coordinates.append([v.y, v.z])
+                    height.append(v.x)
+                elif self.cylinder_axis == 'Y':
+                    coordinates.append([v.x, v.z])
+                    height.append(v.y)
+                elif self.cylinder_axis == 'Z':
+                    coordinates.append([v.x, v.y])
+                    height.append(v.z)
+
+            depth = abs(max(height) - min(height))
+
+            nsphere = welzl(np.array(coordinates))
+            radius = np.sqrt(nsphere.sqradius)
+
+            bounding_cylinder_data['parent'] = obj
             bounding_cylinder_data['radius'] = radius
             bounding_cylinder_data['depth'] = depth
-            bounding_cylinder_data['bbox'] = bounding_box
-            bounding_cylinder_data['center_point'] = center_point
+            bounding_cylinder_data['center_point'] = [
+                center[0], center[1], center[2]]
             collider_data = [bounding_cylinder_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -185,35 +396,28 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             parent = bounding_cylinder_data['parent']
             radius = bounding_cylinder_data['radius']
             depth = bounding_cylinder_data['depth']
-            bbox = bounding_cylinder_data['bbox']
-
-            # self.apply_scale(bbox)
-
-            # currently not used
-            center_point = bounding_cylinder_data['center_point']
+            center = bounding_cylinder_data['center_point']
 
             if self.my_space == 'LOCAL':
-                matrix_WS = parent.matrix_world
-                center = sum((Vector(matrix_WS @ Vector(b)) for b in bbox), Vector()) / 8.0
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,
                                                              rotation_euler=parent.rotation_euler)
-                new_collider.scale = parent.scale
+                new_collider.scale = (1.0, 1.0, 1.0)
 
             else:  # wm.collider_tools.my_space == 'GLOBAL'
-                center = sum((Vector(b) for b in bbox), Vector()) / 8.0
-                new_collider = self.generate_cylinder_object(context, radius, depth, center)
+                new_collider = self.generate_cylinder_object(
+                    context, radius, depth, center)
 
             self.new_colliders_list.append(new_collider)
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
 
             super().set_collider_name(new_collider, parent.name)
-
-            self.custom_set_parent(context, parent, new_collider)
+            # self.custom_set_parent(context, parent, new_collider)
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convex Cylindrical Collider", elapsed_time)
-        self.report({'INFO'}, f"Convex Cylindrical Collider: {float(elapsed_time)}")
+        self.report(
+            {'INFO'}, f"Convex Cylindrical Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}

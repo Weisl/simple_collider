@@ -271,26 +271,30 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # -e
     vhacd_volumneErrorPercent: bpy.props.FloatProperty(name='Volumne Error Percentage',
                                                        description=' Volume error allowed as a percentage. Default is 1%. Valid range is 0.001 to 10',
-                                                       default=0.01, min=0.001, max=10)
+                                                       default=0.01,
+                                                       min=0.001,
+                                                       max=10)
 
-        # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.
+    # -l minEdgeLength      : Minimum size of a voxel edge. Default value is 2 voxels.
     vhacd_minEdgeLength: bpy.props.FloatProperty(name="Min Voxel Edge Size",
                                                  description="Minimum size of a voxel edge. Default value is 2 voxels",
                                                  default=2,
                                                  min=0)
-    
+
     # -d
     vhacd_maxRecursionDepth: bpy.props.IntProperty(name='Maximum recursion depth',
-                                                   default=10
-                                                   )
+                                                   description="The recursion depth has reached a maximum limit specified by the user.  A value of 12 results in a maximum of 4,096 convex hulls",
+                                                   default=10,
+                                                   min=2,
+                                                   max=64)
 
     # -f
     vhacd_fillMode: bpy.props.EnumProperty(name='Fill Mode',
-                                           items=(('flood', 'flood', 'flood'), ('surface', 'surface', 'surface'),
-                                                  ('raycast', 'raycast', 'raycast')),
-                                           default='flood')
-
-
+                                           description="Fill Mode defines the method used for finding the interior voxels used for the auto convex collider creation",
+                                           items=(('raycast', 'Raycast', 'If the source mesh is not perfectly watertight, the user can try the raycast fill option, which will determine interior voxels by raycasting towards the source mesh'),
+                                                  ('flood', 'Flood', 'V-HACD will find all of the interior voxels by performing a flood-fill operation. If the source mesh is not 100% perfectly watertight, the flood-fill will fail'),
+                                                  ('surface', 'Surface', 'In some cases, a user might actually want the source mesh to be treated as if it were hollow, in which case they can skip generating interior voxels entirely')),
+                                           default='raycast')
 
     # -p <true/false>         : If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default.
     vhacd_optimalSplitPlane: bpy.props.BoolProperty(name="Optimal Split Plane",
@@ -313,7 +317,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                   ('ALWAYS', "Always",
                                                    "Collider wireframes are visible during the generation and remain afterwards")),
                                            description="Set the display type for collider wireframes",
-                                           default='PREVIEW')
+                                           default='ALWAYS')
 
     shading_mode: bpy.props.EnumProperty(name="Color Type",
                                          items=(('OBJECT', 'Object', 'Color Type: Object'),
