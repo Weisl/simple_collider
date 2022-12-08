@@ -345,20 +345,19 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(
-                    obj, 'GLOBAL', used_vertices)
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
+ 
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             coordinates = []
             height = []
 
-            if self.my_space == 'LOCAL':
-                ws_vtx_co = verts_co
-                verts_co = self.transform_vertex_space(
-                    ws_vtx_co, self.active_obj)
+            # if self.my_space == 'LOCAL':
+            #     verts_co = self.transform_vertex_space(
+            #         verts_co, self.active_obj)
 
-            bounding_box, center = self.generate_bounding_box(ws_vtx_co)
+            bounding_box, center = self.generate_bounding_box(verts_co)
 
             # Scale has to be applied before location
             # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
