@@ -93,11 +93,25 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             parent = convex_collision_data['parent']
             verts_loc = convex_collision_data['verts_loc']
 
-            bm = bmesh.new()
+            
 
+            if self.prefs.debug:
+                me = bpy.data.meshes.new("joined_mesh")
+                bm = bmesh.new()
+                for v in verts_loc:
+                    bm.verts.new(v)  # add a new vert  
+                me = bpy.data.meshes.new("mesh")
+                bm.to_mesh(me)
+                bm.free()
+
+                root_collection = context.scene.collection
+                debug = bpy.data.objects.new('temp_debug_objects', me)
+                root_collection.objects.link(debug)
+            
+            bm = bmesh.new()
             for v in verts_loc:
                 bm.verts.new(v)  # add a new vert
-
+            
             ch = bmesh.ops.convex_hull(bm, input=bm.verts)
 
             bmesh.ops.delete(
