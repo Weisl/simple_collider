@@ -333,7 +333,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
-                                  description="Developer mode used for debuging",
+                                  description="Debug mode only used for debuging during development",
                                   default=False)
 
     props = [
@@ -431,6 +431,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             for propName in self.display_config:
                 row = box.row()
                 row.prop(self, propName)
+                
+            row = layout.row()
+            row.prop(self, 'debug')
 
         if self.prefs_tabs == 'NAMING':
             box = layout.box()

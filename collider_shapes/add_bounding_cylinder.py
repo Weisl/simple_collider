@@ -1,4 +1,5 @@
 import bpy
+import bmesh
 import numpy as np
 
 from math import sqrt, radians
@@ -295,13 +296,13 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             if not used_vertices:
                 continue
 
+            matrix_WS = obj.matrix_world
+            loc, rot, sca = matrix_WS.decompose()
+
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
 
                 coordinates = []
                 height = []
-
-                matrix_WS = obj.matrix_world
-                loc, rot, sca = matrix_WS.decompose()
 
                 co = self.get_point_positions(
                     obj, self.my_space, used_vertices)
@@ -345,28 +346,43 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
-                verts_co = verts_co + ws_vtx_co
+                for vertex in used_vertices:
+                    # Scale has to be applied before location
+                    v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                    verts_co = self.transform_vertex_space(v, obj)
+                    verts_co.append(v)
  
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             coordinates = []
             height = []
+            
+            if self.prefs.debug:
+                
+                bm = bmesh.new()
 
-            # if self.my_space == 'LOCAL':
-            #     verts_co = self.transform_vertex_space(
-            #         verts_co, self.active_obj)
+                for v in verts_co:
+                    bm.verts.new(v)  # add a new vert
+                me = bpy.data.meshes.new("mesh")
+                bm.to_mesh(me)
+                bm.free()
+
+                temp_obj = bpy.data.objects.new('temp_debug_objects', me)
+                # temp_obj.matrix_world = parent.matrix_world
+
+                root_collection = context.scene.collection
+                # root_collection.objects.link(bounding_box)
+                root_collection.objects.link(temp_obj)
+
 
             bounding_box, center = self.generate_bounding_box(verts_co)
-
+            
             # Scale has to be applied before location
             # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
             center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
-
+                
             for vertex in used_vertices:
                 v = vertex.co
-                # Scale has to be applied before location
-                center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
                 if self.cylinder_axis == 'X':
                     coordinates.append([v.y, v.z])
