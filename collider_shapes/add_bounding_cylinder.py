@@ -276,7 +276,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         colSettings = context.scene.collider_tools
 
         collider_data = []
-        verts_co = []
+        target_vertices = []
 
         for obj in context.selected_objects.copy():
 
@@ -349,6 +349,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
  
+
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             bounding_box, center = self.generate_bounding_box(verts_co)        
             
@@ -370,8 +371,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             # Scale has to be applied before location
             # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+            bounding_box, center = self.generate_bounding_box(target_vertices_ws)
             center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
-                
+   
             for v in verts_co:
                 if self.cylinder_axis == 'X':
                     coordinates.append([v.y, v.z])
