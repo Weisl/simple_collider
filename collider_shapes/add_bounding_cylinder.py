@@ -405,14 +405,14 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             depth = bounding_cylinder_data['depth']
             center = bounding_cylinder_data['center_point']
 
-            if self.my_space == 'LOCAL':
+            if  self.my_space == 'GLOBAL' or self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+                new_collider = self.generate_cylinder_object(
+                    context, radius, depth, center)
+                
+            else: # if self.my_space == 'LOCAL':
                 new_collider = self.generate_cylinder_object(context, radius, depth, center,
                                                              rotation_euler=parent.rotation_euler)
                 new_collider.scale = (1.0, 1.0, 1.0)
-
-            else:  # wm.collider_tools.my_space == 'GLOBAL'
-                new_collider = self.generate_cylinder_object(
-                    context, radius, depth, center)
 
             self.new_colliders_list.append(new_collider)
             collections = parent.users_collection
