@@ -354,17 +354,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             bounding_box, center = self.generate_bounding_box(verts_co)        
             
             if self.prefs.debug:
-                bm = bmesh.new()
-                for v in verts_co:
-                    bm.verts.new(v)  # add a new vert  
-                
-                me = bpy.data.meshes.new("mesh")
-                bm.to_mesh(me)
-                bm.free()
-
-                root_collection = context.scene.collection
-                debug = bpy.data.objects.new('temp_debug_objects', me)
-                root_collection.objects.link(debug)
+                debug_obj = self.create_debug_object_from_verts(context, verts_co)
             
             coordinates = []
             height = []
@@ -421,7 +411,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
 
             super().set_collider_name(new_collider, parent.name)
-            # self.custom_set_parent(context, parent, new_collider)
+            self.custom_set_parent(context, parent, new_collider)
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
