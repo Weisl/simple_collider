@@ -344,46 +344,35 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     center[0], center[1], center[2]]
                 collider_data.append(bounding_cylinder_data)
 
-            else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                for vertex in used_vertices:
-                    # Scale has to be applied before location
-                    v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
-                    verts_co = self.transform_vertex_space(v, obj)
-                    verts_co.append(v)
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
  
-
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            coordinates = []
-            height = []
+            bounding_box, center = self.generate_bounding_box(verts_co)        
             
             if self.prefs.debug:
-                
                 bm = bmesh.new()
-
                 for v in verts_co:
-                    bm.verts.new(v)  # add a new vert
+                    bm.verts.new(v)  # add a new vert  
+                
                 me = bpy.data.meshes.new("mesh")
                 bm.to_mesh(me)
                 bm.free()
 
-                temp_obj = bpy.data.objects.new('temp_debug_objects', me)
-                # temp_obj.matrix_world = parent.matrix_world
-
                 root_collection = context.scene.collection
-                # root_collection.objects.link(bounding_box)
-                root_collection.objects.link(temp_obj)
-
-
-            bounding_box, center = self.generate_bounding_box(verts_co)
+                debug = bpy.data.objects.new('temp_debug_objects', me)
+                root_collection.objects.link(debug)
             
+            coordinates = []
+            height = []
+
             # Scale has to be applied before location
             # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
             center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
                 
-            for vertex in used_vertices:
-                v = vertex.co
-
+            for v in verts_co:
                 if self.cylinder_axis == 'X':
                     coordinates.append([v.y, v.z])
                     height.append(v.x)
@@ -399,11 +388,11 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             nsphere = welzl(np.array(coordinates))
             radius = np.sqrt(nsphere.sqradius)
 
-            bounding_cylinder_data['parent'] = obj
+            bounding_cylinder_data['parent'] = self.active_obj
             bounding_cylinder_data['radius'] = radius
             bounding_cylinder_data['depth'] = depth
             bounding_cylinder_data['center_point'] = [
-                center[0], center[1], center[2]]
+                    center[0], center[1], center[2]]
             collider_data = [bounding_cylinder_data]
 
         bpy.ops.object.mode_set(mode='OBJECT')
