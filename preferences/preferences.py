@@ -15,7 +15,8 @@ from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
-from .keymap import get_hotkey_entry_item 
+from .keymap import get_hotkey_entry_item
+
 
 def setDefaultTemp():
     system_temp_dir = gettempdir()
@@ -82,6 +83,22 @@ def get_default_executable_path():
 
     # if folder or file does not exist, return empty string
     return ''
+
+
+'Main Pie'
+
+
+def draw_key_item(kc, layout, title, kmi_name, kmi_value):
+        
+    row = layout.row(align=True)
+    row.label(text=title)
+    km = kc.keymaps['3D View']
+    kmi = get_hotkey_entry_item(km, kmi_name, kmi_value, 'name')
+    if kmi:
+        layout.context_pointer_set("keymap", km)
+        rna_keymap_ui.draw_kmi([], kc, km, kmi, layout, 0)
+    else:
+        layout.label(text="No hotkey entry found")
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -431,7 +448,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             for propName in self.display_config:
                 row = box.row()
                 row.prop(self, propName)
-                
+
             row = layout.row()
             row.prop(self, 'debug')
 
@@ -509,59 +526,15 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'KEYMAP':
-            box = layout.box()
-            split = box.split()
-            col = split.column()
-
-            sub_box = col.box()
-                    
-            wm = bpy.context.window_manager
+            wm = context.window_manager
             kc = wm.keyconfigs.user
             
             # Main Pie
-            sub_box = col.box()
-            row = sub_box.row(align=True) 
-            row.label(text='Main Pie')
-            sub_box = sub_box.box()
-
-            km = kc.keymaps['3D View']
-            kmi = get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu', 'name')
-            if kmi:
-                sub_box.context_pointer_set("keymap", km)
-                rna_keymap_ui.draw_kmi([], kc, km, kmi, sub_box, 0)
-            else:
-                sub_box.label(text="No hotkey entry found")
-                sub_box.label(text="restore hotkeys from interface tab")
-
-            # Visibilitty Menu
-            sub_box = col.box()
-            row = sub_box.row(align=True) 
-            row.label(text='Visibilitty Menu')
-            sub_box = sub_box.box()
-
-            km = kc.keymaps['3D View']
-            kmi = get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel', 'name')
-            if kmi:
-                sub_box.context_pointer_set("keymap", km)
-                rna_keymap_ui.draw_kmi([], kc, km, kmi, sub_box, 0)
-            else:
-                sub_box.label(text="No hotkey entry found")
-                sub_box.label(text="restore hotkeys from interface tab")
-
-            # Material Menu
-            sub_box = col.box()            
-            row = sub_box.row(align=True) 
-            row.label(text='Material Menu')
-            sub_box = sub_box.box()
-
-            km = kc.keymaps['3D View']
-            kmi = get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel', 'name')
-            if kmi:
-                sub_box.context_pointer_set("keymap", km)
-                rna_keymap_ui.draw_kmi([], kc, km, kmi, sub_box, 0)
-            else:
-                sub_box.label(text="No hotkey entry found")
-                sub_box.label(text="restore hotkeys from interface tab")
+            sub_box = layout.box()
+            draw_key_item(kc, sub_box, 'Main Pie', 'wm.call_menu_pie', 'COLLISION_MT_pie_menu')
+            draw_key_item(kc, sub_box, 'Visibilitty Menu', 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel')
+            draw_key_item(kc, sub_box, 'Material Menu', 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')
+            
 
         elif self.prefs_tabs == 'UI':
 
