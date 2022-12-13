@@ -15,7 +15,7 @@ from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
-
+from .keymap import get_hotkey_entry_item 
 
 def setDefaultTemp():
     system_temp_dir = gettempdir()
@@ -510,26 +510,58 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         elif self.prefs_tabs == 'KEYMAP':
             box = layout.box()
-            col = box.column()
-            col.label(text="keymap")
+            split = box.split()
+            col = split.column()
 
-            wm = context.window_manager
-            kc = wm.keyconfigs.addon
+            sub_box = col.box()
+                    
+            wm = bpy.context.window_manager
+            kc = wm.keyconfigs.user
+            
+            # Main Pie
+            sub_box = col.box()
+            row = sub_box.row(align=True) 
+            row.label(text='Main Pie')
+            sub_box = sub_box.box()
+
             km = kc.keymaps['3D View']
+            kmi = get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu', 'name')
+            if kmi:
+                sub_box.context_pointer_set("keymap", km)
+                rna_keymap_ui.draw_kmi([], kc, km, kmi, sub_box, 0)
+            else:
+                sub_box.label(text="No hotkey entry found")
+                sub_box.label(text="restore hotkeys from interface tab")
 
-            from .keymap import get_hotkey_entry_item
-            kmis = [get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu'), get_hotkey_entry_item(
-                km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel'), get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')]
+            # Visibilitty Menu
+            sub_box = col.box()
+            row = sub_box.row(align=True) 
+            row.label(text='Visibilitty Menu')
+            sub_box = sub_box.box()
 
-            for kmi in kmis:
-                if kmi:
-                    col.context_pointer_set("keymap", km)
-                    rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+            km = kc.keymaps['3D View']
+            kmi = get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel', 'name')
+            if kmi:
+                sub_box.context_pointer_set("keymap", km)
+                rna_keymap_ui.draw_kmi([], kc, km, kmi, sub_box, 0)
+            else:
+                sub_box.label(text="No hotkey entry found")
+                sub_box.label(text="restore hotkeys from interface tab")
 
-                else:
-                    col.label(text="No hotkey entry found")
-                    col.operator("cam_manager.add_hotkey",
-                                 text="Add hotkey entry", icon='ADD')
+            # Material Menu
+            sub_box = col.box()            
+            row = sub_box.row(align=True) 
+            row.label(text='Material Menu')
+            sub_box = sub_box.box()
+
+            km = kc.keymaps['3D View']
+            kmi = get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel', 'name')
+            if kmi:
+                sub_box.context_pointer_set("keymap", km)
+                rna_keymap_ui.draw_kmi([], kc, km, kmi, sub_box, 0)
+            else:
+                sub_box.label(text="No hotkey entry found")
+                sub_box.label(text="restore hotkeys from interface tab")
 
         elif self.prefs_tabs == 'UI':
 
