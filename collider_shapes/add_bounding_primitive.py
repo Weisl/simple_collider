@@ -739,7 +739,10 @@ class OBJECT_OT_add_bounding_object():
             self.add_decimate_modifier(context, bounding_object)
 
         if self.use_geo_nodes_hull:
-            self.add_geo_nodes_hull(context, bounding_object)
+            if bpy.app.version >= (2, 94, 0):
+                self.add_geo_nodes_hull(context, bounding_object)
+            else:
+                self.report({'WARNING'}, 'Update to a newer Blender Version to access all addon features')
 
         mat_name = ''
         if bpy.data.materials[colSettings.material_list_index]:
