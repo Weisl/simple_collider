@@ -92,13 +92,12 @@ def draw_key_item(kc, layout, title, kmi_name, kmi_value):
         
     row = layout.row(align=True)
     row.label(text=title)
-    km = kc.keymaps['3D View']
+    km = kc.keymaps['3D View Generic']
     kmi = get_hotkey_entry_item(km, kmi_name, kmi_value, 'name')
     if kmi:
         layout.context_pointer_set("keymap", km)
         rna_keymap_ui.draw_kmi([], kc, km, kmi, layout, 0)
-    else:
-        layout.label(text="No hotkey entry found")
+
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -534,8 +533,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             draw_key_item(kc, sub_box, 'Main Pie', 'wm.call_menu_pie', 'COLLISION_MT_pie_menu')
             draw_key_item(kc, sub_box, 'Visibilitty Menu', 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel')
             draw_key_item(kc, sub_box, 'Material Menu', 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')
+            row = sub_box.row(align = True)
+            row.operator('collision_tool.add_hotkey', text = "Reset Hotkeys")
             
-
         elif self.prefs_tabs == 'UI':
 
             row = layout.row()
