@@ -85,9 +85,6 @@ def get_default_executable_path():
     return ''
 
 
-'Main Pie'
-
-
 def draw_key_item(kc, layout, title, kmi_name, kmi_value):
         
     row = layout.row(align=True)
