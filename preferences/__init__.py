@@ -1,6 +1,5 @@
 import bpy
 
-from . import keymap
 from . import naming_preset
 from . import preferences
 from . import properties
@@ -13,34 +12,29 @@ keys = []
 
 def add_hotkey():
     wm = bpy.context.window_manager
-    addon_keyconfig = wm.keyconfigs.user
-    # addon_keyconfig = wm.keyconfigs.active
-    kc = addon_keyconfig
-    
-    if not kc:
-        print('Collider Tools: keyconfig unavailable (in batch mode?), no keybinding items registered')
-        return
+    kc = wm.keyconfigs.user
+ 
+    if kc:
+        # register to 3d view mode tab
+        km = kc.keymaps.new(name="3D View Generic", space_type="VIEW_3D")
 
-    # register to 3d view mode tab
-    km = kc.keymaps.new(name="3D View Generic", space_type="VIEW_3D")
+        kmi = km.keymap_items.new(idname='wm.call_menu_pie', type='C', value='PRESS', ctrl=True, shift=True)
+        kmi.properties.name = "COLLISION_MT_pie_menu"
+        kmi.active = True
+        
+        keys.append((km, kmi))
 
-    kmi = km.keymap_items.new(idname='wm.call_menu_pie', type='C', value='PRESS', ctrl=True, shift=True)
-    kmi.properties.name = "COLLISION_MT_pie_menu"
-    kmi.active = True
-    
-    keys.append((km, kmi))
-
-    kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True)
-    kmi.properties.name = 'VIEW3D_PT_collission_visibility_panel'
-    kmi.active = True
-    
-    keys.append((km, kmi))
-    
-    kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True, ctrl=True)
-    kmi.properties.name = 'VIEW3D_PT_collission_material_panel'
-    kmi.active = True
-    
-    keys.append((km, kmi))
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True)
+        kmi.properties.name = 'VIEW3D_PT_collission_visibility_panel'
+        kmi.active = True
+        
+        keys.append((km, kmi))
+        
+        kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True, ctrl=True)
+        kmi.properties.name = 'VIEW3D_PT_collission_material_panel'
+        kmi.active = True
+        
+        keys.append((km, kmi))
 
 
 
@@ -100,8 +94,6 @@ def register():
 
     add_hotkey()
 
-
-    
 
 def unregister():
     from bpy.utils import unregister_class
