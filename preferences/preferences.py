@@ -15,6 +15,7 @@ from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
+from .keymap import get_hotkey_entry_item
 
 
 def setDefaultTemp():
@@ -82,6 +83,21 @@ def get_default_executable_path():
 
     # if folder or file does not exist, return empty string
     return ''
+
+
+'Main Pie'
+
+
+def draw_key_item(kc, layout, title, kmi_name, kmi_value):
+        
+    row = layout.row(align=True)
+    row.label(text=title)
+    km = kc.keymaps['3D View Generic']
+    kmi = get_hotkey_entry_item(km, kmi_name, kmi_value, 'name')
+    if kmi:
+        layout.context_pointer_set("keymap", km)
+        rna_keymap_ui.draw_kmi([], kc, km, kmi, layout, 0)
+
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
@@ -333,7 +349,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
-                                  description="Developer mode used for debuging",
+                                  description="Debug mode only used for debuging during development",
                                   default=False)
 
     props = [
@@ -432,6 +448,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row = box.row()
                 row.prop(self, propName)
 
+            row = layout.row()
+            row.prop(self, 'debug')
+
         if self.prefs_tabs == 'NAMING':
             box = layout.box()
 
@@ -506,28 +525,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'KEYMAP':
-            box = layout.box()
-            col = box.column()
-            col.label(text="keymap")
-
             wm = context.window_manager
-            kc = wm.keyconfigs.addon
-            km = kc.keymaps['3D View']
-
-            from .keymap import get_hotkey_entry_item
-            kmis = [get_hotkey_entry_item(km, 'wm.call_menu_pie', 'COLLISION_MT_pie_menu'), get_hotkey_entry_item(
-                km, 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel'), get_hotkey_entry_item(km, 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')]
-
-            for kmi in kmis:
-                if kmi:
-                    col.context_pointer_set("keymap", km)
-                    rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
-
-                else:
-                    col.label(text="No hotkey entry found")
-                    col.operator("cam_manager.add_hotkey",
-                                 text="Add hotkey entry", icon='ADD')
-
+            kc = wm.keyconfigs.user
+            
+            # Main Pie
+            sub_box = layout.box()
+            draw_key_item(kc, sub_box, 'Main Pie', 'wm.call_menu_pie', 'COLLISION_MT_pie_menu')
+            draw_key_item(kc, sub_box, 'Visibilitty Menu', 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel')
+            draw_key_item(kc, sub_box, 'Material Menu', 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')
+            row = sub_box.row(align = True)
+            row.operator('collision_tool.add_hotkey', text = "Reset Hotkeys")
+            
         elif self.prefs_tabs == 'UI':
 
             row = layout.row()

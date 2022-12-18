@@ -739,7 +739,10 @@ class OBJECT_OT_add_bounding_object():
             self.add_decimate_modifier(context, bounding_object)
 
         if self.use_geo_nodes_hull:
-            self.add_geo_nodes_hull(context, bounding_object)
+            if bpy.app.version >= (3, 2, 0):
+                self.add_geo_nodes_hull(context, bounding_object)
+            else:
+                self.report({'WARNING'}, 'Update to a newer Blender Version to access all addon features')
 
         mat_name = ''
         if bpy.data.materials[colSettings.material_list_index]:
@@ -855,7 +858,24 @@ class OBJECT_OT_add_bounding_object():
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         except ValueError:
             pass
+        
+    def create_debug_object_from_verts(self, context, verts):
+        bm = bmesh.new()
+        for v in verts:
+            bm.verts.new(v)  # add a new vert  
+        
+        me = bpy.data.meshes.new("mesh")
+        bm.to_mesh(me)
+        bm.free()
 
+        root_collection = context.scene.collection
+        debug_obj = bpy.data.objects.new('temp_debug_objects', me)
+        # root_collection.objects.link(debug_obj)
+        self.add_to_collections(debug_obj, 'Debug')
+        
+        return debug_obj
+        
+        
     def __init__(self):
         # has to be in --init
         self.is_mesh_to_collider = False
