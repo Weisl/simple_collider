@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import gettempdir
 
 import bpy
-import rna_keymap_ui
+# import rna_keymap_ui
 
 from .naming_preset import COLLISION_preset
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -15,7 +15,7 @@ from ..ui.properties_panels import VIEW3D_PT_collission_panel
 from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
-from .keymap import get_hotkey_entry_item
+# from .keymap import get_hotkey_entry_item
 
 
 def setDefaultTemp():
@@ -525,13 +525,15 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             wm = context.window_manager
             kc = wm.keyconfigs.user
             
+
+
             # Main Pie
-            sub_box = layout.box()
-            draw_key_item(kc, sub_box, 'Main Pie', 'wm.call_menu_pie', 'COLLISION_MT_pie_menu')
-            draw_key_item(kc, sub_box, 'Visibilitty Menu', 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel')
-            draw_key_item(kc, sub_box, 'Material Menu', 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')
-            row = sub_box.row(align = True)
-            row.operator('collision_tool.add_hotkey', text = "Reset Hotkeys")
+            # sub_box = layout.box()
+            # draw_key_item(kc, sub_box, 'Main Pie', 'wm.call_menu_pie', 'COLLISION_MT_pie_menu')
+            # draw_key_item(kc, sub_box, 'Visibilitty Menu', 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel')
+            # draw_key_item(kc, sub_box, 'Material Menu', 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')
+            # row = sub_box.row(align = True)
+            # row.operator('collision_tool.add_hotkey', text = "Reset Hotkeys")
             
         elif self.prefs_tabs == 'UI':
 
