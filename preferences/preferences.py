@@ -20,19 +20,31 @@ from .keymap import remove_key
 def update_pie_key(self, context):
     wm = bpy.context.window_manager
     km = context.window_manager.keyconfigs.addon.keymaps["Window"]
-    self.collision_pie_type = self.collision_pie_type.upper()
-    
+    collision_pie_type = self.collision_pie_type.upper()
+
     #Remove previous key assignment
     remove_key(context,'wm.call_menu_pie',"COLLISION_MT_pie_menu")
-
-    # TODO: make one function that can be called from all button changes
-    kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=self.collision_pie_type, value='PRESS', ctrl=self.collision_pie_ctrl, shift=self.collision_pie_shift, alt=self.collision_pie_alt)
+    
+    # list_valid_keyitem = []
+    # for keyitem in list(bpy.types.Event.bl_rna.properties['type'].enum_items):
+    #     list_valid_keyitem.append(keyitem.name)
+    # print('Keymap list = ' + str(list_valid_keyitem))
+    
+    # if collision_pie_type not in list_valid_keyitem:
+    #     collision_pie_type = 'NONE'
+    # else:
+    #     collision_pie_type = collision_pie_type
+        
+    kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=collision_pie_type, value='PRESS', ctrl=self.collision_pie_ctrl, shift=self.collision_pie_shift, alt=self.collision_pie_alt)
     kmi.properties.name = "COLLISION_MT_pie_menu"
     kmi.active = True
+    self.collision_pie_type = collision_pie_type
 
 def update_pie_hotkey(self, context):
-    #TODO: safety check
-    km = context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
+    wm = bpy.context.window_manager
+    km = wm.keyconfigs.addon.keymaps["Window"]
+
+
     kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=self.collision_pie_type, value='PRESS', ctrl=self.collision_pie_ctrl, shift=self.collision_pie_shift, alt=self.collision_pie_alt)
     kmi.properties.name = "COLLISION_MT_pie_menu"
     kmi.active = self.collision_pie_active
