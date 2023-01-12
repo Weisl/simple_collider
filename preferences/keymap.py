@@ -57,7 +57,7 @@ class REMOVE_OT_hotkey(bpy.types.Operator):
 
         prefs = context.preferences.addons[__package__.split('.')[
             0]].preferences
-        prefs.collision_pie_type = ""
+        prefs.collision_pie_type = "NONE"
         prefs.collision_pie_ctrl = False
         prefs.collision_pie_shift = False
         prefs.collision_pie_alt = False

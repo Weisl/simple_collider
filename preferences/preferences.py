@@ -129,6 +129,7 @@ class BUTTON_OT_change_key(bpy.types.Operator):
     """My Button Operator"""
     bl_idname = "collider.key_selection_button"
     bl_label = "Press the button you want to assign to this operation."
+    bl_options = {'REGISTER','INTERNAL'}
 
     menu_id: bpy.props.StringProperty()
 
@@ -144,16 +145,21 @@ class BUTTON_OT_change_key(bpy.types.Operator):
         self.my_type = ''
         if self.menu_id == 'collision_pie':
             self.my_type = self.prefs.collision_pie_type 
+            self.prefs.collision_pie_type = 'NONE'
         elif self.menu_id == 'collision_material':
             self.my_type = self.prefs.collision_material_type 
+            self.prefs.collision_material_type = 'NONE'
         elif self.menu_id == 'collision_visibility':
             self.my_type = self.prefs.collision_visibility_type
+            self.prefs.collision_visibility_type = 'NONE'
+        
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         print('modal')
         self.my_event = 'NONE'
+
         if event.type and event.value=='RELEASE':  # Apply
             self.my_event = event.type
 
@@ -590,7 +596,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         col = split.column()
         row = col.row(align=True)
-        op = row.operator("collider.key_selection_button", text= bpy.types.Event.bl_rna.properties['type'].enum_items[event_type].name)
+        text = (
+            bpy.types.Event.bl_rna.properties['type'].enum_items[event_type].name
+            if event_type != 'NONE'
+            else 'PRESS BUTTON'
+        )
+        op = row.operator("collider.key_selection_button", text= text)
         op.menu_id = property_prefix
         # row.prop(self, f'{property_prefix}_type', text="")
         op = row.operator("collision.remove_hotkey", text="", icon="X")
