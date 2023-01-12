@@ -49,7 +49,7 @@ def update_visibility_key(self, context):
     #Remove previous key assignment
     remove_key(context,'wm.call_panel', "VIEW3D_PT_collission_visibility_panel")
     add_key(self, km, 'wm.call_panel', "VIEW3D_PT_collission_visibility_panel", collision_visibility_type, self.collision_visibility_ctrl, self.collision_visibility_shift, self.collision_visibility_alt)
-    self.collision_pie_type = collision_pie_type
+    self.collision_visibility_type = collision_visibility_type
 
 def update_material_key(self, context):
     wm = bpy.context.window_manager
@@ -59,7 +59,7 @@ def update_material_key(self, context):
     #Remove previous key assignment
     remove_key(context, 'wm.call_panel', "VIEW3D_PT_collission_material_panel")
     add_key(self, km, 'wm.call_panel', "VIEW3D_PT_collission_material_panel", collision_material_type, self.collision_material_ctrl, self.collision_material_shift, self.collision_material_alt)
-    self.collision_pie_type = collision_pie_type
+    self.collision_material_type = collision_material_type
 
 
 # def update_pie_hotkey(self, context):
