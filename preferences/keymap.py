@@ -8,9 +8,9 @@ def add_keymap():
 
     kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=prefs.collision_pie_type, value='PRESS', ctrl=prefs.collision_pie_ctrl, shift=prefs.collision_pie_shift, alt=prefs.collision_pie_alt)
     add_key_to_keymap("COLLISION_MT_pie_menu", kmi, km)
-    kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True)
+    kmi = km.keymap_items.new(idname='wm.call_panel', type=prefs.collision_visibility_type, value='PRESS', ctrl=prefs.collision_visibility_ctrl, shift=prefs.collision_visibility_shift, alt=prefs.collision_visibility_alt)
     add_key_to_keymap('VIEW3D_PT_collission_visibility_panel', kmi, km)
-    kmi = km.keymap_items.new(idname='wm.call_panel', type='P', value='PRESS', shift=True, ctrl=True)
+    kmi = km.keymap_items.new(idname='wm.call_panel', type=prefs.collision_material_type, value='PRESS', ctrl=prefs.collision_material_ctrl, shift=prefs.collision_material_shift, alt=prefs.collision_material_alt)
     add_key_to_keymap('VIEW3D_PT_collission_material_panel', kmi, km)
 
 

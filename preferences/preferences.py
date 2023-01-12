@@ -16,6 +16,20 @@ from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
 from .keymap import remove_key
 
+def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie_ctrl, collision_pie_shift, collision_pie_alt):
+    kmi = km.keymap_items.new(idname=idname, type=collision_pie_type, value='PRESS', ctrl=collision_pie_ctrl, shift=collision_pie_shift, alt=collision_pie_alt)
+    kmi.properties.name = properties_name
+    kmi.active = True
+
+# list_valid_keyitem = []
+# for keyitem in list(bpy.types.Event.bl_rna.properties['type'].enum_items):
+#     list_valid_keyitem.append(keyitem.name)
+# print('Keymap list = ' + str(list_valid_keyitem))
+
+# if collision_pie_type not in list_valid_keyitem:
+#     collision_pie_type = 'NONE'
+# else:
+#     collision_pie_type = collision_pie_type
 
 def update_pie_key(self, context):
     wm = bpy.context.window_manager
@@ -24,30 +38,41 @@ def update_pie_key(self, context):
 
     #Remove previous key assignment
     remove_key(context,'wm.call_menu_pie',"COLLISION_MT_pie_menu")
-    
-    # list_valid_keyitem = []
-    # for keyitem in list(bpy.types.Event.bl_rna.properties['type'].enum_items):
-    #     list_valid_keyitem.append(keyitem.name)
-    # print('Keymap list = ' + str(list_valid_keyitem))
-    
-    # if collision_pie_type not in list_valid_keyitem:
-    #     collision_pie_type = 'NONE'
-    # else:
-    #     collision_pie_type = collision_pie_type
-        
-    kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=collision_pie_type, value='PRESS', ctrl=self.collision_pie_ctrl, shift=self.collision_pie_shift, alt=self.collision_pie_alt)
-    kmi.properties.name = "COLLISION_MT_pie_menu"
-    kmi.active = True
+    add_key(self, km, 'wm.call_menu_pie',"COLLISION_MT_pie_menu",collision_pie_type, self.collision_pie_ctrl, self.collision_pie_shift, self.collision_pie_alt)
     self.collision_pie_type = collision_pie_type
 
-def update_pie_hotkey(self, context):
+def update_visibility_key(self, context):
     wm = bpy.context.window_manager
-    km = wm.keyconfigs.addon.keymaps["Window"]
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    collision_visibility_type = self.collision_visibility_type.upper()
+
+    #Remove previous key assignment
+    remove_key(context,'wm.call_panel', "VIEW3D_PT_collission_visibility_panel")
+    add_key(self, km, 'wm.call_panel', "VIEW3D_PT_collission_visibility_panel", collision_visibility_type, self.collision_visibility_ctrl, self.collision_visibility_shift, self.collision_visibility_alt)
+    self.collision_pie_type = collision_pie_type
+
+def update_material_key(self, context):
+    wm = bpy.context.window_manager
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    collision_material_type = self.collision_material_type.upper()
+
+    #Remove previous key assignment
+    remove_key(context, 'wm.call_panel', "VIEW3D_PT_collission_material_panel")
+    add_key(self, km, 'wm.call_panel', "VIEW3D_PT_collission_material_panel", collision_material_type, self.collision_material_ctrl, self.collision_material_shift, self.collision_material_alt)
+    self.collision_pie_type = collision_pie_type
 
 
-    kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=self.collision_pie_type, value='PRESS', ctrl=self.collision_pie_ctrl, shift=self.collision_pie_shift, alt=self.collision_pie_alt)
-    kmi.properties.name = "COLLISION_MT_pie_menu"
-    kmi.active = self.collision_pie_active
+# def update_pie_hotkey(self, context):
+#     wm = bpy.context.window_manager
+#     km = wm.keyconfigs.addon.keymaps["Window"]
+
+#     kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=self.collision_pie_type, value='PRESS', ctrl=self.collision_pie_ctrl, shift=self.collision_pie_shift, alt=self.collision_pie_alt)
+#     kmi.properties.name = "COLLISION_MT_pie_menu"
+#     kmi.active = self.collision_pie_active
+
+
+
+
 
 def setDefaultTemp():
     system_temp_dir = gettempdir()
@@ -159,7 +184,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # KEYMAP
 
     collision_pie_type : bpy.props.StringProperty(
-        name="Collision Pie Key",
+        name="Collider Pie Menu",
         default="C",
         update=update_pie_key
     )
@@ -167,25 +192,84 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     collision_pie_ctrl : bpy.props.BoolProperty(
         name="Ctrl",
         default=True,
-        update=update_pie_hotkey
+        update=update_pie_key
     )
 
     collision_pie_shift : bpy.props.BoolProperty(
         name="Shift",
         default=True,
-        update=update_pie_hotkey
+        update=update_pie_key
     )
     collision_pie_alt : bpy.props.BoolProperty(
         name="Alt",
         default=False,
-        update=update_pie_hotkey
+        update=update_pie_key
     )
 
     collision_pie_active : bpy.props.BoolProperty(
         name="Active",
         default=True,
-        update=update_pie_hotkey
+        update=update_pie_key
     )
+
+    collision_visibility_type : bpy.props.StringProperty(
+        name="Visibility Menu",
+        default="P",
+        update=update_visibility_key
+    )
+
+    collision_visibility_ctrl : bpy.props.BoolProperty(
+        name="Ctrl",
+        default=False,
+        update=update_visibility_key
+    )
+
+    collision_visibility_shift : bpy.props.BoolProperty(
+        name="Shift",
+        default=True,
+        update=update_visibility_key
+    )
+    collision_visibility_alt : bpy.props.BoolProperty(
+        name="Alt",
+        default=False,
+        update=update_visibility_key
+    )
+
+    collision_visibility_active : bpy.props.BoolProperty(
+        name="Active",
+        default=True,
+        update=update_visibility_key
+    )
+
+    collision_material_type : bpy.props.StringProperty(
+        name="Material Menu",
+        default="P",
+        update=update_material_key
+    )
+
+    collision_material_ctrl : bpy.props.BoolProperty(
+        name="Ctrl",
+        default=True,
+        update=update_material_key
+    )
+
+    collision_material_shift : bpy.props.BoolProperty(
+        name="Shift",
+        default=True,
+        update=update_material_key
+    )
+    collision_material_alt : bpy.props.BoolProperty(
+        name="Alt",
+        default=False,
+        update=update_material_key
+    )
+
+    collision_material_active : bpy.props.BoolProperty(
+        name="Active",
+        default=True,
+        update=update_material_key
+    )
+
 
 
     ###################################################################
@@ -465,8 +549,31 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "shading_mode",
     ]
 
-    # here you specify how they are drawn
+    
+    def keymap_ui(self, layout, title, property_prefix, id_name, properties_name):            
+        
+        box = layout.box()
+        split = box.split(align=True, factor=0.5)
+        col = split.column()
+        row = col.row(align=True)
+        row.prop(self, f'{property_prefix}_active', text="")
+        row.label(text=title)
 
+        col = split.column()
+        row = col.row(align=True)
+        row.prop(self, f'{property_prefix}_type', text="")
+        op = row.operator("collision.remove_hotkey", text="", icon="X")
+        op.idname = id_name
+        op.properties_name = properties_name
+
+        row = col.row(align=True)
+        row.prop(self, f'{property_prefix}_ctrl')
+        row.prop(self, f'{property_prefix}_shift')
+        row.prop(self, f'{property_prefix}_alt')
+        return 
+
+
+    # here you specify how they are drawn   
     def draw(self, context):
         layout = self.layout
 
@@ -569,25 +676,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         elif self.prefs_tabs == 'KEYMAP':
             wm = context.window_manager
-
-            split = layout.split(align=True, factor=0.5)
-            col = split.column()
-            row = col.row(align=True)
-            row.prop(self, 'collision_pie_active', text="")
-            row.label(text='Collider Pie Menu')
             
-            col = split.column()
-            row = col.row(align=True)
-            row.prop(self, 'collision_pie_type', text="")
-            op = row.operator("collision.remove_hotkey", text="", icon="X")
-            op.idname = 'wm.call_menu_pie'
-            op.properties_name = "COLLISION_MT_pie_menu"
+            self.keymap_ui(layout, 'Collider Pie Menu', 'collision_pie', 'wm.call_menu_pie', "COLLISION_MT_pie_menu")      
+            self.keymap_ui(layout, 'Visibility Menu', 'collision_visibility', 'wm.call_panel', "VIEW3D_PT_collission_visibility_panel")      
+            self.keymap_ui(layout, 'Material Menu', 'collision_material', 'wm.call_panel', "VIEW3D_PT_collission_material_panel")      
 
-            row = col.row(align=True)
-            row.prop(self, 'collision_pie_ctrl')
-            row.prop(self, 'collision_pie_shift')
-            row.prop(self, 'collision_pie_alt')
-     
+    
         elif self.prefs_tabs == 'UI':
 
             row = layout.row()
