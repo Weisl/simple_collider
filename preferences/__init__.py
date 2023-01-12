@@ -11,6 +11,7 @@ from .preferences import update_panel_category
 classes = (
     properties.ColliderTools_Properties,
     naming_preset.COLLISION_preset,
+    preferences.BUTTON_OT_change_key,
     preferences.CollisionAddonPrefs,
     keymap.REMOVE_OT_hotkey,
 )

@@ -10,25 +10,25 @@ def add_keymap():
 
     kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=prefs.collision_pie_type, value='PRESS',
                               ctrl=prefs.collision_pie_ctrl, shift=prefs.collision_pie_shift, alt=prefs.collision_pie_alt)
-    add_key_to_keymap("COLLISION_MT_pie_menu", kmi, km)
+    add_key_to_keymap("COLLISION_MT_pie_menu", kmi, km, active=prefs.collision_pie_active)
     kmi = km.keymap_items.new(idname='wm.call_panel', type=prefs.collision_visibility_type, value='PRESS',
                               ctrl=prefs.collision_visibility_ctrl, shift=prefs.collision_visibility_shift, alt=prefs.collision_visibility_alt)
-    add_key_to_keymap('VIEW3D_PT_collission_visibility_panel', kmi, km)
+    add_key_to_keymap('VIEW3D_PT_collision_visibility_panel', kmi, km, active=prefs.collision_visibility_active)
     kmi = km.keymap_items.new(idname='wm.call_panel', type=prefs.collision_material_type, value='PRESS',
                               ctrl=prefs.collision_material_ctrl, shift=prefs.collision_material_shift, alt=prefs.collision_material_alt)
-    add_key_to_keymap('VIEW3D_PT_collission_material_panel', kmi, km)
+    add_key_to_keymap('VIEW3D_PT_collision_material_panel', kmi, km, active=prefs.collision_material_active)
 
 
-def add_key_to_keymap(idname, kmi, km):
+def add_key_to_keymap(idname, kmi, km, active=True):
     kmi.properties.name = idname
-    kmi.active = True
+    kmi.active = active
     keys.append((km, kmi))
 
 
 def remove_keymap():
     # only works for menues and pie menus
     for km, kmi in keys:
-        if hasattr(kmi.properties, 'name') and kmi.properties.name in ['COLLISION_MT_pie_menu', 'VIEW3D_PT_collission_visibility_panel', 'VIEW3D_PT_collission_material_panel']:
+        if hasattr(kmi.properties, 'name') and kmi.properties.name in ['COLLISION_MT_pie_menu', 'VIEW3D_PT_collision_visibility_panel', 'VIEW3D_PT_collision_material_panel']:
             km.keymap_items.remove(kmi)
     keys.clear()
 
