@@ -599,7 +599,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         text = (
             bpy.types.Event.bl_rna.properties['type'].enum_items[event_type].name
             if event_type != 'NONE'
-            else 'PRESS BUTTON'
+            else 'Press a key'
         )
         op = row.operator("collider.key_selection_button", text= text)
         op.menu_id = property_prefix
