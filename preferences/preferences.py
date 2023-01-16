@@ -4,18 +4,59 @@ from pathlib import Path
 from tempfile import gettempdir
 
 import bpy
-import rna_keymap_ui
 
 from .naming_preset import COLLISION_preset
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
-from ..ui.properties_panels import VIEW3D_PT_collission_material_panel
-from ..ui.properties_panels import VIEW3D_PT_collission_settings_panel
-from ..ui.properties_panels import VIEW3D_PT_collission_panel
-from ..ui.properties_panels import VIEW3D_PT_collission_visibility_panel
+from ..ui.properties_panels import VIEW3D_PT_collision_material_panel
+from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
+from ..ui.properties_panels import VIEW3D_PT_collision_panel
+from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
-from .keymap import get_hotkey_entry_item
+from .keymap import remove_key
+
+
+def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie_ctrl, collision_pie_shift, collision_pie_alt, collision_pie_active):
+    kmi = km.keymap_items.new(idname=idname, type=collision_pie_type, value='PRESS',
+                              ctrl=collision_pie_ctrl, shift=collision_pie_shift, alt=collision_pie_alt)
+    kmi.properties.name = properties_name
+    kmi.active = collision_pie_active
+
+def update_pie_key(self, context):
+    wm = bpy.context.window_manager
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    collision_pie_type = self.collision_pie_type.upper()
+
+    # Remove previous key assignment
+    remove_key(context, 'wm.call_menu_pie', "COLLISION_MT_pie_menu")
+    add_key(self, km, 'wm.call_menu_pie', "COLLISION_MT_pie_menu", collision_pie_type,
+            self.collision_pie_ctrl, self.collision_pie_shift, self.collision_pie_alt, self.collision_pie_active)
+    self.collision_pie_type = collision_pie_type
+
+
+def update_visibility_key(self, context):
+    wm = bpy.context.window_manager
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    collision_visibility_type = self.collision_visibility_type.upper()
+
+    # Remove previous key assignment
+    remove_key(context, 'wm.call_panel',
+               "VIEW3D_PT_collision_visibility_panel")
+    add_key(self, km, 'wm.call_panel', "VIEW3D_PT_collision_visibility_panel", collision_visibility_type,
+            self.collision_visibility_ctrl, self.collision_visibility_shift, self.collision_visibility_alt, self.collision_visibility_active)
+    self.collision_visibility_type = collision_visibility_type
+
+def update_material_key(self, context):
+    wm = bpy.context.window_manager
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    collision_material_type = self.collision_material_type.upper()
+
+    # Remove previous key assignment
+    remove_key(context, 'wm.call_panel', "VIEW3D_PT_collision_material_panel")
+    add_key(self, km, 'wm.call_panel', "VIEW3D_PT_collision_material_panel", collision_material_type,
+            self.collision_material_ctrl, self.collision_material_shift, self.collision_material_alt, self.collision_material_active)
+    self.collision_material_type = collision_material_type
 
 
 def setDefaultTemp():
@@ -33,17 +74,17 @@ def setDefaultTemp():
 def update_panel_category(self, context):
     '''Update panel tab for collider tools'''
     panelNames = [
-        'VIEW3D_PT_collission_panel',
-        'VIEW3D_PT_collission_settings_panel',
-        'VIEW3D_PT_collission_visibility_panel',
-        'VIEW3D_PT_collission_material_panel',
+        'VIEW3D_PT_collision_panel',
+        'VIEW3D_PT_collision_settings_panel',
+        'VIEW3D_PT_collision_visibility_panel',
+        'VIEW3D_PT_collision_material_panel',
     ]
 
     panels = [
-        VIEW3D_PT_collission_panel,
-        VIEW3D_PT_collission_settings_panel,
-        VIEW3D_PT_collission_visibility_panel,
-        VIEW3D_PT_collission_material_panel,
+        VIEW3D_PT_collision_panel,
+        VIEW3D_PT_collision_settings_panel,
+        VIEW3D_PT_collision_visibility_panel,
+        VIEW3D_PT_collision_material_panel,
     ]
     for panel in panelNames:
         is_panel = hasattr(bpy.types, panel)
@@ -84,16 +125,59 @@ def get_default_executable_path():
     # if folder or file does not exist, return empty string
     return ''
 
+class BUTTON_OT_change_key(bpy.types.Operator):
+    """My Button Operator"""
+    bl_idname = "collider.key_selection_button"
+    bl_label = "Press the button you want to assign to this operation."
+    bl_options = {'REGISTER','INTERNAL'}
 
-def draw_key_item(kc, layout, title, kmi_name, kmi_value):
-        
-    row = layout.row(align=True)
-    row.label(text=title)
-    km = kc.keymaps['3D View Generic']
-    kmi = get_hotkey_entry_item(km, kmi_name, kmi_value, 'name')
-    if kmi:
-        layout.context_pointer_set("keymap", km)
-        rna_keymap_ui.draw_kmi([], kc, km, kmi, layout, 0)
+    menu_id: bpy.props.StringProperty()
+
+    my_event: bpy.props.StringProperty()
+    my_type: bpy.props.StringProperty()
+
+    def __init__(self):
+        self.my_event = ''
+
+    def invoke(self, context, event):
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        self.prefs = prefs
+        self.my_type = ''
+        if self.menu_id == 'collision_pie':
+            self.my_type = self.prefs.collision_pie_type 
+            self.prefs.collision_pie_type = 'NONE'
+        elif self.menu_id == 'collision_material':
+            self.my_type = self.prefs.collision_material_type 
+            self.prefs.collision_material_type = 'NONE'
+        elif self.menu_id == 'collision_visibility':
+            self.my_type = self.prefs.collision_visibility_type
+            self.prefs.collision_visibility_type = 'NONE'
+
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        print('modal')
+        self.my_event = 'NONE'
+
+        if event.type and event.value=='RELEASE':  # Apply
+            self.my_event = event.type
+
+            if self.menu_id == 'collision_pie':
+                self.prefs.collision_pie_type = self.my_event
+            elif self.menu_id == 'collision_material':
+                self.prefs.collision_material_type = self.my_event
+            elif self.menu_id == 'collision_visibility':
+                self.prefs.collision_visibility_type= self.my_event
+
+            self.execute(context)
+            return {'FINISHED'}
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        self.report({'INFO'}, "Key change: " + bpy.types.Event.bl_rna.properties['type'].enum_items[self.my_event].name)
+        return {'FINISHED'}
+
 
 
 
@@ -133,6 +217,96 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_collection_name: bpy.props.StringProperty(name='Collection Name',
                                                   description='Name of the collider collection newly created collisions are added to',
                                                   default='Collisions')
+
+    ###################################################################
+    # KEYMAP
+
+    collision_pie_type: bpy.props.StringProperty(
+        name="Collider Pie Menu",
+        default="C",
+        update=update_pie_key
+    )
+
+    collision_pie_ctrl: bpy.props.BoolProperty(
+        name="Ctrl",
+        default=True,
+        update=update_pie_key
+    )
+
+    collision_pie_shift: bpy.props.BoolProperty(
+        name="Shift",
+        default=True,
+        update=update_pie_key
+    )
+    collision_pie_alt: bpy.props.BoolProperty(
+        name="Alt",
+        default=False,
+        update=update_pie_key
+    )
+
+    collision_pie_active: bpy.props.BoolProperty(
+        name="Active",
+        default=True,
+        update=update_pie_key
+    )
+
+    collision_visibility_type: bpy.props.StringProperty(
+        name="Visibility Menu",
+        default="P",
+        update=update_visibility_key
+    )
+
+    collision_visibility_ctrl: bpy.props.BoolProperty(
+        name="Ctrl",
+        default=False,
+        update=update_visibility_key
+    )
+
+    collision_visibility_shift: bpy.props.BoolProperty(
+        name="Shift",
+        default=True,
+        update=update_visibility_key
+    )
+    collision_visibility_alt: bpy.props.BoolProperty(
+        name="Alt",
+        default=False,
+        update=update_visibility_key
+    )
+
+    collision_visibility_active: bpy.props.BoolProperty(
+        name="Active",
+        default=True,
+        update=update_visibility_key
+    )
+
+    collision_material_type: bpy.props.StringProperty(
+        name="Material Menu",
+        default="P",
+        update=update_material_key
+    )
+
+    collision_material_ctrl: bpy.props.BoolProperty(
+        name="Ctrl",
+        default=True,
+        update=update_material_key
+    )
+
+    collision_material_shift: bpy.props.BoolProperty(
+        name="Shift",
+        default=True,
+        update=update_material_key
+    )
+    collision_material_alt: bpy.props.BoolProperty(
+        name="Alt",
+        default=False,
+        update=update_material_key
+    )
+
+    collision_material_active: bpy.props.BoolProperty(
+        name="Active",
+        default=True,
+        update=update_material_key
+    )
 
     ###################################################################
     # PRESETS
@@ -314,14 +488,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     default=False,
                                                     description="If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default")
 
-    # Not exposed VHACD values.
-    # -g <true/false>         : If set to false, no logging will be displayed.
-    # vhacd_displayLogging: bpy.props.BoolProperty(name="Show Log",
-    #                                              description="If set to false, no logging will be displayed.",
-    #                                              default=True)
-    # -a description = "Whether or not to run asynchronously. Default is 'true'"
-    # -o <obj/stl/usda>       : Export the convex hulls as a series of wavefront OBJ files, STL files, or a single USDA.
-
     wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
                                            items=(('OFF', "Off",
                                                    "Colliders show no wireframes"),
@@ -418,6 +584,36 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "wireframe_mode",
         "shading_mode",
     ]
+
+    def keymap_ui(self, layout, title, property_prefix, id_name, properties_name, event_type):
+
+        box = layout.box()
+        split = box.split(align=True, factor=0.5)
+        col = split.column()
+        row = col.row(align=True)
+        row.prop(self, f'{property_prefix}_active', text="")
+        row.label(text=title)
+
+        col = split.column()
+        row = col.row(align=True)
+        text = (
+            bpy.types.Event.bl_rna.properties['type'].enum_items[event_type].name
+            if event_type != 'NONE'
+            else 'Press a key'
+        )
+        op = row.operator("collider.key_selection_button", text= text)
+        op.menu_id = property_prefix
+        # row.prop(self, f'{property_prefix}_type', text="")
+        op = row.operator("collision.remove_hotkey", text="", icon="X")
+        op.idname = id_name
+        op.properties_name = properties_name
+        op.property_prefix = property_prefix
+
+        row = col.row(align=True)
+        row.prop(self, f'{property_prefix}_ctrl')
+        row.prop(self, f'{property_prefix}_shift')
+        row.prop(self, f'{property_prefix}_alt')
+        return
 
     # here you specify how they are drawn
 
@@ -523,16 +719,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         elif self.prefs_tabs == 'KEYMAP':
             wm = context.window_manager
-            kc = wm.keyconfigs.user
-            
-            # Main Pie
-            sub_box = layout.box()
-            draw_key_item(kc, sub_box, 'Main Pie', 'wm.call_menu_pie', 'COLLISION_MT_pie_menu')
-            draw_key_item(kc, sub_box, 'Visibilitty Menu', 'wm.call_panel', 'VIEW3D_PT_collission_visibility_panel')
-            draw_key_item(kc, sub_box, 'Material Menu', 'wm.call_panel', 'VIEW3D_PT_collission_material_panel')
-            row = sub_box.row(align = True)
-            row.operator('collision_tool.add_hotkey', text = "Reset Hotkeys")
-            
+
+            self.keymap_ui(layout, 'Collider Pie Menu', 'collision_pie',
+                           'wm.call_menu_pie', "COLLISION_MT_pie_menu", self.collision_pie_type)
+            self.keymap_ui(layout, 'Visibility Menu', 'collision_visibility',
+                           'wm.call_panel', "VIEW3D_PT_collision_visibility_panel", self.collision_visibility_type)
+            self.keymap_ui(layout, 'Material Menu', 'collision_material',
+                           'wm.call_panel', "VIEW3D_PT_collision_material_panel", self.collision_material_type)
+
         elif self.prefs_tabs == 'UI':
 
             row = layout.row()
