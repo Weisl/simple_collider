@@ -254,7 +254,7 @@ class OBJECT_MT_collision_presets(Menu):
 
 ############## PANELS ##############################
 
-class VIEW3D_PT_collission(bpy.types.Panel):
+class VIEW3D_PT_collision(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
 
     bl_space_type = 'VIEW_3D'
@@ -262,7 +262,7 @@ class VIEW3D_PT_collission(bpy.types.Panel):
     bl_category = "Collider Tools"
 
 
-class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
+class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
     bl_label = "Collider Tools"
 
@@ -296,7 +296,7 @@ class VIEW3D_PT_collission_panel(VIEW3D_PT_collission):
         draw_creation_menu(context, layout, settings=True)
 
 
-class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
+class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
 
     # bl_label = "Collider Groups"
@@ -324,7 +324,7 @@ class VIEW3D_PT_collission_visibility_panel(VIEW3D_PT_collission):
 
         layout.separator()
 
-class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
+class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
 
     bl_label = "Tool Defaults"
@@ -358,7 +358,7 @@ class VIEW3D_PT_collission_settings_panel(VIEW3D_PT_collission):
         
 
 
-class VIEW3D_PT_collission_material_panel(VIEW3D_PT_collission):
+class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
 
     # bl_label = "Physics Materials"
