@@ -152,7 +152,7 @@ class BUTTON_OT_change_key(bpy.types.Operator):
         elif self.menu_id == 'collision_visibility':
             self.my_type = self.prefs.collision_visibility_type
             self.prefs.collision_visibility_type = 'NONE'
-        
+
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -607,6 +607,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         op = row.operator("collision.remove_hotkey", text="", icon="X")
         op.idname = id_name
         op.properties_name = properties_name
+        op.property_prefix = property_prefix
 
         row = col.row(align=True)
         row.prop(self, f'{property_prefix}_ctrl')
