@@ -17,7 +17,7 @@ class COLLISION_preset(AddPresetBase, Operator):
     preset_values = [
         "prefs.naming_position",
         "prefs.replace_name",
-        "prefs.basename",
+        "prefs.obj_basename",
         "prefs.separator",
         "prefs.collision_string_prefix",
         "prefs.collision_string_suffix",
