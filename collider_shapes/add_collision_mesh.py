@@ -16,6 +16,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_weld_modifier = True
         self.shape = "mesh_shape"
+        self.use_physicsmaterials_overwrite = True
 
     def invoke(self, context, event):
         super().invoke(context, event)

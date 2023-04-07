@@ -139,6 +139,7 @@ def draw_viewport_overlay(self, context):
     value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
+    # creation mode == SELECTION or INDIVIDUAL
     if self.use_creation_mode:
         label = "Creation Mode "
         value = self.creation_mode[self.creation_mode_idx]
@@ -167,6 +168,10 @@ def draw_viewport_overlay(self, context):
     label = "Toggle X Ray "
     value = str(self.x_ray)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)', type='bool')
+
+    label = "Use Physics Materials"
+    value = str(self.physicsmaterials_use)
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
     label = "Opacity"
     value = self.current_settings_dic['alpha']
@@ -750,7 +755,8 @@ class OBJECT_OT_add_bounding_object():
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
-        set_physics_material(bounding_object, mat_name)
+        if self.physicsmaterials_use:
+            set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx]
@@ -878,21 +884,26 @@ class OBJECT_OT_add_bounding_object():
         
     def __init__(self):
         # has to be in --init
+
+        # operator settings
         self.is_mesh_to_collider = False
+
+        # modal settings
         self.use_decimation = False
         self.use_geo_nodes_hull = False
-
         self.use_vertex_count = False
         self.use_modifier_stack = False
         self.use_weld_modifier = False
-
         self.use_space = False
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
-        self.shape = ''
         self.use_shape_change = False
         self.use_creation_mode = True
+        self.use_physicsmaterials_overwrite = False
+
+        # default shape init
+        self.shape = ''
 
         # UI/UX
         self.ignore_input = False
@@ -971,6 +982,9 @@ class OBJECT_OT_add_bounding_object():
 
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
+
+        #Should physics materials be assigned or not.
+        self.physicsmaterials_use = True
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
@@ -1105,6 +1119,10 @@ class OBJECT_OT_add_bounding_object():
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
+            self.execute(context)
+
+        elif event.type == 'O' and event.value == 'RELEASE':
+            self.physicsmaterials_use = not self.physicsmaterials_use
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':
