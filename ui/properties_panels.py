@@ -108,6 +108,14 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
     op.select = True
     op.mode = group_identifier
 
+    # colSettings = context.scene.collider_tools
+    #
+    # Test disabling deleting all objects
+    # if group_identifier == 'OBJECTS':
+    #     row.enabled = False
+    # else:
+    #     row.enabled = True
+
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier
 
@@ -164,7 +172,6 @@ def draw_creation_menu(context, layout, settings=False):
     row.label(text='Display as')
     row.prop(colSettings, 'display_type', text='')
     row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
-
 
 def draw_naming_presets(self, context):
     layout = self.layout
@@ -321,7 +328,6 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision):
         scene = context.scene
 
         draw_visibility_selection_menu(context, layout)
-
         layout.separator()
 
 class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
@@ -430,6 +436,18 @@ class VIEW3D_MT_PIE_template(Menu):
         b = split.box()
         column = b.column()
         column.menu_contents("VIEW3D_MT_collision_creation")
+
+        split_factor = 0.7
+
+        split_left = column.split(factor=split_factor, align=True)
+        col_01 = split_left.column(align=True)
+        col_02 = split_left.column(align=True)
+
+        colSettings = context.scene.collider_tools
+
+        draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02)
+        draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02)
+
 
         # North
         pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
