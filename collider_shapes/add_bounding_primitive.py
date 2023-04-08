@@ -1240,7 +1240,12 @@ class OBJECT_OT_add_bounding_object():
         # reset naming count:
         self.name_count = 0
 
-        self.obj_mode = context.object.mode
+        # Bug:
+        try:
+            self.obj_mode = context.object.mode
+        except AttributeError:
+            print("AttributeError: bug #328")
+
 
         # Remove objects from previous generation
         self.remove_objects(self.new_colliders_list)
