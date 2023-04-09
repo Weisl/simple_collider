@@ -73,7 +73,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.is_mesh_to_collider = True
         self.use_creation_mode = False
         self.shape = 'mesh_shape'
-        self.use_original_material_overwrite = False
+        self.use_original_material_overwrite = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
