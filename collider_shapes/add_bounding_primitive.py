@@ -166,7 +166,7 @@ def draw_viewport_overlay(self, context):
                             type='bool')
 
     if self.use_original_material_overwrite:
-        label = "Use Physics Material"
+        label = "Use Mesh Materials"
         value = str(self.replace_with_physics_material)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
