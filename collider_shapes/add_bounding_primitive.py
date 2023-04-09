@@ -169,8 +169,8 @@ def draw_viewport_overlay(self, context):
     value = str(self.x_ray)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)', type='bool')
 
-    label = "Use Physics Materials"
-    value = str(self.physicsmaterials_use)
+    label = "Replace Materials"
+    value = str(self.replace_with_physics_material)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
     label = "Opacity"
@@ -755,7 +755,7 @@ class OBJECT_OT_add_bounding_object():
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
-        if self.physicsmaterials_use:
+        if self.replace_with_physics_material:
             set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
@@ -900,7 +900,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_sphere_segments = False
         self.use_shape_change = False
         self.use_creation_mode = True
-        self.use_physicsmaterials_overwrite = False
+        self.use_original_material_overwrite = False
 
         # default shape init
         self.shape = ''
@@ -984,7 +984,7 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
         #Should physics materials be assigned or not.
-        self.physicsmaterials_use = True
+        self.replace_with_physics_material = True
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
@@ -1122,7 +1122,7 @@ class OBJECT_OT_add_bounding_object():
             self.execute(context)
 
         elif event.type == 'O' and event.value == 'RELEASE':
-            self.physicsmaterials_use = not self.physicsmaterials_use
+            self.replace_with_physics_material = not self.replace_with_physics_material
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':
@@ -1245,7 +1245,6 @@ class OBJECT_OT_add_bounding_object():
             self.obj_mode = context.object.mode
         except AttributeError:
             print("AttributeError: bug #328")
-
 
         # Remove objects from previous generation
         self.remove_objects(self.new_colliders_list)
