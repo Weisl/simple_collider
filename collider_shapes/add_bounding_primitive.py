@@ -166,7 +166,7 @@ def draw_viewport_overlay(self, context):
                             type='bool')
 
     if self.use_original_material_overwrite:
-        label = "Replace Materials"
+        label = "Use Physics Material"
         value = str(self.replace_with_physics_material)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
@@ -987,7 +987,7 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
         #Should physics materials be assigned or not.
-        self.replace_with_physics_material = True
+        self.replace_with_physics_material = colSettings.default_replace_materials
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
