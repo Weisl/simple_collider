@@ -165,13 +165,16 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(P)',
                             type='bool')
 
+    if self.use_original_material_overwrite:
+        label = "Replace Materials"
+        value = str(self.replace_with_physics_material)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
+
+
+
     label = "Toggle X Ray "
     value = str(self.x_ray)
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)', type='bool')
-
-    label = "Replace Materials"
-    value = str(self.replace_with_physics_material)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
     label = "Opacity"
     value = self.current_settings_dic['alpha']
@@ -1121,7 +1124,7 @@ class OBJECT_OT_add_bounding_object():
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
-        elif event.type == 'O' and event.value == 'RELEASE':
+        elif event.type == 'O' and event.value == 'RELEASE' and self.use_original_material_overwrite:
             self.replace_with_physics_material = not self.replace_with_physics_material
             self.execute(context)
 
