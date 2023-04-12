@@ -165,7 +165,8 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(P)',
                             type='bool')
 
-    if self.use_keep_original_materials:
+    # mode check is here because keep original mesh doesn't work for EDIT mode atm.
+    if self.use_keep_original_materials and self.obj_mode == 'OBJECT':
         label = "Keep Original Materials"
         value = str(self.keep_original_material)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
@@ -758,7 +759,8 @@ class OBJECT_OT_add_bounding_object():
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
-        if self.keep_original_material == False:
+        # The or self.obj_mode == 'OBJECT' is here because the keep_original_material is currently not supported for 'EDIT' mode.
+        if self.keep_original_material == False or self.obj_mode != 'OBJECT':
             set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
@@ -867,12 +869,12 @@ class OBJECT_OT_add_bounding_object():
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         except ValueError:
             pass
-        
+
     def create_debug_object_from_verts(self, context, verts):
         bm = bmesh.new()
         for v in verts:
             bm.verts.new(v)  # add a new vert  
-        
+
         me = bpy.data.meshes.new("mesh")
         bm.to_mesh(me)
         bm.free()
@@ -881,10 +883,10 @@ class OBJECT_OT_add_bounding_object():
         debug_obj = bpy.data.objects.new('temp_debug_objects', me)
         # root_collection.objects.link(debug_obj)
         self.add_to_collections(debug_obj, 'Debug')
-        
+
         return debug_obj
-        
-        
+
+
     def __init__(self):
         # has to be in --init
 
@@ -1010,7 +1012,7 @@ class OBJECT_OT_add_bounding_object():
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
         # add modal handler
         context.window_manager.modal_handler_add(self)
-        
+
         self.execute(context)
 
     def modal(self, context, event):
@@ -1124,7 +1126,7 @@ class OBJECT_OT_add_bounding_object():
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
-        elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True:
+        elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True and self.obj_mode == 'OBJECT':
             self.keep_original_material = not self.keep_original_material
             self.execute(context)
 
