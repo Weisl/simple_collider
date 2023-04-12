@@ -108,8 +108,8 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    default=False,
                                                    description="Set the default for using the modifier stack or not when creating colliders.")
 
-    default_replace_materials: bpy.props.BoolProperty(name="Use Mesh Materials",
-                                               default=True,
+    default_keep_original_material: bpy.props.BoolProperty(name="Keep Original Materials",
+                                               default=False,
                                                description="Set the default for using the modifier stack or not when creating colliders.")
 
 

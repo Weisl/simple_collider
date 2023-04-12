@@ -347,7 +347,7 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
         row = layout.row(align=True)
-        row.prop(colSettings, "default_replace_materials")
+        row.prop(colSettings, "default_keep_original_material")
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop(colSettings, "default_space")

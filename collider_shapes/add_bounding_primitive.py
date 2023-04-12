@@ -165,9 +165,9 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(P)',
                             type='bool')
 
-    if self.use_original_material_overwrite:
-        label = "Use Mesh Materials"
-        value = str(self.replace_with_physics_material)
+    if self.use_keep_original_materials:
+        label = "Keep Original Materials"
+        value = str(self.keep_original_material)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
 
@@ -758,7 +758,7 @@ class OBJECT_OT_add_bounding_object():
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
-        if self.replace_with_physics_material:
+        if self.keep_original_material == False:
             set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
@@ -903,7 +903,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_sphere_segments = False
         self.use_shape_change = False
         self.use_creation_mode = True
-        self.use_original_material_overwrite = False
+        self.use_keep_original_materials = False
 
         # default shape init
         self.shape = ''
@@ -987,7 +987,7 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
         #Should physics materials be assigned or not.
-        self.replace_with_physics_material = colSettings.default_replace_materials
+        self.keep_original_material = colSettings.default_keep_original_material
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
@@ -1124,8 +1124,8 @@ class OBJECT_OT_add_bounding_object():
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
-        elif event.type == 'O' and event.value == 'RELEASE' and self.use_original_material_overwrite:
-            self.replace_with_physics_material = not self.replace_with_physics_material
+        elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True:
+            self.keep_original_material = not self.keep_original_material
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':

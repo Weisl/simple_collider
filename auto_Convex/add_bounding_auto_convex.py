@@ -85,7 +85,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_recenter_origin = True
         self.shape = 'convex_shape'
-        self.use_original_material_overwrite = False
 
     def invoke(self, context, event):
         super().invoke(context, event)
