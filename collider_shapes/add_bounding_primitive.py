@@ -139,6 +139,7 @@ def draw_viewport_overlay(self, context):
     value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
+    # creation mode == SELECTION or INDIVIDUAL
     if self.use_creation_mode:
         label = "Creation Mode "
         value = self.creation_mode[self.creation_mode_idx]
@@ -163,6 +164,14 @@ def draw_viewport_overlay(self, context):
         value = str(self.my_use_modifier_stack)
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(P)',
                             type='bool')
+
+    # mode check is here because keep original mesh doesn't work for EDIT mode atm.
+    if self.use_keep_original_materials and self.obj_mode == 'OBJECT':
+        label = "Keep Original Materials"
+        value = str(self.keep_original_material)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
+
+
 
     label = "Toggle X Ray "
     value = str(self.x_ray)
@@ -750,7 +759,9 @@ class OBJECT_OT_add_bounding_object():
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
-        set_physics_material(bounding_object, mat_name)
+        # The or self.obj_mode == 'OBJECT' is here because the keep_original_material is currently not supported for 'EDIT' mode.
+        if self.keep_original_material == False or self.obj_mode != 'OBJECT':
+            set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx]
@@ -858,12 +869,12 @@ class OBJECT_OT_add_bounding_object():
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         except ValueError:
             pass
-        
+
     def create_debug_object_from_verts(self, context, verts):
         bm = bmesh.new()
         for v in verts:
             bm.verts.new(v)  # add a new vert  
-        
+
         me = bpy.data.meshes.new("mesh")
         bm.to_mesh(me)
         bm.free()
@@ -872,27 +883,32 @@ class OBJECT_OT_add_bounding_object():
         debug_obj = bpy.data.objects.new('temp_debug_objects', me)
         # root_collection.objects.link(debug_obj)
         self.add_to_collections(debug_obj, 'Debug')
-        
+
         return debug_obj
-        
-        
+
+
     def __init__(self):
         # has to be in --init
+
+        # operator settings
         self.is_mesh_to_collider = False
+
+        # modal settings
         self.use_decimation = False
         self.use_geo_nodes_hull = False
-
         self.use_vertex_count = False
         self.use_modifier_stack = False
         self.use_weld_modifier = False
-
         self.use_space = False
         self.use_cylinder_axis = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
-        self.shape = ''
         self.use_shape_change = False
         self.use_creation_mode = True
+        self.use_keep_original_materials = False
+
+        # default shape init
+        self.shape = ''
 
         # UI/UX
         self.ignore_input = False
@@ -972,6 +988,9 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
+        #Should physics materials be assigned or not.
+        self.keep_original_material = colSettings.default_keep_original_material
+
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
 
@@ -993,7 +1012,7 @@ class OBJECT_OT_add_bounding_object():
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
         # add modal handler
         context.window_manager.modal_handler_add(self)
-        
+
         self.execute(context)
 
     def modal(self, context, event):
@@ -1105,6 +1124,10 @@ class OBJECT_OT_add_bounding_object():
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
+            self.execute(context)
+
+        elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True and self.obj_mode == 'OBJECT':
+            self.keep_original_material = not self.keep_original_material
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':
@@ -1222,7 +1245,11 @@ class OBJECT_OT_add_bounding_object():
         # reset naming count:
         self.name_count = 0
 
-        self.obj_mode = context.object.mode
+        # Bug:
+        try:
+            self.obj_mode = context.object.mode
+        except AttributeError:
+            print("AttributeError: bug #328")
 
         # Remove objects from previous generation
         self.remove_objects(self.new_colliders_list)
