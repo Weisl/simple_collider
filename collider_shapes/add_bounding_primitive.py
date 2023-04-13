@@ -66,6 +66,8 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
     elif type == 'key_title':
         if self.ignore_input or self.navigation:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+    elif type == 'disabled':
+        blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
     elif self.ignore_input or self.navigation:
         blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
     elif type == 'title':
@@ -90,6 +92,9 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
             blf.color(font_id, color_enum[0], color_enum[1], color_enum[2], color_enum[3])
         elif type == 'modal':
             blf.color(font_id, color_modal[0], color_modal[1], color_modal[2], color_modal[3])
+        elif type == 'disabled':
+            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
+                      color_ignore_input[3])
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
@@ -103,6 +108,9 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
                       color_ignore_input[3])
         elif highlight:
             blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+        elif type == 'disabled':
+            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
+                      color_ignore_input[3])
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
@@ -131,21 +139,26 @@ def draw_viewport_overlay(self, context):
 
     if self.use_space:
         label = "Global/Local"
-        value = "GLOBAL" if self.my_space == 'GLOBAL' else "LOCAL"
+        # Global/Local switch is currently only supported for cylindrical collider in Global Space
+        if self.shape == 'convex_shape' and self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            type = 'disabled'
+            value = "GLOBAL"
+        else:
+            type = 'enum'
+            value = "GLOBAL" if self.my_space == 'GLOBAL' else "LOCAL"
+
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(G/L)',
-                            type='enum')
+                            type=type)
 
     label = "Collider Group"
     value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
-    # creation mode == SELECTION or INDIVIDUAL
     if self.use_creation_mode:
         label = "Creation Mode "
         value = self.creation_mode[self.creation_mode_idx]
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)',
                             type='enum')
-
 
     if self.use_shape_change:
         label = "Collider Shape"
@@ -166,12 +179,13 @@ def draw_viewport_overlay(self, context):
                             type='bool')
 
     # mode check is here because keep original mesh doesn't work for EDIT mode atm.
-    if self.use_keep_original_materials and self.obj_mode == 'OBJECT':
+    if self.use_keep_original_materials:
         label = "Keep Original Materials"
         value = str(self.keep_original_material)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type='bool')
 
-
+        # Currently only supported in OBJECT mode
+        type = 'bool' if self.obj_mode == 'OBJECT' else 'disabled'
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type=type)
 
     label = "Toggle X Ray "
     value = str(self.x_ray)
@@ -886,7 +900,6 @@ class OBJECT_OT_add_bounding_object():
 
         return debug_obj
 
-
     def __init__(self):
         # has to be in --init
 
@@ -988,7 +1001,7 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
-        #Should physics materials be assigned or not.
+        # Should physics materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
 
         self.collision_groups = collider_groups
@@ -1001,7 +1014,8 @@ class OBJECT_OT_add_bounding_object():
         if context.space_data.shading.type == 'SOLID':
             context.space_data.shading.color_type = self.prefs.shading_mode
 
-        dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments ,colSettings.default_cylinder_segments)
+        dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments,
+                                         colSettings.default_cylinder_segments)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
