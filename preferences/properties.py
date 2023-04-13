@@ -108,6 +108,12 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    default=False,
                                                    description="Set the default for using the modifier stack or not when creating colliders.")
 
+    default_keep_original_material: bpy.props.BoolProperty(name="Keep Original Materials",
+                                               default=False,
+                                               description="Set the default for using the modifier stack or not when creating colliders.")
+
+
+
     default_user_group: bpy.props.EnumProperty(name="Default User Group",
                                                items=(('USER_01', "User Group 01",
                                                        "Show/Hide all objects that are part of User Group 01", '', 4),

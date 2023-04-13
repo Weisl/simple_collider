@@ -15,7 +15,9 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.use_modifier_stack = True
         self.use_weld_modifier = True
+        self.use_keep_original_materials = True
         self.shape = "mesh_shape"
+
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -45,6 +47,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
+
+        # Keep original material is currently not supported for EDIT mode.
+        if self.obj_mode != 'OBJECT':
+            self.keep_original_material = False
 
         collider_data = []
 
