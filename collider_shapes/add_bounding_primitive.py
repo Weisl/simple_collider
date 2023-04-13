@@ -181,10 +181,14 @@ def draw_viewport_overlay(self, context):
     # mode check is here because keep original mesh doesn't work for EDIT mode atm.
     if self.use_keep_original_materials:
         label = "Keep Original Materials"
-        value = str(self.keep_original_material)
 
+        value = str(self.keep_original_material)
         # Currently only supported in OBJECT mode
-        type = 'bool' if self.obj_mode == 'OBJECT' else 'disabled'
+        if self.obj_mode == 'OBJECT':
+            type = 'bool'
+        else:
+            type = 'disabled'
+
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type=type)
 
     label = "Toggle X Ray "
@@ -773,8 +777,7 @@ class OBJECT_OT_add_bounding_object():
         else:  # No default material is selected
             mat_name = self.prefs.physics_material_name
 
-        # The or self.obj_mode == 'OBJECT' is here because the keep_original_material is currently not supported for 'EDIT' mode.
-        if self.keep_original_material == False or self.obj_mode != 'OBJECT':
+        if self.use_keep_original_materials == False or self.keep_original_material == False:
             set_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
@@ -1140,7 +1143,7 @@ class OBJECT_OT_add_bounding_object():
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
-        elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True and self.obj_mode == 'OBJECT':
+        elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True:
             self.keep_original_material = not self.keep_original_material
             self.execute(context)
 

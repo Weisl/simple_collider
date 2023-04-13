@@ -48,6 +48,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
 
+        # Keep original material is currently not supported for EDIT mode.
+        if self.obj_mode != 'OBJECT':
+            self.keep_original_material = False
+
         collider_data = []
 
         for obj in self.selected_objects:
