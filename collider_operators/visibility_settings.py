@@ -2,10 +2,10 @@ import bpy
 
 
 class VIEW3D_OT_object_view(bpy.types.Operator):
-    """Viewport Color type: Object"""
+    """Display type: Object"""
     bl_idname = "view.collider_view_object"
     bl_label = "Collider Groups Display"
-    bl_description = 'Change viewport color type to: Collider Groups'
+    bl_description = 'Change Display type to: Collider Groups'
 
     def execute(self, context):
         colSettings = context.scene.collider_tools
@@ -17,10 +17,10 @@ class VIEW3D_OT_object_view(bpy.types.Operator):
 
 
 class VIEW3D_OT_material_view(bpy.types.Operator):
-    """Viewport Color type: Physics Material"""
+    """Display type: Physics Material"""
     bl_idname = "view.collider_view_material"
     bl_label = "Physics Material Display"
-    bl_description = 'Change viewport color type to: Physics Material'
+    bl_description = 'Change Display type to: Physics Material'
 
     def execute(self, context):
         colSettings = context.scene.collider_tools

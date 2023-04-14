@@ -149,6 +149,13 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    default=16,
                                                    )
 
+    default_color_type: bpy.props.EnumProperty(name="Color Type",
+                                         items=(('OBJECT', 'Collider Groups', 'Color Type: Collider Groups'),
+                                                ('MATERIAL', 'Physics Material', 'Color Type: Physic Materials'),
+                                                ('SINGLE', 'Single', 'Color Type: Single Color')),
+                                         description="Set Color Type",
+                                         default='OBJECT')
+
     on_load: bpy.props.BoolProperty(name='On Load',
                                     default=True)
 
