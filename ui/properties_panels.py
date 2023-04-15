@@ -344,16 +344,25 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         layout = self.layout
         colSettings = context.scene.collider_tools
 
+        #Bools
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
         row = layout.row(align=True)
-        row.prop(colSettings, "default_keep_original_material")
+
+        #Dropdowns
+
         col = layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(colSettings, "default_keep_original_material")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_color_type")
+        col.separator
         row = col.row(align=True)
         row.prop(colSettings, "default_space")
         row = col.row(align=True)
         row.prop(colSettings, "default_creation_mode")
         row = col.row(align=True)
+        col.separator
         row.prop(colSettings, "default_user_group")
         
         col = layout.column(align=True)

@@ -150,9 +150,9 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(G/L)',
                             type=type)
 
-    label = "Collider Group"
-    value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
+    # label = "Collider Group"
+    # value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
+    # i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
 
     if self.use_creation_mode:
         label = "Creation Mode "
@@ -880,12 +880,14 @@ class OBJECT_OT_add_bounding_object():
                         objs = bpy.data.objects
                         objs.remove(obj, do_unlink=True)
 
-        context.space_data.shading.color_type = self.color_type
+        context.space_data.shading.color_type = self.original_color_type
 
         try:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         except ValueError:
             pass
+
+
 
     def create_debug_object_from_verts(self, context, verts):
         bm = bmesh.new()
@@ -1000,6 +1002,15 @@ class OBJECT_OT_add_bounding_object():
 
         # Display settings
         self.color_type = context.space_data.shading.color_type
+        self.original_color_type = context.space_data.shading.color_type
+
+        # Set up scene
+        if context.space_data.shading.type == 'SOLID':
+            context.space_data.shading.color_type = colSettings.default_color_type
+
+        self.color_type = colSettings.default_color_type
+        self.shading_idx = 0
+        self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
 
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
@@ -1013,9 +1024,6 @@ class OBJECT_OT_add_bounding_object():
         # Mesh to Collider
         self.original_obj_data = []
 
-        # Set up scene
-        if context.space_data.shading.type == 'SOLID':
-            context.space_data.shading.color_type = self.prefs.shading_mode
 
         dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments,
                                          colSettings.default_cylinder_segments)
@@ -1062,7 +1070,6 @@ class OBJECT_OT_add_bounding_object():
 
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
-            # self.execute(context)
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
@@ -1108,6 +1115,8 @@ class OBJECT_OT_add_bounding_object():
             if self.is_mesh_to_collider == False:
                 bpy.ops.object.mode_set(mode='OBJECT')
 
+            # restore display settings
+            context.space_data.shading.color_type = self.original_color_type
             return {'FINISHED'}
 
         # Set ref values when switching mode to avoid jumping of field of view.
@@ -1143,8 +1152,17 @@ class OBJECT_OT_add_bounding_object():
             self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
             self.execute(context)
 
+        elif event.type == 'V' and event.value == 'RELEASE':
+            #toggle through display modes
+            self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
+            context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
+
         elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True:
             self.keep_original_material = not self.keep_original_material
+            # Numbers are indizes of the Vierport mode of the color type properties: 0 = Object, 1 = Material, 3 = Single color
+            idx = 1 if self.keep_original_material else 0
+            context.space_data.shading.color_type = self.shading_modes[idx]
+
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':

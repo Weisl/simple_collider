@@ -498,14 +498,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                            description="Set the display type for collider wireframes",
                                            default='ALWAYS')
 
-    shading_mode: bpy.props.EnumProperty(name="Color Type",
-                                         items=(('OBJECT', 'Object', 'Color Type: Object'),
-                                                ('MATERIAL', 'Material',
-                                                 'Color Type: Material'),
-                                                ('SINGLE', 'Single', 'Color Type: Single')),
-                                         description="Set Color Type",
-                                         default='OBJECT')
-
     my_hide: bpy.props.BoolProperty(name="Hide After Creation",
                                     description="Hide collider after creation.",
                                     default=False)
@@ -582,7 +574,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     display_config = [
         "my_hide",
         "wireframe_mode",
-        "shading_mode",
     ]
 
     def keymap_ui(self, layout, title, property_prefix, id_name, properties_name, event_type):
