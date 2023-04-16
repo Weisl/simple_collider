@@ -319,7 +319,7 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
     bl_label = ""
 
     def __init__(self):
-        super().__init__()
+        super(VIEW3D_PT_init).__init__()
 
     def draw_header(self, context):
         layout = self.layout
