@@ -268,6 +268,15 @@ class VIEW3D_PT_collision(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "Collider Tools"
 
+# abstract class
+class VIEW3D_PT_init():
+    def __init__(self):
+        bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
+        bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
+
+        bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
+        bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
+        bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
@@ -303,19 +312,14 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         draw_creation_menu(context, layout, settings=True)
 
 
-class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision):
+class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
     """Creates a Panel in the Object properties window"""
 
     # bl_label = "Collider Groups"
     bl_label = ""
 
     def __init__(self):
-        bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-        bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
-
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
+        super().__init__()
 
     def draw_header(self, context):
         layout = self.layout
@@ -422,11 +426,13 @@ class VIEW3D_MT_collision_creation(Menu):
 
 ############## PIE ##############################
 
-class VIEW3D_MT_PIE_template(Menu):
+class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
     # label is displayed at the center of the pie menu.
     bl_label = "Collision Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
+    def __init__(self):
+        super().__init__()
 
     def draw(self, context):
         layout = self.layout
