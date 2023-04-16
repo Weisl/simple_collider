@@ -160,6 +160,12 @@ def draw_viewport_overlay(self, context):
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)',
                             type='enum')
 
+    if context.space_data.shading.type == 'SOLID':
+        label = "Preview View "
+        value = self.shading_modes[self.shading_idx]
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(V)',
+                            type='enum')
+
     if self.use_shape_change:
         label = "Collider Shape"
         value = self.get_shape_name()

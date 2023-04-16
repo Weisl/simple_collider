@@ -12,7 +12,6 @@ default_group = 'USER_01'
 
 
 def update_hide(self, context):
-    print("self.hide = " + str(self.hide))
     for ob in bpy.context.view_layer.objects:
         if self.mode == 'ALL_COLLIDER':
             if ob.get('isCollider') == True:
