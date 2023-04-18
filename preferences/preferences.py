@@ -26,7 +26,7 @@ def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie
 def update_pie_key(self, context):
     # This functions gets called when the hotkey assignment is updated in the preferences
     wm = bpy.context.window_manager
-    km = context.window_manager.keyconfigs.addon.keymaps["3D View"]
+    km = wm.keyconfigs.addon.keymaps["Window"]
     collision_pie_type = self.collision_pie_type.upper()
 
     # Remove previous key assignment
@@ -38,7 +38,7 @@ def update_pie_key(self, context):
 
 def update_visibility_key(self, context):
     wm = bpy.context.window_manager
-    km = context.window_manager.keyconfigs.addon.keymaps["3D View"]
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
     collision_visibility_type = self.collision_visibility_type.upper()
 
     # Remove previous key assignment
@@ -50,7 +50,7 @@ def update_visibility_key(self, context):
 
 def update_material_key(self, context):
     wm = bpy.context.window_manager
-    km = context.window_manager.keyconfigs.addon.keymaps["3D View"]
+    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
     collision_material_type = self.collision_material_type.upper()
 
     # Remove previous key assignment
@@ -150,7 +150,7 @@ class BUTTON_OT_change_key(bpy.types.Operator):
         elif self.menu_id == 'collision_visibility':
             self.my_type = self.prefs.collision_visibility_type
             self.prefs.collision_visibility_type = 'NONE'
-        "3D View"
+
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -594,8 +594,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             if key_type != 'NONE'
             else 'Press a key'
         )
+
         op = row.operator("collider.key_selection_button", text=text)
         op.menu_id = property_prefix
+        # row.prop(self, f'{property_prefix}_type', text="")
+        op = row.operator("collision.remove_hotkey", text="", icon="X")
+        op.idname = id_name
+        op.properties_name = properties_name
+        op.property_prefix = property_prefix
+
+        row = col.row(align=True)
+        row.prop(self, f'{property_prefix}_ctrl')
+        row.prop(self, f'{property_prefix}_shift')
+        row.prop(self, f'{property_prefix}_alt')
 
     # here you specify how they are drawn
     def draw(self, context):
