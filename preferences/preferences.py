@@ -24,8 +24,9 @@ def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie
     kmi.active = collision_pie_active
 
 def update_pie_key(self, context):
+    # This functions gets called when the hotkey assignment is updated in the preferences
     wm = bpy.context.window_manager
-    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    km = context.window_manager.keyconfigs.addon.keymaps["3D View"]
     collision_pie_type = self.collision_pie_type.upper()
 
     # Remove previous key assignment
@@ -37,7 +38,7 @@ def update_pie_key(self, context):
 
 def update_visibility_key(self, context):
     wm = bpy.context.window_manager
-    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    km = context.window_manager.keyconfigs.addon.keymaps["3D View"]
     collision_visibility_type = self.collision_visibility_type.upper()
 
     # Remove previous key assignment
@@ -49,7 +50,7 @@ def update_visibility_key(self, context):
 
 def update_material_key(self, context):
     wm = bpy.context.window_manager
-    km = context.window_manager.keyconfigs.addon.keymaps["Window"]
+    km = context.window_manager.keyconfigs.addon.keymaps["3D View"]
     collision_material_type = self.collision_material_type.upper()
 
     # Remove previous key assignment
@@ -126,15 +127,12 @@ def get_default_executable_path():
     return ''
 
 class BUTTON_OT_change_key(bpy.types.Operator):
-    """My Button Operator"""
+    """UI button to assign a new key to a addon hotkey"""
     bl_idname = "collider.key_selection_button"
     bl_label = "Press the button you want to assign to this operation."
     bl_options = {'REGISTER','INTERNAL'}
 
     menu_id: bpy.props.StringProperty()
-
-    my_event: bpy.props.StringProperty()
-    my_type: bpy.props.StringProperty()
 
     def __init__(self):
         self.my_event = ''
@@ -144,15 +142,15 @@ class BUTTON_OT_change_key(bpy.types.Operator):
         self.prefs = prefs
         self.my_type = ''
         if self.menu_id == 'collision_pie':
-            self.my_type = self.prefs.collision_pie_type 
+            self.my_type = self.prefs.collision_pie_type
             self.prefs.collision_pie_type = 'NONE'
         elif self.menu_id == 'collision_material':
-            self.my_type = self.prefs.collision_material_type 
+            self.my_type = self.prefs.collision_material_type
             self.prefs.collision_material_type = 'NONE'
         elif self.menu_id == 'collision_visibility':
             self.my_type = self.prefs.collision_visibility_type
             self.prefs.collision_visibility_type = 'NONE'
-
+        "3D View"
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -576,38 +574,30 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "wireframe_mode",
     ]
 
-    def keymap_ui(self, layout, title, property_prefix, id_name, properties_name, event_type):
+    def keymap_ui(self, layout, title, property_prefix, id_name, properties_name):
 
         box = layout.box()
         split = box.split(align=True, factor=0.5)
         col = split.column()
+
+        # Is hotkey active checkbox
         row = col.row(align=True)
         row.prop(self, f'{property_prefix}_active', text="")
         row.label(text=title)
 
+        # Button to assign the key assignments
         col = split.column()
         row = col.row(align=True)
+        key_type = getattr(self, f'{property_prefix}_type')
         text = (
-            bpy.types.Event.bl_rna.properties['type'].enum_items[event_type].name
-            if event_type != 'NONE'
+            bpy.types.Event.bl_rna.properties['type'].enum_items[key_type].name
+            if key_type != 'NONE'
             else 'Press a key'
         )
-        op = row.operator("collider.key_selection_button", text= text)
+        op = row.operator("collider.key_selection_button", text=text)
         op.menu_id = property_prefix
-        # row.prop(self, f'{property_prefix}_type', text="")
-        op = row.operator("collision.remove_hotkey", text="", icon="X")
-        op.idname = id_name
-        op.properties_name = properties_name
-        op.property_prefix = property_prefix
-
-        row = col.row(align=True)
-        row.prop(self, f'{property_prefix}_ctrl')
-        row.prop(self, f'{property_prefix}_shift')
-        row.prop(self, f'{property_prefix}_alt')
-        return
 
     # here you specify how they are drawn
-
     def draw(self, context):
         layout = self.layout
 
@@ -712,11 +702,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             wm = context.window_manager
 
             self.keymap_ui(layout, 'Collider Pie Menu', 'collision_pie',
-                           'wm.call_menu_pie', "COLLISION_MT_pie_menu", self.collision_pie_type)
+                           'wm.call_menu_pie', "COLLISION_MT_pie_menu")
             self.keymap_ui(layout, 'Visibility Menu', 'collision_visibility',
-                           'wm.call_panel', "VIEW3D_PT_collision_visibility_panel", self.collision_visibility_type)
+                           'wm.call_panel', "VIEW3D_PT_collision_visibility_panel")
             self.keymap_ui(layout, 'Material Menu', 'collision_material',
-                           'wm.call_panel', "VIEW3D_PT_collision_material_panel", self.collision_material_type)
+                           'wm.call_panel', "VIEW3D_PT_collision_material_panel")
 
         elif self.prefs_tabs == 'UI':
 
