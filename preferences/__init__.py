@@ -17,6 +17,16 @@ classes = (
 )
 
 
+@persistent
+def _load_handler(dummy):
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    default_mat_name = prefs.physics_material_name
+  
+    mat = bpy.data.materials.get(default_mat_name, material_functions.create_default_material())
+
+    bpy.context.scene.collider_tools.material_list_index = list(bpy.data.materials).index(mat)
+
+
 def register():
     from bpy.utils import register_class
 
@@ -32,6 +42,8 @@ def register():
 
     keymap.add_keymap()
 
+    bpy.app.handlers.load_post.append(_load_handler)
+
 
 def unregister():
     from bpy.utils import unregister_class
@@ -43,3 +55,5 @@ def unregister():
     del scene.collider_tools
 
     keymap.remove_keymap()
+
+    bpy.app.handlers.load_post.remove(_load_handler)
