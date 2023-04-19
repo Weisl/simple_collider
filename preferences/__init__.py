@@ -1,4 +1,5 @@
 import bpy
+from bpy.app.handlers import persistent
 
 from . import naming_preset
 from . import preferences
@@ -6,6 +7,7 @@ from . import properties
 from . import keymap
 from .properties import ColliderTools_Properties
 from .preferences import update_panel_category
+from ..pyshics_materials import material_functions
 
 
 classes = (
