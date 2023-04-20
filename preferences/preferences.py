@@ -207,6 +207,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                 description="The category name used to organize the addon in the properties panel for all the addons",
                                                 default='Collider Tools',
                                                 update=update_panel_category)  # update = update_panel_position,
+    # Parent to base
+    use_parent_to: bpy.props.BoolProperty(name="Parent to Base Mesh",
+                                               description="Parent the newly generated collider to the base mesh it was created from.",
+                                               default=True)
     # Collections
     use_col_collection: bpy.props.BoolProperty(name="Add Collider Collection",
                                                description="Link all collision objects to a specific Collection for collisions. It will create a collider collection with the given name if it doesn't already exist",
@@ -542,6 +546,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
+        "use_parent_to"
     ]
 
     ui_col_colors = [

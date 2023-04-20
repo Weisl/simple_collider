@@ -817,6 +817,11 @@ class OBJECT_OT_add_bounding_object():
             else:
                 self.report({'WARNING'}, 'Update to a newer Blender Version to access all addon features')
 
+        if self.prefs.use_parent_to == False:
+            mtx = bounding_object.matrix_world
+            bounding_object.parent = None
+            bounding_object.matrix_world = mtx
+
         mat_name = ''
         if bpy.data.materials[colSettings.material_list_index]:
             mat_name = bpy.data.materials[colSettings.material_list_index].name
