@@ -1,4 +1,5 @@
 import bpy
+from bpy.app.handlers import persistent
 
 from . import naming_preset
 from . import preferences
@@ -6,7 +7,7 @@ from . import properties
 from . import keymap
 from .properties import ColliderTools_Properties
 from .preferences import update_panel_category
-
+from ..pyshics_materials import material_functions
 
 classes = (
     properties.ColliderTools_Properties,
@@ -15,6 +16,15 @@ classes = (
     preferences.CollisionAddonPrefs,
     keymap.REMOVE_OT_hotkey,
 )
+
+@persistent
+def _load_handler(dummy):
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    default_mat_name = prefs.physics_material_name
+
+    mat = bpy.data.materials.get(default_mat_name, material_functions.create_default_material())
+
+    bpy.context.scene.collider_tools.material_list_index = list(bpy.data.materials).index(mat)
 
 
 def register():
@@ -31,7 +41,7 @@ def register():
         type=ColliderTools_Properties)
 
     keymap.add_keymap()
-
+    bpy.app.handlers.load_post.append(_load_handler)
 
 def unregister():
     from bpy.utils import unregister_class
@@ -43,3 +53,4 @@ def unregister():
     del scene.collider_tools
 
     keymap.remove_keymap()
+    bpy.app.handlers.load_post.remove(_load_handler)
