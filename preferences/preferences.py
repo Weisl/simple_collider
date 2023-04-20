@@ -208,7 +208,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                 default='Collider Tools',
                                                 update=update_panel_category)  # update = update_panel_position,
     # Parent to base
-    use_parent_to: bpy.props.BoolProperty(name="Parent to Base Mesh",
+    use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base",
                                                description="Parent the newly generated collider to the base mesh it was created from.",
                                                default=True)
     # Collections
@@ -509,6 +509,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                   description="Debug mode only used for debuging during development",
                                   default=False)
 
+    general_props = [
+        "use_parent_to",
+    ]
+
     props = [
         "separator",
         "collision_string_prefix",
@@ -546,7 +550,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
-        "use_parent_to"
     ]
 
     ui_col_colors = [
@@ -621,6 +624,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         row.prop(self, "prefs_tabs", expand=True)
 
         if self.prefs_tabs == 'SETTINGS':
+
+            box = layout.box()
+            row = box.row()
+            row.label(text='General')
+
+            for propName in self.general_props:
+                row = box.row()
+                row.prop(self, propName)
 
             box = layout.box()
             row = box.row()
