@@ -8,12 +8,16 @@ classes = (
     physics_materials.MATERIAL_OT_physics_material_create,
     physics_materials.MATERIAL_OT_set_physics_material,
     physics_materials.MATERIAL_UL_physics_materials,
+    physics_materials.MATERIAL_OT_physics_material_random_color
 )
 
 
 def register():
     material = bpy.types.Material
     material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
+    scene = bpy.types.Scene
+
+    scene.use_random_color = bpy.props.BoolProperty(name="Use Random Color", default=True)
 
     from bpy.utils import register_class
 

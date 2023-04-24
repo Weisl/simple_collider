@@ -1,9 +1,27 @@
 import bpy
+import random
 from bpy.props import StringProperty
 from bpy.types import UIList
 
 from .material_functions import set_physics_material, remove_materials, create_material
 
+
+class MATERIAL_OT_physics_material_random_color(bpy.types.Operator):
+    bl_idname = "material.random_physics_mat_color"
+    bl_label = "Random Color"
+    bl_description = "Generate random color for the physics material"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    generated_color: bpy.props.FloatVectorProperty(
+        name="New Color",
+        subtype='COLOR',
+        default=(1, 1, 1, 0.5),
+        size=4,
+        min=0, max=1,
+        description="color picker")
+
+    def execute(self, context):
+        return {"FINISHED"}
 
 class MATERIAL_OT_physics_material_create(bpy.types.Operator):
     bl_idname = "material.create_physics_material"
@@ -13,11 +31,37 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
 
     my_baseName: bpy.props.StringProperty(name="Name")
 
-    rgb_controller: bpy.props.FloatVectorProperty(name="Color", subtype='COLOR', default=(1, 1, 1, 0.5), size=4, min=0,
-                                                  max=1, description="Display Color")
+
+
+    rgb_controller: bpy.props.FloatVectorProperty(name="Color", subtype='COLOR', default=[1, 1, 1, 0.5], size=4, max=1,
+                                                  description="Display Color")
+    @staticmethod
+    def random_color():
+        r = random.uniform(0, 1)
+        g = random.uniform(0, 1)
+        b = random.uniform(0, 1)
+
+        color = (r, g, b, 0.5)
+        return color
+
+    def draw(self, context):
+        layout = self.layout
+
+        scene = context.scene
+        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        layout.label(text=prefs.physics_material_filter)
+        layout.prop(self, "my_baseName")
+        layout.prop(self, "rgb_controller")
+
+        
+
 
     def invoke(self, context, event):
-        # Custom addon Props, get preset Values
+        if context.scene.use_random_color:
+            self.rgb_controller = self.random_color()
+        else:
+            self.rgb_controller = (1, 1, 1, 0.5)
+
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
