@@ -8,6 +8,7 @@ classes = (
     physics_materials.MATERIAL_OT_physics_material_create,
     physics_materials.MATERIAL_OT_set_physics_material,
     physics_materials.MATERIAL_UL_physics_materials,
+    physics_materials.MATERIAL_OT_physics_material_random_color
 )
 
 

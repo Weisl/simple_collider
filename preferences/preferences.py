@@ -365,6 +365,30 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     user_group_03: bpy.props.StringProperty(name="Pre/Suffix", default="Complex",
                                             description='Naming of User Collider Group 03')
 
+    # MATERIALS
+    use_physics_material: bpy.props.BoolProperty(
+        name='Enable Physics Materials List', description='', default=False)
+
+    material_naming_position: bpy.props.EnumProperty(
+        name='Physics Material',
+        items=(('PREFIX', "Prefix", "Prefix"),
+               ('SUFFIX', "Suffix", "Suffix")),
+        default='PREFIX',
+        description='Add custom naming as prefix or suffix'
+    )
+
+    physics_material_separator: bpy.props.StringProperty(name="Separator", default="_",
+                                        description="Separator character used between material name and suffix/prefix")
+
+    use_custom_mat_suf_prefix: bpy.props.BoolProperty(name='Use Suffix/Prefix',
+                                         description='',
+                                         default=False)
+
+    use_random_color: bpy.props.BoolProperty(name="Use Random Color", default=True)
+
+    physics_material_su_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
+                                                      description='Simple string added to the beginning of the collider suffix/prefix')
+
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
                                                     default='MI_COL',
                                                     # type=bpy.types.Material,
@@ -544,7 +568,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     props_physics_materials = [
         "physics_material_name",
+    ]
+
+    props_advanced_physics_materials = [
         "physics_material_filter",
+        "physics_material_separator",
+        "physics_material_su_prefix",
+        "use_random_color",
     ]
 
     col_props = [
@@ -707,12 +737,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             box = layout.box()
             box.label(text="Collider Groups")
+
             for propName in self.props_collider_groups:
                 row = box.row()
                 row.prop(self, propName)
 
+            col = box.column()
+            if not self.collider_groups_enabled:
+                col.enabled = False
+
             for count, (prop_01, prop_02) in enumerate(zip(self.props_collider_groups_name, self.props_collider_groups_identifier), start=1):
-                split = box.split(align=True, factor=0.1)
+                split = col.split(align=True, factor=0.1)
                 split.label(text=f"Group_{str(count)}:")
 
                 split = split.split(align=True, factor=0.5)
@@ -721,8 +756,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
             box = layout.box()
             box.label(text="Physics Materials")
+
             for propName in self.props_physics_materials:
                 row = box.row()
+                row.prop(self, propName)
+
+            box = box.box()
+            row = box.row()
+            row.prop(self, "use_physics_material")
+            col = box.column()
+            if not self.use_physics_material:
+                col.enabled = False
+
+            row = col.row()
+            row.prop(self, "material_naming_position", expand=True)
+            for propName in self.props_advanced_physics_materials:
+                row = col.row()
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'KEYMAP':
