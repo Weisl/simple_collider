@@ -7,7 +7,6 @@ class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
     bl_label = "Renaming Info"
     bl_space_type = "VIEW_3D"
     bl_region_type = "WINDOW"
-    bl_ui_units_x = 30
 
     def draw(self, context):
 
