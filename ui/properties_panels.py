@@ -48,7 +48,7 @@ def draw_auto_convex(layout, context):
 
         if prefs.executable_path or prefs.default_executable_path:
 
-            layout.operator("button.auto_convex", text="Auto Convex", icon='WINDOW')
+            layout.operator("button.auto_convex", text="Auto Convex", icon='MESH_ICOSPHERE')
             op = layout.operator("preferences.addon_search", text="", icon='PREFERENCES')
             op.addon_name = addon_name
             op.prefs_tabs = 'VHACD'
@@ -167,7 +167,7 @@ def draw_creation_menu(context, layout, settings=False):
     row = col.row(align=True)
     row.operator('object.convert_to_collider', icon='PHYSICS')
     row = col.row(align=True)
-    row.operator('object.convert_to_mesh', icon='WINDOW')
+    row.operator('object.convert_to_mesh', icon='MESH_MONKEY')
 
     row = layout.row(align=True)
     row.operator('object.regenerate_name', icon='FILE_REFRESH')
@@ -505,14 +505,6 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
     """Print object name in Console"""
     bl_idname = "button.auto_convex"
     bl_label = "Auto Convex"
-
-    @classmethod
-    def poll(cls, context):
-        count = 0
-        for obj in context.selected_objects:
-            if obj.type == 'MESH':
-                count = count + 1
-        return count > 0
 
     def execute(self, context):
         bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex")

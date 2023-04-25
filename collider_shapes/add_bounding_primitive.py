@@ -465,10 +465,10 @@ class OBJECT_OT_add_bounding_object():
         return cls.unique_name(new_name)
 
     def draw_callback_px(self, context):
-        # # x, y = self.mouse_position
-        # x = 100
-        # y = 100
-        #
+        x, y = self.mouse_position
+        x = 100
+        y = 100
+
         # # Background Square
         # vertices = (
         #     (x, y - 50), (x + 100, y - 50),
@@ -482,22 +482,16 @@ class OBJECT_OT_add_bounding_object():
         # shader.bind()
         # shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
         # batch.draw(shader)
-        #
-        # # draw some text
-        # font_offset = 10
-        # blf.size(font_id, 20, 72)
-        # # blf.position(font_id, x + font_offset, y - font_offset, 0)
-        # blf.position(font_id, x, y, 0)
 
         font_id = 0  # XXX, need to find out how best to get this.
-        font_color = [0.5, 0.5, 0.5, 0.5]
-        font_size = 20
-        blf.size(font_id, 20, font_size)
-        blf.color(font_id, font_color[0], font_color[1], font_color[2], font_color[3])
-        blf.position(font_id, 100, 100, 0)
-        face_label = str(sum(self.facecounts))
-        blf.draw(font_id, face_label)
 
+        # draw some text
+        # font_offset = 10
+        blf.size(font_id, 20, 72)
+        # blf.position(font_id, x + font_offset, y - font_offset)
+        blf.position(font_id, x, y, 0)
+        facecountall= sum(self.facecounts)
+        blf.draw(font_id, 'Faces: ' + str(facecountall))
 
     def collider_name(self, basename='Basename'):
         self.basename = basename
