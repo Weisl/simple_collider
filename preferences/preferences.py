@@ -367,7 +367,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # MATERIALS
     use_physics_material: bpy.props.BoolProperty(
-        name='Enable Physics Materials List', description='', default=True)
+        name='Enable Physics Materials List', description='', default=False)
 
     material_naming_position: bpy.props.EnumProperty(
         name='Physics Material',
@@ -383,6 +383,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     use_custom_mat_suf_prefix: bpy.props.BoolProperty(name='Use Suffix/Prefix',
                                          description='',
                                          default=False)
+
+    use_random_color: bpy.props.BoolProperty(name="Use Random Color", default=True)
 
     physics_material_su_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
                                                       description='Simple string added to the beginning of the collider suffix/prefix')
@@ -572,6 +574,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "physics_material_filter",
         "physics_material_separator",
         "physics_material_su_prefix",
+        "use_random_color",
     ]
 
     col_props = [

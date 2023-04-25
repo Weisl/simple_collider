@@ -15,9 +15,6 @@ classes = (
 def register():
     material = bpy.types.Material
     material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
-    scene = bpy.types.Scene
-
-    scene.use_random_color = bpy.props.BoolProperty(name="Use Random Color", default=True)
 
     from bpy.utils import register_class
 

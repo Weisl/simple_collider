@@ -56,7 +56,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         self.mat_naming_position = prefs.material_naming_position
         self.final_name = ""
-        if context.scene.use_random_color:
+        if prefs.use_random_color:
             self.rgb_controller = self.random_color()
         else:
             self.rgb_controller = (1, 1, 1, 0.5)

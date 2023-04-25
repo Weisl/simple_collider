@@ -424,7 +424,7 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
             box = layout.box()
             col = box.column(align=True)
             scene = context.scene
-            col.prop(scene, "use_random_color")
+            # col.prop(scene, "use_random_color")
             col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
     def draw_active_physics_material(self, colSettings, layout):
