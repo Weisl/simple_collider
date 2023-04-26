@@ -15,6 +15,7 @@ classes = (
 def register():
     material = bpy.types.Material
     material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
+    material.isPhysicsMaterial = bpy.props.BoolProperty(name="Is Physics Material", default=False)
 
     from bpy.utils import register_class
 
