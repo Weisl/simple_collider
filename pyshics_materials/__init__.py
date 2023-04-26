@@ -13,6 +13,8 @@ classes = (
 
 
 def register():
+    scene = bpy.types.Scene
+    scene.use_physics_tag = bpy.props.BoolProperty(name="Physics Materials Tag", default=True)
     material = bpy.types.Material
     material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
     material.isPhysicsMaterial = bpy.props.BoolProperty(name="Is Physics Material", default=False)

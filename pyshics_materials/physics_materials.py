@@ -125,6 +125,16 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class BUTTON_OP_set_active_physics_material(bpy.types.Operator):
+    """Tooltip"""
+    bl_idname = "material.set_active_physicsMaterial"
+    bl_label = "Simple Object Operator"
+
+    mat_name = bpy.props.StringProperty()
+
+    def execute(self, context):
+        print(self.mat_name)
+        return {'FINISHED'}
 
 class MATERIAL_UL_physics_materials(UIList):
     # The draw_item function is called for each item of the collection that is visible in the list.
@@ -154,14 +164,18 @@ class MATERIAL_UL_physics_materials(UIList):
                 self.set_initial_state = False
 
             if mat and self.layout_type in {'DEFAULT', 'COMPACT'}:
-                if mat.is_grease_pencil == False:
-                    row = layout.row(align=True)
+                row = layout.row(align=True)
+
+                if mat.is_grease_pencil == True:
+                    row.enabled = False
+
+                else: #mat.is_grease_pencil == False:
+                    row.prop(mat, 'isPhysicsMaterial', text='', icon="SOLO_ON")
                     row.operator('material.set_physics_material', text='',
                                  icon='FORWARD').physics_material_name = mat.name
-                else:
-                    row = layout.row(align=True)
-                    row.enabled = False
+
                 row.prop(mat, "name", text="", emboss=False, icon_value=icon)
+                # row.operator('', text=mat.name)
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)

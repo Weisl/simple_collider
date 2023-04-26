@@ -417,14 +417,15 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
             layout.active = True
 
         else:
-            self.draw_active_physics_material(colSettings, layout)
+            scene = context.scene
+            layout.prop(scene, "use_physics_tag",icon="SOLO_ON")
+            # self.draw_active_physics_material(colSettings, layout)
             layout.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings,
                               "material_list_index")
 
             box = layout.box()
             col = box.column(align=True)
             scene = context.scene
-            # col.prop(scene, "use_random_color")
             col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
     def draw_active_physics_material(self, colSettings, layout):
