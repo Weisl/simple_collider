@@ -206,8 +206,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             joined_obj.select_set(True)
 
-            # If blender version is older than 3.3 fallback to old exporter addon
-            if (3, 1, 0) > bpy.app.version:
+            io_use_addon = True if bpy.app.version < (3, 2, 0) else False
+            io_new_export_old_parameters = True if bpy.app.version < (3, 3, 0) else False
+
+            if io_use_addon:
                 import addon_utils
                 
                 # enable the obj addon if it's disabled
@@ -228,13 +230,15 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 # Display a warning when Blender uses the small export instead of the fast one! 
                 self.report(
                     {'WARNING'}, "This version of Blender uses the slow exporter/importer. Update to version 3.3!")
-            elif (3, 3, 0) > bpy.app.version:
+
+            elif io_new_export_old_parameters:
                 bpy.ops.wm.obj_export(filepath=obj_filename,  check_existing=False, export_selected_objects=True, export_materials=False,
                                       export_uv=False, export_normals=False, forward_axis='Y_FORWARD', up_axis='Z_UP')
-            else: # Blender version is 3.3 or greater
+
+            else: # io_new_export
                 bpy.ops.wm.obj_export(filepath=obj_filename,  check_existing=False, export_selected_objects=True, export_materials=False,
                         export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
-                
+
             if self.prefs.debug:
                 joined_obj.color = (1.0, 0.1, 0.1, 1.0)
                 joined_obj.select_set(False)
@@ -279,12 +283,12 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             # List of imported objects
             imported = []
             for obj_path in obj_list:
-                if (3, 1, 0) > bpy.app.version:
+                if io_use_addon:
                     bpy.ops.import_scene.obj(filepath=obj_path, use_edges=True, use_smooth_groups=False, use_split_objects=True, use_split_groups=False,
                                              use_groups_as_vgroups=False, use_image_search=False, split_mode='ON', global_clamp_size=0.0, axis_forward='Y', axis_up='Z')
-                elif (3, 3, 0) > bpy.app.version:
+                elif io_new_export_old_parameters:
                     bpy.ops.wm.obj_import(filepath=obj_path, forward_axis='Y_FORWARD', up_axis='Z_UP')
-                else: # Blender version is 3.3 or greater
+                else: #io_new_export
                     bpy.ops.wm.obj_import(filepath=obj_path, forward_axis='Y', up_axis='Z')
                 
                 imported.append(bpy.context.selected_objects)
