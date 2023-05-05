@@ -207,7 +207,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             joined_obj.select_set(True)
 
             io_use_addon = True if bpy.app.version < (3, 2, 0) else False
-            io_new_export_old_parameters = True if bpy.app.version < (3, 4, 0) else False
+            io_new_export_old_parameters = True if bpy.app.version < (3, 3, 0) else False
 
             if io_use_addon:
                 import addon_utils
