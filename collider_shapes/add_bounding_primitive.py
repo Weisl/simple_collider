@@ -4,7 +4,9 @@ import bpy
 import numpy
 import time
 import mathutils
+import gpu
 
+from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix, Quaternion
 
 from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
@@ -159,6 +161,21 @@ def draw_viewport_overlay(self, context):
         value = self.creation_mode[self.creation_mode_idx]
         i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)',
                             type='enum')
+
+
+
+
+    if context.space_data.shading.type == 'SOLID':
+        label = "Solid View"
+        value = str(self.is_solidmode)
+        type = 'bool'
+    else:
+        label = "Preview Mode"
+        value = self.shading_modes[self.shading_idx]
+        type = 'disabled'
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(V)',
+                        type=type)
+
 
     if self.use_shape_change:
         label = "Collider Shape"
@@ -446,6 +463,41 @@ class OBJECT_OT_add_bounding_object():
             new_name = name_pre_suffix + name
 
         return cls.unique_name(new_name)
+
+    def draw_callback_px(self, context):
+        # # x, y = self.mouse_position
+        # x = 100
+        # y = 100
+        #
+        # # Background Square
+        # vertices = (
+        #     (x, y - 50), (x + 100, y - 50),
+        #     (x, y), (x + 100, y))
+        #
+        # indices = (
+        #     (0, 1, 2), (2, 1, 3))
+        # shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+        # batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
+        #
+        # shader.bind()
+        # shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
+        # batch.draw(shader)
+        #
+        # # draw some text
+        # font_offset = 10
+        # blf.size(font_id, 20, 72)
+        # # blf.position(font_id, x + font_offset, y - font_offset, 0)
+        # blf.position(font_id, x, y, 0)
+
+        font_id = 0  # XXX, need to find out how best to get this.
+        font_color = [0.5, 0.5, 0.5, 0.5]
+        font_size = 20
+        blf.size(font_id, 20, font_size)
+        blf.color(font_id, font_color[0], font_color[1], font_color[2], font_color[3])
+        blf.position(font_id, 100, 100, 0)
+        face_label = str(sum(self.facecounts))
+        blf.draw(font_id, face_label)
+
 
     def collider_name(self, basename='Basename'):
         self.basename = basename
@@ -796,8 +848,10 @@ class OBJECT_OT_add_bounding_object():
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
-        bounding_object.display_type = 'SOLID'
-        set_groups_object_color(bounding_object, self.collision_groups[self.collision_group_idx])
+        if context.space_data.shading.type != 'SOLID':
+            context.space_data.shading.type = 'SOLID'
+        else:
+            set_groups_object_color(bounding_object, self.collision_groups[self.collision_group_idx])
 
     def set_object_collider_group(self, obj):
         obj['collider_group'] = self.collision_groups[self.collision_group_idx]
@@ -981,7 +1035,13 @@ class OBJECT_OT_add_bounding_object():
 
         # Mouse
         self.mouse_initial_x = event.mouse_x
+        self.mouse_position = [event.mouse_x, event.mouse_y]
         self.my_space = colSettings.default_space
+
+        #Decimate face count display
+        # self.facecountall = 0
+        self.facecounts = []
+        self.facecountall = 0
 
         # Modal Settings
         self.my_use_modifier_stack = colSettings.default_modifier_stack
@@ -1029,6 +1089,8 @@ class OBJECT_OT_add_bounding_object():
         # Mesh to Collider
         self.original_obj_data = []
 
+        # display settings
+        self.is_solidmode = True if context.space_data.shading.type == 'SOLID' else False
 
         dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments,
                                          colSettings.default_cylinder_segments)
@@ -1040,8 +1102,12 @@ class OBJECT_OT_add_bounding_object():
         # Add the region OpenGL drawing callback
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
+
         # add modal handler
         context.window_manager.modal_handler_add(self)
+
+        #stored for decimate display
+        self.mouse_path = []
 
         self.execute(context)
 
@@ -1141,6 +1207,7 @@ class OBJECT_OT_add_bounding_object():
 
             # update ref mouse position to current
             self.mouse_initial_x = event.mouse_x
+            self.mouse_position = [event.mouse_x, event.mouse_y]
 
             # Alt is not pressed anymore after release
             self.ignore_input = False
@@ -1159,8 +1226,12 @@ class OBJECT_OT_add_bounding_object():
 
         elif event.type == 'V' and event.value == 'RELEASE':
             #toggle through display modes
-            self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
-            context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
+            if context.space_data.shading.type == 'SOLID':
+                self.is_solidmode = True
+                self.shading_idx = (self.shading_idx + 1) % len(self.shading_modes)
+                context.space_data.shading.color_type = self.shading_modes[self.shading_idx]
+            else:
+                self.is_solidmode = not self.is_solidmode
 
         elif event.type == 'O' and event.value == 'RELEASE' and self.use_keep_original_materials == True:
             self.keep_original_material = not self.keep_original_material
@@ -1185,6 +1256,8 @@ class OBJECT_OT_add_bounding_object():
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.mouse_initial_x = event.mouse_x
+            self.mouse_position = [event.mouse_x, event.mouse_y]
+            self.draw_callback_px(context)
 
         elif event.type == 'A' and event.value == 'RELEASE':
             self.opacity_active = not self.opacity_active
@@ -1213,6 +1286,7 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'MOUSEMOVE':
             # calculate mouse movement and offset camera
             delta = int(self.mouse_initial_x - event.mouse_x)
+            self.mouse_position = [event.mouse_x, event.mouse_y]
 
             # Ignore if Alt is pressed
             if event.alt:
@@ -1237,12 +1311,29 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.current_settings_dic['decimate'] != dec_amount:
                     self.current_settings_dic['decimate'] = dec_amount
-
                     # I had to iterate over all object because it crashed when just iterating over the modifiers.
+
+                    self.facecounts = []
+
                     for obj in self.new_colliders_list:
+
                         for mod in obj.modifiers:
                             if mod in self.decimate_modifiers:
                                 mod.ratio = dec_amount
+                                facecount = mod.face_count
+                                self.facecounts.append(facecount)
+
+                                ## More accurate but less efficient face calculation
+                                # bmesh for getting triangle data
+                                # bm=bmesh.new()
+                                # depsgraph = bpy.context.evaluated_depsgraph_get()
+                                # bm.from_object(obj, depsgraph)
+                                # facecount = len(bm.faces)
+                                # self.polycount.append(str(facecount))
+                                # bm.free()
+
+                    self.report({'INFO'}, "Total collider face count:" + str(sum(self.facecounts)))
+                    self.draw_callback_px(context)
 
             if self.opacity_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
