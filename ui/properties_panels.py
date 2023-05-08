@@ -69,7 +69,6 @@ def draw_auto_convex_settings(colSettings, layout):
     row.prop(colSettings, 'voxelResolution')
 
 
-
 def label_multiline(context, text, parent):
     chars = int(context.region.width / 7)  # 7 pix on 1 character
     wrapper = textwrap.TextWrapper(width=chars)
@@ -186,6 +185,7 @@ def draw_creation_menu(context, layout, settings=False):
     row.label(text='Display as')
     row.prop(colSettings, 'display_type', text='')
     row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
+
 
 def draw_naming_presets(self, context):
     layout = self.layout
@@ -411,21 +411,18 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         colSettings = context.scene.collider_tools
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
-        if not prefs.use_physics_material:
-            layout.active = False
-            self.draw_active_physics_material(colSettings, layout)
-            layout.active = True
+        layout.active = False
+        self.draw_active_physics_material(colSettings, layout)
+        layout.active = True
 
-        else:
-            scene = context.scene
-            layout.prop(scene, "use_physics_tag",icon="SOLO_ON")
+        if prefs.use_physics_material:
+
             # self.draw_active_physics_material(colSettings, layout)
             layout.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings,
                               "material_list_index")
 
             box = layout.box()
             col = box.column(align=True)
-            scene = context.scene
             col.operator('material.create_physics_material', icon='ADD', text="Add Physics Material")
 
     def draw_active_physics_material(self, colSettings, layout):
