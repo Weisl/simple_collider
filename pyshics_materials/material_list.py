@@ -99,7 +99,8 @@ class MATERIAL_UL_physics_materials(UIList):
             if mat and self.layout_type in {'DEFAULT', 'COMPACT'}:
                 row = layout.row(align=True)
 
-                row.prop(mat, 'isPhysicsMaterial', text='')
+                if context.scene.use_physics_tag == False:
+                    row.prop(mat, 'isPhysicsMaterial', text='')
                 row.operator('material.set_physics_material', text='',
                              icon='FORWARD').physics_material_name = mat.name
 
