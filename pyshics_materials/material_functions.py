@@ -10,7 +10,8 @@ def create_material(name, diffuse, fakeUser=True):
 
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = diffuse
-
+    mat.isPhysicsMaterial = True
+    
     if fakeUser == True:
         mat.use_fake_user = True
 
@@ -42,6 +43,7 @@ def create_default_material():
         default_material = bpy.data.materials[default_mat_name]
     else:
         default_material = create_material(default_mat_name, (0.0, 0.5, 1, 0.5))
+
 
     return default_material
 
