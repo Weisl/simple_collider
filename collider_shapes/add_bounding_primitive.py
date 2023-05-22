@@ -10,7 +10,7 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix, Quaternion
 
 from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
-from ..pyshics_materials.material_functions import remove_materials, set_physics_material
+from ..pyshics_materials.material_functions import remove_materials, assign_physics_material
 
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
@@ -835,7 +835,7 @@ class OBJECT_OT_add_bounding_object():
             mat_name = self.prefs.physics_material_name
 
         if self.use_keep_original_materials == False or self.keep_original_material == False:
-            set_physics_material(bounding_object, mat_name)
+            assign_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
         bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx]

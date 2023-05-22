@@ -1,6 +1,5 @@
 import bpy
 
-
 def create_material(name, diffuse, fakeUser=True):
     '''Create a materials if none with the specified name already exists'''
     for mat in bpy.data.materials:
@@ -11,7 +10,8 @@ def create_material(name, diffuse, fakeUser=True):
 
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = diffuse
-
+    mat.isPhysicsMaterial = True
+    
     if fakeUser == True:
         mat.use_fake_user = True
 
@@ -44,8 +44,8 @@ def create_default_material():
     else:
         default_material = create_material(default_mat_name, (0.0, 0.5, 1, 0.5))
 
-    return default_material
 
+    return default_material
 
 def create_physics_material(physics_material_name):
     '''Create a default material'''
@@ -58,9 +58,12 @@ def create_physics_material(physics_material_name):
 
 
 # Materials
-def set_physics_material(bounding_object, physics_material_name):
+def assign_physics_material(object, physics_material_name):
     '''Remove existing materials from an object and assign the physics material'''
-    remove_materials(bounding_object)
-
+    remove_materials(object)
     mat = create_physics_material(physics_material_name)
-    set_material(bounding_object, mat)
+    set_material(object, mat)
+
+def set_active_physics_material(context, physics_material_name):
+    ''' '''
+    context.scene.active_physics_material = physics_material_name
