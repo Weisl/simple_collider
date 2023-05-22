@@ -57,6 +57,9 @@ class MATERIAL_UL_physics_materials(UIList):
         # Filter by object type.
         for idx, mat in enumerate(materials):
             #filter out greace pencil objects
+            if self.filter_name not in mat.name:
+                flt_flags[idx] &= ~self.bitflag_filter_item
+                
             if mat.is_grease_pencil == True:
                 flt_flags[idx] &= ~self.bitflag_filter_item
 
