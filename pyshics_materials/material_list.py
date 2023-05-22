@@ -59,10 +59,8 @@ class MATERIAL_UL_physics_materials(UIList):
             #filter out greace pencil objects
             if self.filter_name not in mat.name:
                 flt_flags[idx] &= ~self.bitflag_filter_item
-                
-            if mat.is_grease_pencil == True:
+            elif mat.is_grease_pencil == True:
                 flt_flags[idx] &= ~self.bitflag_filter_item
-
             # filter materials not tagged as physics materials
             elif mat.isPhysicsMaterial == False and context.scene.use_physics_tag == True:
                 flt_flags[idx] &= ~self.bitflag_filter_item
