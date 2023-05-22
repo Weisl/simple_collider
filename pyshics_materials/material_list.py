@@ -28,8 +28,59 @@ class MATERIAL_UL_physics_materials(UIList):
     #   flt_flag is the result of the filtering process for this item.
     #   Note: as index and flt_flag are optional arguments, you do not have to use/declare them here if you don't
     #         need them.
+    """UI list showing all cameras with associated resolution. The resolution can be changed directly from this list"""
+    MAT_FILTER = 1 << 0
 
     set_initial_state: bpy.props.BoolProperty(default=True)
+
+    def filter_list(self, context):
+        '''
+        Filter physics material by tag
+        :param self:
+        :param context:
+        :return: flt_flags is a bit-flag containing the filtering and flt
+                flt_neworder defines the order of all cameras
+        '''
+
+        helper_funcs = bpy.types.UI_UL_list
+
+        # Default return values.
+        flt_flags = []
+        flt_neworder = []
+
+        # Get all objects from scene.
+        materials = bpy.data.materials
+
+        # Create bitmask for all objects
+        flt_flags = [self.bitflag_filter_item] * len(materials)
+
+        # Filter by object type.
+        for idx, mat in enumerate(materials):
+            if mat.is_grease_pencil == True:
+                flt_flags[idx] &= ~self.bitflag_filter_item
+
+            elif mat.isPhysicsMaterial == False and context.scene.use_physics_tag == True:
+                flt_flags[idx] &= ~self.bitflag_filter_item
+                
+            else:
+                flt_flags[idx] |= self.MAT_FILTER
+
+        flt_neworder = helper_funcs.sort_items_by_name(materials, "name")
+
+        return flt_flags, flt_neworder
+
+    def filter_items(self, context, data, propname):
+        # This function gets the collection property (as the usual tuple (data, propname)), and must return two lists:
+        # * The first one is for filtering, it must contain 32bit integers were self.bitflag_filter_item marks the
+        #   matching item as filtered (i.e. to be shown), and 31 other bits are free for custom needs. Here we use the
+        #   first one to mark MAT_FILTER.
+        # * The second one is for reordering, it must return a list containing the new indices of the items (which
+        #   gives us a mapping org_idx -> new_idx).
+        # Please note that the default UI_UL_list defines helper functions for common tasks (see its doc for more info).
+        # If you do not make filtering and/or ordering, return empty list(s) (this will be more efficient than
+        # returning full lists doing nothing!).
+        flt_flags, flt_neworder = self.filter_list(context)
+        return flt_flags, flt_neworder
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mat = item
@@ -45,13 +96,9 @@ class MATERIAL_UL_physics_materials(UIList):
             if mat and self.layout_type in {'DEFAULT', 'COMPACT'}:
                 row = layout.row(align=True)
 
-                if mat.is_grease_pencil == True:
-                    row.enabled = False
-
-                else:  # mat.is_grease_pencil == False:
-                    row.prop(mat, 'isPhysicsMaterial', text='')
-                    row.operator('material.set_physics_material', text='',
-                                 icon='FORWARD').physics_material_name = mat.name
+                row.prop(mat, 'isPhysicsMaterial', text='')
+                row.operator('material.set_physics_material', text='',
+                             icon='FORWARD').physics_material_name = mat.name
 
                 # row.prop(mat, "name", text="", emboss=False, icon_value=icon)
                 op = row.operator('material.set_active_physics_material', text=mat.name, icon_value=icon)
