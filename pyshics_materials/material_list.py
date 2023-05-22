@@ -100,7 +100,8 @@ class MATERIAL_UL_physics_materials(UIList):
                 row = layout.row(align=True)
 
                 if context.scene.use_physics_tag == False:
-                    row.prop(mat, 'isPhysicsMaterial', text='')
+                    tagIcon = 'SOLO_ON' if mat.isPhysicsMaterial else 'SOLO_OFF'
+                    row.prop(mat, 'isPhysicsMaterial', text='', icon=tagIcon)
                 row.operator('material.set_physics_material', text='',
                              icon='FORWARD').physics_material_name = mat.name
 

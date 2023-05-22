@@ -16,12 +16,14 @@ classes = (
 
 def register():
     scene = bpy.types.Scene
-    scene.use_physics_tag = bpy.props.BoolProperty(name="Physics Materials Tag", default=True)
-    scene.active_physics_material = bpy.props.StringProperty(name="Active Physics Material", default="")
+    scene.use_physics_tag = bpy.props.BoolProperty(name="Physics Tag", default=True)
+    # scene.active_physics_material = bpy.props.StringProperty(name="Active Physics Material", default="")
+    materialType = bpy.types.Material
 
-    material = bpy.types.Material
-    material.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
-    material.isPhysicsMaterial = bpy.props.BoolProperty(name="Is Physics Material", default=False)
+    scene.active_physics_material = bpy.props.PointerProperty(name="My Node", type=materialType)
+
+    materialType.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
+    materialType.isPhysicsMaterial = bpy.props.BoolProperty(name="Is Physics Material", default=False)
 
     from bpy.utils import register_class
 
@@ -31,7 +33,7 @@ def register():
 
 def unregister():
     wm = bpy.types.WindowManager
-    material = bpy.types.Material
+    materialType = bpy.types.Material
 
     from bpy.utils import unregister_class
 
@@ -39,4 +41,4 @@ def unregister():
         unregister_class(cls)
 
     # delete variables saved in the scenes file
-    del material.edit
+    del materialType.edit
