@@ -104,7 +104,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         bb_mesh.update()
 
         bb_obj = bpy.data.objects.new(bb_mesh.name, bb_mesh)
-        bb_obj.display_type = "WIRE"
         bb_obj.matrix_world = obj.matrix_world
 
         return bb_obj, rotation_matrix
