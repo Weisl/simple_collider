@@ -63,21 +63,20 @@ def create_physics_material(physics_material_name):
 def assign_physics_material(object, physics_material_name):
     '''Remove existing materials from an object and assign the physics material'''
     if object.mode == 'EDIT':
-        selected_faces = []
+        me = object.data
+        mat = bpy.data.materials[physics_material_name]
 
-        all_materials = object.data.materials  # All the materials of the selected object
-        no_of_materials = len(all_materials)  #
+        me.materials.append(mat)
+        matList = object.material_slots
+        matIdx = matList[mat.name].slot_index
 
         bm = bmesh.from_edit_mesh(object.data)  # Create bmesh object from object mesh
 
         for face in bm.faces:  # Iterate over all of the object's faces
-            face.material_index = random.randint(0, no_of_materials - 1)  # Assing random material to face
+            if face.select == True:
+                face.material_index = matIdx
 
         object.data.update()  # Update the mesh from the bmesh data
-
-        # for poly in object.polygons:
-        #    if poly.select == True:
-        #        selected_faces.append(poly)
 
     else: # if object.mode == 'OBJECT':
         bpy.ops.object.mode_set(mode='OBJECT')

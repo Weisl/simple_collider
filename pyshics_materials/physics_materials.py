@@ -114,12 +114,15 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
 
     def execute(self, context):
         for obj in context.selected_objects:
-            try:
-                remove_materials(obj)
+            if obj.mode == 'EDIT':
                 assign_physics_material(obj, self.physics_material_name)
+            else:
+                try:
+                    remove_materials(obj)
+                    assign_physics_material(obj, self.physics_material_name)
 
-            except Exception as e:
-                print(f'ERROR assigning physics material: {str(e)}')
+                except Exception as e:
+                    print(f'ERROR assigning physics material: {str(e)}')
 
         return {'FINISHED'}
 

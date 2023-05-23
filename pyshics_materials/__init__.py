@@ -16,7 +16,7 @@ classes = (
 
 def register():
     scene = bpy.types.Scene
-    scene.use_physics_tag = bpy.props.BoolProperty(name="Physics Tag", default=True)
+    scene.use_physics_tag = bpy.props.BoolProperty(name="Filter", default=True)
     # scene.active_physics_material = bpy.props.StringProperty(name="Active Physics Material", default="")
     materialType = bpy.types.Material
 

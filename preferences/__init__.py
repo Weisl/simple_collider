@@ -23,8 +23,8 @@ def _load_handler(dummy):
     default_mat_name = prefs.physics_material_name
 
     mat = bpy.data.materials.get(default_mat_name, material_functions.create_default_material())
-
-    bpy.context.scene.collider_tools.material_list_index = list(bpy.data.materials).index(mat)
+    bpy.context.scene.active_physics_material = mat
+    # bpy.context.scene.collider_tools.material_list_index = list(bpy.data.materials).index(mat)
 
 
 def register():
