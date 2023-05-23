@@ -412,7 +412,13 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
         layout.label(text='Active Material')
-        self.draw_active_physics_material(colSettings, layout)
+        # self.draw_active_physics_material(colSettings, layout)
+        activeMat = context.scene.active_physics_material
+        if activeMat:
+            scene= context.scene
+            layout.label(text=activeMat.name)
+        else:
+            layout.label(text="None")
 
         if prefs.use_physics_material:
             layout.label(text='Material List')
