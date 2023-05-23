@@ -66,7 +66,8 @@ def assign_physics_material(object, physics_material_name):
         me = object.data
         mat = bpy.data.materials[physics_material_name]
 
-        me.materials.append(mat)
+        if mat.name not in me.materials:
+            me.materials.append(mat)
         matList = object.material_slots
         matIdx = matList[mat.name].slot_index
 
