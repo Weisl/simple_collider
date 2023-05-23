@@ -14,7 +14,7 @@ class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
 
         colSettings = context.scene.collider_tools
         draw_auto_convex_settings(colSettings, layout)
-
+        layout.label(text='May take up to a few minutes', icon='ERROR')
         layout.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')
 
         return
