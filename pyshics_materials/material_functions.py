@@ -79,11 +79,16 @@ def assign_physics_material(object, physics_material_name):
 
         object.data.update()  # Update the mesh from the bmesh data
 
-    else: # if object.mode == 'OBJECT':
+    elif object.mode == 'OBJECT':
+        remove_materials(object)
+        mat = create_physics_material(physics_material_name)
+        set_material(object, mat)
+    else:
         bpy.ops.object.mode_set(mode='OBJECT')
         remove_materials(object)
         mat = create_physics_material(physics_material_name)
         set_material(object, mat)
+
 
 
 
