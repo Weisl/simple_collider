@@ -4,13 +4,11 @@ import bpy
 import numpy
 import time
 import mathutils
-import gpu
 
-from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix, Quaternion
 
-from ..groups.user_groups import get_groups_identifier, get_groups_name, set_groups_object_color
-from ..pyshics_materials.material_functions import remove_materials, assign_physics_material
+from ..groups.user_groups import get_groups_identifier, set_groups_object_color
+from ..pyshics_materials.material_functions import assign_physics_material
 
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
