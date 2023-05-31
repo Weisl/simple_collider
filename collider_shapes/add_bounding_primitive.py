@@ -166,13 +166,14 @@ def draw_viewport_overlay(self, context):
 
 
     if context.space_data.shading.type == 'SOLID':
+        label = "Preview Mode"
+        value = self.shading_modes[self.shading_idx]
+        type = 'enum'
+    else:
         label = "Solid View"
         value = str(self.is_solidmode)
         type = 'bool'
-    else:
-        label = "Preview Mode"
-        value = self.shading_modes[self.shading_idx]
-        type = 'disabled'
+
     i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(V)',
                         type=type)
 
@@ -829,11 +830,6 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.matrix_world = mtx
 
         mat_name = context.scene.active_physics_material.name
-        # if bpy.data.materials[colSettings.material_list_index]:
-        #     mat_name = bpy.data.materials[colSettings.material_list_index].name
-        # else:  # No default material is selected
-        #     mat_name = self.prefs.physics_material_name
-
 
         if self.use_keep_original_materials == False or self.keep_original_material == False:
             assign_physics_material(bounding_object, mat_name)
