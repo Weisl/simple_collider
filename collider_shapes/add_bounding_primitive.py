@@ -4,8 +4,10 @@ import bpy
 import numpy
 import time
 import mathutils
+import gpu
 
 from mathutils import Vector, Matrix, Quaternion
+from gpu_extras.batch import batch_for_shader
 
 from ..groups.user_groups import get_groups_identifier, set_groups_object_color
 from ..pyshics_materials.material_functions import assign_physics_material
@@ -17,6 +19,9 @@ def alignObjects(new, old):
     """Align two objects"""
     new.matrix_world = old.matrix_world
 
+def create_name_number(name, nr):
+    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
+    return name + nr
 
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
@@ -121,19 +126,24 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
     return i
 
 
-def create_name_number(name, nr):
-    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
-    return name + nr
-
-
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
 
+    # text properties
     font_id = 0  # XXX, need to find out how best to get this.
     font_size = self.prefs.modal_font_size
     vertical_px_offset = 30 / 72 * font_size
-    left_margin = bpy.context.area.width / 2 - 190 / 72 * font_size
+    left_text_margin = bpy.context.area.width / 2 - 190 / 72 * font_size
+
+    # backdrop box
+    box_left = bpy.context.area.width / 2 - 240 / 72 * font_size
+    box_right = bpy.context.area.width / 2 + 240 / 72 * font_size
+    box_top = 300
+    box_bottom = 10
+    color = (0.1, 0.1, 0.1, 0.1)
     i = 1
+
+    draw_2d_backdrop(self,context,box_left, box_right, box_top, box_bottom, color)
 
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
 
@@ -147,21 +157,18 @@ def draw_viewport_overlay(self, context):
             type = 'enum'
             value = "GLOBAL" if self.my_space == 'GLOBAL' else "LOCAL"
 
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(G/L)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(G/L)',
                             type=type)
 
     # label = "Collider Group"
     # value = str(get_groups_name(self.collision_groups[self.collision_group_idx]))
-    # i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(T)', type='enum')
+    # i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(T)', type='enum')
 
     if self.use_creation_mode:
         label = "Creation Mode "
         value = self.creation_mode[self.creation_mode_idx]
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(M)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(M)',
                             type='enum')
-
-
-
 
     if context.space_data.shading.type == 'SOLID':
         label = "Preview Mode"
@@ -172,26 +179,26 @@ def draw_viewport_overlay(self, context):
         value = str(self.is_solidmode)
         type = 'bool'
 
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(V)',
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(V)',
                         type=type)
 
 
     if self.use_shape_change:
         label = "Collider Shape"
         value = self.get_shape_name()
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(Q)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(Q)',
                             type='enum')
 
     if self.use_cylinder_axis:
         label = "Cylinder Axis"
         value = str(self.cylinder_axis)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(X/Y/Z)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(X/Y/Z)',
                             type='enum')
 
     if self.use_modifier_stack:
         label = "Use Modifiers "
         value = str(self.my_use_modifier_stack)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(P)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(P)',
                             type='bool')
 
     # mode check is here because keep original mesh doesn't work for EDIT mode atm.
@@ -205,61 +212,76 @@ def draw_viewport_overlay(self, context):
         else:
             type = 'disabled'
 
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(O)', type=type)
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(O)', type=type)
 
     label = "Toggle X Ray "
     value = str(self.x_ray)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(C)', type='bool')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(C)', type='bool')
 
     label = "Opacity"
     value = self.current_settings_dic['alpha']
     value = '{initial_value:.3f}'.format(initial_value=value)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(A)', type='modal',
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(A)', type='modal',
                         highlight=self.opacity_active)
 
     label = "Shrink/Inflate"
     value = self.current_settings_dic['discplace_offset']
     value = '{initial_value:.3f}'.format(initial_value=value)
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(S)', type='modal',
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(S)', type='modal',
                         highlight=self.displace_active)
 
     if self.use_sphere_segments:
         label = "Sphere Segments "
         value = str(self.current_settings_dic['sphere_segments'])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(R)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(R)',
                             type='modal', highlight=self.sphere_segments_active)
 
     if self.use_decimation:
         label = "Decimate Ratio"
         value = self.current_settings_dic['decimate']
         value = '{initial_value:.3f}'.format(initial_value=value)
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(D)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(D)',
                             type='modal', highlight=self.decimate_active)
 
     if self.use_vertex_count:
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=value, key='(E)',
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, value=value, key='(E)',
                             type='modal', highlight=self.cylinder_segments_active)
 
     label = 'Operator Settings'
-    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='title')
+    i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, type='title')
 
     if self.valid_input_selection:
         if self.navigation:
             label = 'VIEWPORT NAVIGATION'
-            i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title',
+            i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, type='key_title',
                                 highlight=True)
 
         elif self.ignore_input:
             label = 'IGNORE INPUT (ALT)'
-            i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='key_title',
+            i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, type='key_title',
                                 highlight=True)
 
     else:  # Invalid selection (No colliders to be generated)
         label = 'Selection Invalid'
-        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, type='error')
+        i = draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, label, type='error')
 
+def draw_2d_backdrop(self, context, left, right, top, bottom, color):
+    midWidth = bpy.context.area.width / 2
+
+    vertices = (
+        (left, bottom), (right, bottom),
+        (left, top), (right, top))
+
+    indices = (
+        (0, 1, 2), (2, 1, 3))
+
+    shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+    batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
+    shader.bind()
+    shader.uniform_float("color", color)
+    batch.draw(shader)
 
 def get_loc_matrix(location):
     """get location matrix"""
