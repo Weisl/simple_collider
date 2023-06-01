@@ -140,7 +140,7 @@ def draw_viewport_overlay(self, context):
     box_right = bpy.context.area.width / 2 + 240 / 72 * font_size
     box_top = 300
     box_bottom = 10
-    color = (0.1, 0.1, 0.1, 0.1)
+    color = [0.0, 0.0, 0.0, 0.5]
     i = 1
 
     draw_2d_backdrop(self,context,box_left, box_right, box_top, box_bottom, color)
@@ -1118,6 +1118,7 @@ class OBJECT_OT_add_bounding_object():
         args = (self, context)
         # Add the region OpenGL drawing callback
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
+        #self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
 
         # add modal handler
