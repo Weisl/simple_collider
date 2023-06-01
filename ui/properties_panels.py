@@ -413,10 +413,16 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
 
         layout.label(text='Active Material')
         # self.draw_active_physics_material(colSettings, layout)
-        activeMat = context.scene.active_physics_material
+        scene = context.scene
+        activeMat = scene.active_physics_material
         if activeMat:
-            scene= context.scene
-            layout.label(text=activeMat.name)
+            split_left = layout.split(factor=0.75, align=True)
+            col_01 = split_left.column(align=True)
+            col_02 = split_left.column(align=True)
+
+            col_01.prop_search(scene, "active_physics_material", bpy.data, "materials", text='')
+            col_02.prop(activeMat, 'diffuse_color', text='')
+
         else:
             layout.label(text="None")
 
