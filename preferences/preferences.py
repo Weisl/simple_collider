@@ -420,6 +420,15 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
                                                        size=4)
 
+    # Modal Box
+    use_modal_box: bpy.props.BoolProperty(name="Use Backdrop", default=True)
+
+
+    modal_box_color: bpy.props.FloatVectorProperty(name="Backdrop Color",
+                                                       description="Object color and alpha for User Collider Group 03.",
+                                                       default=(0, 0, 0, 0.5), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=4)
+
     # Modal Fonts
     modal_color_default: bpy.props.FloatVectorProperty(name="Default",
                                                        description="Font color in the 3D viewport for settings that are reset every time the collision operator is called",
@@ -590,6 +599,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     ui_props = [
         "modal_font_size",
+        "use_modal_box",
+        "modal_box_color",
         "modal_color_title",
         "modal_color_highlight",
         "modal_color_error",

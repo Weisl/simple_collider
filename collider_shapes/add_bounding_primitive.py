@@ -271,9 +271,12 @@ def draw_viewport_overlay(self, context):
     box_right = bpy.context.area.width / 2 + 240 / 72 * font_size
     box_top = font_size * len(items)
     box_bottom = 10
-    color = [0.0, 0.0, 0.0, 0.5]
 
-    draw_2d_backdrop(self,context,box_left, box_right, box_top, box_bottom, color)
+    prefs = self.prefs
+    color = prefs.modal_box_color
+
+    if prefs.use_modal_box:
+        draw_2d_backdrop(self,context,box_left, box_right, box_top, box_bottom, color)
 
     for i, item in enumerate(items):
         draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, item['label'], value=item['value'], key=item['key'], type=item['type'], highlight=item['highlight'])
