@@ -128,8 +128,6 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
-    i = 1
-
     items = []
 
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
@@ -279,7 +277,7 @@ def draw_viewport_overlay(self, context):
         draw_2d_backdrop(self,context,box_left, box_right, box_top, box_bottom, color)
 
     for i, item in enumerate(items):
-        draw_modal_item(self, font_id, i, vertical_px_offset, left_text_margin, item['label'], value=item['value'], key=item['key'], type=item['type'], highlight=item['highlight'])
+        draw_modal_item(self, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'], value=item['value'], key=item['key'], type=item['type'], highlight=item['highlight'])
 
 
 
