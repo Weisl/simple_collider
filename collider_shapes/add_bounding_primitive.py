@@ -951,15 +951,19 @@ class OBJECT_OT_add_bounding_object():
     def cancel_cleanup(self, context):
         if self.is_mesh_to_collider:
             if self.new_colliders_list:
-                for collider_obj, data in zip(self.new_colliders_list, self.original_obj_data):
+                for collider_obj in self.new_colliders_list:
                     # Remove previously created collisions
                     if collider_obj:
                         objs = bpy.data.objects
                         objs.remove(collider_obj, do_unlink=True)
 
+
+                for data in self.original_obj_data:
                     # Assign unlinked data to user groups
                     original_obj = data['obj']
                     original_user_groups = data['users_collection']
+
+                    bpy.context.collection.objects.link(original_obj)
                     for col in original_user_groups:
                         self.add_to_collections(original_obj, col)
 

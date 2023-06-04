@@ -132,11 +132,14 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
-            bpy.context.collection.objects.link(new_collider)
-
             user_collections = obj.users_collection
 
+            # New collider to scene
+            bpy.context.collection.objects.link(new_collider)
+
+            # store initial state for operation cancel
             self.original_obj_data.append(self.store_initial_obj_state(obj, user_collections))
+
 
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
