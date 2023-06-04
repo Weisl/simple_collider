@@ -71,7 +71,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_shape_change = True
         self.use_decimation = True
         self.is_mesh_to_collider = True
-        self.use_creation_mode = False
+        # self.use_creation_mode = False
         self.shape = 'mesh_shape'
         self.use_keep_original_materials = True
 
@@ -120,6 +120,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().execute(context)
 
         self.original_obj_data = []
+        collider_data = []
+        user_collections = []
 
         # Create the bounding geometry, depending on edit or object mode.
         for obj in self.selected_objects:
@@ -130,15 +132,14 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
+            bpy.context.collection.objects.link(new_collider)
+
             user_collections = obj.users_collection
 
-            self.new_colliders_list.append(new_collider)
             self.original_obj_data.append(self.store_initial_obj_state(obj, user_collections))
 
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
-
-            self.primitive_postprocessing(context, new_collider, user_collections)
 
             prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
@@ -149,7 +150,35 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             else:
                 basename = obj.name
 
+            mesh_collider_data = {}
+            mesh_collider_data['basename'] = basename
+            mesh_collider_data['new_collider'] = new_collider
+            collider_data.append(mesh_collider_data)
+
+        if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            for mesh_collider_data in collider_data:
+                basename = mesh_collider_data['basename']
+                new_collider = mesh_collider_data['new_collider']
+
+                self.primitive_postprocessing(context, new_collider, user_collections)
+                self.new_colliders_list.append(new_collider)
+                super().set_collider_name(new_collider, basename)
+
+        else: # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            bpy.ops.object.select_all(action='DESELECT')
+            last_selected = None
+            for mesh_collider_data in collider_data:
+                basename = mesh_collider_data['basename']
+                new_collider = mesh_collider_data['new_collider']
+                new_collider.select_set(True)
+
+            context.view_layer.objects.active = new_collider
+            bpy.ops.object.join()
+
+            self.primitive_postprocessing(context, new_collider, user_collections)
+            self.new_colliders_list.append(new_collider)
             super().set_collider_name(new_collider, basename)
+
 
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convert to Collider", elapsed_time)
