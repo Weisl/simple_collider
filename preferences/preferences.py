@@ -426,7 +426,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     modal_box_color: bpy.props.FloatVectorProperty(name="Backdrop Color",
                                                        description="Object color and alpha for User Collider Group 03.",
-                                                       default=(0, 0, 0, 0.5), min=0.0, max=1.0, subtype='COLOR',
+                                                       default=(0.2, 0.2, 0.2, 0.5), min=0.0, max=1.0, subtype='COLOR',
                                                        size=4)
 
     # Modal Fonts

@@ -267,7 +267,7 @@ def draw_viewport_overlay(self, context):
     # backdrop box
     box_left = bpy.context.area.width / 2 - 240 / 72 * font_size
     box_right = bpy.context.area.width / 2 + 240 / 72 * font_size
-    box_top = font_size * len(items)
+    box_top = font_size/2 * len(items)
     box_bottom = 10
 
     prefs = self.prefs
