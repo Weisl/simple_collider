@@ -1273,6 +1273,12 @@ class OBJECT_OT_add_bounding_object():
             idx = 1 if self.keep_original_material else 0
             context.space_data.shading.color_type = self.shading_modes[idx]
 
+            for objinfo in self.original_obj_data:
+                ob = objinfo['obj']
+                collections = objinfo['users_collection']
+                for col in collections:
+                    bpy.data.collections[col].objects.link(ob)
+
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':

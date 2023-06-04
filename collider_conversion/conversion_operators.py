@@ -108,7 +108,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def store_initial_obj_state(self, obj, collections):
-        dic = {'obj': obj}
+        dic = {}
+        dic['obj'] = obj
         col_list = [col.name for col in collections]
         dic['users_collection'] = col_list
 
