@@ -5,7 +5,7 @@ from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-tmp_sphere_name = 'box_collider'
+tmp_sphere_name = 'sphere_collider'
 
 
 def distance_vec(point1: Vector, point2: Vector):

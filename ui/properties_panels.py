@@ -317,6 +317,8 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         row = col.row(align=True)
         row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
         row = col.row(align=True)
+        row.operator("mesh.add_bounding_capsule", icon='MESH_CAPSULE')
+        row = col.row(align=True)
         row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
         row = col.row(align=True)
         row.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')

@@ -557,6 +557,8 @@ class OBJECT_OT_add_bounding_object():
             return 'BOX'
         elif self.shape == 'sphere_shape':
             return 'SPHERE'
+        elif self.shape == 'capsule_shape':
+            return 'CAPSULE'
         elif self.shape == 'convex_shape':
             return 'CONVEX'
         else:  # identifier == 'mesh_shape':
@@ -569,6 +571,8 @@ class OBJECT_OT_add_bounding_object():
             return prefs.box_shape
         elif identifier == 'sphere_shape':
             return prefs.sphere_shape
+        elif identifier == 'capsule_shape':
+            return prefs.capsule_shape
         elif identifier == 'convex_shape':
             return prefs.convex_shape
         else:  # identifier == 'mesh_shape':

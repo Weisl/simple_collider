@@ -9,6 +9,7 @@ prefs.collision_string_prefix = ''
 prefs.collision_string_suffix = ''
 prefs.box_shape = 'Box'
 prefs.sphere_shape = 'Sphere'
+prefs.capsule_shape = 'Capsule'
 prefs.convex_shape = 'Convex'
 prefs.mesh_shape = 'Mesh'
 prefs.collider_groups_enabled = True
