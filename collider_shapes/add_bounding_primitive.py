@@ -865,7 +865,13 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.parent = None
             bounding_object.matrix_world = mtx
 
-        mat_name = context.scene.active_physics_material.name
+        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        if context.scene.active_physics_material:
+            mat_name = context.scene.active_physics_material.name
+        elif prefs.physics_material_name:
+            mat_name = prefs.physics_material_name
+        else:
+            mat_name = ''
 
         if self.use_keep_original_materials == False or self.keep_original_material == False:
             assign_physics_material(bounding_object, mat_name)
