@@ -19,7 +19,6 @@ def create_material(name, diffuse, fakeUser=True):
 
     return mat
 
-
 def set_material(ob, mat):
     '''Assign material to object'''
     # add material to object
@@ -36,16 +35,20 @@ def remove_materials(obj):
 def create_default_material():
     '''Create a default material'''
     prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-    default_mat_name = prefs.physics_material_name
 
-    if not default_mat_name:
-        default_mat_name = 'COL_DEFAULT'
+    if prefs:
+        default_mat_name = prefs.physics_material_name
 
-    if default_mat_name and default_mat_name in bpy.data.materials:
-        default_material = bpy.data.materials[default_mat_name]
+        if not default_mat_name:
+            default_mat_name = 'COL_DEFAULT'
+
+        if default_mat_name and default_mat_name in bpy.data.materials:
+            default_material = bpy.data.materials[default_mat_name]
+        else:
+            default_material = create_material(default_mat_name, (0.0, 0.5, 1, 0.5))
     else:
+        default_mat_name = 'COL_DEFAULT'
         default_material = create_material(default_mat_name, (0.0, 0.5, 1, 0.5))
-
 
     return default_material
 
@@ -89,8 +92,12 @@ def assign_physics_material(object, physics_material_name):
         mat = create_physics_material(physics_material_name)
         set_material(object, mat)
 
+def set_default_active_mat():
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    default_mat_name = prefs.physics_material_name
 
-
+    mat = bpy.data.materials.get(default_mat_name, create_default_material())
+    bpy.context.scene.active_physics_material = mat
 
 
 

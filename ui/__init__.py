@@ -7,7 +7,7 @@ from . import popup
 from .properties_panels import collider_presets_folder
 
 classes = (
-    properties_panels.EXPLORER_OT_open_directory,
+    properties_panels.EXPLORER_OT_open_directory_new,
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.BUTTON_OT_auto_convex,
     properties_panels.OBJECT_MT_collision_presets,
