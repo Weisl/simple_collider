@@ -10,7 +10,7 @@ from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
 
 from ..groups.user_groups import get_groups_identifier, set_groups_object_color
-from ..pyshics_materials.material_functions import assign_physics_material
+from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, set_active_physics_material
 
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
@@ -870,6 +870,8 @@ class OBJECT_OT_add_bounding_object():
             mat_name = context.scene.active_physics_material.name
         elif prefs.physics_material_name:
             mat_name = prefs.physics_material_name
+            mat = create_default_material()
+            set_active_physics_material(context, mat.name)
         else:
             mat_name = ''
 
