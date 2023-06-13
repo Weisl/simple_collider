@@ -7,7 +7,7 @@ from . import properties
 from . import keymap
 from .properties import ColliderTools_Properties
 from .preferences import update_panel_category
-from ..pyshics_materials import material_functions
+from ..pyshics_materials.material_functions import set_default_active_mat
 
 classes = (
     properties.ColliderTools_Properties,
@@ -19,13 +19,7 @@ classes = (
 
 @persistent
 def _load_handler(dummy):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-    default_mat_name = prefs.physics_material_name
-
-    mat = bpy.data.materials.get(default_mat_name, material_functions.create_default_material())
-    bpy.context.scene.active_physics_material = mat
-    # bpy.context.scene.collider_tools.material_list_index = list(bpy.data.materials).index(mat)
-
+    set_default_active_mat()
 
 def register():
     from bpy.utils import register_class

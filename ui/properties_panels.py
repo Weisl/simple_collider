@@ -5,6 +5,7 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
+from ..pyshics_materials.material_functions import create_default_material, set_active_physics_material
 
 def collider_presets_folder():
     # Make sure there is a directory for presets
@@ -206,7 +207,7 @@ def draw_naming_presets(self, context):
 
 ############## OPERATORS ##############################
 
-class EXPLORER_OT_open_directory(bpy.types.Operator):
+class EXPLORER_OT_open_directory_new(bpy.types.Operator):
     """Open render output directory in Explorer"""
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"
@@ -415,20 +416,16 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         # self.draw_active_physics_material(colSettings, layout)
         scene = context.scene
         activeMat = scene.active_physics_material
-        if activeMat:
-            split_left = layout.split(factor=0.75, align=True)
-            col_01 = split_left.column(align=True)
-            col_02 = split_left.column(align=True)
 
-            col_01.prop_search(scene, "active_physics_material", bpy.data, "materials", text='')
-            col_02.prop(activeMat, 'diffuse_color', text='')
+        split_left = layout.split(factor=0.75, align=True)
+        col_01 = split_left.column(align=True)
+        col_02 = split_left.column(align=True)
 
-        else:
-            layout.label(text="None")
+        col_01.prop_search(scene, "active_physics_material", bpy.data, "materials", text='')
+        col_02.prop(activeMat, 'diffuse_color', text='')
 
         if prefs.use_physics_material:
             layout.label(text='Material List')
-            # self.draw_active_physics_material(colSettings, layout)
             layout.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings,
                               "material_list_index")
 
