@@ -10,7 +10,7 @@ from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
 
 from ..groups.user_groups import get_groups_identifier, set_groups_object_color
-from ..pyshics_materials.material_functions import assign_physics_material
+from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, set_active_physics_material
 
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
@@ -865,7 +865,15 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.parent = None
             bounding_object.matrix_world = mtx
 
-        mat_name = context.scene.active_physics_material.name
+        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        if context.scene.active_physics_material:
+            mat_name = context.scene.active_physics_material.name
+        elif prefs.physics_material_name:
+            mat_name = prefs.physics_material_name
+            mat = create_default_material()
+            set_active_physics_material(context, mat.name)
+        else:
+            mat_name = ''
 
         if self.use_keep_original_materials == False or self.keep_original_material == False:
             assign_physics_material(bounding_object, mat_name)
