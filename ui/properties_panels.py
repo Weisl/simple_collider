@@ -154,7 +154,10 @@ def draw_creation_menu(context, layout, settings=False):
     # layout.separator()
     col =layout.column(align=True)
     row = col.row(align=True)
+    row.operator("mesh.add_bounding_capsule", icon='MESH_CAPSULE')
+    row = col.row(align=True)
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
 
     # layout.separator()
     row = col.row(align=True)
@@ -317,8 +320,6 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         row.operator("mesh.add_bounding_box", icon='MESH_CUBE')
         row = col.row(align=True)
         row.operator("mesh.add_bounding_cylinder", icon='MESH_CYLINDER')
-        row = col.row(align=True)
-        row.operator("mesh.add_bounding_capsule", icon='MESH_CAPSULE')
         row = col.row(align=True)
         row.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
         row = col.row(align=True)
