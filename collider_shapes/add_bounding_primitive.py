@@ -172,6 +172,12 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': 'enum', 'highlight': False}
         items.append(item)
 
+    if self.use_capsule_axis:
+        label = "Cylinder Axis"
+        value = str(self.cylinder_axis)
+        item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': 'enum', 'highlight': False}
+        items.append(item)
+
     if self.use_modifier_stack:
         label = "Use Modifiers "
         value = str(self.my_use_modifier_stack)
@@ -213,6 +219,12 @@ def draw_viewport_overlay(self, context):
         label = "Sphere Segments "
         value = str(self.current_settings_dic['sphere_segments'])
         item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal', 'highlight': self.sphere_segments_active}
+        items.append(item)
+
+    if self.use_capsule_segments:
+        label = "Capsule Segments "
+        value = str(self.current_settings_dic['capsule_segments'])
+        item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal', 'highlight': self.capsule_segments_active}
         items.append(item)
 
     if self.use_decimation:
@@ -541,13 +553,14 @@ class OBJECT_OT_add_bounding_object():
         user_group = self.collision_groups[self.collision_group_idx]
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
-    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
+    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments):
         dict = {}
         dict['alpha'] = alpha
         dict['discplace_offset'] = offset
         dict['decimate'] = decimate
         dict['sphere_segments'] = sphere_segments
         dict['cylinder_segments'] = cylinder_segments
+        dict['capsule_segments'] = capsule_segments
 
         return dict
 
@@ -1027,6 +1040,8 @@ class OBJECT_OT_add_bounding_object():
         self.use_weld_modifier = False
         self.use_space = False
         self.use_cylinder_axis = False
+        self.use_capsule_axis = False
+        self.use_capsule_segments = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
         self.use_shape_change = False
@@ -1113,6 +1128,7 @@ class OBJECT_OT_add_bounding_object():
         self.cylinder_axis = colSettings.default_cylinder_axis
         self.cylinder_segments_active = False
         self.sphere_segments_active = False
+        self.capsule_segments_active = False
 
         # Display settings
         self.color_type = context.space_data.shading.color_type
@@ -1142,7 +1158,7 @@ class OBJECT_OT_add_bounding_object():
         self.is_solidmode = True if context.space_data.shading.type == 'SOLID' else False
 
         dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments,
-                                         colSettings.default_cylinder_segments)
+                                         colSettings.default_cylinder_segments, colSettings.default_capsule_segments)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -1180,6 +1196,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
 
             return {'PASS_THROUGH'}
 
@@ -1303,6 +1320,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'D' and event.value == 'RELEASE':
@@ -1311,6 +1329,7 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
             self.mouse_position = [event.mouse_x, event.mouse_y]
             self.draw_callback_px(context)
@@ -1321,6 +1340,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'E' and event.value == 'RELEASE':
@@ -1329,6 +1349,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.opacity_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'T' and event.value == 'RELEASE':
@@ -1418,6 +1439,15 @@ class OBJECT_OT_add_bounding_object():
                 # check if value changed to avoid regenerating collisions for the same value
                 if segments != int(round(self.current_settings_dic['sphere_segments'])):
                     self.current_settings_dic['sphere_segments'] = segments
+                    self.execute(context)
+
+            if self.capsule_segments_active:
+                delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
+                segments = int(abs(self.ref_settings_dic['capsule_segments'] - delta))
+
+                # check if value changed to avoid regenerating collisions for the same value
+                if segments != int(round(self.current_settings_dic['capsule_segments'])):
+                    self.current_settings_dic['capsule_segments'] = segments
                     self.execute(context)
 
         # passthrough specific events to blenders default behavior

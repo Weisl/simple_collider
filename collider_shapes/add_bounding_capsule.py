@@ -17,6 +17,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.use_space = True
         self.use_modifier_stack = True
         self.use_global_local_switches = True
+        self.use_capsule_axis = True
+        self.use_capsule_segments = True
         self.shape = 'capsule_shape'
 
 
@@ -24,6 +26,13 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         super().invoke(context, event)
         return {'RUNNING_MODAL'}
 
+    def set_modal_capsule_segments_active(self, context):
+        self.capsule_segments_active = not self.capsule_segments_active
+        self.displace_active = False
+        self.opacity_active = False
+        self.decimate_active = False
+        self.cylinder_segments_active = False
+        self.execute(context)
     def modal(self, context, event):
         status = super().modal(context, event)
 
@@ -42,6 +51,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         elif event.type == 'L' and event.value == 'RELEASE':
             self.my_space = 'LOCAL'
             self.execute(context)
+
+        # change bounding object settings
+        if event.type == 'R' and event.value == 'RELEASE':
+            self.set_modal_capsule_segments_active(context)
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
@@ -76,6 +89,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
+            matrix_WS = obj.matrix_world
+            loc, rot, sca = matrix_WS.decompose()
+
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
@@ -95,7 +111,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
-            data = Capsule.create_capsule(radius=radius, depth=height, uv_profile="FIXED")
+            data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'], latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius, depth=height, uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
                 vts=data["vts"],
@@ -126,6 +142,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             super().set_collider_name(new_collider, parent_name)
+            new_collider.matrix_world = parent.matrix_world
+            self.custom_set_parent(context, parent, new_collider)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

@@ -1,5 +1,4 @@
 import bpy
-import bmesh
 import numpy as np
 
 from math import sqrt, radians
