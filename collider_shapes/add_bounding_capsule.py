@@ -123,6 +123,19 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            coordinates = []
+            height = []
+
+            # Scale has to be applied before location
+            bounding_box, center = self.generate_bounding_box(verts_co)
+            center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+
+            # store data needed to generate a bounding box in a dictionary
+            bounding_capsule_data['parent'] = self.active_obj
+            bounding_capsule_data['verts_loc'] = verts_co
+            bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
+            collider_data.append(bounding_capsule_data)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
