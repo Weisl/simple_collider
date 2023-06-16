@@ -62,7 +62,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
-            
+
+        # define cylinder axis
+        elif event.type == 'X' or event.type == 'Y' or event.type == 'Z' and event.value == 'RELEASE':
+            self.cylinder_axis = event.type
+            self.execute(context)
+
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
@@ -99,6 +104,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
                 bounding_box, center = self.generate_bounding_box(co)
 
+                coordinates = []
+
                 for vertex in used_vertices:
 
                     # Ignore Scale
@@ -106,15 +113,23 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         v = vertex.co @ get_sca_matrix(sca)
                         center = sum((Vector(matrix_WS @ Vector(b))
                                       for b in bounding_box), Vector()) / 8.0
+
                     else:
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
                         center = sum((Vector(b)
                                       for b in bounding_box), Vector()) / 8.0
 
+                    if self.cylinder_axis == 'X':
+                        coordinates.append([v.y, v.z, v.x])
+                    elif self.cylinder_axis == 'Y':
+                        coordinates.append([v.x, v.z, v.y])
+                    elif self.cylinder_axis == 'Z':
+                        coordinates.append([v.x, v.y, v.z])
+
                 # store data needed to generate a bounding box in a dictionary
                 bounding_capsule_data['parent'] = obj
-                bounding_capsule_data['verts_loc'] = co
+                bounding_capsule_data['verts_loc'] = coordinates
                 bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
                 collider_data.append(bounding_capsule_data)
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
