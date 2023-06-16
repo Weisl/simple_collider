@@ -1,7 +1,9 @@
 import bpy
 from bpy.types import Operator
+from mathutils import Matrix, Vector
 from . import capsule_generation as Capsule
 
+from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'capsule_collider'
@@ -95,12 +97,32 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
+                bounding_box, center = self.generate_bounding_box(co)
+
+                for vertex in used_vertices:
+
+                    # Ignore Scale
+                    if self.my_space == 'LOCAL':
+                        v = vertex.co @ get_sca_matrix(sca)
+                        center = sum((Vector(matrix_WS @ Vector(b))
+                                      for b in bounding_box), Vector()) / 8.0
+                    else:
+                        # Scale has to be applied before location
+                        v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                        center = sum((Vector(b)
+                                      for b in bounding_box), Vector()) / 8.0
 
                 # store data needed to generate a bounding box in a dictionary
                 bounding_capsule_data['parent'] = obj
                 bounding_capsule_data['verts_loc'] = co
-
+                bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
                 collider_data.append(bounding_capsule_data)
+            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+
+                # get list of all vertex coordinates in global space
+                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                verts_co = verts_co + ws_vtx_co
+
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -108,6 +130,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             # get data from dictionary
             parent = bounding_capsule_data['parent']
             verts_loc = bounding_capsule_data['verts_loc']
+            center = bounding_capsule_data['center_point']
 
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
@@ -124,6 +147,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             bm.to_mesh(mesh_data)
             bm.free()
             new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
+            new_collider.location = center
             #context.scene.collection.objects.link(new_collider)
 
             # Get the combined object
@@ -142,7 +166,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             super().set_collider_name(new_collider, parent_name)
-            new_collider.matrix_world = parent.matrix_world
             self.custom_set_parent(context, parent, new_collider)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
