@@ -1,7 +1,9 @@
 import bpy
 from bpy.types import Operator
 from mathutils import Matrix, Vector
+import numpy as np
 from . import capsule_generation as Capsule
+from .capsule_height_radius import calculate_bounding_capsule
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -101,9 +103,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
-                co = self.get_point_positions(obj, self.my_space, used_vertices)
-                bounding_box, center = self.generate_bounding_box(co)
-
                 coordinates = []
 
                 for vertex in used_vertices:
@@ -111,14 +110,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                     # Ignore Scale
                     if self.my_space == 'LOCAL':
                         v = vertex.co @ get_sca_matrix(sca)
-                        center = sum((Vector(matrix_WS @ Vector(b))
-                                      for b in bounding_box), Vector()) / 8.0
 
                     else:
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
-                        center = sum((Vector(b)
-                                      for b in bounding_box), Vector()) / 8.0
 
                     if self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z, v.x])
@@ -126,6 +121,13 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         coordinates.append([v.x, v.z, v.y])
                     elif self.cylinder_axis == 'Z':
                         coordinates.append([v.x, v.y, v.z])
+
+                vrts = []
+                if self.my_space == 'LOCAL':
+                    center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
+                else:
+                    center = sum((Vector(v) for v in coordinates), Vector()) / len(used_vertices)
+
 
                 # store data needed to generate a bounding box in a dictionary
                 bounding_capsule_data['parent'] = obj
@@ -143,8 +145,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             height = []
 
             # Scale has to be applied before location
-            bounding_box, center = self.generate_bounding_box(verts_co)
-            center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+            center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
 
             # store data needed to generate a bounding box in a dictionary
             bounding_capsule_data['parent'] = self.active_obj
@@ -162,6 +163,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
+            #height, radius = calculate_bounding_capsule(verts_loc)
+            print("Optimal bounding capsule height:", height)
+            print("Optimal bounding capsule radius:", radius)
             data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'], latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius, depth=height, uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
@@ -174,18 +178,14 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             mesh_data = bpy.data.meshes.new("Capsule")
             bm.to_mesh(mesh_data)
             bm.free()
+
             new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
             new_collider.location = center
             #context.scene.collection.objects.link(new_collider)
 
-            # Get the combined object
-            #new_collider = bpy.context.object
-
-            # Move the bounding capsule to the same location as the original object
-            #new_collider.location = parent.location
-
-            # Align the bounding capsule with the original object's rotation
-            #new_collider.rotation_euler = parent.rotation_euler
+            if  self.my_space == 'LOCAL' and self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+                # Align the bounding capsule with the original object's rotation
+                new_collider.rotation_euler = parent.rotation_euler
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
