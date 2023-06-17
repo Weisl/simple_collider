@@ -140,8 +140,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            coordinates = []
-            height = []
 
             # Scale has to be applied before location
             center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
