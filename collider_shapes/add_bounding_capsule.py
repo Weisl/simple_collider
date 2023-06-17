@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 from mathutils import Matrix, Vector
 from . import capsule_generation as Capsule
-
+from math import radians
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -118,14 +118,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    # if self.cylinder_axis == 'X':
-                    #     coordinates.append([v.y, v.z, v.x])
-                    # elif self.cylinder_axis == 'Y':
-                    #     coordinates.append([v.x, v.z, v.y])
-                    # elif self.cylinder_axis == 'Z':
-                    #     coordinates.append([v.x, v.y, v.z])
-
-                    coordinates.append([v.x, v.y, v.z])
+                    if self.cylinder_axis == 'X':
+                        coordinates.append([v.y, v.z, v.x])
+                    elif self.cylinder_axis == 'Y':
+                        coordinates.append([v.x, v.z, v.y])
+                    elif self.cylinder_axis == 'Z':
+                        coordinates.append([v.x, v.y, v.z])
 
                 center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
 
@@ -187,6 +185,11 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             if  self.my_space == 'LOCAL' and self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
+
+            if self.cylinder_axis == 'X':
+                new_collider.rotation_euler.rotate_axis("Y", radians(90))
+            elif self.cylinder_axis == 'Y':
+                new_collider.rotation_euler.rotate_axis("X", radians(90))
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
