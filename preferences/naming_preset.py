@@ -23,6 +23,7 @@ class COLLISION_preset(AddPresetBase, Operator):
         "prefs.collision_string_suffix",
         "prefs.box_shape",
         "prefs.sphere_shape",
+        "prefs.capsule_shape",
         "prefs.convex_shape",
         "prefs.mesh_shape",
         "prefs.collider_groups_enabled",

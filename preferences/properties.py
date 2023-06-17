@@ -130,6 +130,11 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    default=16,
                                                    )
 
+    default_capsule_segments: bpy.props.IntProperty(name="Capsule Segments",
+                                                   description="Amount of sphere segments.",
+                                                   default=16,
+                                                   )
+
     default_color_type: bpy.props.EnumProperty(name="Color Type",
                                          items=(('OBJECT', 'Collider Groups', 'Color Type: Collider Groups'),
                                                 ('MATERIAL', 'Physics Material', 'Color Type: Physic Materials'),

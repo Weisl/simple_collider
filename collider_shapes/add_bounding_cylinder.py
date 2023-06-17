@@ -1,34 +1,14 @@
 import bpy
-import bmesh
 import numpy as np
 
 from math import sqrt, radians
 
 from bpy.types import Operator
 from mathutils import Matrix, Vector
-
+from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'cylindrical_collider'
-
-
-def get_sca_matrix(scale):
-    """get scale matrix"""
-    scale_mx = Matrix()
-    for i in range(3):
-        scale_mx[i][i] = scale[i]
-    return scale_mx
-
-
-def get_loc_matrix(location):
-    """get location matrix"""
-    return Matrix.Translation(location)
-
-
-def get_rot_matrix(rotation):
-    """get rotation matrix"""
-    return rotation.to_matrix().to_4x4()
-
 
 class ProjectorStack:
     """

@@ -154,7 +154,10 @@ def draw_creation_menu(context, layout, settings=False):
     # layout.separator()
     col =layout.column(align=True)
     row = col.row(align=True)
+    row.operator("mesh.add_bounding_capsule", icon='MESH_CAPSULE')
+    row = col.row(align=True)
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
 
     # layout.separator()
     row = col.row(align=True)

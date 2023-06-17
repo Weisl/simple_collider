@@ -79,7 +79,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         super().invoke(context, event)
 
         self.collider_shapes_idx = 3
-        self.collider_shapes = ['box_shape', 'sphere_shape', 'convex_shape',
+        self.collider_shapes = ['box_shape', 'sphere_shape', 'capsule_shape', 'convex_shape',
                                 'mesh_shape']
 
         self.shape = self.collider_shapes[self.collider_shapes_idx]

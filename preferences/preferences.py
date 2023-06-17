@@ -342,6 +342,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                         description='Naming used to define box colliders')
     sphere_shape: bpy.props.StringProperty(name="Sphere Collision", default="USP",
                                            description='Naming used to define sphere colliders')
+    capsule_shape: bpy.props.StringProperty(name="Capsule Collision", default="UCP",
+                                       description='Naming used to define capsule colliders')
     convex_shape: bpy.props.StringProperty(name="Convex Collision", default="UCX",
                                            description='Naming used to define convex colliders')
     mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
@@ -555,6 +557,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     props_shapes = [
         "box_shape",
         "sphere_shape",
+        "capsule_shape",
         "convex_shape",
         "mesh_shape",
     ]
