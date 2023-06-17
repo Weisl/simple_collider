@@ -1,9 +1,8 @@
 import bpy
 from bpy.types import Operator
 from mathutils import Matrix, Vector
-import numpy as np
 from . import capsule_generation as Capsule
-from .capsule_height_radius import calculate_bounding_capsule
+
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -37,6 +36,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.decimate_active = False
         self.cylinder_segments_active = False
         self.execute(context)
+
+
     def modal(self, context, event):
         status = super().modal(context, event)
 
@@ -98,8 +99,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
+            # Save base object coordinates
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
+
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # used_vertices uses local space.
@@ -115,18 +118,16 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    if self.cylinder_axis == 'X':
-                        coordinates.append([v.y, v.z, v.x])
-                    elif self.cylinder_axis == 'Y':
-                        coordinates.append([v.x, v.z, v.y])
-                    elif self.cylinder_axis == 'Z':
-                        coordinates.append([v.x, v.y, v.z])
+                    # if self.cylinder_axis == 'X':
+                    #     coordinates.append([v.y, v.z, v.x])
+                    # elif self.cylinder_axis == 'Y':
+                    #     coordinates.append([v.x, v.z, v.y])
+                    # elif self.cylinder_axis == 'Z':
+                    #     coordinates.append([v.x, v.y, v.z])
 
-                vrts = []
-                if self.my_space == 'LOCAL':
-                    center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
-                else:
-                    center = sum((Vector(v) for v in coordinates), Vector()) / len(used_vertices)
+                    coordinates.append([v.x, v.y, v.z])
+
+                center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
 
 
                 # store data needed to generate a bounding box in a dictionary
