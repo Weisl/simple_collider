@@ -1,9 +1,11 @@
-from . import conversion_operators
+from . import convert_to_collider
+from . import convert_to_mesh
+from . import regenerate_name
 
 classes = (
-    conversion_operators.OBJECT_OT_convert_to_collider,
-    conversion_operators.OBJECT_OT_convert_to_mesh,
-    conversion_operators.OBJECT_OT_regenerate_name,
+    convert_to_collider.OBJECT_OT_convert_to_collider,
+    convert_to_mesh.OBJECT_OT_convert_to_mesh,
+    regenerate_name.OBJECT_OT_regenerate_name,
 )
 
 

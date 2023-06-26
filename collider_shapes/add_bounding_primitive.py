@@ -853,6 +853,15 @@ class OBJECT_OT_add_bounding_object():
         print(shape)
         print("Time elapsed: ", str(time))
 
+    @staticmethod
+    def store_initial_obj_state(obj, collections):
+        dic = {}
+        dic['obj'] = obj
+        col_list = [col.name for col in collections]
+        dic['users_collection'] = col_list
+
+        return dic
+
     def convert_to_mesh(self, context, object):
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
@@ -993,16 +1002,6 @@ class OBJECT_OT_add_bounding_object():
                         objs = bpy.data.objects
                         objs.remove(collider_obj, do_unlink=True)
 
-
-                for data in self.original_obj_data:
-                    # Assign unlinked data to user groups
-                    original_obj = data['obj']
-                    original_user_groups = data['users_collection']
-
-                    bpy.context.collection.objects.link(original_obj)
-                    for col in original_user_groups:
-                        self.add_to_collections(original_obj, col)
-
         # All other operators
         else:
             # Remove previously created collisions
@@ -1011,6 +1010,16 @@ class OBJECT_OT_add_bounding_object():
                     if obj:
                         objs = bpy.data.objects
                         objs.remove(obj, do_unlink=True)
+
+        # delete original data
+        for data in self.original_obj_data:
+            # Assign unlinked data to user groups
+            original_obj = data['obj']
+            original_user_groups = data['users_collection']
+
+            bpy.context.collection.objects.link(original_obj)
+            for col in original_user_groups:
+                self.add_to_collections(original_obj, col)
 
         context.space_data.shading.color_type = self.original_color_type
 
@@ -1068,7 +1077,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_recenter_origin = False
         self.use_custom_rotation = False
 
-        self.valid_object_types = ['CURVE', 'SURFACE', 'FONT', 'META']
+        self.valid_object_types = ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
 
     @classmethod
     def poll(cls, context):
@@ -1484,6 +1493,9 @@ class OBJECT_OT_add_bounding_object():
         # Remove objects from previous generation
         self.remove_objects(self.new_colliders_list)
         self.new_colliders_list = []
+
+        # original data to be restored on cancelation or deleted on accept
+        self.original_obj_data = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []

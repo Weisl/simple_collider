@@ -128,8 +128,15 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             if obj and obj.type in self.valid_object_types:
-                print('ZZZZZZZZZZZZZZZZZZZZZZZZZ')
-                obj = self.convert_to_mesh(context, obj)
+                if obj.type is not 'MESH':
+
+                    # store initial state for operation cancel
+                    original_obj = obj
+                    user_collections = original_obj.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(original_obj, user_collections))
+
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, obj)
 
             context.view_layer.objects.active = obj
             bounding_box_data = {}
