@@ -174,9 +174,6 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if not self.is_valid_object(obj):
                 continue
 
-            if obj and obj.type in self.valid_object_types:
-                obj = self.convert_to_mesh(context, obj)
-
             initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene

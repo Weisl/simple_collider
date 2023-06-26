@@ -153,8 +153,6 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             # skip if invalid object
             if not self.is_valid_object(obj):
                 continue
-            if obj and obj.type in self.valid_object_types:
-                obj = self.convert_to_mesh(context, obj)
 
             bounding_box_data = {}
 

@@ -779,9 +779,10 @@ class OBJECT_OT_add_bounding_object():
 
         return mesh
 
-    def is_valid_object(self, obj):
+    @staticmethod
+    def is_valid_object(obj):
         """Is the object valid to be used as a base mesh for collider generation"""
-        if obj is None or obj.type not in self.valid_object_types:
+        if obj is None or obj.type != "MESH":
             return False
         return True
 
@@ -852,18 +853,6 @@ class OBJECT_OT_add_bounding_object():
     def print_generation_time(shape, time):
         print(shape)
         print("Time elapsed: ", str(time))
-
-    def convert_to_mesh(self, context, object):
-        deg = context.evaluated_depsgraph_get()
-        me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
-
-        new_obj = bpy.data.objects.new(object.name + "_mesh", me)
-        context.collection.objects.link(new_obj)
-
-        new_obj.matrix_world = object.matrix_world
-        context.view_layer.objects.active = new_obj
-
-        return new_obj
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
         colSettings = context.scene.collider_tools
@@ -1068,13 +1057,11 @@ class OBJECT_OT_add_bounding_object():
         self.use_recenter_origin = False
         self.use_custom_rotation = False
 
-        self.valid_object_types = ['CURVE', 'SURFACE', 'FONT', 'META']
-
     @classmethod
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type == 'MESH':
                 count = count + 1
         return count > 0
 
