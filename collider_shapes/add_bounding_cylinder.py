@@ -264,6 +264,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             if not self.is_valid_object(obj):
                 continue
 
+            if obj and obj.type in self.valid_object_types:
+                obj = self.convert_to_mesh(context, obj)
+
             bounding_cylinder_data = {}
 
             if self.obj_mode == 'EDIT':

@@ -55,6 +55,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             if not self.is_valid_object(obj):
                 continue
 
+            if obj and obj.type in self.valid_object_types:
+                obj = self.convert_to_mesh(context, obj)
+
             convex_collision_data = {}
 
             if self.obj_mode == "EDIT":
