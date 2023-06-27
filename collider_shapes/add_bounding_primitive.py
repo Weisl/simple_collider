@@ -864,16 +864,27 @@ class OBJECT_OT_add_bounding_object():
 
         return dic
 
-    def convert_to_mesh(self, context, object):
+
+    @staticmethod
+    def convert_to_mesh(context, object, use_modifiers = False):
+        mods=[]
+
+        for mod in object.modifiers:
+            mods.append({"mod":mod, "show_viewport":mod.show_viewport, "show_in_editmode": mod.show_in_editmode})
+
+
+            mod.show_viewport = use_modifiers
+            mod.show_in_editmode = use_modifiers
+
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
-
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
         context.collection.objects.link(new_obj)
 
-        new_obj.matrix_world = object.matrix_world
-        context.view_layer.objects.active = new_obj
-
+        # for mod in mods:
+        #     modifier = mod["mod"]
+        #     modifier.show_viewport = mod["show_viewport"]
+        #     modifier.show_in_editmode = mod["show_in_editmode"]
         return new_obj
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
