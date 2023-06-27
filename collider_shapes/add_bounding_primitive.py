@@ -1017,9 +1017,10 @@ class OBJECT_OT_add_bounding_object():
             original_obj = data['obj']
             original_user_groups = data['users_collection']
 
-            bpy.context.collection.objects.link(original_obj)
-            for col in original_user_groups:
-                self.add_to_collections(original_obj, col)
+            if self.is_mesh_to_collider:
+                bpy.context.collection.objects.link(original_obj)
+                for col in original_user_groups:
+                    self.add_to_collections(original_obj, col)
 
         context.space_data.shading.color_type = self.original_color_type
 

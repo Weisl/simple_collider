@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import Operator
-from mathutils import Matrix, Vector
-from . import capsule_generation as Capsule
+from mathutils import Vector
+from ..bmesh_operations import capsule_generation as Capsule
 from math import radians
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
