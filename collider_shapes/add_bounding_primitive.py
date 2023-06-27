@@ -1338,7 +1338,10 @@ class OBJECT_OT_add_bounding_object():
                 ob = objinfo['obj']
                 collections = objinfo['users_collection']
                 for col in collections:
-                    bpy.data.collections[col].objects.link(ob)
+                    try:
+                        bpy.data.collections[col].objects.link(ob)
+                    except:
+                        pass
 
             self.execute(context)
 
