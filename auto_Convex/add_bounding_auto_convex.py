@@ -92,13 +92,23 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         meshes = []
         matrices = []
 
-        for obj in self.selected_objects:
+        for base_ob in self.selected_objects:
 
             # skip if invalid object
-            if not self.is_valid_object(obj):
+            if not self.is_valid_object(base_ob):
                 continue
-            if obj and obj.type in self.valid_object_types:
-                obj = self.convert_to_mesh(context, obj)
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                if base_ob.type == 'MESH':
+                    obj = base_ob
+
+                else:
+                    # store initial state for operation cancel
+                    user_collections = base_ob.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob)
+                    self.tmp_meshes.append(obj)
 
             context.view_layer.objects.active = obj
 
