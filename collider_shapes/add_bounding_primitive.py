@@ -609,7 +609,9 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def remove_objects(list):
-        '''Remove previously created collisions'''
+        '''Remove list of objects'''
+        print(str(list))
+
         if len(list) > 0:
             for ob in list:
                 if ob:
@@ -996,11 +998,7 @@ class OBJECT_OT_add_bounding_object():
     def cancel_cleanup(self, context):
         if self.is_mesh_to_collider:
             if self.new_colliders_list:
-                for collider_obj in self.new_colliders_list:
-                    # Remove previously created collisions
-                    if collider_obj:
-                        objs = bpy.data.objects
-                        objs.remove(collider_obj, do_unlink=True)
+                self.remove_objects(self.new_colliders_list)
 
         # All other operators
         else:
@@ -1010,6 +1008,9 @@ class OBJECT_OT_add_bounding_object():
                     if obj:
                         objs = bpy.data.objects
                         objs.remove(obj, do_unlink=True)
+
+        # Delete temporary objects
+        self.remove_objects(self.tmp_meshes)
 
         # delete original data
         for data in self.original_obj_data:
@@ -1115,6 +1116,7 @@ class OBJECT_OT_add_bounding_object():
 
         # General init settings
         self.new_colliders_list = []
+        self.tmp_meshes = []
         self.col_rotation_matrix_list = []
         self.col_center_loc_list = []
 
@@ -1267,6 +1269,9 @@ class OBJECT_OT_add_bounding_object():
                     obj.show_wire = True
                 else:
                     obj.show_wire = False
+
+            # Delete temporary generated meshes
+            self.remove_objects(self.tmp_meshes)
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -1492,8 +1497,11 @@ class OBJECT_OT_add_bounding_object():
             print("AttributeError: bug #328")
 
         # Remove objects from previous generation
+        self.remove_objects(self.tmp_meshes)
         self.remove_objects(self.new_colliders_list)
         self.new_colliders_list = []
+        self.original_obj_data = []
+        self.tmp_meshes = []
 
         # original data to be restored on cancelation or deleted on accept
         self.original_obj_data = []

@@ -75,9 +75,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     # store initial state for operation cancel
                     user_collections = base_ob.users_collection
                     self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
-
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob)
+                    self.tmp_meshes.append(obj)
 
             context.view_layer.objects.active = obj
             bounding_box_data = {}
