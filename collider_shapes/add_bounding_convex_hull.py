@@ -82,7 +82,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 # duplicate object
-                convex_collision_data['parent'] = obj
+                convex_collision_data['parent'] = base_ob
                 convex_collision_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(convex_collision_data)

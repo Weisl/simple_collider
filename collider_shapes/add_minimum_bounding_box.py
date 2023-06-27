@@ -187,7 +187,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
                 # used_vertices uses local space.
                 # store data needed to generate a bounding box in a dictionary
-                bounding_box_data['parent'] = obj
+                bounding_box_data['parent'] = base_ob
                 bounding_box_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(bounding_box_data)

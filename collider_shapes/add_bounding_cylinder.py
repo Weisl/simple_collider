@@ -329,7 +329,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqradius)
 
-                bounding_cylinder_data['parent'] = obj
+                bounding_cylinder_data['parent'] = base_ob
                 bounding_cylinder_data['radius'] = radius
                 bounding_cylinder_data['depth'] = depth
                 bounding_cylinder_data['center_point'] = [

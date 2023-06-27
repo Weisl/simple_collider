@@ -87,7 +87,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             scene = context.scene
-            mesh_collider_data['parent'] = obj
+            mesh_collider_data['parent'] = base_ob
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
 

@@ -204,7 +204,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
                                                                                                                    used_vertices)
-                bounding_sphere_data['parent'] = obj
+                bounding_sphere_data['parent'] = base_ob
                 collider_data.append(bounding_sphere_data)
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':

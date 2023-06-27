@@ -124,7 +124,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 convex_collision_data = {}
-                convex_collision_data['parent'] = obj
+                convex_collision_data['parent'] = base_ob
                 convex_collision_data['mesh'] = new_mesh
                 collider_data.append(convex_collision_data)
 

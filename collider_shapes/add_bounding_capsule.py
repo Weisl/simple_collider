@@ -141,7 +141,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
 
                 # store data needed to generate a bounding box in a dictionary
-                bounding_capsule_data['parent'] = obj
+                bounding_capsule_data['parent'] = base_ob
                 bounding_capsule_data['verts_loc'] = coordinates
                 bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
                 collider_data.append(bounding_capsule_data)
