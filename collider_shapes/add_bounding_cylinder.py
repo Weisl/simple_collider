@@ -273,7 +273,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     user_collections = base_ob.users_collection
                     self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
                     # convert meshes
-                    obj = self.convert_to_mesh(context, base_ob)
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
             bounding_cylinder_data = {}
