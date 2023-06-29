@@ -1,7 +1,7 @@
 import bpy
 from bpy.types import Operator
-from mathutils import Matrix, Vector
-from . import capsule_generation as Capsule
+from mathutils import Vector
+from ..bmesh_operations import capsule_generation as Capsule
 from math import radians
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
@@ -81,16 +81,28 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         verts_co = []
 
         # Create the bounding geometry, depending on edit or object mode.
-        for obj in self.selected_objects:
+        for base_ob in self.selected_objects:
 
             # skip if invalid object
-            if not self.is_valid_object(obj):
+            if not self.is_valid_object(base_ob):
                 continue
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                if base_ob.type == 'MESH':
+                    obj = base_ob
+
+                else:
+                    # store initial state for operation cancel
+                    user_collections = base_ob.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
+                    self.tmp_meshes.append(obj)
 
             context.view_layer.objects.active = obj
             bounding_capsule_data = {}
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT":
@@ -129,7 +141,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
 
                 # store data needed to generate a bounding box in a dictionary
-                bounding_capsule_data['parent'] = obj
+                bounding_capsule_data['parent'] = base_ob
                 bounding_capsule_data['verts_loc'] = coordinates
                 bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
                 collider_data.append(bounding_capsule_data)

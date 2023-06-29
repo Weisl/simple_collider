@@ -258,15 +258,27 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         verts_co = []
 
-        for obj in context.selected_objects.copy():
+        for base_ob in self.selected_objects:
 
             # skip if invalid object
-            if not self.is_valid_object(obj):
+            if not self.is_valid_object(base_ob):
                 continue
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                if base_ob.type == 'MESH':
+                    obj = base_ob
+
+                else:
+                    # store initial state for operation cancel
+                    user_collections = base_ob.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
+                    self.tmp_meshes.append(obj)
 
             bounding_cylinder_data = {}
 
-            if self.obj_mode == 'EDIT':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
             else:
@@ -317,7 +329,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqradius)
 
-                bounding_cylinder_data['parent'] = obj
+                bounding_cylinder_data['parent'] = base_ob
                 bounding_cylinder_data['radius'] = radius
                 bounding_cylinder_data['depth'] = depth
                 bounding_cylinder_data['center_point'] = [

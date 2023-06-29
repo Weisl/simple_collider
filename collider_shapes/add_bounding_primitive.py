@@ -609,7 +609,9 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def remove_objects(list):
-        '''Remove previously created collisions'''
+        '''Remove list of objects'''
+        print(str(list))
+
         if len(list) > 0:
             for ob in list:
                 if ob:
@@ -779,28 +781,37 @@ class OBJECT_OT_add_bounding_object():
 
         return mesh
 
-    @staticmethod
-    def is_valid_object(obj):
+    def is_valid_object(self, obj):
         """Is the object valid to be used as a base mesh for collider generation"""
-        if obj is None or obj.type != "MESH":
+        if obj is None or obj.type not in self.valid_object_types:
             return False
         return True
 
     # Collections
     @staticmethod
-    def add_to_collections(obj, collection_name):
+    def add_to_collections(obj, collection_name, hide=False):
         """Add an object to a collection"""
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
             bpy.context.scene.collection.children.link(collection)
 
         col = bpy.data.collections[collection_name]
-
+        if hide:
+            col.hide_viewport = True
+            col.hide_render = True
         try:
             col.objects.link(obj)
         except RuntimeError as err:
             pass
 
+        return col
+
+    @staticmethod
+    def remove_empty_collection(collection_name):
+        if collection_name in bpy.data.collections:
+            collection = bpy.data.collections[collection_name]
+            if len(collection.objects) == 0:
+                bpy.data.collections.remove(collection)
     @staticmethod
     def set_collections(obj, collections):
         """link an object to a collection"""
@@ -853,6 +864,51 @@ class OBJECT_OT_add_bounding_object():
     def print_generation_time(shape, time):
         print(shape)
         print("Time elapsed: ", str(time))
+
+    @staticmethod
+    def store_initial_obj_state(obj, collections):
+        dic = {}
+        dic['obj'] = obj
+        col_list = [col.name for col in collections]
+        dic['users_collection'] = col_list
+
+        return dic
+
+    @staticmethod
+    def store_obj_mod_in_dic(object):
+        mods = []
+
+        for mod in object.modifiers:
+            mods.append({"mod":mod, "show_viewport":mod.show_viewport, "show_in_editmode": mod.show_in_editmode})
+
+        return mods
+
+    @staticmethod
+    def restore_obj_mod_from_dic(modifier_dic):
+        for mod_entry in modifier_dic:
+            modifier = mod_entry["mod"]
+            modifier.show_viewport = mod_entry["show_viewport"]
+            modifier.show_in_editmode = mod_entry["show_in_editmode"]
+
+    @classmethod
+    def convert_to_mesh(cls, context, object, use_modifiers = False):
+        mods = cls.store_obj_mod_in_dic(object)
+
+        for mod in object.modifiers:
+            mod.show_viewport = use_modifiers
+            mod.show_in_editmode = use_modifiers
+
+        deg = context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
+        new_obj = bpy.data.objects.new(object.name + "_mesh", me)
+        col = cls.add_to_collections(new_obj, 'tmp_mesh', hide=False)
+        col.color_tag = 'COLOR_03'
+
+        cls.restore_obj_mod_from_dic(mods)
+
+        new_obj.matrix_world = object.matrix_world
+        context.view_layer.objects.active = new_obj
+        return new_obj
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
         colSettings = context.scene.collider_tools
@@ -976,21 +1032,7 @@ class OBJECT_OT_add_bounding_object():
     def cancel_cleanup(self, context):
         if self.is_mesh_to_collider:
             if self.new_colliders_list:
-                for collider_obj in self.new_colliders_list:
-                    # Remove previously created collisions
-                    if collider_obj:
-                        objs = bpy.data.objects
-                        objs.remove(collider_obj, do_unlink=True)
-
-
-                for data in self.original_obj_data:
-                    # Assign unlinked data to user groups
-                    original_obj = data['obj']
-                    original_user_groups = data['users_collection']
-
-                    bpy.context.collection.objects.link(original_obj)
-                    for col in original_user_groups:
-                        self.add_to_collections(original_obj, col)
+                self.remove_objects(self.new_colliders_list)
 
         # All other operators
         else:
@@ -1000,6 +1042,22 @@ class OBJECT_OT_add_bounding_object():
                     if obj:
                         objs = bpy.data.objects
                         objs.remove(obj, do_unlink=True)
+
+        # Delete temporary objects
+        if self.prefs.debug == False:
+            self.remove_objects(self.tmp_meshes)
+            self.remove_empty_collection('tmp_mesh')
+
+        # delete original data
+        for data in self.original_obj_data:
+            # Assign unlinked data to user groups
+            original_obj = data['obj']
+            original_user_groups = data['users_collection']
+
+            if self.is_mesh_to_collider:
+                bpy.context.collection.objects.link(original_obj)
+                for col in original_user_groups:
+                    self.add_to_collections(original_obj, col)
 
         context.space_data.shading.color_type = self.original_color_type
 
@@ -1057,11 +1115,13 @@ class OBJECT_OT_add_bounding_object():
         self.use_recenter_origin = False
         self.use_custom_rotation = False
 
+        self.valid_object_types = ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
+
     @classmethod
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 count = count + 1
         return count > 0
 
@@ -1092,6 +1152,7 @@ class OBJECT_OT_add_bounding_object():
 
         # General init settings
         self.new_colliders_list = []
+        self.tmp_meshes = []
         self.col_rotation_matrix_list = []
         self.col_center_loc_list = []
 
@@ -1151,7 +1212,7 @@ class OBJECT_OT_add_bounding_object():
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
 
-        # Mesh to Collider
+        # Object to Collider
         self.original_obj_data = []
 
         # display settings
@@ -1245,6 +1306,11 @@ class OBJECT_OT_add_bounding_object():
                 else:
                     obj.show_wire = False
 
+            # Delete temporary generated meshes
+            if self.prefs.debug == False:
+                self.remove_objects(self.tmp_meshes)
+                self.remove_empty_collection('tmp_mesh')
+
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
@@ -1310,7 +1376,10 @@ class OBJECT_OT_add_bounding_object():
                 ob = objinfo['obj']
                 collections = objinfo['users_collection']
                 for col in collections:
-                    bpy.data.collections[col].objects.link(ob)
+                    try:
+                        bpy.data.collections[col].objects.link(ob)
+                    except:
+                        pass
 
             self.execute(context)
 
@@ -1469,8 +1538,15 @@ class OBJECT_OT_add_bounding_object():
             print("AttributeError: bug #328")
 
         # Remove objects from previous generation
+        self.remove_objects(self.tmp_meshes)
         self.remove_objects(self.new_colliders_list)
+        self.remove_empty_collection('tmp_mesh')
         self.new_colliders_list = []
+        self.original_obj_data = []
+        self.tmp_meshes = []
+
+        # original data to be restored on cancelation or deleted on accept
+        self.original_obj_data = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []

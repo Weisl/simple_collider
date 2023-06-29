@@ -148,15 +148,27 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         verts_co = []
 
         # Create the bounding geometry, depending on edit or object mode.
-        for obj in self.selected_objects:
+        for base_ob in self.selected_objects:
 
             # skip if invalid object
-            if not self.is_valid_object(obj):
+            if not self.is_valid_object(base_ob):
                 continue
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                if base_ob.type == 'MESH':
+                    obj = base_ob
+
+                else:
+                    # store initial state for operation cancel
+                    user_collections = base_ob.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
+                    self.tmp_meshes.append(obj)
 
             bounding_box_data = {}
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT":
@@ -175,7 +187,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
                 # used_vertices uses local space.
                 # store data needed to generate a bounding box in a dictionary
-                bounding_box_data['parent'] = obj
+                bounding_box_data['parent'] = base_ob
                 bounding_box_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(bounding_box_data)

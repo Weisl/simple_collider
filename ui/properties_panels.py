@@ -519,7 +519,7 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 count = count + 1
         return count > 0
 

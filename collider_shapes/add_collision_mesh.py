@@ -54,15 +54,27 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         collider_data = []
 
-        for obj in self.selected_objects:
+        for base_ob in self.selected_objects:
 
             # skip if invalid object
-            if not self.is_valid_object(obj):
+            if not self.is_valid_object(base_ob):
                 continue
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                if base_ob.type == 'MESH':
+                    obj = base_ob
+
+                else:
+                    # store initial state for operation cancel
+                    user_collections = base_ob.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
+                    self.tmp_meshes.append(obj)
 
             mesh_collider_data = {}
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
 
@@ -75,7 +87,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             scene = context.scene
-            mesh_collider_data['parent'] = obj
+            mesh_collider_data['parent'] = base_ob
+            mesh_collider_data['mtx_world'] = base_ob.matrix_world.copy()
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
 
@@ -85,16 +98,18 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         for mesh_collider_data in collider_data:
             parent = mesh_collider_data['parent']
             new_collider = mesh_collider_data['new_collider']
+            mtx_world = mesh_collider_data['mtx_world']
 
             context.scene.collection.objects.link(new_collider)
             self.shape_suffix = self.prefs.mesh_shape
 
             # create collision meshes
+            new_collider.matrix_world = mtx_world
             self.custom_set_parent(context, parent, new_collider)
             self.remove_all_modifiers(context, new_collider)
 
             # align objects
-            new_collider.matrix_world = parent.matrix_world
+            #new_collider.matrix_world = parent.matrix_world
 
             super().set_collider_name(new_collider, parent.name)
 
