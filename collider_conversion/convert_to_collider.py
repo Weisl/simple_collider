@@ -96,7 +96,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = obj.copy()
             new_collider.data = obj.data.copy()
-            user_collections = obj.users_collection
+            user_collections = base_ob.users_collection
 
             # New collider to scene
             bpy.context.collection.objects.link(new_collider)
