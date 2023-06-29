@@ -74,7 +74,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             mesh_collider_data = {}
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
 
