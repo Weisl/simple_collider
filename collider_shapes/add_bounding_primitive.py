@@ -874,13 +874,27 @@ class OBJECT_OT_add_bounding_object():
 
         return dic
 
-
-    @classmethod
-    def convert_to_mesh(cls, context, object, use_modifiers = False):
-        mods=[]
+    @staticmethod
+    def store_obj_mod_in_dic(object):
+        mods = []
 
         for mod in object.modifiers:
             mods.append({"mod":mod, "show_viewport":mod.show_viewport, "show_in_editmode": mod.show_in_editmode})
+
+        return mods
+
+    @staticmethod
+    def restore_obj_mod_from_dic(modifier_dic):
+        for mod_entry in modifier_dic:
+            modifier = mod_entry["mod"]
+            modifier.show_viewport = mod_entry["show_viewport"]
+            modifier.show_in_editmode = mod_entry["show_in_editmode"]
+
+    @classmethod
+    def convert_to_mesh(cls, context, object, use_modifiers = False):
+        mods = cls.store_obj_mod_in_dic(object)
+
+        for mod in object.modifiers:
             mod.show_viewport = use_modifiers
             mod.show_in_editmode = use_modifiers
 
@@ -890,10 +904,7 @@ class OBJECT_OT_add_bounding_object():
         col = cls.add_to_collections(new_obj, 'tmp_mesh', hide=False)
         col.color_tag = 'COLOR_03'
 
-        for mod in mods:
-            modifier = mod["mod"]
-            modifier.show_viewport = mod["show_viewport"]
-            modifier.show_in_editmode = mod["show_in_editmode"]
+        cls.restore_obj_mod_from_dic(mods)
 
         new_obj.matrix_world = object.matrix_world
         context.view_layer.objects.active = new_obj
@@ -1201,7 +1212,7 @@ class OBJECT_OT_add_bounding_object():
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
 
-        # Mesh to Collider
+        # Object to Collider
         self.original_obj_data = []
 
         # display settings

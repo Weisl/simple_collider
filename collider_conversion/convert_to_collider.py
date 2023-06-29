@@ -9,7 +9,7 @@ default_group = 'USER_01'
 class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     """Convert existing objects to be a collider"""
     bl_idname = "object.convert_to_collider"
-    bl_label = "Mesh to Collider"
+    bl_label = "Object to Collider"
     bl_description = 'Convert selected meshes to colliders'
 
     @classmethod
@@ -22,9 +22,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_shape_change = True
         self.use_decimation = True
         self.is_mesh_to_collider = True
-        # self.use_creation_mode = False
         self.shape = 'mesh_shape'
         self.use_keep_original_materials = True
+        self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -46,6 +46,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
 
+        if event.type == 'P' and event.value == 'RELEASE':
+            self.my_use_modifier_stack = not self.my_use_modifier_stack
+            self.execute(context)
 
         elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes
@@ -75,8 +78,15 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             if base_ob and base_ob.type in self.valid_object_types:
                 if base_ob.type == 'MESH':
                     obj = base_ob
+                    mods = self.store_obj_mod_in_dic(obj)
 
-                else:
+                    for mod in obj.modifiers:
+                        mod.show_viewport = self.use_modifier_stack
+                        mod.show_in_editmode = self.use_modifier_stack
+
+                    self.restore_obj_mod_from_dic(mods)
+
+                else: # other object types like curves, surfaces, texts ...
                     # store initial state for operation cancel
                     user_collections = base_ob.users_collection
                     self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
