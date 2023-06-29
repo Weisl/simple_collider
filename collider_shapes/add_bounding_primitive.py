@@ -789,14 +789,16 @@ class OBJECT_OT_add_bounding_object():
 
     # Collections
     @staticmethod
-    def add_to_collections(obj, collection_name):
+    def add_to_collections(obj, collection_name, hide=False):
         """Add an object to a collection"""
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
             bpy.context.scene.collection.children.link(collection)
 
         col = bpy.data.collections[collection_name]
-
+        if hide:
+            col.hide_viewport = True
+            col.hide_render = True
         try:
             col.objects.link(obj)
         except RuntimeError as err:
@@ -885,7 +887,7 @@ class OBJECT_OT_add_bounding_object():
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
-        col = cls.add_to_collections(new_obj, 'tmp_mesh')
+        col = cls.add_to_collections(new_obj, 'tmp_mesh', hide=False)
         col.color_tag = 'COLOR_03'
 
         for mod in mods:
