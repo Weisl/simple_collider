@@ -1031,8 +1031,9 @@ class OBJECT_OT_add_bounding_object():
                         objs.remove(obj, do_unlink=True)
 
         # Delete temporary objects
-        self.remove_objects(self.tmp_meshes)
-        self.remove_empty_collection('tmp_mesh')
+        if self.prefs.debug == False:
+            self.remove_objects(self.tmp_meshes)
+            self.remove_empty_collection('tmp_mesh')
 
         # delete original data
         for data in self.original_obj_data:
@@ -1293,8 +1294,9 @@ class OBJECT_OT_add_bounding_object():
                     obj.show_wire = False
 
             # Delete temporary generated meshes
-            self.remove_objects(self.tmp_meshes)
-            self.remove_empty_collection('tmp_mesh')
+            if self.prefs.debug == False:
+                self.remove_objects(self.tmp_meshes)
+                self.remove_empty_collection('tmp_mesh')
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
