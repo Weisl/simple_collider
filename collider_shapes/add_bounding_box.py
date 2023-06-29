@@ -83,9 +83,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
             bounding_box_data = {}
 
-            if self.obj_mode == "EDIT":
+            # EDIT is only supported for 'MESH' type objects and only if the active object is a 'MESH'.
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
-
             else:  # self.obj_mode  == "OBJECT":
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
