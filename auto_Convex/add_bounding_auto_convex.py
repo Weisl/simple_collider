@@ -71,8 +71,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP
         super().execute(context)
 
-        overwrite_path = self.overwrite_executable_path(
-            self.prefs.executable_path)
+        overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
         vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
         data_path = self.set_temp_data_path(self.prefs.data_path)
 
@@ -125,6 +124,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
                 convex_collision_data = {}
                 convex_collision_data['parent'] = base_ob
+                convex_collision_data['mtx_world'] = base_ob.matrix_world.copy()
                 convex_collision_data['mesh'] = new_mesh
                 collider_data.append(convex_collision_data)
 
@@ -136,6 +136,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
+            convex_collision_data['mtx_world'] = self.active_obj.matrix_world.copy()
 
             bmeshes = []
 
@@ -155,6 +156,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collision_data in collider_data:
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
+            mtx_world = convex_collision_data['mtx_world']
 
             joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
             bpy.context.scene.collection.objects.link(joined_obj)
@@ -267,6 +269,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             convex_collisions_data = {}
             convex_collisions_data['colliders'] = imported
             convex_collisions_data['parent'] = parent
+            convex_collisions_data['mtx_world'] = parent.matrix_world.copy()
             convex_decomposition_data.append(convex_collisions_data)
 
         context.view_layer.objects.active = self.active_obj
@@ -274,17 +277,17 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collisions_data in convex_decomposition_data:
             convex_collision = convex_collisions_data['colliders']
             parent = convex_collisions_data['parent']
+            mtx_world = convex_collisions_data['mtx_world']
 
             for new_collider in convex_collision:
                 new_collider.name = super().collider_name(basename=parent.name)
 
-                self.custom_set_parent(context, parent, new_collider)
-
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                    new_collider.matrix_world = parent.matrix_world
-                    # Apply rotation and scale for custom origin to work.
+                    new_collider.matrix_world = mtx_world
                     self.apply_transform(
                         new_collider, rotation=True, scale=True)
+
+                self.custom_set_parent(context, parent, new_collider)
 
                 collections = parent.users_collection
                 self.primitive_postprocessing(
