@@ -88,6 +88,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
             scene = context.scene
             mesh_collider_data['parent'] = base_ob
+            mesh_collider_data['mtx_world'] = base_ob.matrix_world.copy()
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
 
@@ -97,16 +98,18 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         for mesh_collider_data in collider_data:
             parent = mesh_collider_data['parent']
             new_collider = mesh_collider_data['new_collider']
+            mtx_world = mesh_collider_data['mtx_world']
 
             context.scene.collection.objects.link(new_collider)
             self.shape_suffix = self.prefs.mesh_shape
 
             # create collision meshes
+            new_collider.matrix_world = mtx_world
             self.custom_set_parent(context, parent, new_collider)
             self.remove_all_modifiers(context, new_collider)
 
             # align objects
-            new_collider.matrix_world = parent.matrix_world
+            #new_collider.matrix_world = parent.matrix_world
 
             super().set_collider_name(new_collider, parent.name)
 
