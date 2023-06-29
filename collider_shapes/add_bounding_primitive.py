@@ -802,6 +802,14 @@ class OBJECT_OT_add_bounding_object():
         except RuntimeError as err:
             pass
 
+        return col
+
+    @staticmethod
+    def remove_empty_collection(collection_name):
+        if collection_name in bpy.data.collections:
+            collection = bpy.data.collections[collection_name]
+            if len(collection.objects) == 0:
+                bpy.data.collections.remove(collection)
     @staticmethod
     def set_collections(obj, collections):
         """link an object to a collection"""
@@ -865,8 +873,8 @@ class OBJECT_OT_add_bounding_object():
         return dic
 
 
-    @staticmethod
-    def convert_to_mesh(context, object, use_modifiers = False):
+    @classmethod
+    def convert_to_mesh(cls, context, object, use_modifiers = False):
         mods=[]
 
         for mod in object.modifiers:
@@ -877,7 +885,8 @@ class OBJECT_OT_add_bounding_object():
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
-        context.collection.objects.link(new_obj)
+        col = cls.add_to_collections(new_obj, 'tmp_mesh')
+        col.color_tag = 'COLOR_03'
 
         for mod in mods:
             modifier = mod["mod"]
@@ -1023,6 +1032,7 @@ class OBJECT_OT_add_bounding_object():
 
         # Delete temporary objects
         self.remove_objects(self.tmp_meshes)
+        self.remove_empty_collection('tmp_mesh')
 
         # delete original data
         for data in self.original_obj_data:
@@ -1284,6 +1294,7 @@ class OBJECT_OT_add_bounding_object():
 
             # Delete temporary generated meshes
             self.remove_objects(self.tmp_meshes)
+            self.remove_empty_collection('tmp_mesh')
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -1514,6 +1525,7 @@ class OBJECT_OT_add_bounding_object():
         # Remove objects from previous generation
         self.remove_objects(self.tmp_meshes)
         self.remove_objects(self.new_colliders_list)
+        self.remove_empty_collection('tmp_mesh')
         self.new_colliders_list = []
         self.original_obj_data = []
         self.tmp_meshes = []
