@@ -99,6 +99,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
                 # store data needed to generate a bounding box in a dictionary
                 bounding_box_data['parent'] = base_ob
+                bounding_box_data['mtx_world'] = base_ob.matrix_world.copy()
                 bounding_box_data['verts_loc'] = verts_loc
                 bounding_box_data['center_point'] = center_point
 
@@ -111,6 +112,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             collider_data = self.selection_bbox_data(verts_co)
+
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for bounding_box_data in collider_data:
@@ -118,14 +120,15 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             parent = bounding_box_data['parent']
             verts_loc = bounding_box_data['verts_loc']
             center_point = bounding_box_data['center_point']
+            mtx_world = bounding_box_data['mtx_world']
 
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc)
             scene = context.scene
 
             if self.my_space == 'LOCAL':
-                new_collider.parent = parent
+                new_collider.matrix_world = mtx_world
                 # align collider with parent
-                new_collider.matrix_world = parent.matrix_world
+                self.custom_set_parent(context, parent, new_collider)
                 self.use_recenter_origin = False
 
             else:  # self.my_space == 'GLOBAL':
@@ -156,7 +159,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             verts_co = self.transform_vertex_space(ws_vtx_co, self.active_obj)
 
         bbox_verts, center_point = self.generate_bounding_box(verts_co)
+        mtx_world = self.active_obj.matrix_world
 
-        bounding_box_data = {'parent': self.active_obj, 'verts_loc': bbox_verts, 'center_point': center_point}
+        bounding_box_data = {'parent': self.active_obj, 'verts_loc': bbox_verts, 'center_point': center_point, 'mtx_world': mtx_world}
 
         return [bounding_box_data]
