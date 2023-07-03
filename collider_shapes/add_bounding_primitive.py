@@ -244,6 +244,16 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': key, 'type': type, 'highlight': highlight}
         items.append(item)
 
+    if self.use_remesh:
+        label = "Voxel Size"
+        value = str(self.current_settings_dic['voxel_size'])
+        key='(R)'
+        type='modal'
+        highlight=self.remesh_active
+
+        item = {'label': label, 'value': value, 'key': key, 'type': type, 'highlight': highlight}
+        items.append(item)
+
     label = 'Operator Settings'
     type='title'
     item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': False}
@@ -553,7 +563,7 @@ class OBJECT_OT_add_bounding_object():
         user_group = self.collision_groups[self.collision_group_idx]
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
-    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments):
+    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments, voxel_size):
         dict = {}
         dict['alpha'] = alpha
         dict['discplace_offset'] = offset
@@ -561,6 +571,7 @@ class OBJECT_OT_add_bounding_object():
         dict['sphere_segments'] = sphere_segments
         dict['cylinder_segments'] = cylinder_segments
         dict['capsule_segments'] = capsule_segments
+        dict['voxel_size'] = voxel_size
 
         return dict
 
@@ -927,6 +938,9 @@ class OBJECT_OT_add_bounding_object():
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
 
+        if self.use_remesh:
+            self.add_remesh_modifier(context, bounding_object)
+
         if self.use_geo_nodes_hull:
             if bpy.app.version >= (3, 2, 0):
                 self.add_geo_nodes_hull(context, bounding_object)
@@ -1002,7 +1016,13 @@ class OBJECT_OT_add_bounding_object():
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='REMESH')
+        modifier.voxel_size = self.current_settings_dic['voxel_size']
+        self.remesh_modifiers.append(modifier)
+
+    def add_remesh_modifier(self, context, bounding_object):
+        # add decimation modifier and safe it to manipulate the strenght in the modal operator
+        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
@@ -1105,6 +1125,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_shape_change = False
         self.use_creation_mode = True
         self.use_keep_original_materials = False
+        self.use_remesh = False
 
         # default shape init
         self.shape = ''
@@ -1173,6 +1194,9 @@ class OBJECT_OT_add_bounding_object():
         self.x_ray = context.space_data.shading.show_xray
 
         # Modal MODIFIERS
+        self.remesh_active = False
+        self.remesh_modifiers = []
+
         # Displace
         self.displace_active = False
         self.displace_modifiers = []
@@ -1218,8 +1242,13 @@ class OBJECT_OT_add_bounding_object():
         # display settings
         self.is_solidmode = True if context.space_data.shading.type == 'SOLID' else False
 
-        dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments,
-                                         colSettings.default_cylinder_segments, colSettings.default_capsule_segments)
+        default_alpha = 0.5
+        default_decimate = 1.0
+        default_voxel_size = 0.1
+        default_offset = 0
+
+        dict = self.collision_dictionary(default_alpha, default_offset, default_decimate, colSettings.default_sphere_segments,
+                                         colSettings.default_cylinder_segments, colSettings.default_capsule_segments, default_voxel_size)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -1256,6 +1285,7 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = False
             self.decimate_active = False
             self.cylinder_segments_active = False
+            self.remesh_active = False
             self.sphere_segments_active = False
             self.capsule_segments_active = False
 
@@ -1390,6 +1420,7 @@ class OBJECT_OT_add_bounding_object():
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.capsule_segments_active = False
+            self.remesh_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'D' and event.value == 'RELEASE':
@@ -1399,6 +1430,7 @@ class OBJECT_OT_add_bounding_object():
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.capsule_segments_active = False
+            self.remesh_active = False
             self.mouse_initial_x = event.mouse_x
             self.mouse_position = [event.mouse_x, event.mouse_y]
             self.draw_callback_px(context)
@@ -1410,6 +1442,7 @@ class OBJECT_OT_add_bounding_object():
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
             self.capsule_segments_active = False
+            self.remesh_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'E' and event.value == 'RELEASE':
@@ -1420,6 +1453,7 @@ class OBJECT_OT_add_bounding_object():
             self.sphere_segments_active = False
             self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
+            self.remesh_active = False
 
         elif event.type == 'T' and event.value == 'RELEASE':
             # toggle through display modes
@@ -1480,6 +1514,19 @@ class OBJECT_OT_add_bounding_object():
 
                     self.report({'INFO'}, "Total collider face count:" + str(sum(self.facecounts)))
                     self.draw_callback_px(context)
+
+            if self.remesh_active:
+                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                voxel_size = (self.ref_settings_dic['voxel_size'] + delta)
+                voxel_size = numpy.clip(voxel_size, 0.01, 1.0)
+
+                if self.current_settings_dic['voxel_size'] != voxel_size:
+                    self.current_settings_dic['voxel_size'] = voxel_size
+
+                    for obj in self.new_colliders_list:
+                        for mod in obj.modifiers:
+                            if mod in self.remesh_modifiers:
+                                mod.voxel_size = voxel_size
 
             if self.opacity_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
