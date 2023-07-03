@@ -41,7 +41,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.sphere_segments_active = not self.sphere_segments_active
+            self.remesh_active = not self.remesh_active
 
         return {'RUNNING_MODAL'}
 
@@ -112,9 +112,6 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
             new_collider.matrix_world = mtx_world
             self.custom_set_parent(context, parent, new_collider)
             self.remove_all_modifiers(context, new_collider)
-
-            # align objects
-            #new_collider.matrix_world = parent.matrix_world
 
             super().set_collider_name(new_collider, parent.name)
 

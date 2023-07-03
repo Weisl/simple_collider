@@ -935,11 +935,11 @@ class OBJECT_OT_add_bounding_object():
             collection_name = self.prefs.col_collection_name
             self.add_to_collections(bounding_object, collection_name)
 
-        if self.use_decimation:
-            self.add_decimate_modifier(context, bounding_object)
-
         if self.use_remesh:
             self.add_remesh_modifier(context, bounding_object)
+
+        if self.use_decimation:
+            self.add_decimate_modifier(context, bounding_object)
 
         if self.use_geo_nodes_hull:
             if bpy.app.version >= (3, 2, 0):
@@ -1014,13 +1014,13 @@ class OBJECT_OT_add_bounding_object():
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_weld", type='WELD')
 
-    def add_decimate_modifier(self, context, bounding_object):
+    def add_remesh_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_decimate", type='REMESH')
         modifier.voxel_size = self.current_settings_dic['voxel_size']
         self.remesh_modifiers.append(modifier)
 
-    def add_remesh_modifier(self, context, bounding_object):
+    def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_remesh", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
@@ -1523,10 +1523,8 @@ class OBJECT_OT_add_bounding_object():
                 if self.current_settings_dic['voxel_size'] != voxel_size:
                     self.current_settings_dic['voxel_size'] = voxel_size
 
-                    for obj in self.new_colliders_list:
-                        for mod in obj.modifiers:
-                            if mod in self.remesh_modifiers:
-                                mod.voxel_size = voxel_size
+                    for mod in self.remesh_modifiers:
+                        mod.voxel_size = voxel_size
 
             if self.opacity_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
@@ -1597,6 +1595,7 @@ class OBJECT_OT_add_bounding_object():
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
+        self.remesh_modifiers = []
 
         # Create the bounding geometry, depending on edit or object mode.
         self.old_objs = set(context.scene.objects)
