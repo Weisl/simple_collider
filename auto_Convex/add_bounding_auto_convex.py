@@ -8,6 +8,7 @@ from bpy.types import Operator
 
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.mesh_edit import bmesh_join
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
@@ -90,6 +91,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         meshes = []
         matrices = []
+        objs = []
 
         for base_ob in self.selected_objects:
 
@@ -109,6 +111,14 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj, use_world=False)
+                    objs.extend(split_objs)
+                    self.tmp_meshes.extend(split_objs)
+                else:
+                    objs.append(obj)
+
+        for obj in objs:
             context.view_layer.objects.active = obj
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':

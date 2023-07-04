@@ -79,7 +79,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
                     self.tmp_meshes.append(obj)
 
                 if self.split_by_mesh_island:
-                    split_objs = create_objs_from_island(obj)
+                    split_objs = create_objs_from_island(obj, use_world=False)
                     objs.extend(split_objs)
                 else:
                     objs.append(obj)
