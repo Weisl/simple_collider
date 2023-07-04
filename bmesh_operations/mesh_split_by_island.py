@@ -75,8 +75,8 @@ def get_face_islands(bm, faces, face_islands = [], i=0):
 
 
 
-def create_objs_from_island(obj):
-    #wld_mat = obj.matrix_world
+def create_objs_from_island(obj, use_world = True):
+    wld_mat = obj.matrix_world
 
     # change mode to editmode
     bpy.ops.object.mode_set(mode='EDIT')
@@ -92,9 +92,10 @@ def create_objs_from_island(obj):
 
         name = 'Object'
         me = bpy.data.meshes.new(name)
-
-        #me.from_pydata([wld_mat @ x.co for x in py_verts], [], py_faces)
-        me.from_pydata([x.co for x in py_verts], [], py_faces)
+        if use_world:
+            me.from_pydata([wld_mat @ x.co for x in py_verts], [], py_faces)
+        else:
+            me.from_pydata([x.co for x in py_verts], [], py_faces)
 
         # create a new object, and link it to the current view layer for display
         ob = bpy.data.objects.new(name='output', object_data=me)
