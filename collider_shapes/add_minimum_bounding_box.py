@@ -6,6 +6,7 @@ from bpy.types import Operator
 from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -146,6 +147,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
+        objs = []
 
         # Create the bounding geometry, depending on edit or object mode.
         for base_ob in self.selected_objects:
@@ -166,6 +168,13 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj)
+                    objs.extend(split_objs)
+                else:
+                    objs.append(obj)
+
+        for obj in objs:
             bounding_box_data = {}
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':

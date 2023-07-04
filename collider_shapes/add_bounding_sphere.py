@@ -4,6 +4,7 @@ from bpy.types import Operator
 from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 tmp_sphere_name = 'sphere_collider'
 
@@ -166,6 +167,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         collider_data = []
         verts_co = []
+        objs = []
 
         # Create the bounding geometry, depending on edit or object mode.
         for base_ob in self.selected_objects:
@@ -185,6 +187,14 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
+
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj)
+                    objs.extend(split_objs)
+                else:
+                    objs.append(obj)
+
+        for obj in objs:
 
             initial_mod_state = {}
             context.view_layer.objects.active = obj

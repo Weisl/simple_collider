@@ -198,6 +198,11 @@ def draw_viewport_overlay(self, context):
         items.append(item)
 
 
+    label = "Split by Island"
+    value = str(self.split_by_mesh_island)
+    item = {'label': label, 'value': value, 'key': '(I)', 'type': 'bool', 'highlight': False}
+    items.append(item)
+
     label = "Toggle X Ray "
     value = str(self.x_ray)
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
@@ -1230,6 +1235,8 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
+        self.split_by_mesh_island = False
+
         # Should physics materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
 
@@ -1411,6 +1418,10 @@ class OBJECT_OT_add_bounding_object():
                     except:
                         pass
 
+            self.execute(context)
+
+        elif event.type == 'I' and event.value == 'RELEASE':
+            self.split_by_mesh_island = not self.split_by_mesh_island
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':

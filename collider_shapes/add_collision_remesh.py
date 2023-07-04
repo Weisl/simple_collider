@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
@@ -58,6 +58,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.keep_original_material = False
 
         collider_data = []
+        objs = []
 
         for base_ob in self.selected_objects:
 
@@ -77,6 +78,13 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj)
+                    objs.extend(split_objs)
+                else:
+                    objs.append(obj)
+
+        for obj in objs:
             mesh_collider_data = {}
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
