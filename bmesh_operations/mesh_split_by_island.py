@@ -70,7 +70,7 @@ def get_face_islands(bm, faces, face_islands = [], i=0):
 
         i = i + 1
         islands = get_face_islands(bm, remaining_faces, face_islands, i)
-        bm.free()
+
         return islands
 
 
@@ -102,6 +102,8 @@ def create_objs_from_island(obj, use_world = True):
         bpy.context.view_layer.active_layer_collection.collection.objects.link(ob)
         objs.append(ob)
 
+    bm.free()
+    
     return objs
 
 
