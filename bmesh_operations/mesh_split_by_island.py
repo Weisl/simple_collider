@@ -38,17 +38,17 @@ def construct_python_faces(bmesh_faces):
         cur_face_indices = []
 
         for v in f.verts:
-            if v not in py_verts:
+            if v.co not in py_verts:
                 # this vert is found for the first time, add it
-                py_verts.append(v)
+                py_verts.append(v.co)
 
             # add the new index of the current vert to the current face index list
-            cur_face_indices.append(py_verts.index(v))
+            cur_face_indices.append(py_verts.index(v.co))
 
         # face index list construction is complete, add it to the face list
         py_faces.append(cur_face_indices)
 
-    print(py_verts, py_faces)
+    # print(py_verts, py_faces)
     dic['py_verts'] = py_verts
     dic['py_faces'] = py_faces
 
@@ -58,15 +58,14 @@ def get_face_islands(bm, faces, face_islands = [], i=0):
         return face_islands
     else:
         bm.faces.ensure_lookup_table()
-
-        print('FACES ' + str(len(faces)))
+        #print('FACES ' + str(len(faces)))
 
         linked_faces = get_linked_faces(faces[0])
-        print('LINKED FACES ' + str(len(linked_faces)))
+        #print('LINKED FACES ' + str(len(linked_faces)))
         face_islands.append(construct_python_faces(linked_faces))
 
         remaining_faces = [face for face in faces if face not in linked_faces]
-        print('REMAINING FACES ' + str(len(remaining_faces)))
+        #print('REMAINING FACES ' + str(len(remaining_faces)))
 
         i = i + 1
         islands = get_face_islands(bm, remaining_faces, face_islands, i)
@@ -82,9 +81,12 @@ def create_objs_from_island(obj, use_world = True):
     bpy.ops.object.mode_set(mode='EDIT')
     bm = bmesh.from_edit_mesh(obj.data)
 
-    face_islands = get_face_islands(bm, bm.faces)
-    print('Face Islands: ' + str(face_islands))
+    face_islands = []
+    face_islands = get_face_islands(bm, bm.faces, face_islands)
+    bm.free()
+    # print('Face Islands: ' + str(face_islands))
     objs = []
+
 
     for island in face_islands:
         py_verts = island['py_verts']
@@ -93,16 +95,15 @@ def create_objs_from_island(obj, use_world = True):
         name = 'Object'
         me = bpy.data.meshes.new(name)
         if use_world:
-            me.from_pydata([wld_mat @ x.co for x in py_verts], [], py_faces)
+            me.from_pydata([wld_mat @ x_co for x_co in py_verts], [], py_faces)
         else:
-            me.from_pydata([x.co for x in py_verts], [], py_faces)
+            me.from_pydata([x_co for x_co in py_verts], [], py_faces)
 
         # create a new object, and link it to the current view layer for display
         ob = bpy.data.objects.new(name='output', object_data=me)
-        bpy.context.view_layer.active_layer_collection.collection.objects.link(ob)
+        ob.select_set(False)
+        #bpy.context.view_layer.active_layer_collection.collection.objects.link(ob)
         objs.append(ob)
-
-    bm.free()
     
     return objs
 
