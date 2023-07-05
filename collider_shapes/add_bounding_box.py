@@ -82,7 +82,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
                 if self.split_by_mesh_island:
                     bpy.ops.object.mode_set(mode='OBJECT')
-                    split_objs = create_objs_from_island(obj, use_world = False)
+                    if self.my_space == 'LOCAL':
+                        split_objs = create_objs_from_island(obj, use_world = False)
+                    else:
+                        split_objs = create_objs_from_island(obj, use_world = True)
+
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
                         col.color_tag = 'COLOR_03'
