@@ -80,12 +80,13 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-                if self.split_by_mesh_island:
+                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
                     bpy.ops.object.mode_set(mode='OBJECT')
+
                     if self.my_space == 'LOCAL':
-                        split_objs = create_objs_from_island(obj, use_world = False)
+                        split_objs = create_objs_from_island(obj, use_world=False)
                     else:
-                        split_objs = create_objs_from_island(obj, use_world = True)
+                        split_objs = create_objs_from_island(obj, use_world=True)
 
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
