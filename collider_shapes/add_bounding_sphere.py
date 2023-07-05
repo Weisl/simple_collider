@@ -189,22 +189,18 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     self.tmp_meshes.append(obj)
 
                 if self.split_by_mesh_island:
-                    print('obj = ' + obj.name)
-                    split_objs = create_objs_from_island(obj)
-                    print("Split objs = " + str(len(split_objs)))
-                    for split_ob in split_objs:
-                        print("Split obj = " + str(split_ob.name))
 
+                    split_objs = create_objs_from_island(obj)
                     self.tmp_meshes.extend(split_objs)
+
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
                         col.color_tag = 'COLOR_03'
-
-                    objs.extend(split_objs)
+                        objs.append((base_ob, split))
                 else:
-                    objs.append(obj)
+                    objs.append((base_ob, obj))
 
-        for obj in objs:
+        for base_ob, obj in objs:
             initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene

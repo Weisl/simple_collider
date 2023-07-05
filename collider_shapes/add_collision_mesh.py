@@ -78,11 +78,11 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
                         col.color_tag = 'COLOR_03'
-                    objs.extend(split_objs)
+                        objs.append((base_ob, split))
                 else:
-                    objs.append(obj)
+                    objs.append((base_ob, obj))
 
-        for obj in objs:
+        for base_ob, obj in objs:
             mesh_collider_data = {}
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
