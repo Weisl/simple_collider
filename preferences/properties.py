@@ -105,10 +105,10 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                default='USER_01')
 
     default_creation_mode: bpy.props.EnumProperty(name="Creation Mode",
-                                                  items=(('INDIVIDUAL', "Individual",
-                                                          "Colliders are created per individual object."),
-                                                         ('SELECTION', "Selection",
-                                                          "Colliders are created for the entire selection.")),
+                                                  items=(('INDIVIDUAL', "Individual", "Colliders are created per individual object."),
+                                                         ('SELECTION', "Selection", "Colliders are created for the entire selection."),
+                                                         ('LOOSEMESH', "Loose Mesh", "Colliders are created per for connected meshes.")
+                                                         ),
                                                   description="Colliders are generated per individual object or bounding the entire selection.",
                                                   default='INDIVIDUAL')
 
