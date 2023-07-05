@@ -102,6 +102,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
                 if self.split_by_mesh_island:
                     split_objs = create_objs_from_island(obj)
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                        col.color_tag = 'COLOR_03'
                     objs.extend(split_objs)
                 else:
                     objs.append(obj)
