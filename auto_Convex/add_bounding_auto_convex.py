@@ -134,7 +134,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh == None:
                 continue
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
                 convex_collision_data = {}
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['mtx_world'] = base_ob.matrix_world.copy()
