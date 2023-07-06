@@ -278,7 +278,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
 
-            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
 
                 coordinates = []
                 height = []

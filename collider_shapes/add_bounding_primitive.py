@@ -1000,7 +1000,10 @@ class OBJECT_OT_add_bounding_object():
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
+                creation_mode = self.creation_mode[
+                    self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+
+                if creation_mode == 'LOOSEMESH':
                     bpy.ops.object.mode_set(mode='OBJECT')
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(obj, use_world=local_world_spc)
@@ -1272,6 +1275,8 @@ class OBJECT_OT_add_bounding_object():
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
 
         self.creation_mode = ['INDIVIDUAL', 'SELECTION', 'LOOSEMESH']
+        self.creation_mode_edit = ['INDIVIDUAL', 'SELECTION']
+
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
         # Should physics materials be assigned or not.
@@ -1428,7 +1433,12 @@ class OBJECT_OT_add_bounding_object():
             self.set_collisions_wire_preview(self.prefs.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
-            self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
+            if self.obj_mode == 'OBJECT':
+                length = len(self.creation_mode)
+            else:
+                length = len(self.creation_mode_edit)
+            self.creation_mode_idx = (self.creation_mode_idx + 1) % length
+
             self.execute(context)
 
         elif event.type == 'V' and event.value == 'RELEASE':

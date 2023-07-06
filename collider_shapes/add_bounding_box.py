@@ -78,7 +78,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
                 verts_loc, center_point = self.generate_bounding_box(co)
