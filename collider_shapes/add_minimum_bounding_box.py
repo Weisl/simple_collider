@@ -161,7 +161,9 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # Don't add object if it consists of less than 3 vertices
                 if len(used_vertices) < 3:
                     continue

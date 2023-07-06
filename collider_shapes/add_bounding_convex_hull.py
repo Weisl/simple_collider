@@ -65,7 +65,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
-            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # duplicate object
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['verts_loc'] = ws_vtx_co

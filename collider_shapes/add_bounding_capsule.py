@@ -101,8 +101,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
 
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
 
-            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # used_vertices uses local space.
                 coordinates = []
 
@@ -178,7 +179,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             new_collider.location = center
             #context.scene.collection.objects.link(new_collider)
 
-            if  self.my_space == 'LOCAL' and self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+            if  self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
 
