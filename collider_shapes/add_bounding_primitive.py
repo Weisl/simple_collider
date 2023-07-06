@@ -11,6 +11,7 @@ from gpu_extras.batch import batch_for_shader
 
 from ..groups.user_groups import get_groups_identifier, set_groups_object_color
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, set_active_physics_material
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
@@ -976,6 +977,45 @@ class OBJECT_OT_add_bounding_object():
         if self.prefs.debug == False:
             for obj in self.tmp_meshes:
                 obj.hide_set(True)
+
+    def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False):
+
+        objs = []
+
+        # Create the bounding geometry, depending on edit or object mode.
+        for base_ob in self.selected_objects:
+
+            # skip if invalid object
+            if not self.is_valid_object(base_ob):
+                continue
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                if base_ob.type == 'MESH':
+                    obj = base_ob
+                else:
+                    # store initial state for operation cancel
+                    user_collections = base_ob.users_collection
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
+                    self.tmp_meshes.append(obj)
+
+                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                    if use_local and self.my_space == 'LOCAL':
+                        split_objs = create_objs_from_island(obj, use_world=local_world_spc)
+                    else:
+                        split_objs = create_objs_from_island(obj, use_world=default_world_spc)
+
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                        col.color_tag = 'COLOR_03'
+                        objs.append((base_ob, split))
+                    self.tmp_meshes.extend(split_objs)
+                else:
+                    objs.append((base_ob, obj))
+
+        return objs
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
