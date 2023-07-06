@@ -91,37 +91,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         meshes = []
         matrices = []
-        objs = []
 
-        for base_ob in self.selected_objects:
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
 
-            # skip if invalid object
-            if not self.is_valid_object(base_ob):
-                continue
-
-            if base_ob and base_ob.type in self.valid_object_types:
-                if base_ob.type == 'MESH':
-                    obj = base_ob
-
-                else:
-                    # store initial state for operation cancel
-                    user_collections = base_ob.users_collection
-                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
-                    # convert meshes
-                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
-                    self.tmp_meshes.append(obj)
-
-                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
-                    split_objs = create_objs_from_island(obj, use_world=False)
-                    for split in split_objs:
-                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
-                        col.color_tag = 'COLOR_03'
-                    objs.extend(split_objs)
-                    self.tmp_meshes.extend(split_objs)
-                else:
-                    objs.append(obj)
-
-        for obj in objs:
+        for base_ob, obj in objs:
             context.view_layer.objects.active = obj
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':

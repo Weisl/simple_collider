@@ -78,6 +78,7 @@ def create_objs_from_island(obj, use_world = True):
     wld_mat = obj.matrix_world
 
     # change mode to editmode
+    bpy.context.view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode='EDIT')
     bm = bmesh.from_edit_mesh(obj.data)
 
