@@ -1021,13 +1021,14 @@ class OBJECT_OT_add_bounding_object():
 
     def add_remesh_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='REMESH')
+        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='REMESH')
+        modifier.mode = 'VOXEL'
         modifier.voxel_size = self.current_settings_dic['voxel_size']
         self.remesh_modifiers.append(modifier)
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
