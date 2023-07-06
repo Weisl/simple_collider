@@ -239,7 +239,7 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(D)', 'type': 'modal', 'highlight': self.decimate_active}
         items.append(item)
 
-    if self.use_vertex_count:
+    if self.use_cylinder_segments:
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
         key='(E)'
@@ -1119,7 +1119,7 @@ class OBJECT_OT_add_bounding_object():
         # modal settings
         self.use_decimation = False
         self.use_geo_nodes_hull = False
-        self.use_vertex_count = False
+        self.use_cylinder_segments = False
         self.use_modifier_stack = False
         self.use_weld_modifier = False
         self.use_space = False
@@ -1555,6 +1555,7 @@ class OBJECT_OT_add_bounding_object():
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if segment_count != int(round(self.current_settings_dic['cylinder_segments'])):
+                    segment_count = 3 if segment_count < 3 else segment_count
                     self.current_settings_dic['cylinder_segments'] = segment_count
                     self.execute(context)
 

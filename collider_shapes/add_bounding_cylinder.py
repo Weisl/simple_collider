@@ -211,7 +211,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_global_local_switches = True
 
         # cylinder specific
-        self.use_vertex_count = True
+        self.use_cylinder_segments = True
         self.use_cylinder_axis = True
         self.shape = 'convex_shape'
 
