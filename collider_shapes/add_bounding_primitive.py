@@ -973,6 +973,10 @@ class OBJECT_OT_add_bounding_object():
         else:
             bounding_object.show_wire = False
 
+        if self.prefs.debug == False:
+            for obj in self.tmp_meshes:
+                obj.hide_set(True)
+
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         if context.space_data.shading.type != 'SOLID':
