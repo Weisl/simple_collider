@@ -7,7 +7,7 @@ from bpy.types import Operator
 from mathutils import Matrix, Vector
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 tmp_name = 'cylindrical_collider'
 
 class ProjectorStack:
@@ -257,6 +257,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         collider_data = []
         verts_co = []
+        objs = []
 
         for base_ob in self.selected_objects:
 
@@ -275,6 +276,17 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
+
+            if self.split_by_mesh_island:
+                split_objs = create_objs_from_island(obj)
+                for split in split_objs:
+                    col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                    col.color_tag = 'COLOR_03'
+                    objs.append((base_ob, split))
+            else:
+                objs.append((base_ob, obj))
+
+        for base_ob, obj in objs:
 
             bounding_cylinder_data = {}
 

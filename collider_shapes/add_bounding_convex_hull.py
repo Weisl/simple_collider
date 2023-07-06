@@ -4,7 +4,7 @@ import numpy as np
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create convex bounding collisions based on the selection"""
@@ -47,6 +47,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
+        objs = []
 
         # Duplicate original meshes to convert to collider
         for base_ob in self.selected_objects:
@@ -66,6 +67,17 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
+
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj)
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                        col.color_tag = 'COLOR_03'
+                    objs.append((base_ob, split))
+                else:
+                    objs.append((base_ob, obj))
+
+        for base_ob, obj in objs:
 
             convex_collision_data = {}
 

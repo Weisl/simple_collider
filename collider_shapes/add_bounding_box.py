@@ -3,6 +3,7 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.box_creation import verts_faces_to_bbox_collider
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 tmp_name = 'box_collider'
 
 
@@ -56,6 +57,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
+        objs = []
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
@@ -70,7 +72,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if base_ob and base_ob.type in self.valid_object_types:
                 if base_ob.type == 'MESH':
                     obj = base_ob
-
                 else:
                     # store initial state for operation cancel
                     user_collections = base_ob.users_collection
@@ -79,6 +80,22 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
+                if self.split_by_mesh_island:
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                    if self.my_space == 'LOCAL':
+                        split_objs = create_objs_from_island(obj, use_world = False)
+                    else:
+                        split_objs = create_objs_from_island(obj, use_world = True)
+
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                        col.color_tag = 'COLOR_03'
+                        objs.append((base_ob, split))
+                    self.tmp_meshes.extend(split_objs)
+                else:
+                    objs.append((base_ob, obj))
+
+        for base_ob, obj in objs:
 
             context.view_layer.objects.active = obj
             bounding_box_data = {}

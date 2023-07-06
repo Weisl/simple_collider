@@ -2,6 +2,7 @@ import bpy
 from bpy.types import Operator
 from mathutils import Vector
 from ..bmesh_operations import capsule_generation as Capsule
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from math import radians
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
@@ -79,7 +80,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
-
+        objs = []
         # Create the bounding geometry, depending on edit or object mode.
         for base_ob in self.selected_objects:
 
@@ -98,6 +99,17 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
+
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj)
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                        col.color_tag = 'COLOR_03'
+                        objs.append((base_ob, split))
+                else:
+                    objs.append((base_ob, obj))
+
+        for base_ob, obj in objs:
 
             context.view_layer.objects.active = obj
             bounding_capsule_data = {}

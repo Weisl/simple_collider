@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
@@ -53,6 +53,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.keep_original_material = False
 
         collider_data = []
+        objs = []
 
         for base_ob in self.selected_objects:
 
@@ -72,6 +73,16 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
+                if self.split_by_mesh_island:
+                    split_objs = create_objs_from_island(obj, use_world=False)
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
+                        col.color_tag = 'COLOR_03'
+                        objs.append((base_ob, split))
+                else:
+                    objs.append((base_ob, obj))
+
+        for base_ob, obj in objs:
             mesh_collider_data = {}
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':

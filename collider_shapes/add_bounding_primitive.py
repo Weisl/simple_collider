@@ -198,6 +198,11 @@ def draw_viewport_overlay(self, context):
         items.append(item)
 
 
+    label = "Split by Island"
+    value = str(self.split_by_mesh_island)
+    item = {'label': label, 'value': value, 'key': '(I)', 'type': 'bool', 'highlight': False}
+    items.append(item)
+
     label = "Toggle X Ray "
     value = str(self.x_ray)
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
@@ -1016,13 +1021,14 @@ class OBJECT_OT_add_bounding_object():
 
     def add_remesh_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='REMESH')
+        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='REMESH')
+        modifier.mode = 'VOXEL'
         modifier.voxel_size = self.current_settings_dic['voxel_size']
         self.remesh_modifiers.append(modifier)
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
@@ -1230,6 +1236,8 @@ class OBJECT_OT_add_bounding_object():
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
+        self.split_by_mesh_island = False
+
         # Should physics materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
 
@@ -1411,6 +1419,10 @@ class OBJECT_OT_add_bounding_object():
                     except:
                         pass
 
+            self.execute(context)
+
+        elif event.type == 'I' and event.value == 'RELEASE':
+            self.split_by_mesh_island = not self.split_by_mesh_island
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':
