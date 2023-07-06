@@ -188,7 +188,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-                if self.split_by_mesh_island:
+                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
 
                     split_objs = create_objs_from_island(obj)
                     self.tmp_meshes.extend(split_objs)
@@ -216,7 +216,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             bounding_sphere_data = {}
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
                                                                                                                    used_vertices)
                 bounding_sphere_data['parent'] = base_ob

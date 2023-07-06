@@ -197,12 +197,6 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(O)', 'type': type, 'highlight': False}
         items.append(item)
 
-
-    label = "Split by Island"
-    value = str(self.split_by_mesh_island)
-    item = {'label': label, 'value': value, 'key': '(I)', 'type': 'bool', 'highlight': False}
-    items.append(item)
-
     label = "Toggle X Ray "
     value = str(self.x_ray)
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
@@ -239,7 +233,7 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(D)', 'type': 'modal', 'highlight': self.decimate_active}
         items.append(item)
 
-    if self.use_vertex_count:
+    if self.use_cylinder_segments:
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
         key='(E)'
@@ -979,6 +973,10 @@ class OBJECT_OT_add_bounding_object():
         else:
             bounding_object.show_wire = False
 
+        if self.prefs.debug == False:
+            for obj in self.tmp_meshes:
+                obj.hide_set(True)
+
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
         if context.space_data.shading.type != 'SOLID':
@@ -1119,7 +1117,7 @@ class OBJECT_OT_add_bounding_object():
         # modal settings
         self.use_decimation = False
         self.use_geo_nodes_hull = False
-        self.use_vertex_count = False
+        self.use_cylinder_segments = False
         self.use_modifier_stack = False
         self.use_weld_modifier = False
         self.use_space = False
@@ -1233,10 +1231,8 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
 
-        self.creation_mode = ['INDIVIDUAL', 'SELECTION']
+        self.creation_mode = ['INDIVIDUAL', 'SELECTION', 'LOOSEMESH']
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
-
-        self.split_by_mesh_island = False
 
         # Should physics materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
@@ -1421,10 +1417,6 @@ class OBJECT_OT_add_bounding_object():
 
             self.execute(context)
 
-        elif event.type == 'I' and event.value == 'RELEASE':
-            self.split_by_mesh_island = not self.split_by_mesh_island
-            self.execute(context)
-
         elif event.type == 'S' and event.value == 'RELEASE':
             self.displace_active = not self.displace_active
             self.opacity_active = False
@@ -1555,6 +1547,7 @@ class OBJECT_OT_add_bounding_object():
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if segment_count != int(round(self.current_settings_dic['cylinder_segments'])):
+                    segment_count = 3 if segment_count < 3 else segment_count
                     self.current_settings_dic['cylinder_segments'] = segment_count
                     self.execute(context)
 

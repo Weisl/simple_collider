@@ -111,7 +111,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-                if self.split_by_mesh_island:
+                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
                     split_objs = create_objs_from_island(obj, use_world=False)
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
@@ -134,7 +134,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh == None:
                 continue
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
                 convex_collision_data = {}
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['mtx_world'] = base_ob.matrix_world.copy()

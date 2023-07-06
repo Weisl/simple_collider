@@ -211,7 +211,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_global_local_switches = True
 
         # cylinder specific
-        self.use_vertex_count = True
+        self.use_cylinder_segments = True
         self.use_cylinder_axis = True
         self.shape = 'convex_shape'
 
@@ -277,7 +277,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-            if self.split_by_mesh_island:
+            if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
                 split_objs = create_objs_from_island(obj)
                 for split in split_objs:
                     col = self.add_to_collections(split, 'tmp_mesh', hide=False)
@@ -303,7 +303,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
 
                 coordinates = []
                 height = []

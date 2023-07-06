@@ -100,7 +100,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-                if self.split_by_mesh_island:
+                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
                     split_objs = create_objs_from_island(obj)
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
@@ -128,7 +128,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             loc, rot, sca = matrix_WS.decompose()
 
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
                 # used_vertices uses local space.
                 coordinates = []
 
@@ -204,7 +204,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             new_collider.location = center
             #context.scene.collection.objects.link(new_collider)
 
-            if  self.my_space == 'LOCAL' and self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if  self.my_space == 'LOCAL' and self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
 

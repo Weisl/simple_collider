@@ -68,7 +68,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
                     self.tmp_meshes.append(obj)
 
-                if self.split_by_mesh_island:
+                if self.creation_mode[self.creation_mode_idx] == 'LOOSEMESH':
                     split_objs = create_objs_from_island(obj)
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
@@ -92,7 +92,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            if self.creation_mode[self.creation_mode_idx] in ['INDIVIDUAL', 'LOOSEMESH']:
                 # duplicate object
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['verts_loc'] = ws_vtx_co
