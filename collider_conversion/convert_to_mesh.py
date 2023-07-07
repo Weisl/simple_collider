@@ -13,8 +13,8 @@ class OBJECT_OT_convert_to_mesh(Operator):
     bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
 
-    my_string: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
-
+    mesh_name: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
+    keep_original_material: bpy.props.BoolProperty(name="Keep Material", default=False)
     def invoke(self, context, event):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
@@ -25,10 +25,12 @@ class OBJECT_OT_convert_to_mesh(Operator):
         col = layout.column()
 
         row = col.row()
-        row.prop(self, "my_string")
+        row.prop(self, "mesh_name")
 
         row = col.row()
         row.prop(scene, "DefaultMeshMaterial", text='Material')
+        row = col.row()
+        row.prop(self, "keep_original_material", text='Keep Material')
 
     @classmethod
     def poll(cls, context):
@@ -54,17 +56,20 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 # Reste object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = OBJECT_OT_add_bounding_object.unique_name(self.my_string)
+                obj.name = OBJECT_OT_add_bounding_object.unique_name(self.mesh_name)
                 obj.display_type = 'TEXTURED'
 
-                # replace collision material
-                remove_materials(obj)
-                if colSettings.defaultMeshMaterial:
-                    assign_physics_material(obj, colSettings.defaultMeshMaterial.name)
-                else:
-                    default_material = create_material('Material', (1, 1, 1, 1))
-                    colSettings.defaultMeshMaterial = default_material
-                    assign_physics_material(obj, default_material.name)
+
+                if self.keep_original_material == False:
+                    remove_materials(obj)
+                    
+                    # replace collision material
+                    if colSettings.defaultMeshMaterial:
+                        assign_physics_material(obj, colSettings.defaultMeshMaterial.name)
+                    else:
+                        default_material = create_material('Material', (1, 1, 1, 1))
+                        colSettings.defaultMeshMaterial = default_material
+                        assign_physics_material(obj, default_material.name)
 
                 # remove from collision collection
                 prefs = context.preferences.addons[__package__.split('.')[0]].preferences
