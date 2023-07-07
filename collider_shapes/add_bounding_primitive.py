@@ -634,8 +634,6 @@ class OBJECT_OT_add_bounding_object():
     @staticmethod
     def remove_objects(list):
         '''Remove list of objects'''
-        print(str(list))
-
         if len(list) > 0:
             for ob in list:
                 if ob:
