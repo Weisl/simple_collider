@@ -1023,21 +1023,32 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
 
                 if creation_mode == 'LOOSEMESH':
-                    bpy.context.view_layer.objects.active = obj
-                    bpy.ops.object.mode_set(mode='OBJECT')
-
+                    base = obj
                     if self.use_modifier_stack and self.my_use_modifier_stack:
-                        self.apply_all_modifiers(context, obj)
+                        bpy.context.view_layer.objects.active = obj
+                        bpy.ops.object.mode_set(mode='OBJECT')
+
+                        tmp_ob = obj.copy()
+                        tmp_ob.data = obj.data.copy()
+                        bpy.context.collection.objects.link(tmp_ob)
+
+                        self.apply_all_modifiers(context, tmp_ob)
+                        base = tmp_ob
+
                     if use_local and self.my_space == 'LOCAL':
-                        split_objs = create_objs_from_island(obj, use_world=local_world_spc)
+                        split_objs = create_objs_from_island(base, use_world=local_world_spc)
                     else:
-                        split_objs = create_objs_from_island(obj, use_world=default_world_spc)
+                        split_objs = create_objs_from_island(base, use_world=default_world_spc)
 
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
                         col.color_tag = 'COLOR_03'
                         objs.append((base_ob, split))
                     self.tmp_meshes.extend(split_objs)
+
+                    if self.use_modifier_stack and self.my_use_modifier_stack:
+                        list = [tmp_ob]
+                        self.remove_objects(list)
                 else:
                     objs.append((base_ob, obj))
 
