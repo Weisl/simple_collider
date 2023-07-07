@@ -1004,6 +1004,7 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
 
                 if creation_mode == 'LOOSEMESH':
+                    bpy.context.view_layer.objects.active = obj
                     bpy.ops.object.mode_set(mode='OBJECT')
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(obj, use_world=local_world_spc)
@@ -1433,7 +1434,7 @@ class OBJECT_OT_add_bounding_object():
             self.set_collisions_wire_preview(self.prefs.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
-            if self.obj_mode == 'OBJECT':
+            if self.obj_mode == 'OBJECT' and not self.is_mesh_to_collider:
                 length = len(self.creation_mode)
             else:
                 length = len(self.creation_mode_edit)
