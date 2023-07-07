@@ -1025,6 +1025,9 @@ class OBJECT_OT_add_bounding_object():
                 if creation_mode == 'LOOSEMESH':
                     bpy.context.view_layer.objects.active = obj
                     bpy.ops.object.mode_set(mode='OBJECT')
+
+                    if self.use_modifier_stack and self.my_use_modifier_stack:
+                        self.apply_all_modifiers(context, obj)
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(obj, use_world=local_world_spc)
                     else:
