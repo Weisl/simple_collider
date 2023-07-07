@@ -25,6 +25,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_decimation = True
         self.shape = 'mesh_shape'
         self.use_keep_original_materials = True
+        self.use_keep_original_name = True
         self.use_modifier_stack = True
 
     def invoke(self, context, event):
@@ -37,7 +38,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                                 'mesh_shape']
 
         self.shape = self.collider_shapes[self.collider_shapes_idx]
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -68,36 +68,37 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
+        # list of coller
         collider_data = []
+        # user collections of the objs
         user_collections = []
+        # tmp collection for base objs
+        base_collections = [self.create_collection('base_obj')]
 
-        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False)
+        # get list of objects to be converted
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True)
 
-        # Create the bounding geometry, depending on edit or object mode.
         for base_ob, obj in objs:
 
-            new_collider = obj.copy()
-            new_collider.data = obj.data.copy()
+            new_collider = obj
             user_collections = base_ob.users_collection
-
-            # New collider to scene
             bpy.context.collection.objects.link(new_collider)
 
-            # store initial state for operation cancel
-            self.original_obj_data.append(self.store_initial_obj_state(obj, user_collections))
+            # Assign base obj to base object collection
+            self.set_collections(base_ob, base_collections)
 
-
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-
+            # naming
             prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
-            if prefs.replace_name:
-                basename = prefs.obj_basename
-            elif obj.parent:
-                basename = obj.parent.name
+            if self.keep_original_name:
+                basename = base_ob.name
             else:
-                basename = obj.name
+                if prefs.replace_name:
+                    basename = prefs.obj_basename
+                elif obj.parent:
+                    basename = obj.parent.name
+                else:
+                    basename = obj.name
 
             mesh_collider_data = {}
             mesh_collider_data['basename'] = basename
@@ -113,12 +114,15 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
                 self.primitive_postprocessing(context, new_collider, user_collections)
                 self.new_colliders_list.append(new_collider)
-                super().set_collider_name(new_collider, basename)
+
+                if not self.keep_original_name:
+                    super().set_collider_name(new_collider, basename)
 
         else: # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            # Deselect all objects
             for obj in bpy.data.objects: obj.select_set(False)
 
-            last_selected = None
+            # Select mesh objs
             for mesh_collider_data in collider_data:
                 basename = mesh_collider_data['basename']
                 new_collider = mesh_collider_data['new_collider']
@@ -129,7 +133,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             self.primitive_postprocessing(context, new_collider, user_collections)
             self.new_colliders_list.append(new_collider)
-            super().set_collider_name(new_collider, basename)
+
+            if not self.keep_original_name:
+                super().set_collider_name(new_collider, basename)
 
 
         elapsed_time = self.get_time_elapsed()
