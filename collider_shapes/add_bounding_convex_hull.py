@@ -85,6 +85,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             convex_collision_data['verts_loc'] = verts_co
             collider_data = [convex_collision_data]
 
+        bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for convex_collision_data in collider_data:

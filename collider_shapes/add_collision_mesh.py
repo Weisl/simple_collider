@@ -78,6 +78,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
 
+        bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
 
         # Create new collider objects
