@@ -40,7 +40,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             obj.name = name
             self.set_collections(obj, user_collections)
 
-
         return super().cancel_cleanup(context, delete_colliders=False)
 
     def __init__(self):
@@ -113,6 +112,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         for base_ob, obj in objs:
 
             new_collider = obj
+            new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
+            new_collider.data = new_mesh
+
             self.store_initial_obj_state(base_ob, base_ob.name, base_ob.users_collection)
             self.baseobjs.append(base_ob)
 
@@ -157,6 +159,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
                 self.primitive_postprocessing(context, new_collider, user_collections)
                 self.new_colliders_list.append(new_collider)
+                self.remove_all_modifiers(context, new_collider)
 
                 if self.keep_original_name:
                     new_collider.name = basename
