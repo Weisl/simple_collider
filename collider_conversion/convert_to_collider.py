@@ -12,10 +12,36 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Object to Collider"
     bl_description = 'Convert selected meshes to colliders'
 
+    @staticmethod
+    def store_initial_obj_state(obj, name, user_collections):
+        obj['users_collection'] = obj.get('users_collection') if obj.get('users_collection') else user_collections
+        obj['original_name'] = obj.get('original_name') if obj.get('original_name') else name
+
     @classmethod
     def poll(cls, context):
         # Convert is only supported in object mode
         return False if context.mode != 'OBJECT' else super().poll(context)
+
+    def cancel_cleanup(self, context):
+        if self.new_colliders_list:
+            self.remove_objects(self.new_colliders_list)
+        for obj in self.baseobjs:
+            obj.hide_set(False)
+            if obj.get('original_name'):
+                name = obj['original_name']
+            else:
+                name = obj.name
+
+            if obj.get('users_collection'):
+                user_collections = obj['users_collection']
+            else:
+                user_collections = obj.users_collection
+
+            obj.name = name
+            self.set_collections(obj, user_collections)
+
+
+        return super().cancel_cleanup(context, delete_colliders=False)
 
     def __init__(self):
         super().__init__()
@@ -38,9 +64,14 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                                 'mesh_shape']
 
         self.shape = self.collider_shapes[self.collider_shapes_idx]
+        self.baseobjs = []
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.cancel_cleanup(context)
+            return {'CANCELLED'}
+
         status = super().modal(context, event)
         if status == {'FINISHED'}:
             return {'FINISHED'}
@@ -74,6 +105,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         user_collections = []
         # tmp collection for base objs
         base_collections = [self.create_collection('base_obj')]
+        self.baseobjs = []
 
         # get list of objects to be converted
         objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True)
@@ -81,24 +113,35 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         for base_ob, obj in objs:
 
             new_collider = obj
-            user_collections = base_ob.users_collection
+            self.store_initial_obj_state(base_ob, base_ob.name, base_ob.users_collection)
+            self.baseobjs.append(base_ob)
+
+            user_collections = base_ob['users_collection']
             bpy.context.collection.objects.link(new_collider)
 
             # Assign base obj to base object collection
             self.set_collections(base_ob, base_collections)
 
+            original_name = base_ob.get('original_name')
+
+            if base_ob.name == original_name:
+                base_ob.name = base_ob.name + '_tmp'
+            base_ob.hide_set(True)
             # naming
             prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
+
+            print('original name = ' + original_name)
+
             if self.keep_original_name:
-                basename = base_ob.name
+                basename = original_name
             else:
                 if prefs.replace_name:
                     basename = prefs.obj_basename
                 elif obj.parent:
                     basename = obj.parent.name
                 else:
-                    basename = obj.name
+                    basename = original_name
 
             mesh_collider_data = {}
             mesh_collider_data['basename'] = basename
@@ -115,7 +158,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                 self.primitive_postprocessing(context, new_collider, user_collections)
                 self.new_colliders_list.append(new_collider)
 
-                if not self.keep_original_name:
+                if self.keep_original_name:
+                    new_collider.name = basename
+                else:
                     super().set_collider_name(new_collider, basename)
 
         else: # self.creation_mode[self.creation_mode_idx] == 'SELECTION':

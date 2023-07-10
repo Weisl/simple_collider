@@ -1128,13 +1128,8 @@ class OBJECT_OT_add_bounding_object():
         t1 = time.time() - self.t0
         return t1
 
-    def cancel_cleanup(self, context):
-        if self.is_mesh_to_collider:
-            if self.new_colliders_list:
-                self.remove_objects(self.new_colliders_list)
-
-        # All other operators
-        else:
+    def cancel_cleanup(self, context, delete_colliders=True):
+        if delete_colliders:
             # Remove previously created collisions
             if self.new_colliders_list:
                 for obj in self.new_colliders_list:
@@ -1146,17 +1141,6 @@ class OBJECT_OT_add_bounding_object():
         if self.prefs.debug == False:
             self.remove_objects(self.tmp_meshes)
             self.remove_empty_collection('tmp_mesh')
-
-        # delete original data
-        for data in self.original_obj_data:
-            # Assign unlinked data to user groups
-            original_obj = data['obj']
-            original_user_groups = data['users_collection']
-
-            if self.is_mesh_to_collider:
-                bpy.context.collection.objects.link(original_obj)
-                for col in original_user_groups:
-                    self.add_to_collections(original_obj, col)
 
         context.space_data.shading.color_type = self.original_color_type
 
