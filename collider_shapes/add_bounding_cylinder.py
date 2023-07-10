@@ -368,6 +368,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     center[0], center[1], center[2]]
             collider_data = [bounding_cylinder_data]
 
+        bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for bounding_cylinder_data in collider_data:
