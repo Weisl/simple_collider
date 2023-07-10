@@ -157,6 +157,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                 basename = mesh_collider_data['basename']
                 new_collider = mesh_collider_data['new_collider']
 
+                self.remove_all_modifiers(context, new_collider)
                 self.primitive_postprocessing(context, new_collider, user_collections)
                 self.new_colliders_list.append(new_collider)
                 self.remove_all_modifiers(context, new_collider)
@@ -179,6 +180,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = new_collider
             bpy.ops.object.join()
 
+            self.remove_all_modifiers(context, new_collider)
             self.primitive_postprocessing(context, new_collider, user_collections)
             self.new_colliders_list.append(new_collider)
 
