@@ -821,7 +821,7 @@ class OBJECT_OT_add_bounding_object():
 
     # Collections
     @classmethod
-    def add_to_collections(cls, obj, collection_name, hide=False):
+    def add_to_collections(cls, obj, collection_name, hide=False, color='NONE'):
         col = cls.create_collection(collection_name)
         if hide:
             col.hide_viewport = True
@@ -830,6 +830,7 @@ class OBJECT_OT_add_bounding_object():
             col.objects.link(obj)
         except RuntimeError as err:
             pass
+        col.color_tag = color
 
         return col
 
@@ -917,9 +918,9 @@ class OBJECT_OT_add_bounding_object():
             modifier.show_viewport = mod_entry["show_viewport"]
             modifier.show_in_editmode = mod_entry["show_in_editmode"]
 
-    @classmethod
-    def convert_to_mesh(cls, context, object, use_modifiers = False):
-        mods = cls.store_obj_mod_in_dic(object)
+
+    def convert_to_mesh(self, context, object, use_modifiers=False):
+        mods = self.store_obj_mod_in_dic(object)
 
         for mod in object.modifiers:
             mod.show_viewport = use_modifiers
@@ -928,10 +929,9 @@ class OBJECT_OT_add_bounding_object():
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
-        col = cls.add_to_collections(new_obj, 'tmp_mesh', hide=False)
-        col.color_tag = 'COLOR_03'
+        col = self.add_to_collections(new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
 
-        cls.restore_obj_mod_from_dic(mods)
+        self.restore_obj_mod_from_dic(mods)
 
         new_obj.matrix_world = object.matrix_world
         context.view_layer.objects.active = new_obj
@@ -949,7 +949,7 @@ class OBJECT_OT_add_bounding_object():
 
         if self.prefs.use_col_collection:
             collection_name = self.prefs.col_collection_name
-            self.add_to_collections(bounding_object, collection_name)
+            self.add_to_collections(bounding_object, collection_name, color=self.prefs.col_collection_color)
 
         if self.use_remesh:
             self.add_remesh_modifier(context, bounding_object)
@@ -1039,8 +1039,8 @@ class OBJECT_OT_add_bounding_object():
                         split_objs = create_objs_from_island(base, use_world=default_world_spc)
 
                     for split in split_objs:
-                        col = self.add_to_collections(split, 'tmp_mesh', hide=False)
-                        col.color_tag = 'COLOR_03'
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
+                        col.color_tag = self.prefs.col_tmp_collection_color
                         objs.append((base_ob, split))
                     self.tmp_meshes.extend(split_objs)
 

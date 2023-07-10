@@ -159,9 +159,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
-            #height, radius = calculate_bounding_capsule(verts_loc)
-            print("Optimal bounding capsule height:", height)
-            print("Optimal bounding capsule radius:", radius)
             data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'], latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius, depth=height, uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
