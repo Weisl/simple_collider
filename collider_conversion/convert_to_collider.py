@@ -23,22 +23,24 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         return False if context.mode != 'OBJECT' else super().poll(context)
 
     def cancel_cleanup(self, context):
-        if self.new_colliders_list:
-            self.remove_objects(self.new_colliders_list)
+        print('baseobjs = ' + str(self.baseobjs))
         for obj in self.baseobjs:
             obj.hide_set(False)
             if obj.get('original_name'):
-                name = obj['original_name']
+                name = obj.get('original_name')
             else:
                 name = obj.name
 
             if obj.get('users_collection'):
-                user_collections = obj['users_collection']
+                user_collections = obj.get('users_collection')
             else:
                 user_collections = obj.users_collection
 
             obj.name = name
             self.set_collections(obj, user_collections)
+
+        if self.new_colliders_list:
+            self.remove_objects(self.new_colliders_list)
 
         return super().cancel_cleanup(context, delete_colliders=False)
 
@@ -63,13 +65,17 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                                 'mesh_shape']
 
         self.shape = self.collider_shapes[self.collider_shapes_idx]
-        self.baseobjs = []
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         if event.type in {'RIGHTMOUSE', 'ESC'}:
             self.cancel_cleanup(context)
             return {'CANCELLED'}
+        # apply operator
+        elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
+            if self.prefs.debug == False:
+                self.remove_objects(self.baseobjs)
+                self.remove_empty_collection('base_obj')
 
         status = super().modal(context, event)
         if status == {'FINISHED'}:
