@@ -166,7 +166,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                 self.remove_all_modifiers(context, new_collider)
                 self.primitive_postprocessing(context, new_collider, user_collections)
                 self.new_colliders_list.append(new_collider)
-                self.remove_all_modifiers(context, new_collider)
 
                 if self.keep_original_name:
                     new_collider.name = basename
