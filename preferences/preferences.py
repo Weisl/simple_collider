@@ -615,7 +615,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "use_col_collection",
         "col_collection_name",
         "col_collection_color",
-        "col_tmp_collection_color",
     ]
 
     ui_col_colors = [
