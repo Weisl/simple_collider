@@ -198,6 +198,19 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(O)', 'type': type, 'highlight': False}
         items.append(item)
 
+    if self.use_keep_original_name:
+        label = "Keep Original Name"
+
+        value = str(self.keep_original_name)
+        # Currently only supported in OBJECT mode
+        if self.obj_mode == 'OBJECT':
+            type = 'bool'
+        else:
+            type = 'disabled'
+        item = {'label': label, 'value': value, 'key': '(N)', 'type': type, 'highlight': False}
+        items.append(item)
+
+
     label = "Toggle X Ray "
     value = str(self.x_ray)
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
@@ -621,8 +634,6 @@ class OBJECT_OT_add_bounding_object():
     @staticmethod
     def remove_objects(list):
         '''Remove list of objects'''
-        print(str(list))
-
         if len(list) > 0:
             for ob in list:
                 if ob:
@@ -798,15 +809,20 @@ class OBJECT_OT_add_bounding_object():
             return False
         return True
 
-    # Collections
     @staticmethod
-    def add_to_collections(obj, collection_name, hide=False):
+    def create_collection(collection_name):
         """Add an object to a collection"""
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
             bpy.context.scene.collection.children.link(collection)
 
         col = bpy.data.collections[collection_name]
+        return col
+
+    # Collections
+    @classmethod
+    def add_to_collections(cls, obj, collection_name, hide=False):
+        col = cls.create_collection(collection_name)
         if hide:
             col.hide_viewport = True
             col.hide_render = True
@@ -978,7 +994,7 @@ class OBJECT_OT_add_bounding_object():
             for obj in self.tmp_meshes:
                 obj.hide_set(True)
 
-    def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False):
+    def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False, use_mesh_copy=False):
 
         objs = []
 
@@ -991,7 +1007,8 @@ class OBJECT_OT_add_bounding_object():
 
             if base_ob and base_ob.type in self.valid_object_types:
                 if base_ob.type == 'MESH':
-                    obj = base_ob
+                    obj = base_ob.copy() if use_mesh_copy else base_ob
+                    obj.data = base_ob.data.copy() if use_mesh_copy else base_ob.data
                 else:
                     # store initial state for operation cancel
                     user_collections = base_ob.users_collection
@@ -1004,17 +1021,32 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
 
                 if creation_mode == 'LOOSEMESH':
-                    bpy.ops.object.mode_set(mode='OBJECT')
+                    base = obj
+                    if self.use_modifier_stack and self.my_use_modifier_stack:
+                        bpy.context.view_layer.objects.active = obj
+                        bpy.ops.object.mode_set(mode='OBJECT')
+
+                        tmp_ob = obj.copy()
+                        tmp_ob.data = obj.data.copy()
+                        bpy.context.collection.objects.link(tmp_ob)
+
+                        self.apply_all_modifiers(context, tmp_ob)
+                        base = tmp_ob
+
                     if use_local and self.my_space == 'LOCAL':
-                        split_objs = create_objs_from_island(obj, use_world=local_world_spc)
+                        split_objs = create_objs_from_island(base, use_world=local_world_spc)
                     else:
-                        split_objs = create_objs_from_island(obj, use_world=default_world_spc)
+                        split_objs = create_objs_from_island(base, use_world=default_world_spc)
 
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False)
                         col.color_tag = 'COLOR_03'
                         objs.append((base_ob, split))
                     self.tmp_meshes.extend(split_objs)
+
+                    if self.use_modifier_stack and self.my_use_modifier_stack:
+                        list = [tmp_ob]
+                        self.remove_objects(list)
                 else:
                     objs.append((base_ob, obj))
 
@@ -1172,6 +1204,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_shape_change = False
         self.use_creation_mode = True
         self.use_keep_original_materials = False
+        self.use_keep_original_name = False
         self.use_remesh = False
 
         # default shape init
@@ -1281,6 +1314,7 @@ class OBJECT_OT_add_bounding_object():
 
         # Should physics materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
+        self.keep_original_name = colSettings.default_keep_original_name
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
@@ -1433,7 +1467,7 @@ class OBJECT_OT_add_bounding_object():
             self.set_collisions_wire_preview(self.prefs.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
-            if self.obj_mode == 'OBJECT':
+            if self.obj_mode == 'OBJECT' and not self.is_mesh_to_collider:
                 length = len(self.creation_mode)
             else:
                 length = len(self.creation_mode_edit)
@@ -1465,6 +1499,10 @@ class OBJECT_OT_add_bounding_object():
                     except:
                         pass
 
+            self.execute(context)
+
+        elif event.type == 'N' and event.value == 'RELEASE' and self.use_keep_original_name == True:
+            self.keep_original_name = not self.keep_original_name
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':

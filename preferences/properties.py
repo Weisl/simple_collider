@@ -93,6 +93,10 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                default=False,
                                                description="Set the default for using the modifier stack or not when creating colliders.")
 
+    default_keep_original_name: bpy.props.BoolProperty(name="Keep Original Name",
+                                               default=False,
+                                               description="Keep the original object name and don't use the automatic collider renaming")
+
 
 
     default_user_group: bpy.props.EnumProperty(name="Default User Group",

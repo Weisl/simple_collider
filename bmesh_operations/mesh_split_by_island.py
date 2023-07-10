@@ -54,7 +54,7 @@ def construct_python_faces(bmesh_faces):
 
     return dic
 def get_face_islands(bm, faces, face_islands = [], i=0):
-    if len(faces) == 0 or i > 10:
+    if len(faces) == 0:
         return face_islands
     else:
         bm.faces.ensure_lookup_table()

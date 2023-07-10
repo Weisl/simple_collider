@@ -19,22 +19,25 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
     def __init__(self):
         super().__init__()
+        self.is_mesh_to_collider = True
+
         self.use_shape_change = True
         self.use_decimation = True
-        self.is_mesh_to_collider = True
         self.shape = 'mesh_shape'
         self.use_keep_original_materials = True
+        self.use_keep_original_name = True
         self.use_modifier_stack = True
 
     def invoke(self, context, event):
         super().invoke(context, event)
 
+        self.use_creation_mode = True
+        self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.collider_shapes_idx = 3
         self.collider_shapes = ['box_shape', 'sphere_shape', 'capsule_shape', 'convex_shape',
                                 'mesh_shape']
 
         self.shape = self.collider_shapes[self.collider_shapes_idx]
-
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
@@ -65,75 +68,61 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
+        # list of coller
         collider_data = []
+        # user collections of the objs
         user_collections = []
+        # tmp collection for base objs
+        base_collections = [self.create_collection('base_obj')]
 
-        # Create the bounding geometry, depending on edit or object mode.
-        for base_ob in self.selected_objects:
+        # get list of objects to be converted
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True)
 
-            # skip if invalid object
-            if not self.is_valid_object(base_ob):
-                continue
+        for base_ob, obj in objs:
 
-            if base_ob and base_ob.type in self.valid_object_types:
-                if base_ob.type == 'MESH':
-                    obj = base_ob
-                    mods = self.store_obj_mod_in_dic(obj)
-
-                    for mod in obj.modifiers:
-                        mod.show_viewport = self.use_modifier_stack
-                        mod.show_in_editmode = self.use_modifier_stack
-
-                    self.restore_obj_mod_from_dic(mods)
-
-                else: # other object types like curves, surfaces, texts ...
-                    # store initial state for operation cancel
-                    user_collections = base_ob.users_collection
-                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
-                    # convert meshes
-                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
-                    self.tmp_meshes.append(obj)
-
-            new_collider = obj.copy()
-            new_collider.data = obj.data.copy()
+            new_collider = obj
             user_collections = base_ob.users_collection
-
-            # New collider to scene
             bpy.context.collection.objects.link(new_collider)
 
-            # store initial state for operation cancel
-            self.original_obj_data.append(self.store_initial_obj_state(obj, user_collections))
+            # Assign base obj to base object collection
+            self.set_collections(base_ob, base_collections)
 
-
-            for collection in obj.users_collection:
-                collection.objects.unlink(obj)
-
+            # naming
             prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
-            if prefs.replace_name:
-                basename = prefs.obj_basename
-            elif obj.parent:
-                basename = obj.parent.name
+            if self.keep_original_name:
+                basename = base_ob.name
             else:
-                basename = obj.name
+                if prefs.replace_name:
+                    basename = prefs.obj_basename
+                elif obj.parent:
+                    basename = obj.parent.name
+                else:
+                    basename = obj.name
 
             mesh_collider_data = {}
             mesh_collider_data['basename'] = basename
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
 
-        if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+        creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+
+        if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
             for mesh_collider_data in collider_data:
                 basename = mesh_collider_data['basename']
                 new_collider = mesh_collider_data['new_collider']
 
                 self.primitive_postprocessing(context, new_collider, user_collections)
                 self.new_colliders_list.append(new_collider)
-                super().set_collider_name(new_collider, basename)
+
+                if not self.keep_original_name:
+                    super().set_collider_name(new_collider, basename)
 
         else: # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            bpy.ops.object.select_all(action='DESELECT')
-            last_selected = None
+            # Deselect all objects
+            for obj in bpy.data.objects: obj.select_set(False)
+
+            # Select mesh objs
             for mesh_collider_data in collider_data:
                 basename = mesh_collider_data['basename']
                 new_collider = mesh_collider_data['new_collider']
@@ -144,7 +133,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
             self.primitive_postprocessing(context, new_collider, user_collections)
             self.new_colliders_list.append(new_collider)
-            super().set_collider_name(new_collider, basename)
+
+            if not self.keep_original_name:
+                super().set_collider_name(new_collider, basename)
 
 
         elapsed_time = self.get_time_elapsed()
