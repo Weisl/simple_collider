@@ -13,8 +13,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     bl_description = 'Convert selected meshes to colliders'
 
     @staticmethod
-    def store_initial_obj_state(obj, name, user_collections):
-        obj['users_collection'] = obj.get('users_collection') if obj.get('users_collection') else user_collections
+    def store_init_state(obj, name, user_collections):
+        obj['original_collections'] = obj.get('original_collections') if obj.get('original_collections') else user_collections
         obj['original_name'] = obj.get('original_name') if obj.get('original_name') else name
 
     @classmethod
@@ -31,8 +31,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             else:
                 name = obj.name
 
-            if obj.get('users_collection'):
-                user_collections = obj.get('users_collection')
+            if obj.get('original_collections'):
+                user_collections = obj.get('original_collections')
             else:
                 user_collections = obj.users_collection
 
@@ -121,10 +121,10 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
             new_collider.data = new_mesh
 
-            self.store_initial_obj_state(base_ob, base_ob.name, base_ob.users_collection)
+            self.store_init_state(base_ob, base_ob.name, base_ob.users_collection)
             self.baseobjs.append(base_ob)
 
-            user_collections = base_ob['users_collection']
+            user_collections = base_ob['original_collections']
             bpy.context.collection.objects.link(new_collider)
 
             # Assign base obj to base object collection

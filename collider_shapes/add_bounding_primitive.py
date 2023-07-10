@@ -1006,12 +1006,12 @@ class OBJECT_OT_add_bounding_object():
                 continue
 
             if base_ob and base_ob.type in self.valid_object_types:
+                user_collections = base_ob.users_collection
                 if base_ob.type == 'MESH':
                     obj = base_ob.copy() if use_mesh_copy else base_ob
                     obj.data = base_ob.data.copy() if use_mesh_copy else base_ob.data
                 else:
                     # store initial state for operation cancel
-                    user_collections = base_ob.users_collection
                     self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
