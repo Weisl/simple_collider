@@ -1006,12 +1006,12 @@ class OBJECT_OT_add_bounding_object():
                 continue
 
             if base_ob and base_ob.type in self.valid_object_types:
+                user_collections = base_ob.users_collection
                 if base_ob.type == 'MESH':
                     obj = base_ob.copy() if use_mesh_copy else base_ob
                     obj.data = base_ob.data.copy() if use_mesh_copy else base_ob.data
                 else:
                     # store initial state for operation cancel
-                    user_collections = base_ob.users_collection
                     self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
@@ -1128,13 +1128,8 @@ class OBJECT_OT_add_bounding_object():
         t1 = time.time() - self.t0
         return t1
 
-    def cancel_cleanup(self, context):
-        if self.is_mesh_to_collider:
-            if self.new_colliders_list:
-                self.remove_objects(self.new_colliders_list)
-
-        # All other operators
-        else:
+    def cancel_cleanup(self, context, delete_colliders=True):
+        if delete_colliders:
             # Remove previously created collisions
             if self.new_colliders_list:
                 for obj in self.new_colliders_list:
@@ -1146,17 +1141,6 @@ class OBJECT_OT_add_bounding_object():
         if self.prefs.debug == False:
             self.remove_objects(self.tmp_meshes)
             self.remove_empty_collection('tmp_mesh')
-
-        # delete original data
-        for data in self.original_obj_data:
-            # Assign unlinked data to user groups
-            original_obj = data['obj']
-            original_user_groups = data['users_collection']
-
-            if self.is_mesh_to_collider:
-                bpy.context.collection.objects.link(original_obj)
-                for col in original_user_groups:
-                    self.add_to_collections(original_obj, col)
 
         context.space_data.shading.color_type = self.original_color_type
 
