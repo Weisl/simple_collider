@@ -638,8 +638,10 @@ class OBJECT_OT_add_bounding_object():
             for ob in list:
                 if ob:
                     objs = bpy.data.objects
-                    objs.remove(ob, do_unlink=True)
-
+                    try:
+                        objs.remove(ob, do_unlink=True)
+                    except:
+                        pass
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
         '''Get delta of input movement'''
@@ -1661,6 +1663,7 @@ class OBJECT_OT_add_bounding_object():
 
         # Remove objects from previous generation
         self.remove_objects(self.tmp_meshes)
+
         self.remove_objects(self.new_colliders_list)
         self.remove_empty_collection('tmp_mesh')
         self.new_colliders_list = []
