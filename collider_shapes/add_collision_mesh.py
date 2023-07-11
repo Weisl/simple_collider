@@ -48,10 +48,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
 
-        # Keep original material is currently not supported for EDIT mode.
-        if self.obj_mode != 'OBJECT':
-            self.keep_original_material = False
-
         collider_data = []
         objs = []
 
@@ -63,6 +59,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
+
 
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
