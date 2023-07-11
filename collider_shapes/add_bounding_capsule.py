@@ -12,7 +12,7 @@ tmp_name = 'capsule_collider'
 class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding capsule collider based on the selection"""
     bl_idname = "mesh.add_bounding_capsule"
-    bl_label = "Add Capsule"
+    bl_label = "Add Capsule (Beta)"
     bl_description = 'Create bounding capsule colliders based on the selection'
 
     def __init__(self):
