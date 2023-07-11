@@ -994,9 +994,11 @@ class OBJECT_OT_add_bounding_object():
 
         if self.prefs.debug == False:
             for obj in self.tmp_meshes:
-                obj.hide_set(True)
-
-    def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False, use_mesh_copy=False):
+                try:
+                    obj.hide_set(True)
+                except:
+                    pass
+    def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False, use_mesh_copy=False, add_to_tmp_meshes = True):
 
         objs = []
 
@@ -1017,7 +1019,8 @@ class OBJECT_OT_add_bounding_object():
                     self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
                     # convert meshes
                     obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
-                    self.tmp_meshes.append(obj)
+                    if add_to_tmp_meshes:
+                        self.tmp_meshes.append(obj)
 
                 creation_mode = self.creation_mode[
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
@@ -1044,7 +1047,9 @@ class OBJECT_OT_add_bounding_object():
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
                         col.color_tag = self.prefs.col_tmp_collection_color
                         objs.append((base_ob, split))
-                    self.tmp_meshes.extend(split_objs)
+
+                    if add_to_tmp_meshes:
+                        self.tmp_meshes.extend(split_objs)
 
                     if self.use_modifier_stack and self.my_use_modifier_stack:
                         list = [tmp_ob]
