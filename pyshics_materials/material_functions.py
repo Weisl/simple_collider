@@ -23,7 +23,8 @@ def set_material(ob, mat):
     '''Assign material to object'''
     # add material to object
     me = ob.data
-    me.materials.append(mat)
+    if mat:
+        me.materials.append(mat)
 
 
 def remove_materials(obj):
