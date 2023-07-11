@@ -21,11 +21,13 @@ def create_material(name, diffuse, fakeUser=True):
 
 def set_material(ob, mat):
     '''Assign material to object'''
-    # add material to object
+    # add material to object    
     me = ob.data
     if mat:
-        me.materials.append(mat)
-
+        try:
+            me.materials.append(mat)
+        except:
+            pass
 
 def remove_materials(obj):
     '''Remove all materials from object'''
