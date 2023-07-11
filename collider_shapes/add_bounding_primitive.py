@@ -12,7 +12,7 @@ from gpu_extras.batch import batch_for_shader
 from ..groups.user_groups import get_groups_identifier, set_groups_object_color
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, set_active_physics_material
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
-
+from ..pyshics_materials.material_functions import set_material
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
 
@@ -1046,6 +1046,10 @@ class OBJECT_OT_add_bounding_object():
                     for split in split_objs:
                         col = self.add_to_collections(split, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
                         col.color_tag = self.prefs.col_tmp_collection_color
+
+                        for mat in base_ob.material_slots:
+                            set_material(split, mat.material)
+
                         objs.append((base_ob, split))
 
                     if add_to_tmp_meshes:
