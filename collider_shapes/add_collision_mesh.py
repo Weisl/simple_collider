@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
+from ..pyshics_materials.material_functions import set_material
 
 class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
@@ -59,6 +59,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
+                for mat in base_ob.material_slots:
+                    set_material(new_collider, mat.material)
 
 
             else:  # mode == "OBJECT":
