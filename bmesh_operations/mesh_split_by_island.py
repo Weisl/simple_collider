@@ -32,6 +32,7 @@ def construct_python_faces(bmesh_faces):
     dic={}
     py_verts = []
     py_faces = []
+    py_face_mat = []
 
     for f in bmesh_faces:
         # cur_face_indices holds the new indices of our verts per face
@@ -47,10 +48,12 @@ def construct_python_faces(bmesh_faces):
 
         # face index list construction is complete, add it to the face list
         py_faces.append(cur_face_indices)
+        py_face_mat.append(f.material_index)
 
     # print(py_verts, py_faces)
     dic['py_verts'] = py_verts
     dic['py_faces'] = py_faces
+    dic['py_face_mat'] = py_face_mat
 
     return dic
 def get_face_islands(bm, faces, face_islands = [], i=0):
@@ -92,6 +95,7 @@ def create_objs_from_island(obj, use_world = True):
     for island in face_islands:
         py_verts = island['py_verts']
         py_faces = island['py_faces']
+        py_face_mat = island['py_face_mat']
 
         name = 'Object'
         me = bpy.data.meshes.new(name)
@@ -99,6 +103,9 @@ def create_objs_from_island(obj, use_world = True):
             me.from_pydata([wld_mat @ x_co for x_co in py_verts], [], py_faces)
         else:
             me.from_pydata([x_co for x_co in py_verts], [], py_faces)
+
+        for f, f_mat_idx in zip(me.polygons, py_face_mat):
+            f.material_index = f_mat_idx
 
         # create a new object, and link it to the current view layer for display
         ob = bpy.data.objects.new(name='output', object_data=me)
