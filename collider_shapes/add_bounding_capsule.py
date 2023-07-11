@@ -66,10 +66,13 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
-        # define cylinder axis
+
         elif event.type == 'X' or event.type == 'Y' or event.type == 'Z' and event.value == 'RELEASE':
-            self.cylinder_axis = event.type
-            self.execute(context)
+            # define cylinder axis
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+            if creation_mode != 'LOOSEMESH':
+                self.cylinder_axis = event.type
+                self.execute(context)
 
         return {'RUNNING_MODAL'}
 
@@ -116,12 +119,13 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    if self.cylinder_axis == 'X':
+                    if self.cylinder_axis == 'Z' or creation_mode == 'LOOSEMESH':
+                        coordinates.append([v.x, v.y, v.z])
+                    elif self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z, v.x])
                     elif self.cylinder_axis == 'Y':
                         coordinates.append([v.x, v.z, v.y])
-                    elif self.cylinder_axis == 'Z':
-                        coordinates.append([v.x, v.y, v.z])
+
 
                 center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
 
