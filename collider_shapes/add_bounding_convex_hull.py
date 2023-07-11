@@ -1,10 +1,8 @@
 import bmesh
 import bpy
-import numpy as np
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create convex bounding collisions based on the selection"""

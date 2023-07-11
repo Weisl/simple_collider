@@ -7,7 +7,6 @@ from bpy.types import Operator
 from mathutils import Matrix, Vector
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 tmp_name = 'cylindrical_collider'
 
 class ProjectorStack:

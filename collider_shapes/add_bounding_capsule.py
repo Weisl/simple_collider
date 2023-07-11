@@ -2,7 +2,6 @@ import bpy
 from bpy.types import Operator
 from mathutils import Vector
 from ..bmesh_operations import capsule_generation as Capsule
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from math import radians
 
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix

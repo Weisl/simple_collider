@@ -8,7 +8,6 @@ from bpy.types import Operator
 
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.mesh_edit import bmesh_join
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'

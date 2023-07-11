@@ -4,7 +4,6 @@ from bpy.types import Operator
 from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 tmp_sphere_name = 'sphere_collider'
 
