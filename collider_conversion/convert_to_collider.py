@@ -113,7 +113,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.baseobjs = []
 
         # get list of objects to be converted
-        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True)
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True, add_to_tmp_meshes=False)
 
         for base_ob, obj in objs:
 
