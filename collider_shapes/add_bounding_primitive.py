@@ -174,9 +174,15 @@ def draw_viewport_overlay(self, context):
         items.append(item)
 
     if self.use_capsule_axis:
-        label = "Cylinder Axis"
+        label = "Capsule Axis"
         value = str(self.cylinder_axis)
-        item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': 'enum', 'highlight': False}
+        creation_mode = self.creation_mode[
+            self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+        if creation_mode == 'LOOSEMESH':
+            type = 'disabled'
+        else:
+            type = 'enum'
+        item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': type, 'highlight': False}
         items.append(item)
 
     if self.use_modifier_stack:

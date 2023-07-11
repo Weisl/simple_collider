@@ -2,8 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
-
+from ..pyshics_materials.material_functions import set_material
 class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_remesh_collision"
@@ -53,10 +52,6 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
 
-        # Keep original material is currently not supported for EDIT mode.
-        if self.obj_mode != 'OBJECT':
-            self.keep_original_material = False
-
         collider_data = []
         objs = []
 
@@ -68,6 +63,8 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
+                for mat in base_ob.material_slots:
+                    set_material(new_collider, mat.material)
 
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
