@@ -191,10 +191,7 @@ def draw_viewport_overlay(self, context):
 
         value = str(self.keep_original_material)
         # Currently only supported in OBJECT mode
-        if self.obj_mode == 'OBJECT':
-            type = 'bool'
-        else:
-            type = 'disabled'
+        type = 'bool'
         item = {'label': label, 'value': value, 'key': '(O)', 'type': type, 'highlight': False}
         items.append(item)
 
