@@ -13,17 +13,13 @@ classes = (
     physics_materials.MATERIAL_OT_physics_material_random_color,
 )
 
-# def defaultActive():
-#     mat = material_functions.create_default_material()
-#     return mat
+
 
 def register():
     scene = bpy.types.Scene
     scene.use_physics_tag = bpy.props.BoolProperty(name="Filter", default=False)
-    # scene.active_physics_material = bpy.props.StringProperty(name="Active Physics Material", default="")
     materialType = bpy.types.Material
 
-    #scene.active_physics_material = bpy.props.PointerProperty(name="My Node", default=defaultActive(), type=materialType)
     scene.active_physics_material = bpy.props.PointerProperty(name="My Node", type=materialType)
 
     materialType.edit = bpy.props.BoolProperty(name="Manipulate", default=False)
@@ -36,7 +32,6 @@ def register():
 
 
 def unregister():
-    wm = bpy.types.WindowManager
     materialType = bpy.types.Material
 
     from bpy.utils import unregister_class

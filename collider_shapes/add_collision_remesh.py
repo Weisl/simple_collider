@@ -2,12 +2,12 @@ import bpy
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..pyshics_materials.material_functions import set_material
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
-class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
+class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
-    bl_idname = "mesh.add_mesh_collision"
-    bl_label = "Add Mesh"
+    bl_idname = "mesh.add_remesh_collision"
+    bl_label = "Add Re-meshed"
     bl_description = 'Create triangle mesh colliders based on the selection'
 
     def __init__(self):
@@ -16,6 +16,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_weld_modifier = True
         self.use_keep_original_materials = True
+        self.use_remesh = True
         self.shape = "mesh_shape"
 
 
@@ -38,6 +39,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
+        # change bounding object settings
+        if event.type == 'R' and event.value == 'RELEASE':
+            self.remesh_active = not self.remesh_active
+
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
@@ -47,6 +52,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         # Add the active object to selection if it's not selected. This fixes the rare case when the active Edit mode object is not selected in Object mode.
         if context.object not in self.selected_objects:
             self.selected_objects.append(context.object)
+
+        # Keep original material is currently not supported for EDIT mode.
+        if self.obj_mode != 'OBJECT':
+            self.keep_original_material = False
 
         collider_data = []
         objs = []
@@ -59,9 +68,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
-                for mat in base_ob.material_slots:
-                    set_material(new_collider, mat.material)
-
 
             else:  # mode == "OBJECT":
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
@@ -93,9 +99,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             new_collider.matrix_world = mtx_world
             self.custom_set_parent(context, parent, new_collider)
             self.remove_all_modifiers(context, new_collider)
-
-            # align objects
-            #new_collider.matrix_world = parent.matrix_world
 
             super().set_collider_name(new_collider, parent.name)
 

@@ -11,7 +11,8 @@ from gpu_extras.batch import batch_for_shader
 
 from ..groups.user_groups import get_groups_identifier, set_groups_object_color
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, set_active_physics_material
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
+from ..pyshics_materials.material_functions import set_material
 collider_groups = ['USER_01', 'USER_02', 'USER_03']
 
 
@@ -134,7 +135,7 @@ def draw_viewport_overlay(self, context):
     if self.use_space:
         label = "Global/Local"
         # Global/Local switch is currently only supported for cylindrical collider in Global Space
-        if self.shape == 'convex_shape' and self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+        if (self.shape == 'convex_shape' or self.shape == 'capsule_shape') and self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             type = 'disabled'
             value = "GLOBAL"
         else:
@@ -172,6 +173,12 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': 'enum', 'highlight': False}
         items.append(item)
 
+    if self.use_capsule_axis:
+        label = "Cylinder Axis"
+        value = str(self.cylinder_axis)
+        item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': 'enum', 'highlight': False}
+        items.append(item)
+
     if self.use_modifier_stack:
         label = "Use Modifiers "
         value = str(self.my_use_modifier_stack)
@@ -184,11 +191,20 @@ def draw_viewport_overlay(self, context):
 
         value = str(self.keep_original_material)
         # Currently only supported in OBJECT mode
+        type = 'bool'
+        item = {'label': label, 'value': value, 'key': '(O)', 'type': type, 'highlight': False}
+        items.append(item)
+
+    if self.use_keep_original_name:
+        label = "Keep Original Name"
+
+        value = str(self.keep_original_name)
+        # Currently only supported in OBJECT mode
         if self.obj_mode == 'OBJECT':
             type = 'bool'
         else:
             type = 'disabled'
-        item = {'label': label, 'value': value, 'key': '(O)', 'type': type, 'highlight': False}
+        item = {'label': label, 'value': value, 'key': '(N)', 'type': type, 'highlight': False}
         items.append(item)
 
 
@@ -215,6 +231,12 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal', 'highlight': self.sphere_segments_active}
         items.append(item)
 
+    if self.use_capsule_segments:
+        label = "Capsule Segments "
+        value = str(self.current_settings_dic['capsule_segments'])
+        item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal', 'highlight': self.capsule_segments_active}
+        items.append(item)
+
     if self.use_decimation:
         label = "Decimate Ratio"
         value = self.current_settings_dic['decimate']
@@ -222,12 +244,22 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(D)', 'type': 'modal', 'highlight': self.decimate_active}
         items.append(item)
 
-    if self.use_vertex_count:
+    if self.use_cylinder_segments:
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
         key='(E)'
         type='modal'
         highlight=self.cylinder_segments_active
+
+        item = {'label': label, 'value': value, 'key': key, 'type': type, 'highlight': highlight}
+        items.append(item)
+
+    if self.use_remesh:
+        label = "Voxel Size"
+        value = str(self.current_settings_dic['voxel_size'])
+        key='(R)'
+        type='modal'
+        highlight=self.remesh_active
 
         item = {'label': label, 'value': value, 'key': key, 'type': type, 'highlight': highlight}
         items.append(item)
@@ -541,13 +573,15 @@ class OBJECT_OT_add_bounding_object():
         user_group = self.collision_groups[self.collision_group_idx]
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
-    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments):
+    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments, voxel_size):
         dict = {}
         dict['alpha'] = alpha
         dict['discplace_offset'] = offset
         dict['decimate'] = decimate
         dict['sphere_segments'] = sphere_segments
         dict['cylinder_segments'] = cylinder_segments
+        dict['capsule_segments'] = capsule_segments
+        dict['voxel_size'] = voxel_size
 
         return dict
 
@@ -557,6 +591,8 @@ class OBJECT_OT_add_bounding_object():
             return 'BOX'
         elif self.shape == 'sphere_shape':
             return 'SPHERE'
+        elif self.shape == 'capsule_shape':
+            return 'CAPSULE'
         elif self.shape == 'convex_shape':
             return 'CONVEX'
         else:  # identifier == 'mesh_shape':
@@ -569,6 +605,8 @@ class OBJECT_OT_add_bounding_object():
             return prefs.box_shape
         elif identifier == 'sphere_shape':
             return prefs.sphere_shape
+        elif identifier == 'capsule_shape':
+            return prefs.capsule_shape
         elif identifier == 'convex_shape':
             return prefs.convex_shape
         else:  # identifier == 'mesh_shape':
@@ -592,13 +630,15 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def remove_objects(list):
-        '''Remove previously created collisions'''
+        '''Remove list of objects'''
         if len(list) > 0:
             for ob in list:
                 if ob:
                     objs = bpy.data.objects
-                    objs.remove(ob, do_unlink=True)
-
+                    try:
+                        objs.remove(ob, do_unlink=True)
+                    except:
+                        pass
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precission=0):
         '''Get delta of input movement'''
@@ -762,28 +802,43 @@ class OBJECT_OT_add_bounding_object():
 
         return mesh
 
-    @staticmethod
-    def is_valid_object(obj):
+    def is_valid_object(self, obj):
         """Is the object valid to be used as a base mesh for collider generation"""
-        if obj is None or obj.type != "MESH":
+        if obj is None or obj.type not in self.valid_object_types:
             return False
         return True
 
-    # Collections
     @staticmethod
-    def add_to_collections(obj, collection_name):
+    def create_collection(collection_name):
         """Add an object to a collection"""
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
             bpy.context.scene.collection.children.link(collection)
 
         col = bpy.data.collections[collection_name]
+        return col
 
+    # Collections
+    @classmethod
+    def add_to_collections(cls, obj, collection_name, hide=False, color='NONE'):
+        col = cls.create_collection(collection_name)
+        if hide:
+            col.hide_viewport = True
+            col.hide_render = True
         try:
             col.objects.link(obj)
         except RuntimeError as err:
             pass
+        col.color_tag = color
 
+        return col
+
+    @staticmethod
+    def remove_empty_collection(collection_name):
+        if collection_name in bpy.data.collections:
+            collection = bpy.data.collections[collection_name]
+            if len(collection.objects) == 0:
+                bpy.data.collections.remove(collection)
     @staticmethod
     def set_collections(obj, collections):
         """link an object to a collection"""
@@ -837,6 +892,50 @@ class OBJECT_OT_add_bounding_object():
         print(shape)
         print("Time elapsed: ", str(time))
 
+    @staticmethod
+    def store_initial_obj_state(obj, collections):
+        dic = {}
+        dic['obj'] = obj
+        col_list = [col.name for col in collections]
+        dic['users_collection'] = col_list
+
+        return dic
+
+    @staticmethod
+    def store_obj_mod_in_dic(object):
+        mods = []
+
+        for mod in object.modifiers:
+            mods.append({"mod":mod, "show_viewport":mod.show_viewport, "show_in_editmode": mod.show_in_editmode})
+
+        return mods
+
+    @staticmethod
+    def restore_obj_mod_from_dic(modifier_dic):
+        for mod_entry in modifier_dic:
+            modifier = mod_entry["mod"]
+            modifier.show_viewport = mod_entry["show_viewport"]
+            modifier.show_in_editmode = mod_entry["show_in_editmode"]
+
+
+    def convert_to_mesh(self, context, object, use_modifiers=False):
+        mods = self.store_obj_mod_in_dic(object)
+
+        for mod in object.modifiers:
+            mod.show_viewport = use_modifiers
+            mod.show_in_editmode = use_modifiers
+
+        deg = context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
+        new_obj = bpy.data.objects.new(object.name + "_mesh", me)
+        col = self.add_to_collections(new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
+
+        self.restore_obj_mod_from_dic(mods)
+
+        new_obj.matrix_world = object.matrix_world
+        context.view_layer.objects.active = new_obj
+        return new_obj
+
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
         colSettings = context.scene.collider_tools
 
@@ -849,7 +948,10 @@ class OBJECT_OT_add_bounding_object():
 
         if self.prefs.use_col_collection:
             collection_name = self.prefs.col_collection_name
-            self.add_to_collections(bounding_object, collection_name)
+            self.add_to_collections(bounding_object, collection_name, color=self.prefs.col_collection_color)
+
+        if self.use_remesh:
+            self.add_remesh_modifier(context, bounding_object)
 
         if self.use_decimation:
             self.add_decimate_modifier(context, bounding_object)
@@ -886,6 +988,77 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.show_wire = True
         else:
             bounding_object.show_wire = False
+
+        if self.prefs.debug == False:
+            for obj in self.tmp_meshes:
+                try:
+                    obj.hide_set(True)
+                except:
+                    pass
+    def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False, use_mesh_copy=False, add_to_tmp_meshes = True):
+
+        objs = []
+
+        # Create the bounding geometry, depending on edit or object mode.
+        for base_ob in self.selected_objects:
+
+            # skip if invalid object
+            if not self.is_valid_object(base_ob):
+                continue
+
+            if base_ob and base_ob.type in self.valid_object_types:
+                user_collections = base_ob.users_collection
+                if base_ob.type == 'MESH':
+                    obj = base_ob.copy() if use_mesh_copy else base_ob
+                    obj.data = base_ob.data.copy() if use_mesh_copy else base_ob.data
+                else:
+                    # store initial state for operation cancel
+                    self.original_obj_data.append(self.store_initial_obj_state(base_ob, user_collections))
+                    # convert meshes
+                    obj = self.convert_to_mesh(context, base_ob, use_modifiers=self.my_use_modifier_stack)
+                    if add_to_tmp_meshes:
+                        self.tmp_meshes.append(obj)
+
+                creation_mode = self.creation_mode[
+                    self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+
+                if creation_mode == 'LOOSEMESH':
+                    base = obj
+                    if self.use_modifier_stack and self.my_use_modifier_stack:
+                        bpy.context.view_layer.objects.active = obj
+                        bpy.ops.object.mode_set(mode='OBJECT')
+
+                        tmp_ob = obj.copy()
+                        tmp_ob.data = obj.data.copy()
+                        bpy.context.collection.objects.link(tmp_ob)
+
+                        self.apply_all_modifiers(context, tmp_ob)
+                        base = tmp_ob
+
+                    if use_local and self.my_space == 'LOCAL':
+                        split_objs = create_objs_from_island(base, use_world=local_world_spc)
+                    else:
+                        split_objs = create_objs_from_island(base, use_world=default_world_spc)
+
+                    for split in split_objs:
+                        col = self.add_to_collections(split, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
+                        col.color_tag = self.prefs.col_tmp_collection_color
+
+                        for mat in base_ob.material_slots:
+                            set_material(split, mat.material)
+
+                        objs.append((base_ob, split))
+
+                    if add_to_tmp_meshes:
+                        self.tmp_meshes.extend(split_objs)
+
+                    if self.use_modifier_stack and self.my_use_modifier_stack:
+                        list = [tmp_ob]
+                        self.remove_objects(list)
+                else:
+                    objs.append((base_ob, obj))
+
+        return objs
 
     def set_viewport_drawing(self, context, bounding_object):
         ''' Assign material to the bounding object and set the visibility settings of the created object.'''
@@ -927,6 +1100,13 @@ class OBJECT_OT_add_bounding_object():
         # add displacement modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_weld", type='WELD')
 
+    def add_remesh_modifier(self, context, bounding_object):
+        # add decimation modifier and safe it to manipulate the strenght in the modal operator
+        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='REMESH')
+        modifier.mode = 'VOXEL'
+        modifier.voxel_size = self.current_settings_dic['voxel_size']
+        self.remesh_modifiers.append(modifier)
+
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
@@ -956,33 +1136,19 @@ class OBJECT_OT_add_bounding_object():
         t1 = time.time() - self.t0
         return t1
 
-    def cancel_cleanup(self, context):
-        if self.is_mesh_to_collider:
-            if self.new_colliders_list:
-                for collider_obj in self.new_colliders_list:
-                    # Remove previously created collisions
-                    if collider_obj:
-                        objs = bpy.data.objects
-                        objs.remove(collider_obj, do_unlink=True)
-
-
-                for data in self.original_obj_data:
-                    # Assign unlinked data to user groups
-                    original_obj = data['obj']
-                    original_user_groups = data['users_collection']
-
-                    bpy.context.collection.objects.link(original_obj)
-                    for col in original_user_groups:
-                        self.add_to_collections(original_obj, col)
-
-        # All other operators
-        else:
+    def cancel_cleanup(self, context, delete_colliders=True):
+        if delete_colliders:
             # Remove previously created collisions
             if self.new_colliders_list:
                 for obj in self.new_colliders_list:
                     if obj:
                         objs = bpy.data.objects
                         objs.remove(obj, do_unlink=True)
+
+        # Delete temporary objects
+        if self.prefs.debug == False:
+            self.remove_objects(self.tmp_meshes)
+            self.remove_empty_collection('tmp_mesh')
 
         context.space_data.shading.color_type = self.original_color_type
 
@@ -1018,16 +1184,20 @@ class OBJECT_OT_add_bounding_object():
         # modal settings
         self.use_decimation = False
         self.use_geo_nodes_hull = False
-        self.use_vertex_count = False
+        self.use_cylinder_segments = False
         self.use_modifier_stack = False
         self.use_weld_modifier = False
         self.use_space = False
         self.use_cylinder_axis = False
+        self.use_capsule_axis = False
+        self.use_capsule_segments = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
         self.use_shape_change = False
         self.use_creation_mode = True
         self.use_keep_original_materials = False
+        self.use_keep_original_name = False
+        self.use_remesh = False
 
         # default shape init
         self.shape = ''
@@ -1038,11 +1208,13 @@ class OBJECT_OT_add_bounding_object():
         self.use_recenter_origin = False
         self.use_custom_rotation = False
 
+        self.valid_object_types = ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
+
     @classmethod
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 count = count + 1
         return count > 0
 
@@ -1073,6 +1245,7 @@ class OBJECT_OT_add_bounding_object():
 
         # General init settings
         self.new_colliders_list = []
+        self.tmp_meshes = []
         self.col_rotation_matrix_list = []
         self.col_center_loc_list = []
 
@@ -1093,6 +1266,9 @@ class OBJECT_OT_add_bounding_object():
         self.x_ray = context.space_data.shading.show_xray
 
         # Modal MODIFIERS
+        self.remesh_active = False
+        self.remesh_modifiers = []
+
         # Displace
         self.displace_active = False
         self.displace_modifiers = []
@@ -1109,6 +1285,7 @@ class OBJECT_OT_add_bounding_object():
         self.cylinder_axis = colSettings.default_cylinder_axis
         self.cylinder_segments_active = False
         self.sphere_segments_active = False
+        self.capsule_segments_active = False
 
         # Display settings
         self.color_type = context.space_data.shading.color_type
@@ -1122,23 +1299,31 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT','MATERIAL','SINGLE']
 
-        self.creation_mode = ['INDIVIDUAL', 'SELECTION']
+        self.creation_mode = ['INDIVIDUAL', 'SELECTION', 'LOOSEMESH']
+        self.creation_mode_edit = ['INDIVIDUAL', 'SELECTION']
+
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
         # Should physics materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
+        self.keep_original_name = colSettings.default_keep_original_name
 
         self.collision_groups = collider_groups
         self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
 
-        # Mesh to Collider
+        # Object to Collider
         self.original_obj_data = []
 
         # display settings
         self.is_solidmode = True if context.space_data.shading.type == 'SOLID' else False
 
-        dict = self.collision_dictionary(0.5, 0, 1.0, colSettings.default_sphere_segments,
-                                         colSettings.default_cylinder_segments)
+        default_alpha = 0.5
+        default_decimate = 1.0
+        default_voxel_size = 0.1
+        default_offset = 0
+
+        dict = self.collision_dictionary(default_alpha, default_offset, default_decimate, colSettings.default_sphere_segments,
+                                         colSettings.default_cylinder_segments, colSettings.default_capsule_segments, default_voxel_size)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -1175,7 +1360,9 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = False
             self.decimate_active = False
             self.cylinder_segments_active = False
+            self.remesh_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
 
             return {'PASS_THROUGH'}
 
@@ -1224,6 +1411,11 @@ class OBJECT_OT_add_bounding_object():
                 else:
                     obj.show_wire = False
 
+            # Delete temporary generated meshes
+            if self.prefs.debug == False:
+                self.remove_objects(self.tmp_meshes)
+                self.remove_empty_collection('tmp_mesh')
+
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
@@ -1267,7 +1459,12 @@ class OBJECT_OT_add_bounding_object():
             self.set_collisions_wire_preview(self.prefs.wireframe_mode)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
-            self.creation_mode_idx = (self.creation_mode_idx + 1) % len(self.creation_mode)
+            if self.obj_mode == 'OBJECT' and not self.is_mesh_to_collider:
+                length = len(self.creation_mode)
+            else:
+                length = len(self.creation_mode_edit)
+            self.creation_mode_idx = (self.creation_mode_idx + 1) % length
+
             self.execute(context)
 
         elif event.type == 'V' and event.value == 'RELEASE':
@@ -1289,8 +1486,15 @@ class OBJECT_OT_add_bounding_object():
                 ob = objinfo['obj']
                 collections = objinfo['users_collection']
                 for col in collections:
-                    bpy.data.collections[col].objects.link(ob)
+                    try:
+                        bpy.data.collections[col].objects.link(ob)
+                    except:
+                        pass
 
+            self.execute(context)
+
+        elif event.type == 'N' and event.value == 'RELEASE' and self.use_keep_original_name == True:
+            self.keep_original_name = not self.keep_original_name
             self.execute(context)
 
         elif event.type == 'S' and event.value == 'RELEASE':
@@ -1299,6 +1503,8 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
+            self.remesh_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'D' and event.value == 'RELEASE':
@@ -1307,6 +1513,8 @@ class OBJECT_OT_add_bounding_object():
             self.displace_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
+            self.remesh_active = False
             self.mouse_initial_x = event.mouse_x
             self.mouse_position = [event.mouse_x, event.mouse_y]
             self.draw_callback_px(context)
@@ -1317,6 +1525,8 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.cylinder_segments_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
+            self.remesh_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'E' and event.value == 'RELEASE':
@@ -1325,7 +1535,9 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.opacity_active = False
             self.sphere_segments_active = False
+            self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
+            self.remesh_active = False
 
         elif event.type == 'T' and event.value == 'RELEASE':
             # toggle through display modes
@@ -1387,6 +1599,17 @@ class OBJECT_OT_add_bounding_object():
                     self.report({'INFO'}, "Total collider face count:" + str(sum(self.facecounts)))
                     self.draw_callback_px(context)
 
+            if self.remesh_active:
+                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                voxel_size = (self.ref_settings_dic['voxel_size'] + delta)
+                voxel_size = numpy.clip(voxel_size, 0.01, 1.0)
+
+                if self.current_settings_dic['voxel_size'] != voxel_size:
+                    self.current_settings_dic['voxel_size'] = voxel_size
+
+                    for mod in self.remesh_modifiers:
+                        mod.voxel_size = voxel_size
+
             if self.opacity_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
                 color_alpha = self.ref_settings_dic['alpha'] - delta
@@ -1404,6 +1627,7 @@ class OBJECT_OT_add_bounding_object():
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if segment_count != int(round(self.current_settings_dic['cylinder_segments'])):
+                    segment_count = 3 if segment_count < 3 else segment_count
                     self.current_settings_dic['cylinder_segments'] = segment_count
                     self.execute(context)
 
@@ -1414,6 +1638,15 @@ class OBJECT_OT_add_bounding_object():
                 # check if value changed to avoid regenerating collisions for the same value
                 if segments != int(round(self.current_settings_dic['sphere_segments'])):
                     self.current_settings_dic['sphere_segments'] = segments
+                    self.execute(context)
+
+            if self.capsule_segments_active:
+                delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
+                segments = int(abs(self.ref_settings_dic['capsule_segments'] - delta))
+
+                # check if value changed to avoid regenerating collisions for the same value
+                if segments != int(round(self.current_settings_dic['capsule_segments'])):
+                    self.current_settings_dic['capsule_segments'] = segments
                     self.execute(context)
 
         # passthrough specific events to blenders default behavior
@@ -1435,11 +1668,20 @@ class OBJECT_OT_add_bounding_object():
             print("AttributeError: bug #328")
 
         # Remove objects from previous generation
+        self.remove_objects(self.tmp_meshes)
+
         self.remove_objects(self.new_colliders_list)
+        self.remove_empty_collection('tmp_mesh')
         self.new_colliders_list = []
+        self.original_obj_data = []
+        self.tmp_meshes = []
+
+        # original data to be restored on cancelation or deleted on accept
+        self.original_obj_data = []
 
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
+        self.remesh_modifiers = []
 
         # Create the bounding geometry, depending on edit or object mode.
         self.old_objs = set(context.scene.objects)

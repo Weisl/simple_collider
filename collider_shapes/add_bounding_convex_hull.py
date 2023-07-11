@@ -4,7 +4,7 @@ import numpy as np
 from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create convex bounding collisions based on the selection"""
@@ -48,16 +48,13 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         verts_co = []
 
-        # Duplicate original meshes to convert to collider
-        for obj in self.selected_objects:
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
 
-            # skip if invalid object
-            if not self.is_valid_object(obj):
-                continue
+        for base_ob, obj in objs:
 
             convex_collision_data = {}
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT":
@@ -68,9 +65,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # duplicate object
-                convex_collision_data['parent'] = obj
+                convex_collision_data['parent'] = base_ob
                 convex_collision_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(convex_collision_data)
@@ -86,6 +85,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             convex_collision_data['verts_loc'] = verts_co
             collider_data = [convex_collision_data]
 
+        bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for convex_collision_data in collider_data:

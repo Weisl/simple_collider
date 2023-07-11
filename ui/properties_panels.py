@@ -154,7 +154,13 @@ def draw_creation_menu(context, layout, settings=False):
     # layout.separator()
     col =layout.column(align=True)
     row = col.row(align=True)
+    row.operator("mesh.add_bounding_capsule", icon='MESH_CAPSULE')
+    row = col.row(align=True)
+    row.operator("mesh.add_remesh_collision", icon='MOD_REMESH')
+    row = col.row(align=True)
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
+
+
 
     # layout.separator()
     row = col.row(align=True)
@@ -516,7 +522,7 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 count = count + 1
         return count > 0
 

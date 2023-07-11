@@ -6,6 +6,7 @@ from bpy.types import Operator
 from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
 CUBE_FACE_INDICES = (
     (0, 1, 3, 2),
@@ -146,17 +147,12 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False)
 
-        # Create the bounding geometry, depending on edit or object mode.
-        for obj in self.selected_objects:
-
-            # skip if invalid object
-            if not self.is_valid_object(obj):
-                continue
-
+        for base_ob, obj in objs:
             bounding_box_data = {}
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT":
@@ -165,7 +161,9 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # Don't add object if it consists of less than 3 vertices
                 if len(used_vertices) < 3:
                     continue
@@ -175,7 +173,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
                 # used_vertices uses local space.
                 # store data needed to generate a bounding box in a dictionary
-                bounding_box_data['parent'] = obj
+                bounding_box_data['parent'] = base_ob
                 bounding_box_data['verts_loc'] = ws_vtx_co
 
                 collider_data.append(bounding_box_data)

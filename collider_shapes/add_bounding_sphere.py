@@ -4,8 +4,9 @@ from bpy.types import Operator
 from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 
-tmp_sphere_name = 'box_collider'
+tmp_sphere_name = 'sphere_collider'
 
 
 def distance_vec(point1: Vector, point2: Vector):
@@ -167,18 +168,14 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         verts_co = []
 
-        # Create the bounding geometry, depending on edit or object mode.
-        for obj in self.selected_objects:
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
 
-            # skip if invalid object
-            if not self.is_valid_object(obj):
-                continue
-
+        for base_ob, obj in objs:
             initial_mod_state = {}
             context.view_layer.objects.active = obj
             scene = context.scene
 
-            if self.obj_mode == "EDIT":
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # mode == "OBJECT":
@@ -189,10 +186,12 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             bounding_sphere_data = {}
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
                                                                                                                    used_vertices)
-                bounding_sphere_data['parent'] = obj
+                bounding_sphere_data['parent'] = base_ob
                 collider_data.append(bounding_sphere_data)
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':

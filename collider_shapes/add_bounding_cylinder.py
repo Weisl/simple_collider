@@ -1,34 +1,14 @@
 import bpy
-import bmesh
 import numpy as np
 
 from math import sqrt, radians
 
 from bpy.types import Operator
 from mathutils import Matrix, Vector
-
+from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 tmp_name = 'cylindrical_collider'
-
-
-def get_sca_matrix(scale):
-    """get scale matrix"""
-    scale_mx = Matrix()
-    for i in range(3):
-        scale_mx[i][i] = scale[i]
-    return scale_mx
-
-
-def get_loc_matrix(location):
-    """get location matrix"""
-    return Matrix.Translation(location)
-
-
-def get_rot_matrix(rotation):
-    """get rotation matrix"""
-    return rotation.to_matrix().to_4x4()
-
 
 class ProjectorStack:
     """
@@ -231,7 +211,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_global_local_switches = True
 
         # cylinder specific
-        self.use_vertex_count = True
+        self.use_cylinder_segments = True
         self.use_cylinder_axis = True
         self.shape = 'convex_shape'
 
@@ -277,16 +257,15 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         collider_data = []
         verts_co = []
+        objs = []
 
-        for obj in context.selected_objects.copy():
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
 
-            # skip if invalid object
-            if not self.is_valid_object(obj):
-                continue
+        for base_ob, obj in objs:
 
             bounding_cylinder_data = {}
 
-            if self.obj_mode == 'EDIT':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
                 used_vertices = self.get_vertices_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
             else:
@@ -299,7 +278,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
 
-            if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+
+            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
 
                 coordinates = []
                 height = []
@@ -337,7 +318,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqradius)
 
-                bounding_cylinder_data['parent'] = obj
+                bounding_cylinder_data['parent'] = base_ob
                 bounding_cylinder_data['radius'] = radius
                 bounding_cylinder_data['depth'] = depth
                 bounding_cylinder_data['center_point'] = [
@@ -387,6 +368,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     center[0], center[1], center[2]]
             collider_data = [bounding_cylinder_data]
 
+        bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for bounding_cylinder_data in collider_data:

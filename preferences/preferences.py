@@ -16,6 +16,17 @@ from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
 from .keymap import remove_key
 
+collection_colors = [
+    ("NONE", "White", "", "OUTLINER_COLLECTION", 0),
+    ("COLOR_01", "Red", "", "COLLECTION_COLOR_01", 1),
+    ("COLOR_02", "Orange", "", "COLLECTION_COLOR_02", 2),
+    ("COLOR_03", "Yellow", "", "COLLECTION_COLOR_03", 3),
+    ("COLOR_04", "Green", "", "COLLECTION_COLOR_04", 4),
+    ("COLOR_05", "Blue", "", "COLLECTION_COLOR_05", 5),
+    ("COLOR_06", "Violet", "", "COLLECTION_COLOR_06", 6),
+    ("COLOR_07", "Pink", "", "COLLECTION_COLOR_07", 7),
+    ("COLOR_08", "Brown", "", "COLLECTION_COLOR_08", 8),
+]
 
 def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie_ctrl, collision_pie_shift, collision_pie_alt, collision_pie_active):
     kmi = km.keymap_items.new(idname=idname, type=collision_pie_type, value='PRESS',
@@ -220,6 +231,17 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                   description='Name of the collider collection newly created collisions are added to',
                                                   default='Collisions')
 
+    col_collection_color: bpy.props.EnumProperty(name='Collection Color',
+                                                 items=collection_colors,
+                                                 description='Choose the color for the collider collections.',
+                                                 default='COLOR_05',
+                                                 )
+    col_tmp_collection_color: bpy.props.EnumProperty(name='Temp Collection Color',
+                                                 items=collection_colors,
+                                                 description='Choose the color for the collider collections.',
+                                                 default='COLOR_03',
+                                                 )
+
     ###################################################################
     # KEYMAP
 
@@ -342,6 +364,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                         description='Naming used to define box colliders')
     sphere_shape: bpy.props.StringProperty(name="Sphere Collision", default="USP",
                                            description='Naming used to define sphere colliders')
+    capsule_shape: bpy.props.StringProperty(name="Capsule Collision", default="UCP",
+                                       description='Naming used to define capsule colliders')
     convex_shape: bpy.props.StringProperty(name="Convex Collision", default="UCX",
                                            description='Naming used to define convex colliders')
     mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
@@ -555,6 +579,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     props_shapes = [
         "box_shape",
         "sphere_shape",
+        "capsule_shape",
         "convex_shape",
         "mesh_shape",
     ]
@@ -589,6 +614,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     col_props = [
         "use_col_collection",
         "col_collection_name",
+        "col_collection_color",
     ]
 
     ui_col_colors = [

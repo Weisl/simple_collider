@@ -93,6 +93,10 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                default=False,
                                                description="Set the default for using the modifier stack or not when creating colliders.")
 
+    default_keep_original_name: bpy.props.BoolProperty(name="Keep Original Name",
+                                               default=False,
+                                               description="Keep the original object name and don't use the automatic collider renaming")
+
 
 
     default_user_group: bpy.props.EnumProperty(name="Default User Group",
@@ -105,10 +109,10 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                default='USER_01')
 
     default_creation_mode: bpy.props.EnumProperty(name="Creation Mode",
-                                                  items=(('INDIVIDUAL', "Individual",
-                                                          "Colliders are created per individual object."),
-                                                         ('SELECTION', "Selection",
-                                                          "Colliders are created for the entire selection.")),
+                                                  items=(('INDIVIDUAL', "Individual", "Colliders are created per individual object."),
+                                                         ('SELECTION', "Selection", "Colliders are created for the entire selection."),
+                                                         ('LOOSEMESH', "Loose Mesh", "Colliders are created per for connected meshes.")
+                                                         ),
                                                   description="Colliders are generated per individual object or bounding the entire selection.",
                                                   default='INDIVIDUAL')
 
@@ -126,6 +130,11 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                      )
 
     default_sphere_segments: bpy.props.IntProperty(name="Sphere Segments",
+                                                   description="Amount of sphere segments.",
+                                                   default=16,
+                                                   )
+
+    default_capsule_segments: bpy.props.IntProperty(name="Capsule Segments",
                                                    description="Amount of sphere segments.",
                                                    default=16,
                                                    )
