@@ -1,9 +1,11 @@
 import bpy
 import bmesh
+import sys
 
 
 # Simple - get all linked faces
 def get_linked_faces(f):
+    sys.setrecursionlimit(10**6)
     if f.tag:
         # If the face is already tagged, return empty list
         return []

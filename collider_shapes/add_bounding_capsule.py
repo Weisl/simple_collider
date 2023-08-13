@@ -12,7 +12,7 @@ tmp_name = 'capsule_collider'
 class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding capsule collider based on the selection"""
     bl_idname = "mesh.add_bounding_capsule"
-    bl_label = "Add Capsule"
+    bl_label = "Add Capsule (Beta)"
     bl_description = 'Create bounding capsule colliders based on the selection'
 
     def __init__(self):
@@ -22,6 +22,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.use_global_local_switches = True
         self.use_capsule_axis = True
         self.use_capsule_segments = True
+        self.use_height_multiplier = True
         self.shape = 'capsule_shape'
 
 
@@ -162,7 +163,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
-            data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'], latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius, depth=height, uv_profile="FIXED")
+            data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'], latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius, depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
                 vts=data["vts"],

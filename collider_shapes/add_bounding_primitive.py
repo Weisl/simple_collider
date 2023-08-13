@@ -250,6 +250,13 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(D)', 'type': 'modal', 'highlight': self.decimate_active}
         items.append(item)
 
+    if self.use_height_multiplier:
+        label = "Height Multiplier"
+        value = self.current_settings_dic['height_mult']
+        value = '{initial_value:.3f}'.format(initial_value=value)
+        item = {'label': label, 'value': value, 'key': '(H)', 'type': 'modal', 'highlight': self.height_active}
+        items.append(item)
+
     if self.use_cylinder_segments:
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
@@ -579,7 +586,7 @@ class OBJECT_OT_add_bounding_object():
         user_group = self.collision_groups[self.collision_group_idx]
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
-    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments, voxel_size):
+    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments, voxel_size, height_mult):
         dict = {}
         dict['alpha'] = alpha
         dict['discplace_offset'] = offset
@@ -588,6 +595,7 @@ class OBJECT_OT_add_bounding_object():
         dict['cylinder_segments'] = cylinder_segments
         dict['capsule_segments'] = capsule_segments
         dict['voxel_size'] = voxel_size
+        dict['height_mult'] = height_mult
 
         return dict
 
@@ -1204,6 +1212,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_keep_original_materials = False
         self.use_keep_original_name = False
         self.use_remesh = False
+        self.use_height_multiplier = False
 
         # default shape init
         self.shape = ''
@@ -1275,6 +1284,8 @@ class OBJECT_OT_add_bounding_object():
         self.remesh_active = False
         self.remesh_modifiers = []
 
+        self.height_active = False
+
         # Displace
         self.displace_active = False
         self.displace_modifiers = []
@@ -1327,9 +1338,10 @@ class OBJECT_OT_add_bounding_object():
         default_decimate = 1.0
         default_voxel_size = 0.1
         default_offset = 0
+        default_height_mult = 1
 
         dict = self.collision_dictionary(default_alpha, default_offset, default_decimate, colSettings.default_sphere_segments,
-                                         colSettings.default_cylinder_segments, colSettings.default_capsule_segments, default_voxel_size)
+                                         colSettings.default_cylinder_segments, colSettings.default_capsule_segments, default_voxel_size, default_height_mult)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -1367,6 +1379,7 @@ class OBJECT_OT_add_bounding_object():
             self.decimate_active = False
             self.cylinder_segments_active = False
             self.remesh_active = False
+            self.height_active = False
             self.sphere_segments_active = False
             self.capsule_segments_active = False
 
@@ -1511,6 +1524,7 @@ class OBJECT_OT_add_bounding_object():
             self.sphere_segments_active = False
             self.capsule_segments_active = False
             self.remesh_active = False
+            self.height_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'D' and event.value == 'RELEASE':
@@ -1521,6 +1535,7 @@ class OBJECT_OT_add_bounding_object():
             self.sphere_segments_active = False
             self.capsule_segments_active = False
             self.remesh_active = False
+            self.height_active = False
             self.mouse_initial_x = event.mouse_x
             self.mouse_position = [event.mouse_x, event.mouse_y]
             self.draw_callback_px(context)
@@ -1533,6 +1548,7 @@ class OBJECT_OT_add_bounding_object():
             self.sphere_segments_active = False
             self.capsule_segments_active = False
             self.remesh_active = False
+            self.height_active = False
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'E' and event.value == 'RELEASE':
@@ -1544,6 +1560,19 @@ class OBJECT_OT_add_bounding_object():
             self.capsule_segments_active = False
             self.mouse_initial_x = event.mouse_x
             self.remesh_active = False
+            self.height_active = False
+
+        elif event.type == 'H' and event.value == 'RELEASE':
+            self.height_active = not self.height_active
+            self.cylinder_segments_active = False
+            self.displace_active = False
+            self.decimate_active = False
+            self.opacity_active = False
+            self.sphere_segments_active = False
+            self.capsule_segments_active = False
+            self.mouse_initial_x = event.mouse_x
+            self.remesh_active = False
+
 
         elif event.type == 'T' and event.value == 'RELEASE':
             # toggle through display modes
@@ -1636,6 +1665,16 @@ class OBJECT_OT_add_bounding_object():
                     segment_count = 3 if segment_count < 3 else segment_count
                     self.current_settings_dic['cylinder_segments'] = segment_count
                     self.execute(context)
+
+            if self.height_active:
+                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                height_mult = (self.ref_settings_dic['height_mult'] + delta)
+                height_mult = numpy.clip(height_mult, 0.01, 1.0)
+
+                if self.current_settings_dic['height_mult'] != height_mult:
+                    self.current_settings_dic['height_mult'] = height_mult
+                    self.execute(context)
+
 
             if self.sphere_segments_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.02, tweak_amount=10)
