@@ -24,7 +24,10 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
 
         if bm_to_add.faces:
             for face in bm_to_add.faces:
-                add_face(tuple(bm.verts[i.index + offset] for i in face.verts))
+                try:
+                    add_face(tuple(bm.verts[i.index + offset] for i in face.verts))
+                except:
+                    pass
             bm.faces.index_update()
 
         if bm_to_add.edges:
