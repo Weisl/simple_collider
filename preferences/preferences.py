@@ -561,11 +561,29 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                     description="Hide collider after creation.",
                                     default=False)
 
+
+    parent_rename : bpy.props.BoolProperty(name="Modify Parent Name",
+                                  description="Add suffix or prefix to parent name",
+                                  default=False)
+
+    parent_naming_position: bpy.props.EnumProperty(
+        name='Parent Extension',
+        items=(('PREFIX', "Prefix", "Prefix"),
+               ('SUFFIX', "Suffix", "Suffix")),
+        default='SUFFIX',
+        description='Add custom naming as prefix or suffix'
+    )
+
+    parent_extension: bpy.props.StringProperty(name="Parent Extension", default="RB",
+                                        description='String added to the parent naming')
+
+    parent_separator: bpy.props.StringProperty(name="Separator", default="_",
+                                        description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
+
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Debug mode only used for debuging during development",
                                   default=False)
-
     general_props = [
         "use_parent_to",
     ]
@@ -582,6 +600,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "capsule_shape",
         "convex_shape",
         "mesh_shape",
+    ]
+
+    props_parent = [
+        "parent_rename",
+        "parent_separator",
+        "parent_naming_position",
+        "parent_extension",
     ]
 
     props_collider_groups = [
@@ -770,6 +795,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             box2.label(text="Shape")
             for propName in self.props_shapes:
                 row = box2.row()
+                row.prop(self, propName)
+
+            box = layout.box()
+            box.label(text="Parent Renaming")
+
+            for propName in self.props_parent:
+                row = box.row()
                 row.prop(self, propName)
 
             box = layout.box()

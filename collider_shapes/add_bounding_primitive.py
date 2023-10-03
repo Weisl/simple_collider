@@ -1089,6 +1089,16 @@ class OBJECT_OT_add_bounding_object():
         new_collider.name = new_name
         self.set_data_name(new_collider, new_name, self.data_suffix)
 
+    def set_parent_name(self, parent):
+        if self.prefs.parent_rename:
+            if self.prefs.parent_naming_position == 'SUFFIX':
+                new_name = parent.name + self.prefs.parent_separator + self.prefs.parent_extension
+            else:
+                new_name = self.prefs.parent_extension + self.prefs.parent_separator + parent.name
+
+            parent.name = new_name
+            self.set_data_name(parent, new_name, self.data_suffix)
+
     def update_names(self):
         for obj in self.new_colliders_list:
             new_name = self.collider_name(basename=self.basename)
