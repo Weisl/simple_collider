@@ -162,7 +162,7 @@ def draw_viewport_overlay(self, context):
     items.append(item)
 
     if self.use_shape_change:
-        label = "Collider Shape"
+        label = "Shape Overwrite"
         value = self.get_shape_name()
         item = {'label': label, 'value': value, 'key': '(Q)', 'type': 'enum', 'highlight': False}
         items.append(item)
@@ -1207,7 +1207,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_capsule_segments = False
         self.use_global_local_switches = False
         self.use_sphere_segments = False
-        self.use_shape_change = False
+        self.use_shape_change = True
         self.use_creation_mode = True
         self.use_keep_original_materials = False
         self.use_keep_original_name = False
@@ -1257,6 +1257,10 @@ class OBJECT_OT_add_bounding_object():
         self.prev_decimate_time = time.time()
         self.data_suffix = "_data"
         self.valid_input_selection = True
+
+        self.collider_shapes_idx = 3
+        self.collider_shapes = ['box_shape', 'sphere_shape', 'capsule_shape', 'convex_shape',
+                                'mesh_shape']
 
         # General init settings
         self.new_colliders_list = []
@@ -1573,6 +1577,14 @@ class OBJECT_OT_add_bounding_object():
             self.mouse_initial_x = event.mouse_x
             self.remesh_active = False
 
+        elif event.type == 'Q' and event.value == 'RELEASE':
+            # toggle through display modes
+            self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
+            self.shape = self.collider_shapes[self.collider_shapes_idx]
+            for collider in self.new_colliders_list:
+                if collider:
+                    collider['collider_shape'] = self.shape
+            self.update_names()
 
         elif event.type == 'T' and event.value == 'RELEASE':
             # toggle through display modes

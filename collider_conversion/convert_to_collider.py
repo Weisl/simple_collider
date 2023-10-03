@@ -60,9 +60,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
         self.use_creation_mode = True
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
-        self.collider_shapes_idx = 3
-        self.collider_shapes = ['box_shape', 'sphere_shape', 'capsule_shape', 'convex_shape',
-                                'mesh_shape']
+
 
         self.shape = self.collider_shapes[self.collider_shapes_idx]
         return {'RUNNING_MODAL'}
@@ -89,14 +87,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
-        elif event.type == 'Q' and event.value == 'RELEASE':
-            # toggle through display modes
-            self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
-            self.shape = self.collider_shapes[self.collider_shapes_idx]
-            for collider in self.new_colliders_list:
-                if collider:
-                    collider['collider_shape'] = self.shape
-            self.update_names()
 
         return {'RUNNING_MODAL'}
 
