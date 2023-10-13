@@ -143,9 +143,13 @@ def draw_visibility_selection_menu(context, layout):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_01, col_01, col_02, user_group=True)
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
+        collider_groups = [colSettings.visibility_toggle_user_group_01,
+                           colSettings.visibility_toggle_user_group_02,
+                           colSettings.visibility_toggle_user_group_03]
+
+        for colgroup in collider_groups:
+            draw_group_properties(context, colgroup, col_01, col_02, user_group=True)
+
 
 
 def draw_creation_menu(context, layout, settings=False):

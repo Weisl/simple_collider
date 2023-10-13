@@ -152,8 +152,7 @@ def draw_viewport_overlay(self, context):
 
     if self.collider_groups_enabled:
         label = "Collider Group"
-        colSettings = context.scene.collider_tools
-        value = self.collision_groups[self.collision_group_idx]
+        value = self.collision_groups[self.collision_group_idx].name
 
 
         item = {'label': label, 'value': value, 'key': '(T)', 'type': 'enum', 'highlight':False}
@@ -1004,7 +1003,7 @@ class OBJECT_OT_add_bounding_object():
             assign_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
-        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx]
+        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].identifier
         bounding_object['collider_shape'] = self.shape
 
         if self.prefs.wireframe_mode in ['PREVIEW', 'ALWAYS']:
@@ -1088,10 +1087,10 @@ class OBJECT_OT_add_bounding_object():
         if context.space_data.shading.type != 'SOLID':
             context.space_data.shading.type = 'SOLID'
         else:
-            set_groups_object_color(bounding_object, self.collision_groups[self.collision_group_idx])
-
+            col = self.collision_groups[self.collision_group_idx].color
+            set_groups_object_color(bounding_object, (col[0], col[1], col[2], 1.0))
     def set_object_collider_group(self, obj):
-        obj['collider_group'] = self.collision_groups[self.collision_group_idx]
+        obj['collider_group'] = self.collision_groups[self.collision_group_idx].name
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
@@ -1257,7 +1256,7 @@ class OBJECT_OT_add_bounding_object():
 
         colSettings = context.scene.collider_tools
 
-        self.collider_groups = [colSettings.visibility_toggle_user_group_01.mode, colSettings.visibility_toggle_user_group_02.mode, colSettings.visibility_toggle_user_group_03.mode]
+        self.collider_groups = [colSettings.visibility_toggle_user_group_01, colSettings.visibility_toggle_user_group_02, colSettings.visibility_toggle_user_group_03]
 
         if context.space_data.type != 'VIEW_3D':
             self.report({'WARNING'}, "Active space must be a View3d")
@@ -1354,7 +1353,7 @@ class OBJECT_OT_add_bounding_object():
 
         self.collider_groups_enabled = self.prefs.collider_groups_enabled
         self.collision_groups = self.collider_groups
-        self.collision_group_idx = self.collision_groups.index(colSettings.default_user_group)
+        self.collision_group_idx = self.collision_groups.index(colSettings.visibility_toggle_user_group_01)
 
         # Object to Collider
         self.original_obj_data = []
@@ -1614,7 +1613,8 @@ class OBJECT_OT_add_bounding_object():
             # toggle through display modes
             self.collision_group_idx = (self.collision_group_idx + 1) % len(self.collision_groups)
             for obj in self.new_colliders_list:
-                set_groups_object_color(obj, self.collision_groups[self.collision_group_idx])
+                col = self.collision_groups[self.collision_group_idx].color
+                set_groups_object_color(obj, (col[0],col[1],col[2], 1.0))
                 self.set_object_collider_group(obj)
                 self.update_names()
 
