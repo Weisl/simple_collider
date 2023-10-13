@@ -65,8 +65,7 @@ class ColliderGroup(bpy.types.PropertyGroup):
                 self.name = get_groups_name(group[0])
                 self.identifier = get_groups_identifier(group[0])
                 self.icon = group[3]
-                self.color = get_groups_color(group[4])
-
+                self.color = get_groups_color(group[0])
         return self["mode"]
 
     def set_groups_enum(self, val):

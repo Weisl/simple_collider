@@ -1088,9 +1088,10 @@ class OBJECT_OT_add_bounding_object():
             context.space_data.shading.type = 'SOLID'
         else:
             col = self.collision_groups[self.collision_group_idx].color
-            set_groups_object_color(bounding_object, (col[0], col[1], col[2], 1.0))
+            set_groups_object_color(bounding_object, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
     def set_object_collider_group(self, obj):
-        obj['collider_group'] = self.collision_groups[self.collision_group_idx].name
+        # user idx rather than name for the property, so that renaming is possible.
+        obj['collider_group'] = self.collision_groups[self.collision_group_idx].identifier
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
@@ -1614,7 +1615,7 @@ class OBJECT_OT_add_bounding_object():
             self.collision_group_idx = (self.collision_group_idx + 1) % len(self.collision_groups)
             for obj in self.new_colliders_list:
                 col = self.collision_groups[self.collision_group_idx].color
-                set_groups_object_color(obj, (col[0],col[1],col[2], 1.0))
+                set_groups_object_color(obj, (col[0],col[1],col[2], self.current_settings_dic['alpha']))
                 self.set_object_collider_group(obj)
                 self.update_names()
 
