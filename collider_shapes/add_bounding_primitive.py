@@ -529,7 +529,7 @@ class OBJECT_OT_add_bounding_object():
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
                 cls.get_shape_pre_suffix(prefs, shape_identifier),
-                get_groups_identifier(user_group),
+                user_group,
                 prefs.collision_string_suffix
             ]
         else:  # prefs.collider_groups_enabled == False:
@@ -591,7 +591,7 @@ class OBJECT_OT_add_bounding_object():
 
     def collider_name(self, basename='Basename'):
         self.basename = basename
-        user_group = self.collision_groups[self.collision_group_idx]
+        user_group = self.collision_groups[self.collision_group_idx].identifier
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
     def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments, voxel_size, height_mult):
@@ -1003,7 +1003,7 @@ class OBJECT_OT_add_bounding_object():
             assign_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
-        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].mode
+        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].identifier
         bounding_object['collider_shape'] = self.shape
 
         if self.prefs.wireframe_mode in ['PREVIEW', 'ALWAYS']:
