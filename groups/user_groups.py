@@ -42,8 +42,21 @@ def update_selected(self, context):
                 if ob.get('isCollider') and ob.get('collider_group') == self.mode:
                     ob.select_set(not self.selected)
 
+def get_groups_color(groups_identifier):
+    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    color = [1.0, 1.0, 1.0]
 
+    if groups_identifier == 'USER_01':
+        color = prefs.user_group_01_color
+    elif groups_identifier == 'USER_02':
+        color = prefs.user_group_02_color
+    elif groups_identifier == 'USER_03':
+        color = prefs.user_group_03_color
+
+    return color
 class ColliderGroup(bpy.types.PropertyGroup):
+
+
     def get_groups_enum(self):
         '''Set name and description according to type'''
         for group in default_groups_enum:
@@ -52,10 +65,7 @@ class ColliderGroup(bpy.types.PropertyGroup):
                 self.name = get_groups_name(group[0])
                 self.identifier = get_groups_identifier(group[0])
                 self.icon = group[3]
-
-                color = get_groups_color(group[0])
-                self.color = (color[0], color[1], color[2])
-
+                self.color = get_groups_color(group[0])
         return self["mode"]
 
     def set_groups_enum(self, val):
@@ -137,22 +147,11 @@ def get_groups_name(groups_identifier):
     return name
 
 
-def set_groups_object_color(obj, groups_identifier):
-    obj.color = get_groups_color(groups_identifier)
+def set_groups_object_color(obj, color):
+    obj.color = color
 
 
-def get_groups_color(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
-    color = [1.0, 1.0, 1.0, 1.0]
 
-    if groups_identifier == 'USER_01':
-        color = prefs.user_group_01_color
-    elif groups_identifier == 'USER_02':
-        color = prefs.user_group_02_color
-    elif groups_identifier == 'USER_03':
-        color = prefs.user_group_03_color
-
-    return color
 
 
 class COLLISION_OT_assign_user_group(bpy.types.Operator):
@@ -185,7 +184,7 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
                 continue
             count += 1
 
-            set_groups_object_color(obj, self.mode)
+            #set_groups_object_color(obj, self.mode)
             obj['collider_group'] = self.mode
 
             if prefs.replace_name:

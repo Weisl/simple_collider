@@ -429,20 +429,20 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # The object color for the bounding object
     user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
                                                        description="Object color and alpha for User Collider Group 01",
-                                                       default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
-                                                       subtype='COLOR', size=4)
+                                                       default=(0.36, 0.5, 1), min=0.0, max=1.0,
+                                                       subtype='COLOR', size=3)
 
     # The object color for the bounding object
     user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
                                                        description="Object color and alpha for User Collider Group 02",
-                                                       default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=4)
+                                                       default=(0.5, 1, 0.36), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3)
 
     # The object color for the bounding object
     user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
                                                        description="Object color and alpha for User Collider Group 03.",
-                                                       default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=4)
+                                                       default=(1, 0.36, 0.36), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3)
 
     # Modal Box
     use_modal_box: bpy.props.BoolProperty(name="Use Backdrop", default=True)
