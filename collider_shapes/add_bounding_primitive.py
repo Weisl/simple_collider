@@ -1003,7 +1003,7 @@ class OBJECT_OT_add_bounding_object():
             assign_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
-        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].identifier
+        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].mode
         bounding_object['collider_shape'] = self.shape
 
         if self.prefs.wireframe_mode in ['PREVIEW', 'ALWAYS']:
@@ -1091,7 +1091,7 @@ class OBJECT_OT_add_bounding_object():
             set_groups_object_color(bounding_object, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
     def set_object_collider_group(self, obj):
         # user idx rather than name for the property, so that renaming is possible.
-        obj['collider_group'] = self.collision_groups[self.collision_group_idx].identifier
+        obj['collider_group'] = self.collision_groups[self.collision_group_idx].mode
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
