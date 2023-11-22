@@ -10,6 +10,8 @@ from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_obje
 from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collision_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
+from ..ui.properties_panels import VIEW3D_PT_merge_panel
+# from ..ui.properties_panels import VIEW3D_PT_baking_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
 from ..ui.properties_panels import collider_presets_folder
@@ -88,6 +90,8 @@ def update_panel_category(self, context):
     panelNames = [
         'VIEW3D_PT_collision_panel',
         'VIEW3D_PT_collision_settings_panel',
+        'VIEW3D_PT_merge_panel',
+        # 'VIEW3D_PT_baking_panel',
         'VIEW3D_PT_collision_visibility_panel',
         'VIEW3D_PT_collision_material_panel',
     ]
@@ -95,6 +99,8 @@ def update_panel_category(self, context):
     panels = [
         VIEW3D_PT_collision_panel,
         VIEW3D_PT_collision_settings_panel,
+        VIEW3D_PT_merge_panel,
+        # VIEW3D_PT_baking_panel,
         VIEW3D_PT_collision_visibility_panel,
         VIEW3D_PT_collision_material_panel,
     ]

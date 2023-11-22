@@ -14,6 +14,8 @@ classes = (
     properties_panels.VIEW3D_MT_collision_creation,
     properties_panels.VIEW3D_PT_collision_panel,
     properties_panels.VIEW3D_PT_collision_settings_panel,
+    properties_panels.VIEW3D_PT_merge_panel,
+    # properties_panels.VIEW3D_PT_baking_panel,
     properties_panels.VIEW3D_PT_collision_visibility_panel,
     properties_panels.VIEW3D_PT_collision_material_panel,
     properties_panels.VIEW3D_MT_PIE_template,

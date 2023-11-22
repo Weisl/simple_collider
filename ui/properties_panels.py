@@ -359,6 +359,28 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
         draw_visibility_selection_menu(context, layout)
         layout.separator()
 
+class VIEW3D_PT_merge_panel(VIEW3D_PT_collision):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Merge Meshes"
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator("mesh.add_merged_mesh")
+
+class VIEW3D_PT_baking_panel(VIEW3D_PT_collision):
+    """Creates a Panel in the Object properties window"""
+
+    bl_label = "Bake Panel"
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row(align=True)
+        row.operator("mesh.add_merged_mesh")
+
 class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
 

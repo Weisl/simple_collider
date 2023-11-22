@@ -9,6 +9,7 @@ from . import add_bounding_capsule
 from . import add_collision_mesh
 from . import add_collision_remesh
 from . import add_minimum_bounding_box
+from . import add_merged_mesh
 
 classes = (
     add_bounding_box.OBJECT_OT_add_bounding_box,
@@ -18,7 +19,8 @@ classes = (
     add_bounding_capsule.OBJECT_OT_add_bounding_capsule,
     add_bounding_convex_hull.OBJECT_OT_add_convex_hull,
     add_collision_mesh.OBJECT_OT_add_mesh_collision,
-    add_collision_remesh.OBJECT_OT_add_remesh_collision
+    add_collision_remesh.OBJECT_OT_add_remesh_collision,
+    add_merged_mesh.OBJECT_OT_add_merged_mesh
 )
 
 
