@@ -317,7 +317,7 @@ def draw_viewport_overlay(self, context):
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
     font_size = int(self.prefs.modal_font_size / 3.6)
-    vertical_px_offset = 30 / 72 * font_size
+    vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 72 * font_size
 
     # backdrop box
