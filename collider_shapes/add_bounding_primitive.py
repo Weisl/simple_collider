@@ -115,7 +115,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 220 / 72 * font_size, padding_bottom + (i * vertical_px_offset), 0)
+        blf.position(font_id, left_margin + 220 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, key)
 
     if value:
@@ -131,7 +131,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 290 / 72 * font_size, padding_bottom + (i * vertical_px_offset), 0)
+        blf.position(font_id, left_margin + 290 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, value)
 
     i += 1
@@ -318,12 +318,12 @@ def draw_viewport_overlay(self, context):
     font_id = 0  # XXX, need to find out how best to get this.
     font_size = int(self.prefs.modal_font_size / 3.6)
     vertical_px_offset = font_size * 1.5
-    left_text_margin = bpy.context.area.width / 2 - 190 / 72 * font_size
+    left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
     # backdrop box
-    box_left = bpy.context.area.width / 2 - 240 / 72 * font_size
-    box_right = bpy.context.area.width / 2 + 240 / 72 * font_size
-    box_top = font_size/2 * len(items)
+    box_left = bpy.context.area.width / 2 - 240 / 20 * font_size
+    box_right = bpy.context.area.width / 2 + 240 / 20 * font_size
+    box_top = font_size * len(items) * 1.75
     box_bottom = 10
 
     prefs = self.prefs
