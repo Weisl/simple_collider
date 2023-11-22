@@ -26,8 +26,15 @@ def create_name_number(name, nr):
 
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
-    group.inputs.new('NodeSocketGeometry', "Geometry")
-    group.outputs.new('NodeSocketGeometry', "Geometry")
+    if bpy.app.version < (4, 00):
+        # legacy support
+        group.inputs.new('NodeSocketGeometry', "Geometry")
+        group.outputs.new('NodeSocketGeometry', "Geometry")
+
+    else:
+        group.interface.new_socket('Geometry',  description="", in_out='INPUT', socket_type='NodeSocketGeometry', parent=None)
+        group.interface.new_socket('Geometry',  description="", in_out='OUTPUT', socket_type='NodeSocketGeometry', parent=None)
+
     input_node = group.nodes.new('NodeGroupInput')
     output_node = group.nodes.new('NodeGroupOutput')
     output_node.is_active_output = True
