@@ -26,8 +26,15 @@ def create_name_number(name, nr):
 
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
-    group.inputs.new('NodeSocketGeometry', "Geometry")
-    group.outputs.new('NodeSocketGeometry', "Geometry")
+    if bpy.app.version < (4, 00):
+        # legacy support
+        group.inputs.new('NodeSocketGeometry', "Geometry")
+        group.outputs.new('NodeSocketGeometry', "Geometry")
+
+    else:
+        group.interface.new_socket('Geometry',  description="", in_out='INPUT', socket_type='NodeSocketGeometry', parent=None)
+        group.interface.new_socket('Geometry',  description="", in_out='OUTPUT', socket_type='NodeSocketGeometry', parent=None)
+
     input_node = group.nodes.new('NodeGroupInput')
     output_node = group.nodes.new('NodeGroupOutput')
     output_node.is_active_output = True
@@ -60,12 +67,16 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
     color_error = self.prefs.modal_color_error
 
     # padding bottom
-    font_size = self.prefs.modal_font_size
+    font_size = int(self.prefs.modal_font_size / 3.6)
 
     # padding_bottom = self.prefs.padding_bottom
     padding_bottom = 0
 
-    blf.size(font_id, 20, font_size)
+    if bpy.app.version < (4, 00):
+        # legacy support
+        blf.size(font_id, 72, font_size)
+    else:
+        blf.size(font_id, font_size)
 
     if type == 'error':
         blf.color(font_id, color_error[0], color_error[1], color_error[2], color_error[3])
@@ -104,7 +115,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 220 / 72 * font_size, padding_bottom + (i * vertical_px_offset), 0)
+        blf.position(font_id, left_margin + 220 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, key)
 
     if value:
@@ -120,7 +131,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
         else:  # type == 'default':
             blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
 
-        blf.position(font_id, left_margin + 290 / 72 * font_size, padding_bottom + (i * vertical_px_offset), 0)
+        blf.position(font_id, left_margin + 290 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, value)
 
     i += 1
@@ -313,14 +324,14 @@ def draw_viewport_overlay(self, context):
 
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
-    font_size = self.prefs.modal_font_size
-    vertical_px_offset = 30 / 72 * font_size
-    left_text_margin = bpy.context.area.width / 2 - 190 / 72 * font_size
+    font_size = int(self.prefs.modal_font_size / 3.6)
+    vertical_px_offset = font_size * 1.5
+    left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
     # backdrop box
-    box_left = bpy.context.area.width / 2 - 240 / 72 * font_size
-    box_right = bpy.context.area.width / 2 + 240 / 72 * font_size
-    box_top = font_size/2 * len(items)
+    box_left = bpy.context.area.width / 2 - 240 / 20 * font_size
+    box_right = bpy.context.area.width / 2 + 240 / 20 * font_size
+    box_top = font_size * len(items) * 1.75
     box_bottom = 10
 
     prefs = self.prefs
@@ -346,7 +357,12 @@ def draw_2d_backdrop(self, context, left, right, top, bottom, color):
     indices = (
         (0, 1, 2), (2, 1, 3))
 
-    shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+    if bpy.app.version < (4, 00):
+        # legacy support
+        shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
+    else:
+        shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
     batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
     shader.bind()
     shader.uniform_float("color", color)
@@ -555,34 +571,18 @@ class OBJECT_OT_add_bounding_object():
         return cls.unique_name(new_name)
 
     def draw_callback_px(self, context):
-        # # x, y = self.mouse_position
-        # x = 100
-        # y = 100
-        #
-        # # Background Square
-        # vertices = (
-        #     (x, y - 50), (x + 100, y - 50),
-        #     (x, y), (x + 100, y))
-        #
-        # indices = (
-        #     (0, 1, 2), (2, 1, 3))
-        # shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')
-        # batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
-        #
-        # shader.bind()
-        # shader.uniform_float("color", (0.2, 0.2, 0.2, 1))
-        # batch.draw(shader)
-        #
-        # # draw some text
-        # font_offset = 10
-        # blf.size(font_id, 20, 72)
-        # # blf.position(font_id, x + font_offset, y - font_offset, 0)
-        # blf.position(font_id, x, y, 0)
+
 
         font_id = 0  # XXX, need to find out how best to get this.
         font_color = [0.5, 0.5, 0.5, 0.5]
         font_size = 20
-        blf.size(font_id, 20, font_size)
+
+        if bpy.app.version < (4, 00):
+            # legacy support
+            blf.size(font_id, 72, font_size)
+        else:
+            blf.size(font_id, font_size)
+
         blf.color(font_id, font_color[0], font_color[1], font_color[2], font_color[3])
         blf.position(font_id, 100, 100, 0)
         face_label = str(sum(self.facecounts))
