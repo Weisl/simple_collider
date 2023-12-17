@@ -142,15 +142,11 @@ class BUTTON_OT_change_key(bpy.types.Operator):
     def invoke(self, context, event):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         self.prefs = prefs
-        self.my_type = ''
         if self.menu_id == 'collision_pie':
-            self.my_type = self.prefs.collision_pie_type
             self.prefs.collision_pie_type = 'NONE'
         elif self.menu_id == 'collision_material':
-            self.my_type = self.prefs.collision_material_type
             self.prefs.collision_material_type = 'NONE'
         elif self.menu_id == 'collision_visibility':
-            self.my_type = self.prefs.collision_visibility_type
             self.prefs.collision_visibility_type = 'NONE'
 
         context.window_manager.modal_handler_add(self)
