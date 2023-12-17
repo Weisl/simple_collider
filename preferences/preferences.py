@@ -85,21 +85,12 @@ def setDefaultTemp():
 
 def update_panel_category(self, context):
     '''Update panel tab for collider tools'''
-    panelNames = [
-        'VIEW3D_PT_collision_panel',
-        'VIEW3D_PT_collision_settings_panel',
-        'VIEW3D_PT_collision_visibility_panel',
-        'VIEW3D_PT_collision_material_panel',
-    ]
-
     panels = [
         VIEW3D_PT_collision_panel,
         VIEW3D_PT_collision_settings_panel,
         VIEW3D_PT_collision_visibility_panel,
         VIEW3D_PT_collision_material_panel,
     ]
-    for panel in panelNames:
-        is_panel = hasattr(bpy.types, panel)
 
     for panel in panels:
         try:
