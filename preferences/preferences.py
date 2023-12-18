@@ -153,7 +153,6 @@ class BUTTON_OT_change_key(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        print('modal')
         self.my_event = 'NONE'
 
         if event.type and event.value=='RELEASE':  # Apply
