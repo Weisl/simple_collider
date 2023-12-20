@@ -7,7 +7,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_remesh_collision"
     bl_label = "Add Re-meshed"
-    bl_description = 'Create triangle mesh colliders based on the selection'
+    bl_description = 'Create a triangle mesh colliders based on the voxel re-meshed target'
 
     def __init__(self):
         super().__init__()
