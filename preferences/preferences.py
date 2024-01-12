@@ -430,6 +430,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                        default=(1, 0.36, 0.36), min=0.0, max=1.0, subtype='COLOR',
                                                        size=3)
 
+    # The object color for the bounding object
+    user_groups_alpha: bpy.props.FloatProperty(name="Alpha",
+                                                       description="Object alpha for User Collider Groups.",
+                                                       default=0.5, min=0.0, max=1.0)
+
     # Modal Box
     use_modal_box: bpy.props.BoolProperty(name="Use Backdrop", default=True)
 
@@ -632,6 +637,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         'user_group_01_color',
         'user_group_02_color',
         'user_group_03_color',
+        'user_groups_alpha',
     ]
 
     ui_props = [

@@ -1690,7 +1690,7 @@ class OBJECT_OT_add_bounding_object():
                 for obj in self.new_colliders_list:
                     obj.color[3] = color_alpha
 
-                self.prefs.user_group_01_color[3] = color_alpha
+                self.prefs.user_groups_alpha = color_alpha
                 self.current_settings_dic['alpha'] = color_alpha
 
             if self.cylinder_segments_active:
