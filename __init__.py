@@ -2,7 +2,7 @@ bl_info = {
     "name": "Collider Tools",
     "description": "Collider Tools is a Blender addon to create physics colliders for games and real-time applications.",
     "author": "Matthias Patscheider",
-    "version": (1, 4, 3),
+    "version": (1, 5, 0),
     "blender": (3, 2, 0),
     "location": "View3D > Collider Tools",
     "doc_url": "https://weisl.github.io/collider-tools_overview/",
