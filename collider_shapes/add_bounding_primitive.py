@@ -544,6 +544,17 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
+        if prefs.parent_rename:
+            if prefs.parent_naming_position == 'SUFFIX':
+                end = prefs.parent_separator + prefs.parent_extension
+                if name.endswith(end):
+                    name = name[:-(len(end))]
+
+            else:
+                start = prefs.parent_extension + prefs.parent_separator
+                if name.startswith(start):
+                    name = name[len(start):]
+
         if prefs.collider_groups_enabled:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
