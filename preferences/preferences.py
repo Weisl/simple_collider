@@ -87,15 +87,7 @@ def setDefaultTemp():
 
 def update_panel_category(self, context):
     '''Update panel tab for collider tools'''
-    panelNames = [
-        'VIEW3D_PT_collision_panel',
-        'VIEW3D_PT_collision_settings_panel',
-        'VIEW3D_PT_merge_panel',
-        # 'VIEW3D_PT_baking_panel',
-        'VIEW3D_PT_collision_visibility_panel',
-        'VIEW3D_PT_collision_material_panel',
-    ]
-
+    
     panels = [
         VIEW3D_PT_collision_panel,
         VIEW3D_PT_collision_settings_panel,
@@ -104,8 +96,6 @@ def update_panel_category(self, context):
         VIEW3D_PT_collision_visibility_panel,
         VIEW3D_PT_collision_material_panel,
     ]
-    for panel in panelNames:
-        is_panel = hasattr(bpy.types, panel)
 
     for panel in panels:
         try:
@@ -157,22 +147,17 @@ class BUTTON_OT_change_key(bpy.types.Operator):
     def invoke(self, context, event):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         self.prefs = prefs
-        self.my_type = ''
         if self.menu_id == 'collision_pie':
-            self.my_type = self.prefs.collision_pie_type
             self.prefs.collision_pie_type = 'NONE'
         elif self.menu_id == 'collision_material':
-            self.my_type = self.prefs.collision_material_type
             self.prefs.collision_material_type = 'NONE'
         elif self.menu_id == 'collision_visibility':
-            self.my_type = self.prefs.collision_visibility_type
             self.prefs.collision_visibility_type = 'NONE'
 
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        print('modal')
         self.my_event = 'NONE'
 
         if event.type and event.value=='RELEASE':  # Apply
