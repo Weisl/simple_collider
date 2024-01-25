@@ -154,10 +154,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
-                        remesh_active=False, height_active=False):
+                        remesh_active=False, height_active=False, width_active=False):
         super().set_modal_state(cylinder_segments_active, displace_active, decimate_active,
                                 opacity_active, sphere_segments_active, capsule_segments_active,
-                                remesh_active, height_active)
+                                remesh_active, height_active, width_active)
         self.sphere_segments_active = sphere_segments_active
 
     def execute(self, context):

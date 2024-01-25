@@ -280,6 +280,13 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(H)', 'type': 'modal', 'highlight': self.height_active}
         items.append(item)
 
+    if self.use_width_multiplier:
+        label = "Width Multiplier"
+        value = self.current_settings_dic['width_mult']
+        value = '{initial_value:.3f}'.format(initial_value=value)
+        item = {'label': label, 'value': value, 'key': '(W)', 'type': 'modal', 'highlight': self.width_active}
+        items.append(item)
+
     if self.use_cylinder_segments:
         label = "Segments"
         value = str(self.current_settings_dic['cylinder_segments'])
@@ -607,7 +614,7 @@ class OBJECT_OT_add_bounding_object():
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
 
     def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments,
-                             voxel_size, height_mult):
+                             voxel_size, height_mult, width_mult):
         dict = {}
         dict['alpha'] = alpha
         dict['discplace_offset'] = offset
@@ -617,6 +624,7 @@ class OBJECT_OT_add_bounding_object():
         dict['capsule_segments'] = capsule_segments
         dict['voxel_size'] = voxel_size
         dict['height_mult'] = height_mult
+        dict['width_mult'] = width_mult
 
         return dict
 
@@ -1252,6 +1260,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_keep_original_name = False
         self.use_remesh = False
         self.use_height_multiplier = False
+        self.use_width_multiplier = False
 
         # default shape init
         self.shape = ''
@@ -1274,7 +1283,7 @@ class OBJECT_OT_add_bounding_object():
 
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
-                        remesh_active=False, height_active=False):
+                        remesh_active=False, height_active=False, width_active = False):
 
         self.cylinder_segments_active = cylinder_segments_active
         self.displace_active = displace_active
@@ -1284,6 +1293,7 @@ class OBJECT_OT_add_bounding_object():
         self.capsule_segments_active = capsule_segments_active
         self.remesh_active = remesh_active
         self.height_active = height_active
+        self.width_active = width_active
 
     def invoke(self, context, event):
         colSettings = context.scene.collider_tools
@@ -1344,6 +1354,7 @@ class OBJECT_OT_add_bounding_object():
         self.remesh_modifiers = []
 
         self.height_active = False
+        self.width_active = False
 
         # Displace
         self.displace_active = False
@@ -1399,11 +1410,12 @@ class OBJECT_OT_add_bounding_object():
         default_voxel_size = 0.1
         default_offset = 0
         default_height_mult = 1
+        default_width_mult = 1
 
         dict = self.collision_dictionary(default_alpha, default_offset, default_decimate,
                                          colSettings.default_sphere_segments,
                                          colSettings.default_cylinder_segments, colSettings.default_capsule_segments,
-                                         default_voxel_size, default_height_mult)
+                                         default_voxel_size, default_height_mult, default_width_mult)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -1442,6 +1454,7 @@ class OBJECT_OT_add_bounding_object():
             self.cylinder_segments_active = False
             self.remesh_active = False
             self.height_active = False
+            self.width_active = False
             self.sphere_segments_active = False
             self.capsule_segments_active = False
 
@@ -1604,6 +1617,10 @@ class OBJECT_OT_add_bounding_object():
             self.set_modal_state(height_active=not self.height_active)
             self.mouse_initial_x = event.mouse_x
 
+        elif event.type == 'W' and event.value == 'RELEASE':
+            self.set_modal_state(width_active=not self.width_active)
+            self.mouse_initial_x = event.mouse_x
+
         elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes
             self.collider_shapes_idx = (self.collider_shapes_idx + 1) % len(self.collider_shapes)
@@ -1713,6 +1730,15 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.current_settings_dic['height_mult'] != height_mult:
                     self.current_settings_dic['height_mult'] = height_mult
+                    self.execute(context)
+
+            if self.width_active:
+                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                width_mult = (self.ref_settings_dic['width_mult'] + delta)
+                width_mult = numpy.clip(width_mult, 0.01, 1.0)
+
+                if self.current_settings_dic['width_mult'] != width_mult:
+                    self.current_settings_dic['width_mult'] = width_mult
                     self.execute(context)
 
             if self.sphere_segments_active:

@@ -24,6 +24,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.use_capsule_axis = True
         self.use_capsule_segments = True
         self.use_height_multiplier = True
+        self.use_width_multiplier = True
         self.shape = 'capsule_shape'
 
     def invoke(self, context, event):
@@ -32,10 +33,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
-                        remesh_active=False, height_active=False):
+                        remesh_active=False, height_active=False, width_active=False):
         super().set_modal_state(cylinder_segments_active, displace_active, decimate_active,
                                 opacity_active, sphere_segments_active, capsule_segments_active,
-                                remesh_active, height_active)
+                                remesh_active, height_active, width_active)
         self.capsule_segments_active = capsule_segments_active
 
     def modal(self, context, event):
@@ -162,7 +163,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
             data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
-                                          latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius,
+                                          latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius * self.current_settings_dic['width_mult'],
                                           depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
