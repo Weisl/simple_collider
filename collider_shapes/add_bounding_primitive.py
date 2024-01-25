@@ -1724,18 +1724,21 @@ class OBJECT_OT_add_bounding_object():
                     self.execute(context)
 
             if self.height_active:
-                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
-                height_mult = (self.ref_settings_dic['height_mult'] + delta)
-                height_mult = numpy.clip(height_mult, 0.01, 1.0)
+                # delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                offset = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                strenght = self.ref_settings_dic['height_mult'] - offset
+                height_mult = strenght
+                height_mult = numpy.clip(height_mult, 0, 10.0)
 
                 if self.current_settings_dic['height_mult'] != height_mult:
                     self.current_settings_dic['height_mult'] = height_mult
                     self.execute(context)
 
             if self.width_active:
-                delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
-                width_mult = (self.ref_settings_dic['width_mult'] + delta)
-                width_mult = numpy.clip(width_mult, 0.01, 1.0)
+                offset = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                strenght = self.ref_settings_dic['width_mult'] - offset
+                width_mult = strenght
+                width_mult = numpy.clip(width_mult, 0, 10.0)
 
                 if self.current_settings_dic['width_mult'] != width_mult:
                     self.current_settings_dic['width_mult'] = width_mult
