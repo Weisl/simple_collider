@@ -1273,6 +1273,8 @@ class OBJECT_OT_add_bounding_object():
 
         self.valid_object_types = ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
 
+        self.collision_group_idx = 0
+
     @classmethod
     def poll(cls, context):
         count = 0
