@@ -15,6 +15,7 @@ if "bpy" in locals():
 
     importlib.reload(ui)
     importlib.reload(groups)
+    importlib.reload(properties)
     importlib.reload(collider_operators)
     importlib.reload(collider_shapes)
     importlib.reload(collider_conversion)
@@ -26,6 +27,7 @@ if "bpy" in locals():
 else:
     from . import ui
     from . import groups
+    from . import properties
     from . import collider_operators
     from . import collider_shapes
     from . import collider_conversion
@@ -37,7 +39,7 @@ else:
 def register():
     # call the register function of the sub modules
     ui.register()
-    groups.register()
+
     collider_operators.register()
     collider_shapes.register()
     collider_conversion.register()
@@ -46,6 +48,8 @@ def register():
 
     # keymap and preferences should be last
     preferences.register()
+    groups.register()
+    properties.register()
 
 
 def unregister():
@@ -57,5 +61,6 @@ def unregister():
     collider_conversion.unregister()
     collider_shapes.unregister()
     collider_operators.unregister()
+    properties.unregister()
     groups.unregister()
     ui.unregister()

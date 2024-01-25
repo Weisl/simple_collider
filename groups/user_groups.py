@@ -42,6 +42,7 @@ def update_selected(self, context):
                 if ob.get('isCollider') and ob.get('collider_group') == self.mode:
                     ob.select_set(not self.selected)
 
+
 def get_groups_color(groups_identifier):
     prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
     color = [1.0, 1.0, 1.0]
@@ -54,8 +55,9 @@ def get_groups_color(groups_identifier):
         color = prefs.user_group_03_color
 
     return color
-class ColliderGroup(bpy.types.PropertyGroup):
 
+
+class ColliderGroup(bpy.types.PropertyGroup):
 
     def get_groups_enum(self):
         '''Set name and description according to type'''
@@ -151,9 +153,6 @@ def set_groups_object_color(obj, color):
     obj.color = color
 
 
-
-
-
 class COLLISION_OT_assign_user_group(bpy.types.Operator):
     """Select/Deselect collision objects"""
     bl_idname = "object.assign_user_group"
@@ -184,7 +183,7 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
                 continue
             count += 1
 
-            #set_groups_object_color(obj, self.mode)
+            # set_groups_object_color(obj, self.mode)
             obj['collider_group'] = self.mode
 
             if prefs.replace_name:
