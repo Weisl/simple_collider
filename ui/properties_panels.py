@@ -299,9 +299,7 @@ class VIEW3D_PT_init():
         bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
         bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
 
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
+
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
