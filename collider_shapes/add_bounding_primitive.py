@@ -1272,8 +1272,20 @@ class OBJECT_OT_add_bounding_object():
                 count = count + 1
         return count > 0
 
-    def invoke(self, context, event):
+    def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
+                        opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
+                        remesh_active=False, height_active=False):
 
+        self.cylinder_segments_active = cylinder_segments_active
+        self.displace_active = displace_active
+        self.decimate_active = decimate_active
+        self.opacity_active = opacity_active
+        self.sphere_segments_active = sphere_segments_active
+        self.capsule_segments_active = capsule_segments_active
+        self.remesh_active = remesh_active
+        self.height_active = height_active
+
+    def invoke(self, context, event):
         colSettings = context.scene.collider_tools
 
         self.collider_groups = [colSettings.visibility_toggle_user_group_01,
@@ -1566,62 +1578,31 @@ class OBJECT_OT_add_bounding_object():
             self.keep_original_name = not self.keep_original_name
             self.execute(context)
 
+
         elif event.type == 'S' and event.value == 'RELEASE':
-            self.displace_active = not self.displace_active
-            self.opacity_active = False
-            self.decimate_active = False
-            self.cylinder_segments_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
-            self.remesh_active = False
-            self.height_active = False
+
+            self.set_modal_state(displace_active=not self.displace_active)
             self.mouse_initial_x = event.mouse_x
 
         elif event.type == 'D' and event.value == 'RELEASE':
-            self.decimate_active = not self.decimate_active
-            self.opacity_active = False
-            self.displace_active = False
-            self.cylinder_segments_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
-            self.remesh_active = False
-            self.height_active = False
+            self.set_modal_state(decimate_active=not self.decimate_active)
+
             self.mouse_initial_x = event.mouse_x
             self.mouse_position = [event.mouse_x, event.mouse_y]
             self.draw_callback_px(context)
 
         elif event.type == 'A' and event.value == 'RELEASE':
-            self.opacity_active = not self.opacity_active
-            self.displace_active = False
-            self.decimate_active = False
-            self.cylinder_segments_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
-            self.remesh_active = False
-            self.height_active = False
+            self.set_modal_state(opacity_active=not self.opacity_active)
             self.mouse_initial_x = event.mouse_x
+
 
         elif event.type == 'E' and event.value == 'RELEASE':
-            self.cylinder_segments_active = not self.cylinder_segments_active
-            self.displace_active = False
-            self.decimate_active = False
-            self.opacity_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
+            self.set_modal_state(cylinder_segments_active=not self.cylinder_segments_active)
             self.mouse_initial_x = event.mouse_x
-            self.remesh_active = False
-            self.height_active = False
 
         elif event.type == 'H' and event.value == 'RELEASE':
-            self.height_active = not self.height_active
-            self.cylinder_segments_active = False
-            self.displace_active = False
-            self.decimate_active = False
-            self.opacity_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
+            self.set_modal_state(height_active=not self.height_active)
             self.mouse_initial_x = event.mouse_x
-            self.remesh_active = False
 
         elif event.type == 'Q' and event.value == 'RELEASE':
             # toggle through display modes

@@ -9,6 +9,7 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'capsule_collider'
 
+
 class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding capsule collider based on the selection"""
     bl_idname = "mesh.add_bounding_capsule"
@@ -25,19 +26,17 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.use_height_multiplier = True
         self.shape = 'capsule_shape'
 
-
     def invoke(self, context, event):
         super().invoke(context, event)
         return {'RUNNING_MODAL'}
 
-    def set_modal_capsule_segments_active(self, context):
-        self.capsule_segments_active = not self.capsule_segments_active
-        self.displace_active = False
-        self.opacity_active = False
-        self.decimate_active = False
-        self.cylinder_segments_active = False
-        self.execute(context)
-
+    def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
+                        opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
+                        remesh_active=False, height_active=False):
+        super().set_modal_state(cylinder_segments_active, displace_active, decimate_active,
+                                opacity_active, sphere_segments_active, capsule_segments_active,
+                                remesh_active, height_active)
+        self.capsule_segments_active = capsule_segments_active
 
     def modal(self, context, event):
         status = super().modal(context, event)
@@ -60,17 +59,18 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.set_modal_capsule_segments_active(context)
+            self.set_modal_state(capsule_segments_active=not self.capsule_segments_active)
+            self.execute(context)
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
-
         elif event.type == 'X' or event.type == 'Y' or event.type == 'Z' and event.value == 'RELEASE':
             # define cylinder axis
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+                self.creation_mode_edit[self.creation_mode_idx]
             if creation_mode != 'LOOSEMESH':
                 self.cylinder_axis = event.type
                 self.execute(context)
@@ -104,7 +104,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+                self.creation_mode_edit[self.creation_mode_idx]
 
             if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # used_vertices uses local space.
@@ -127,9 +128,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                     elif self.cylinder_axis == 'Y':
                         coordinates.append([v.x, v.z, v.y])
 
-
                 center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
-
 
                 # store data needed to generate a bounding box in a dictionary
                 bounding_capsule_data['parent'] = base_ob
@@ -143,7 +142,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-
             # Scale has to be applied before location
             center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
 
@@ -163,7 +161,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
-            data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'], latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius, depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
+            data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
+                                          latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius,
+                                          depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
                 vts=data["vts"],
@@ -178,10 +178,11 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
             new_collider.location = center
-            #context.scene.collection.objects.link(new_collider)
+            # context.scene.collection.objects.link(new_collider)
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
-            if  self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+                self.creation_mode_edit[self.creation_mode_idx]
+            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
 
@@ -206,4 +207,3 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.report({'INFO'}, f"Capsule Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
-
