@@ -981,7 +981,7 @@ class OBJECT_OT_add_bounding_object():
         return new_obj
 
     def primitive_postprocessing(self, context, bounding_object, base_object_collections):
-        colSettings = context.scene.collider_tools
+        self.set_object_collider_group(bounding_object)
 
         self.set_viewport_drawing(context, bounding_object)
         if self.use_weld_modifier:
