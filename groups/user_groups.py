@@ -149,7 +149,7 @@ def get_groups_name(groups_identifier):
     return name
 
 
-def set_groups_object_color(obj, color):
+def set_object_color(obj, color):
     obj.color = color
 
 
@@ -183,8 +183,10 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
                 continue
             count += 1
 
-            # set_groups_object_color(obj, self.mode)
             obj['collider_group'] = self.mode
+            col = get_groups_color(self.mode)
+            alpha = prefs.user_groups_alpha
+            set_object_color(obj, (col[0], col[1], col[2], alpha))
 
             if prefs.replace_name:
                 basename = prefs.obj_basename

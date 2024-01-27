@@ -9,7 +9,7 @@ import gpu
 from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
 
-from ..groups.user_groups import get_groups_identifier, set_groups_object_color
+from ..groups.user_groups import get_groups_identifier, set_object_color
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
@@ -1119,7 +1119,7 @@ class OBJECT_OT_add_bounding_object():
             context.space_data.shading.type = 'SOLID'
         else:
             col = self.collision_groups[self.collision_group_idx].color
-            set_groups_object_color(bounding_object, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
+            set_object_color(bounding_object, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
 
     def set_object_collider_group(self, obj):
         # user idx rather than name for the property, so that renaming is possible.
@@ -1642,7 +1642,7 @@ class OBJECT_OT_add_bounding_object():
             self.collision_group_idx = (self.collision_group_idx + 1) % len(self.collision_groups)
             for obj in self.new_colliders_list:
                 col = self.collision_groups[self.collision_group_idx].color
-                set_groups_object_color(obj, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
+                set_object_color(obj, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
                 self.set_object_collider_group(obj)
                 self.update_names()
 
