@@ -1030,7 +1030,7 @@ class OBJECT_OT_add_bounding_object():
         print('IDX ' + str(self.collision_group_idx))
         print('GRP ' + str(self.collision_groups[self.collision_group_idx]))
 
-        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].identifier
+        bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].mode
         bounding_object['collider_shape'] = self.shape
 
         if self.prefs.wireframe_mode in ['PREVIEW', 'ALWAYS']:
