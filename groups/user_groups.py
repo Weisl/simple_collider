@@ -199,7 +199,8 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
 
             from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
-            new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier, user_group,
+            new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier=shape_identifier,
+                                                                         user_group=get_groups_identifier(user_group),
                                                                          basename=basename)
             data_name = OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
