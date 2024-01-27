@@ -398,7 +398,8 @@ def get_sca_matrix(scale):
 
 class OBJECT_OT_add_bounding_object():
     """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding object collider_shapes"""
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO', 'GRAB_CURSOR', 'BLOCKING'}
+    # GRAB_CURSOR + BLOCKING enables wrap-around mouse feature.
     bm = []
 
     @staticmethod
@@ -1289,7 +1290,7 @@ class OBJECT_OT_add_bounding_object():
 
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
-                        remesh_active=False, height_active=False, width_active = False):
+                        remesh_active=False, height_active=False, width_active=False):
 
         self.cylinder_segments_active = cylinder_segments_active
         self.displace_active = displace_active
