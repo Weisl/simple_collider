@@ -182,6 +182,9 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.operator('object.regenerate_name', icon='FILE_REFRESH')
 
+    row = layout.row(align=True)
+    row.operator('object.convert_from_name', icon='NONE')
+
     layout.separator()
 
     # row = layout.row(align=True)
