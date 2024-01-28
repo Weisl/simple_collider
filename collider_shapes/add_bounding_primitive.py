@@ -1026,10 +1026,6 @@ class OBJECT_OT_add_bounding_object():
             assign_physics_material(bounding_object, mat_name)
 
         bounding_object['isCollider'] = True
-        print('GROUPS ' + str(self.collision_groups))
-        print('IDX ' + str(self.collision_group_idx))
-        print('GRP ' + str(self.collision_groups[self.collision_group_idx]))
-
         bounding_object['collider_group'] = self.collision_groups[self.collision_group_idx].mode
         bounding_object['collider_shape'] = self.shape
 
