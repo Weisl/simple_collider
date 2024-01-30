@@ -552,14 +552,14 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        if prefs.parent_rename:
-            if prefs.parent_naming_position == 'SUFFIX':
-                end = prefs.parent_separator + prefs.parent_extension
+        if prefs.rigid_body_rename:
+            if prefs.rigid_body_naming_position == 'SUFFIX':
+                end = prefs.rigid_body_separator + prefs.rigid_body_extension
                 if name.endswith(end):
                     name = name[:-(len(end))]
 
             else:
-                start = prefs.parent_extension + prefs.parent_separator
+                start = prefs.rigid_body_extension + prefs.rigid_body_separator
                 if name.startswith(start):
                     name = name[len(start):]
 
@@ -1128,13 +1128,13 @@ class OBJECT_OT_add_bounding_object():
 
     def set_parent_name(self, parent):
         new_name = parent.name
-        if self.prefs.parent_rename:
-            if self.prefs.parent_naming_position == 'SUFFIX':
-                if not parent.name.endswith(self.prefs.parent_extension):
-                    new_name = parent.name + self.prefs.parent_separator + self.prefs.parent_extension
+        if self.prefs.rigid_body_rename:
+            if self.prefs.rigid_body_naming_position == 'SUFFIX':
+                if not parent.name.endswith(self.prefs.rigid_body_extension):
+                    new_name = parent.name + self.prefs.rigid_body_separator + self.prefs.rigid_body_extension
             else:
-                if not parent.name.startswith(self.prefs.parent_extension):
-                    new_name = self.prefs.parent_extension + self.prefs.parent_separator + parent.name
+                if not parent.name.startswith(self.prefs.rigid_body_extension):
+                    new_name = self.prefs.rigid_body_extension + self.prefs.rigid_body_separator + parent.name
 
             parent.name = new_name
 

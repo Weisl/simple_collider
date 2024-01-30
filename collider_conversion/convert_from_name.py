@@ -35,6 +35,7 @@ class OBJECT_OT_convert_from_name(Operator):
             regexp = re.compile(str(user_group_03))
             if regexp.search(name):
                 obj['collider_group'] = 'USER_03'
+
                 isCollider = True
 
             regexp = re.compile(str(user_group_02))

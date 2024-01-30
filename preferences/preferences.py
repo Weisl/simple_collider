@@ -553,11 +553,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                     default=False)
 
 
-    parent_rename : bpy.props.BoolProperty(name="Modify Parent Name",
+    rigid_body_rename : bpy.props.BoolProperty(name="Rigid Body",
                                   description="Add suffix or prefix to parent name",
                                   default=False)
 
-    parent_naming_position: bpy.props.EnumProperty(
+    rigid_body_naming_position: bpy.props.EnumProperty(
         name='Parent Extension',
         items=(('PREFIX', "Prefix", "Prefix"),
                ('SUFFIX', "Suffix", "Suffix")),
@@ -565,10 +565,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         description='Add custom naming as prefix or suffix'
     )
 
-    parent_extension: bpy.props.StringProperty(name="Parent Extension", default="RB",
+    rigid_body_extension: bpy.props.StringProperty(name="Parent Extension", default="RB",
                                         description='String added to the parent naming')
 
-    parent_separator: bpy.props.StringProperty(name="Separator", default="_",
+    rigid_body_separator: bpy.props.StringProperty(name="Separator", default="_",
                                         description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
 
     # DEBUG
@@ -594,10 +594,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     props_parent = [
-        "parent_rename",
-        "parent_separator",
-        "parent_naming_position",
-        "parent_extension",
+        "rigid_body_rename",
+        "rigid_body_separator",
+        "rigid_body_naming_position",
+        "rigid_body_extension",
     ]
 
     props_collider_groups = [
