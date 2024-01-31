@@ -1111,21 +1111,26 @@ class OBJECT_OT_add_bounding_object():
         obj['collider_group'] = self.collision_groups[self.collision_group_idx].mode
 
     def set_collider_name(self, new_collider, parent_name):
-        new_name = self.collider_name(basename=parent_name)
+        basename = parent_name
         prefs = self.prefs
 
         #Ignore rigid body in base_name
         if prefs.rigid_body_extension:
             if prefs.rigid_body_naming_position == 'SUFFIX':
                 end = prefs.rigid_body_separator + prefs.rigid_body_extension
-                if new_name.endswith(end):
-                    new_name = new_name[:-(len(end))]
+                print(end)
+                if basename.endswith(end):
+                    print("Endswith")
+                    basename = basename[:-(len(end))]
 
             else:
+                print("RB PREFIX")
                 start = prefs.rigid_body_extension + prefs.rigid_body_separator
-                if new_name.startswith(start):
-                    new_name = new_name[len(start):]
+                if basename.startswith(start):
+                    print("Startswith")
+                    basename = basename[len(start):]
 
+        new_name = self.collider_name(basename=basename)
 
         new_collider.name = new_name
         self.set_data_name(new_collider, new_name, self.data_suffix)
