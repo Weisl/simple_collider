@@ -1112,6 +1112,21 @@ class OBJECT_OT_add_bounding_object():
 
     def set_collider_name(self, new_collider, parent_name):
         new_name = self.collider_name(basename=parent_name)
+        prefs = self.prefs
+
+        #Ignore rigid body in base_name
+        if prefs.rigid_body_extension:
+            if prefs.rigid_body_naming_position == 'SUFFIX':
+                end = prefs.rigid_body_separator + prefs.rigid_body_extension
+                if new_name.endswith(end):
+                    new_name = new_name[:-(len(end))]
+
+            else:
+                start = prefs.rigid_body_extension + prefs.rigid_body_separator
+                if new_name.startswith(start):
+                    new_name = new_name[len(start):]
+
+
         new_collider.name = new_name
         self.set_data_name(new_collider, new_name, self.data_suffix)
 
