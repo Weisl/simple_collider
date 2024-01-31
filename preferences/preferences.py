@@ -790,7 +790,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
             box = layout.box()
-            box.label(text="Parent Renaming")
+            box.label(text="Rigid Body")
 
             for propName in self.props_parent:
                 row = box.row()
