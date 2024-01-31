@@ -27,12 +27,21 @@ class OBJECT_OT_regenerate_name(Operator):
 
     def execute(self, context):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-
+        count = 0
         for obj in context.selected_objects.copy():
 
             # skip if invalid object
-            if obj is None or obj.type != "MESH":
+            if obj is None:
                 continue
+
+            if obj.type != "MESH":
+                continue
+
+            if not obj.get('isCollider'):
+                continue
+
+            # count how many objects are renamed
+            count = count + 1
 
             if prefs.replace_name:
                 basename = prefs.obj_basename
@@ -49,5 +58,9 @@ class OBJECT_OT_regenerate_name(Operator):
                                                                          basename=basename)
             obj.name = new_name
             OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+
+        # Show warning if no object is found to rename
+        if count == 0:
+            self.report({'WARNING'}, 'No collider to rename')
 
         return {'FINISHED'}
