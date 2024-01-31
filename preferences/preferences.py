@@ -553,10 +553,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                     default=False)
 
 
-    rigid_body_rename : bpy.props.BoolProperty(name="Rigid Body",
-                                  description="Add suffix or prefix to parent name",
-                                  default=False)
-
     rigid_body_naming_position: bpy.props.EnumProperty(
         name='Parent Extension',
         items=(('PREFIX', "Prefix", "Prefix"),
@@ -594,7 +590,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     ]
 
     props_parent = [
-        "rigid_body_rename",
         "rigid_body_separator",
         "rigid_body_naming_position",
         "rigid_body_extension",

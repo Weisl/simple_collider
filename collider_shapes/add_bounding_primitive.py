@@ -552,17 +552,6 @@ class OBJECT_OT_add_bounding_object():
         else:
             name = basename
 
-        if prefs.rigid_body_rename:
-            if prefs.rigid_body_naming_position == 'SUFFIX':
-                end = prefs.rigid_body_separator + prefs.rigid_body_extension
-                if name.endswith(end):
-                    name = name[:-(len(end))]
-
-            else:
-                start = prefs.rigid_body_extension + prefs.rigid_body_separator
-                if name.startswith(start):
-                    name = name[len(start):]
-
         if prefs.collider_groups_enabled:
             pre_suffix_componetns = [
                 prefs.collision_string_prefix,
@@ -1126,17 +1115,6 @@ class OBJECT_OT_add_bounding_object():
         new_collider.name = new_name
         self.set_data_name(new_collider, new_name, self.data_suffix)
 
-    def set_parent_name(self, parent):
-        new_name = parent.name
-        if self.prefs.rigid_body_rename:
-            if self.prefs.rigid_body_naming_position == 'SUFFIX':
-                if not parent.name.endswith(self.prefs.rigid_body_extension):
-                    new_name = parent.name + self.prefs.rigid_body_separator + self.prefs.rigid_body_extension
-            else:
-                if not parent.name.startswith(self.prefs.rigid_body_extension):
-                    new_name = self.prefs.rigid_body_extension + self.prefs.rigid_body_separator + parent.name
-
-            parent.name = new_name
 
     def update_names(self):
         for obj in self.new_colliders_list:
