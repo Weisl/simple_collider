@@ -187,12 +187,11 @@ def draw_creation_menu(context, layout, settings=False):
 
     layout.separator()
 
-    # row = layout.row(align=True)
-    # row.label(text='Display')
-    #
-    # row = layout.row(align=True)
-    # row.operator('view.collider_view_object', icon='HIDE_OFF', text='Groups')
-    # row.operator('view.collider_view_material', icon='HIDE_OFF', text='Materials')
+    row = layout.row(align=True)
+    row.label(text='Rigid Body')
+
+    row = layout.row(align=True)
+    row.operator('object.set_rigid_body', icon='NONE')
 
 
     row = layout.row(align=True)

@@ -21,6 +21,7 @@ if "bpy" in locals():
     importlib.reload(collider_conversion)
     importlib.reload(auto_Convex)
     importlib.reload(pyshics_materials)
+    importlib.reload(rigid_body)
     importlib.reload(preferences)
 
 
@@ -33,6 +34,7 @@ else:
     from . import collider_conversion
     from . import auto_Convex
     from . import pyshics_materials
+    from . import rigid_body
     from . import preferences
 
 
@@ -45,6 +47,7 @@ def register():
     collider_conversion.register()
     auto_Convex.register()
     pyshics_materials.register()
+    rigid_body.register()
 
     # keymap and preferences should be last
     preferences.register()
@@ -56,6 +59,7 @@ def unregister():
     # call unregister function of the sub-modules
     preferences.unregister()
 
+    rigid_body.unregister()
     pyshics_materials.unregister()
     auto_Convex.unregister()
     collider_conversion.unregister()
