@@ -1114,27 +1114,23 @@ class OBJECT_OT_add_bounding_object():
         basename = parent_name
         prefs = self.prefs
 
-        #Ignore rigid body in base_name
+        # Ignore rigid body in base_name
         if prefs.rigid_body_extension:
             if prefs.rigid_body_naming_position == 'SUFFIX':
                 end = prefs.rigid_body_separator + prefs.rigid_body_extension
-                print(end)
+
                 if basename.endswith(end):
-                    print("Endswith")
                     basename = basename[:-(len(end))]
 
             else:
-                print("RB PREFIX")
                 start = prefs.rigid_body_extension + prefs.rigid_body_separator
                 if basename.startswith(start):
-                    print("Startswith")
                     basename = basename[len(start):]
 
         new_name = self.collider_name(basename=basename)
 
         new_collider.name = new_name
         self.set_data_name(new_collider, new_name, self.data_suffix)
-
 
     def update_names(self):
         for obj in self.new_colliders_list:
@@ -1299,7 +1295,6 @@ class OBJECT_OT_add_bounding_object():
     def invoke(self, context, event):
         colSettings = context.scene.collider_tools
 
-
         self.collider_groups = [colSettings.visibility_toggle_user_group_01,
                                 colSettings.visibility_toggle_user_group_02,
                                 colSettings.visibility_toggle_user_group_03]
@@ -1433,10 +1428,6 @@ class OBJECT_OT_add_bounding_object():
 
         # stored for decimate display
         self.mouse_path = []
-
-
-
-
 
         self.execute(context)
 
