@@ -105,22 +105,29 @@ def update_panel_category(self, context):
 
 
 def get_default_executable_path():
-    '''Set the default exectuable path for the vhacd exe to the addon folder. '''
+    '''Set the default exectuable path for the vhacd executable to the addon folder. '''
     path = Path(str(__file__))
     parent = path.parent.parent.absolute()
 
     vhacd_app_folder = "v-hacd_app"
 
-    if platform.system() != 'Windows':
+    if platform.system() not in ['Windows', 'Linux']:
         return ''
 
-    OS_folder = 'Win'
+    OS_folder = ''
+    app_name = ''
+
+    if platform.system() == 'Windows':
+        OS_folder = 'Win'
+        app_name = 'VHACD-4_1.exe'
+    elif platform.system() == 'Linux':
+        OS_folder = 'Linux'
+        app_name = 'VHACD'
+
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
 
     if os.path.isdir(collider_addon_directory):
-        app_name = 'VHACD-4_1.exe'
-
         executable_path = os.path.join(collider_addon_directory, app_name)
         if os.path.isfile(executable_path):
             return executable_path
