@@ -1,20 +1,17 @@
 import bpy
-from bpy.app.handlers import persistent
-
 
 from .properties import ColliderTools_Properties
-
 
 classes = (
     properties.ColliderTools_Properties,
 )
+
 
 def register():
     from bpy.utils import register_class
 
     for cls in classes:
         register_class(cls)
-
 
     # Pointer Properties have to be initialized after classes
     scene = bpy.types.Scene
@@ -30,4 +27,3 @@ def unregister():
 
     scene = bpy.types.Scene
     del scene.collider_tools
-

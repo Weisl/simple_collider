@@ -7,6 +7,7 @@ from . import keymap
 
 from .preferences import update_panel_category
 from ..pyshics_materials.material_functions import set_default_active_mat
+from ..groups.user_groups import set_default_group_values
 
 classes = (
     naming_preset.COLLISION_preset,
@@ -18,26 +19,9 @@ classes = (
 @persistent
 def _load_handler(dummy):
     set_default_active_mat()
+    set_default_group_values()
 
-    from ..groups.user_groups import get_groups_identifier, get_groups_color, get_groups_name
 
-    bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-    bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
-    
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.name = get_groups_name('USER_01')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.identifier = get_groups_identifier('USER_01')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.color = get_groups_color('USER_01')
-
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.name = get_groups_name('USER_02')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.identifier = get_groups_identifier('USER_02')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.color = get_groups_color('USER_02')
-
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.name = get_groups_name('USER_03')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.identifier = get_groups_identifier('USER_03')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.color = get_groups_color('USER_03')
 
 def register():
     from bpy.utils import register_class

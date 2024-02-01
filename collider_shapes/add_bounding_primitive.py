@@ -9,7 +9,7 @@ import gpu
 from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
 
-from ..groups.user_groups import get_groups_identifier, set_object_color
+from ..groups.user_groups import set_object_color, set_default_group_values
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
@@ -1299,6 +1299,7 @@ class OBJECT_OT_add_bounding_object():
     def invoke(self, context, event):
         colSettings = context.scene.collider_tools
 
+
         self.collider_groups = [colSettings.visibility_toggle_user_group_01,
                                 colSettings.visibility_toggle_user_group_02,
                                 colSettings.visibility_toggle_user_group_03]
@@ -1433,10 +1434,15 @@ class OBJECT_OT_add_bounding_object():
         # stored for decimate display
         self.mouse_path = []
 
+
+
+
+
         self.execute(context)
 
     def modal(self, context, event):
         colSettings = context.scene.collider_tools
+
         self.navigation = False
 
         # Ignore if Alt is pressed
@@ -1780,6 +1786,11 @@ class OBJECT_OT_add_bounding_object():
             self.obj_mode = context.object.mode
         except AttributeError:
             print("AttributeError: bug #328")
+
+        colSettings = context.scene.collider_tools
+
+        if not colSettings.get('visibility_toggle_user_group_01'):
+            set_default_group_values()
 
         # Remove objects from previous generation
         self.remove_objects(self.tmp_meshes)
