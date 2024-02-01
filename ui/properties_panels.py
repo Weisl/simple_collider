@@ -33,12 +33,12 @@ def draw_auto_convex(layout, context):
 
     # row.label(text='Auto Convex')
 
-    if platform.system() != 'Windows':
+    if platform.system() not in ['Windows', 'Linux']:
         op = layout.operator("preferences.addon_search", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
 
-        text = "Auto convex is only supported for Windows at this moment."
+        text = "Auto convex is only supported for Windows and Linux at this moment."
         label_multiline(
             context=context,
             text=text,

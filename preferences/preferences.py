@@ -861,9 +861,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'VHACD':
-            text = "Auto convex is only supported for Windows at this moment."
+            text = "Auto convex is only supported for Windows and Linux at this moment."
             texts = [text]
-            if platform.system() != 'Windows':
+            if platform.system() not in ['Windows', 'Linux']:
                 for text in texts:
                     label_multiline(
                         context=context,
