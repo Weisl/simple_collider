@@ -1,13 +1,14 @@
 import bpy
-from bpy.types import Operator
 import re
+
+from bpy.types import Operator
+from ..groups.user_groups import get_groups_color, set_object_color
 
 class OBJECT_OT_convert_from_name(Operator):
     """Convert selected colliders to mesh objects"""
     bl_idname = "object.convert_from_name"
     bl_label = "Collider from Naming"
     bl_description = 'Assign collider attributes from the object naming.'
-
 
     @classmethod
     def poll(cls, context):
@@ -20,34 +21,46 @@ class OBJECT_OT_convert_from_name(Operator):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
         for obj in bpy.context.selected_objects.copy():
+
+            # skip if invalid object
+            if obj is None:
+                continue
+
             name = obj.name
 
-            col_suffix = prefs.collision_string_suffix
-            col_prefix = prefs.collision_string_prefix
-
             isCollider = False
+
+            if name.endswith(prefs.collision_string_suffix):
+                isCollider = True
+            if name.startswith(prefs.collision_string_prefix):
+                isCollider = True
 
             user_group_01 = prefs.user_group_01,
             user_group_02 = prefs.user_group_02,
             user_group_03 = prefs.user_group_03
+            color = [0, 0, 0]
 
+            if prefs.collider_groups_enabled:
+                regexp = re.compile(str(user_group_03))
+                if regexp.search(name):
+                    obj['collider_group'] = 'USER_03'
+                    color = get_groups_color('USER_03')
+                    isCollider = True
 
-            regexp = re.compile(str(user_group_03))
-            if regexp.search(name):
-                obj['collider_group'] = 'USER_03'
+                regexp = re.compile(str(user_group_02))
+                if regexp.search(name):
+                    obj['collider_group'] = 'USER_02'
+                    color = get_groups_color('USER_02')
+                    isCollider = True
 
-                isCollider = True
+                regexp = re.compile(str(user_group_01))
+                if regexp.search(name):
+                    obj['collider_group'] = 'USER_01'
+                    color = get_groups_color('USER_01')
+                    isCollider = True
 
-            regexp = re.compile(str(user_group_02))
-            if regexp.search(name):
-                obj['collider_group'] = 'USER_02'
-                isCollider = True
-
-            regexp = re.compile(str(user_group_01))
-            if regexp.search(name):
-                obj['collider_group'] = 'USER_01'
-                isCollider = True
-
+                alpha = prefs.user_groups_alpha
+                set_object_color(obj, (color[0], color[1], color[2], alpha))
 
             shape = prefs.box_shape
             regexp = re.compile(str(shape))
@@ -81,7 +94,6 @@ class OBJECT_OT_convert_from_name(Operator):
 
             if isCollider:
                 obj['isCollider'] = True
-
 
         if count == 0:
             self.report({'WARNING'}, 'No collider has been detected')
