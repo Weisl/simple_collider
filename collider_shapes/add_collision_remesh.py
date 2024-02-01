@@ -3,11 +3,13 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_material
+
+
 class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_remesh_collision"
     bl_label = "Add Re-meshed"
-    bl_description = 'Create triangle mesh colliders based on the selection'
+    bl_description = 'Create a triangle mesh colliders based on the voxel re-meshed target'
 
     def __init__(self):
         super().__init__()
@@ -18,10 +20,17 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_remesh = True
         self.shape = "mesh_shape"
 
-
     def invoke(self, context, event):
         super().invoke(context, event)
         return {'RUNNING_MODAL'}
+
+    def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
+                        opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
+                        remesh_active=False, height_active=False, width_active=False):
+        super().set_modal_state(cylinder_segments_active, displace_active, decimate_active,
+                                opacity_active, sphere_segments_active, capsule_segments_active,
+                                remesh_active, height_active, width_active)
+        self.remesh_active = remesh_active
 
     def modal(self, context, event):
         status = super().modal(context, event)
@@ -40,7 +49,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.remesh_active = not self.remesh_active
+            self.set_modal_state(remesh_active=not self.remesh_active)
 
         return {'RUNNING_MODAL'}
 

@@ -142,8 +142,9 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
-            self.set_modal_sphere_segments_active(context)
-            
+            self.set_modal_state(sphere_segments_active=not self.sphere_segments_active)
+            self.execute(context)
+
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
@@ -151,14 +152,13 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         return {'RUNNING_MODAL'}
 
-
-    def set_modal_sphere_segments_active(self, context):
-        self.sphere_segments_active = not self.sphere_segments_active
-        self.displace_active = False
-        self.opacity_active = False
-        self.decimate_active = False
-        self.cylinder_segments_active = False
-        self.execute(context)
+    def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
+                        opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
+                        remesh_active=False, height_active=False, width_active=False):
+        super().set_modal_state(cylinder_segments_active, displace_active, decimate_active,
+                                opacity_active, sphere_segments_active, capsule_segments_active,
+                                remesh_active, height_active, width_active)
+        self.sphere_segments_active = sphere_segments_active
 
     def execute(self, context):
         # CLEANUP
@@ -185,7 +185,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             bounding_sphere_data = {}
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+            self.creation_mode_edit[self.creation_mode_idx]
 
             if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
@@ -200,7 +201,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             collider_data = self.bounding_sphere_data_selection(verts_co)
-            
+
         for bounding_sphere_data in collider_data:
             mid_point = bounding_sphere_data['mid_point']
             radius = bounding_sphere_data['radius']

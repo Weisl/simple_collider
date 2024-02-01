@@ -85,21 +85,12 @@ def setDefaultTemp():
 
 def update_panel_category(self, context):
     '''Update panel tab for collider tools'''
-    panelNames = [
-        'VIEW3D_PT_collision_panel',
-        'VIEW3D_PT_collision_settings_panel',
-        'VIEW3D_PT_collision_visibility_panel',
-        'VIEW3D_PT_collision_material_panel',
-    ]
-
     panels = [
         VIEW3D_PT_collision_panel,
         VIEW3D_PT_collision_settings_panel,
         VIEW3D_PT_collision_visibility_panel,
         VIEW3D_PT_collision_material_panel,
     ]
-    for panel in panelNames:
-        is_panel = hasattr(bpy.types, panel)
 
     for panel in panels:
         try:
@@ -151,22 +142,17 @@ class BUTTON_OT_change_key(bpy.types.Operator):
     def invoke(self, context, event):
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
         self.prefs = prefs
-        self.my_type = ''
         if self.menu_id == 'collision_pie':
-            self.my_type = self.prefs.collision_pie_type
             self.prefs.collision_pie_type = 'NONE'
         elif self.menu_id == 'collision_material':
-            self.my_type = self.prefs.collision_material_type
             self.prefs.collision_material_type = 'NONE'
         elif self.menu_id == 'collision_visibility':
-            self.my_type = self.prefs.collision_visibility_type
             self.prefs.collision_visibility_type = 'NONE'
 
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
-        print('modal')
         self.my_event = 'NONE'
 
         if event.type and event.value=='RELEASE':  # Apply
@@ -429,20 +415,25 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # The object color for the bounding object
     user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
                                                        description="Object color and alpha for User Collider Group 01",
-                                                       default=(0.36, 0.5, 1, 0.25), min=0.0, max=1.0,
-                                                       subtype='COLOR', size=4)
+                                                       default=(0.36, 0.5, 1), min=0.0, max=1.0,
+                                                       subtype='COLOR', size=3)
 
     # The object color for the bounding object
     user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
                                                        description="Object color and alpha for User Collider Group 02",
-                                                       default=(0.5, 1, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=4)
+                                                       default=(0.5, 1, 0.36), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3)
 
     # The object color for the bounding object
     user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
                                                        description="Object color and alpha for User Collider Group 03.",
-                                                       default=(1, 0.36, 0.36, 0.25), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=4)
+                                                       default=(1, 0.36, 0.36), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3)
+
+    # The object color for the bounding object
+    user_groups_alpha: bpy.props.FloatProperty(name="Alpha",
+                                                       description="Object alpha for User Collider Groups.",
+                                                       default=0.5, min=0.0, max=1.0)
 
     # Modal Box
     use_modal_box: bpy.props.BoolProperty(name="Use Backdrop", default=True)
@@ -561,11 +552,25 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                     description="Hide collider after creation.",
                                     default=False)
 
+
+    rigid_body_naming_position: bpy.props.EnumProperty(
+        name='Parent Extension',
+        items=(('PREFIX', "Prefix", "Prefix"),
+               ('SUFFIX', "Suffix", "Suffix")),
+        default='SUFFIX',
+        description='Add custom naming as prefix or suffix'
+    )
+
+    rigid_body_extension: bpy.props.StringProperty(name="Parent Extension", default="RB",
+                                        description='String added to the parent naming')
+
+    rigid_body_separator: bpy.props.StringProperty(name="Separator", default="_",
+                                        description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
+
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Debug mode only used for debuging during development",
                                   default=False)
-
     general_props = [
         "use_parent_to",
     ]
@@ -582,6 +587,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "capsule_shape",
         "convex_shape",
         "mesh_shape",
+    ]
+
+    props_parent = [
+        "rigid_body_separator",
+        "rigid_body_naming_position",
+        "rigid_body_extension",
     ]
 
     props_collider_groups = [
@@ -621,6 +632,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         'user_group_01_color',
         'user_group_02_color',
         'user_group_03_color',
+        'user_groups_alpha',
     ]
 
     ui_props = [
@@ -770,6 +782,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             box2.label(text="Shape")
             for propName in self.props_shapes:
                 row = box2.row()
+                row.prop(self, propName)
+
+            box = layout.box()
+            box.label(text="Rigid Body")
+
+            for propName in self.props_parent:
+                row = box.row()
                 row.prop(self, propName)
 
             box = layout.box()

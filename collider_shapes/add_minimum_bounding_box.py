@@ -209,13 +209,15 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             temp_obj = bpy.data.objects.new('temp_debug_objects', me)
             temp_obj.matrix_world = parent.matrix_world
 
-            if self.prefs.debug:
-                root_collection = context.scene.collection
-                root_collection.objects.link(temp_obj)
+            root_collection = context.scene.collection
+            root_collection.objects.link(temp_obj)
 
             self.apply_transform(temp_obj, rotation=True, scale=True)
 
             new_collider, rotation_matrix = self.obj_rotating_calipers(temp_obj)
+
+            if not self.prefs.debug:
+                root_collection.objects.unlink(temp_obj)
 
             root_collection = context.scene.collection
             root_collection.objects.link(new_collider)

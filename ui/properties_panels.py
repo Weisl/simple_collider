@@ -5,7 +5,7 @@ import subprocess
 import textwrap
 from bpy.types import Menu
 
-from ..pyshics_materials.material_functions import create_default_material, set_active_physics_material
+from ..groups.user_groups import get_groups_color, get_groups_name, get_groups_identifier
 
 def collider_presets_folder():
     # Make sure there is a directory for presets
@@ -78,9 +78,10 @@ def label_multiline(context, text, parent):
         parent.label(text=text_line)
 
 
-def draw_group_properties(context, property, col_01, col_02, user_group=False):
-    group_identifier = property.mode
-    group_name = property.name
+def draw_group_properties(context, property, col_01, col_02, mode, user_group=False):
+    group_identifier = mode
+    group_name = get_groups_name(mode)
+    color = get_groups_color(mode)
 
     if user_group:
         split = col_01.split(factor=0.95, align=True)
@@ -112,13 +113,6 @@ def draw_group_properties(context, property, col_01, col_02, user_group=False):
     op.select = True
     op.mode = group_identifier
 
-    # colSettings = context.scene.collider_tools
-    #
-    # Test disabling deleting all objects
-    # if group_identifier == 'OBJECTS':
-    #     row.enabled = False
-    # else:
-    #     row.enabled = True
 
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier
@@ -133,8 +127,8 @@ def draw_visibility_selection_menu(context, layout):
 
     colSettings = context.scene.collider_tools
 
-    draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02)
-    draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02)
+    draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
+    draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
 
     prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
@@ -143,9 +137,10 @@ def draw_visibility_selection_menu(context, layout):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_01, col_01, col_02, user_group=True)
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_02, col_01, col_02, user_group=True)
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_01, col_01, col_02, 'USER_01', user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_02, col_01, col_02, 'USER_02', user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, 'USER_03', user_group=True)
+
 
 
 def draw_creation_menu(context, layout, settings=False):
@@ -178,14 +173,16 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.operator('object.regenerate_name', icon='FILE_REFRESH')
 
+    row = layout.row(align=True)
+    row.operator('object.convert_from_name', icon='NONE')
+
     layout.separator()
 
-    # row = layout.row(align=True)
-    # row.label(text='Display')
-    #
-    # row = layout.row(align=True)
-    # row.operator('view.collider_view_object', icon='HIDE_OFF', text='Groups')
-    # row.operator('view.collider_view_material', icon='HIDE_OFF', text='Materials')
+    row = layout.row(align=True)
+    row.label(text='Rigid Body')
+
+    row = layout.row(align=True)
+    row.operator('object.set_rigid_body', icon='NONE')
 
 
     row = layout.row(align=True)
@@ -295,9 +292,7 @@ class VIEW3D_PT_init():
         bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
         bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
 
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
-        bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
+
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
@@ -500,8 +495,8 @@ class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
 
         colSettings = context.scene.collider_tools
 
-        draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02)
-        draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02)
+        draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
+        draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
 
 
         # North
