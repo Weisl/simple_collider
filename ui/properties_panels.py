@@ -4,7 +4,7 @@ import platform
 import subprocess
 import textwrap
 from bpy.types import Menu
-
+from bpy_extras.io_utils import ImportHelper
 from ..groups.user_groups import get_groups_color, get_groups_name, get_groups_identifier
 
 def collider_presets_folder():
@@ -199,9 +199,8 @@ def draw_naming_presets(self, context):
 
     addon_name = get_addon_name()
 
-    if platform.system() == 'Windows':
-        op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-        op.dirpath = collider_presets_folder()
+    op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
+    op.dirpath = collider_presets_folder()
 
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
@@ -210,22 +209,38 @@ def draw_naming_presets(self, context):
 
 ############## OPERATORS ##############################
 
-class EXPLORER_OT_open_directory_new(bpy.types.Operator):
+class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
     """Open render output directory in Explorer"""
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
+    
+    dirpath: bpy.props.StringProperty(default = '/')
+    filename_ext = ".py"
+    filter_glob: bpy.props.StringProperty(
+        default = '*.py',
+        options = {'HIDDEN'}
+        )
 
-    dirpath: bpy.props.StringProperty()
+    def check(self, context):
+        # Ensure that the selected file is actually a Python file
+        return self.filepath.lower().endswith('.py')
 
-    def execute(self, context):
-
+    def invoke(self, context, event):
+        # Clear the default file name in the file selection dialog
         if os.path.isdir(self.dirpath):
-            subprocess.Popen(["explorer.exe", self.dirpath])
+            if not self.dirpath.lower().endswith('/'):
+                self.dirpath += '/'
+            self.filepath = self.dirpath
+            return super().invoke(context, event)
         else:
             self.report({'ERROR'}, 'Invalid Preset Path')
-            return {'CANCELLED'}
 
+    def execute(self, context):
+        if not self.check(context):
+            self.report({'ERROR'}, "Selected file is not a Python file.")
+            return {'CANCELLED'}
+        self.dirpath = self.filepath
         return {'FINISHED'}
 
 

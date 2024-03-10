@@ -750,10 +750,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                          icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
                          icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
-            if platform.system() == 'Windows':
-                op = row.operator("explorer.open_in_explorer",
+
+            op = row.operator("explorer.open_in_explorer",
                                   text="", icon='FILE_FOLDER')
-                op.dirpath = collider_presets_folder()
+            op.dirpath = collider_presets_folder()
 
             boxname = box.box()
             row = box.row()
