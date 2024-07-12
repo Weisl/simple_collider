@@ -241,6 +241,11 @@ def draw_viewport_overlay(self, context):
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
     items.append(item)
 
+    label = "Join Primitives"
+    value = str(self.join_primitives)
+    item = {'label': label, 'value': value, 'key': '(J)', 'type': 'bool', 'highlight': False}
+
+    items.append(item)
     label = "Opacity"
     value = self.current_settings_dic['alpha']
     value = '{initial_value:.3f}'.format(initial_value=value)
@@ -1214,6 +1219,20 @@ class OBJECT_OT_add_bounding_object():
         except ValueError:
             pass
 
+    def join_primitives(self, context):
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        last_selected = None
+
+        for obj in self.new_colliders_list:
+            if obj:
+                obj.select_set(True)
+                context.view_layer.objects.active = self.new_colliders_list[0]
+                last_selected = obj
+
+        bpy.ops.object.join()
+        self.new_colliders_list = [self.new_colliders_list[0]]
+
     def create_debug_object_from_verts(self, context, verts):
         bm = bmesh.new()
         for v in verts:
@@ -1346,6 +1365,8 @@ class OBJECT_OT_add_bounding_object():
         self.my_use_modifier_stack = colSettings.default_modifier_stack
         self.x_ray = context.space_data.shading.show_xray
 
+        self.join_primitives = False
+
         # Modal MODIFIERS
         self.remesh_active = False
         self.remesh_modifiers = []
@@ -1476,14 +1497,15 @@ class OBJECT_OT_add_bounding_object():
                 if not obj:
                     continue
 
-                if self.use_recenter_origin:
-                    # set origin causes issues. Does not work properly
-                    center = self.calculate_center_of_mass(obj)
-                    self.set_custom_origin_location(obj, center)
+                if not self.join_primitives:
+                    if self.use_recenter_origin:
+                        # set origin causes issues. Does not work properly
+                        center = self.calculate_center_of_mass(obj)
+                        self.set_custom_origin_location(obj, center)
 
-                if self.use_custom_rotation:
-                    if len(self.col_rotation_matrix_list) > 0:
-                        self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
+                    if self.use_custom_rotation:
+                        if len(self.col_rotation_matrix_list) > 0:
+                            self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
 
                 # remove modifiers if they have the default value
                 if self.current_settings_dic['discplace_offset'] == 0.0:
@@ -1549,6 +1571,15 @@ class OBJECT_OT_add_bounding_object():
             context.space_data.shading.show_xray = self.x_ray
             # Another function needs to be called for the modal UI to update :(
             self.set_collisions_wire_preview(self.prefs.wireframe_mode)
+
+        elif event.type == 'J' and event.value == 'RELEASE':
+            self.join_primitives = not self.join_primitives
+            if self.join_primitives:
+
+                self.shape = "mesh_shape"
+            else:
+                self.shape = self.initial_shape
+            self.execute(context)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             if self.obj_mode == 'OBJECT' and not self.is_mesh_to_collider:

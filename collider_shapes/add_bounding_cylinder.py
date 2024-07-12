@@ -213,6 +213,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_cylinder_segments = True
         self.use_cylinder_axis = True
         self.shape = 'convex_shape'
+        self.initial_shape = 'convex_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -393,6 +394,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             super().set_collider_name(new_collider, parent.name)
             self.custom_set_parent(context, parent, new_collider)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()

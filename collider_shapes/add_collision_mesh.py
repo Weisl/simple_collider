@@ -17,6 +17,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_weld_modifier = True
         self.use_keep_original_materials = True
         self.shape = "mesh_shape"
+        self.initial_shape = "mesh_shape"
 
 
     def invoke(self, context, event):
@@ -119,6 +120,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             bpy.ops.object.join()
 
             self.new_colliders_list = [last_selected] if last_selected else []
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

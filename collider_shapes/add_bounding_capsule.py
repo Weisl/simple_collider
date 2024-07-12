@@ -26,6 +26,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.use_height_multiplier = True
         self.use_width_multiplier = True
         self.shape = 'capsule_shape'
+        self.initial_shape = 'capsule_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -200,6 +201,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             parent_name = parent.name
             super().set_collider_name(new_collider, parent_name)
             self.custom_set_parent(context, parent, new_collider)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

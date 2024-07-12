@@ -16,6 +16,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         self.use_geo_nodes_hull = True
         self.use_modifier_stack = True
         self.shape = 'convex_shape'
+        self.initial_shape = 'convex_shape'
         self.use_recenter_origin = True
 
     def invoke(self, context, event):
@@ -120,6 +121,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
             super().set_collider_name(new_collider, parent.name)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

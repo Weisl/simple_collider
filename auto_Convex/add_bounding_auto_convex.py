@@ -284,6 +284,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             self.report({'WARNING'}, 'No meshes to process!')
             return {'CANCELLED'}
 
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
+
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Auto Convex Colliders", elapsed_time)

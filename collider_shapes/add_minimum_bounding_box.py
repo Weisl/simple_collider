@@ -113,6 +113,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = "box_shape"
+        self.initial_shape = "box_shape"
         self.use_recenter_origin = True
         self.use_custom_rotation = True
 
@@ -232,6 +233,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.primitive_postprocessing(context, new_collider, collections)
 
             super().set_collider_name(new_collider, parent.name)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
