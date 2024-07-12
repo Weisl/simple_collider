@@ -54,7 +54,7 @@ def geometry_node_group_empty_new():
     return group
 
 
-def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
+def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
                     highlight=False):
     """Draw label in the 3D Viewport"""
 
@@ -71,7 +71,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
     color_error = self.prefs.modal_color_error
 
     # padding bottom
-    font_size = int(self.prefs.modal_font_size / 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
 
     # padding_bottom = self.prefs.padding_bottom
     padding_bottom = 0
@@ -335,7 +335,7 @@ def draw_viewport_overlay(self, context):
 
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
-    font_size = int(self.prefs.modal_font_size / 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale/ 3.6)
     vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
@@ -352,7 +352,7 @@ def draw_viewport_overlay(self, context):
         draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, color)
 
     for i, item in enumerate(items):
-        draw_modal_item(self, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'], value=item['value'],
+        draw_modal_item(self, context, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'], value=item['value'],
                         key=item['key'], type=item['type'], highlight=item['highlight'])
 
 
