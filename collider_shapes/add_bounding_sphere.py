@@ -200,8 +200,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            collider_data = self.bounding_sphere_data_selection(verts_co)
+                collider_data = self.bounding_sphere_data_selection(verts_co)
 
         for bounding_sphere_data in collider_data:
             mid_point = bounding_sphere_data['mid_point']
