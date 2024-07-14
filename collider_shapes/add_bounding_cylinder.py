@@ -329,44 +329,42 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
- 
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            bounding_box, center = self.generate_bounding_box(verts_co)        
-            
-            if self.prefs.debug:
-                debug_obj = self.create_debug_object_from_verts(context, verts_co)
-            
-            coordinates = []
-            height = []
+                bounding_box, center = self.generate_bounding_box(verts_co)
 
-            # Scale has to be applied before location
-            # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
-            bounding_box, center = self.generate_bounding_box(verts_co)
-            center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
-   
-            for v in verts_co:
-                if self.cylinder_axis == 'X':
-                    coordinates.append([v.y, v.z])
-                    height.append(v.x)
-                elif self.cylinder_axis == 'Y':
-                    coordinates.append([v.x, v.z])
-                    height.append(v.y)
-                elif self.cylinder_axis == 'Z':
-                    coordinates.append([v.x, v.y])
-                    height.append(v.z)
+                if self.prefs.debug:
+                    debug_obj = self.create_debug_object_from_verts(context, verts_co)
 
-            depth = abs(max(height) - min(height))
+                coordinates = []
+                height = []
 
-            nsphere = welzl(np.array(coordinates))
-            radius = np.sqrt(nsphere.sqradius)
+                # Scale has to be applied before location
+                # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                bounding_box, center = self.generate_bounding_box(verts_co)
+                center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
-            bounding_cylinder_data['parent'] = self.active_obj
-            bounding_cylinder_data['radius'] = radius
-            bounding_cylinder_data['depth'] = depth
-            bounding_cylinder_data['center_point'] = [
-                    center[0], center[1], center[2]]
-            collider_data = [bounding_cylinder_data]
+                for v in verts_co:
+                    if self.cylinder_axis == 'X':
+                        coordinates.append([v.y, v.z])
+                        height.append(v.x)
+                    elif self.cylinder_axis == 'Y':
+                        coordinates.append([v.x, v.z])
+                        height.append(v.y)
+                    elif self.cylinder_axis == 'Z':
+                        coordinates.append([v.x, v.y])
+                        height.append(v.z)
+
+                depth = abs(max(height) - min(height))
+
+                nsphere = welzl(np.array(coordinates))
+                radius = np.sqrt(nsphere.sqradius)
+
+                bounding_cylinder_data['parent'] = self.active_obj
+                bounding_cylinder_data['radius'] = radius
+                bounding_cylinder_data['depth'] = depth
+                bounding_cylinder_data['center_point'] = [
+                        center[0], center[1], center[2]]
+                collider_data = [bounding_cylinder_data]
 
         bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
