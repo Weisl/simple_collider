@@ -81,6 +81,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+
+
             if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
@@ -98,9 +100,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
-
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            collider_data = self.selection_bbox_data(verts_co)
+                collider_data = self.selection_bbox_data(verts_co)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 

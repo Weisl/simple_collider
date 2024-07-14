@@ -109,7 +109,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+            if creation_mode in ['INDIVIDUAL']:
                 # used_vertices uses local space.
                 coordinates = []
 
