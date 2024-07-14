@@ -1078,7 +1078,9 @@ class OBJECT_OT_add_bounding_object():
                     tmp_ob = obj.copy()
                     tmp_ob.data = obj.data.copy()
                     bpy.context.collection.objects.link(tmp_ob)
-                    tmp_ob = delete_non_selected_verts(tmp_ob)
+
+                    if self.obj_mode == 'EDIT':
+                        tmp_ob = delete_non_selected_verts(tmp_ob)
 
                     self.apply_all_modifiers(context, tmp_ob)
                     base = tmp_ob
