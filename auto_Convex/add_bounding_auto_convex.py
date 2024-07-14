@@ -96,10 +96,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for base_ob, obj in objs:
             context.view_layer.objects.active = obj
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 new_mesh = self.get_mesh_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
-            else:  # mode == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
                 new_mesh = self.mesh_from_selection(
                     obj, use_modifiers=self.my_use_modifier_stack)
 

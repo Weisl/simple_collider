@@ -71,9 +71,10 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             bounding_box_data = {}
 
             # EDIT is only supported for 'MESH' type objects and only if the active object is a 'MESH'
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
+                # Use Mesh uses copies of edit mode meshes
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
-            else:  # self.obj_mode  == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider

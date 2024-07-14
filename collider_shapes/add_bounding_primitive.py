@@ -10,9 +10,9 @@ from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
 
 from ..groups.user_groups import set_object_color, set_default_group_values
-from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
-    set_active_physics_material
+from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, set_active_physics_material
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
+from ..bmesh_operations.mesh_edit import delete_non_selected_verts
 from ..pyshics_materials.material_functions import set_material
 
 
@@ -1071,16 +1071,17 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.use_loose_mesh:
                     base = obj
-                    if self.use_modifier_stack and self.my_use_modifier_stack:
-                        bpy.context.view_layer.objects.active = obj
-                        bpy.ops.object.mode_set(mode='OBJECT')
 
-                        tmp_ob = obj.copy()
-                        tmp_ob.data = obj.data.copy()
-                        bpy.context.collection.objects.link(tmp_ob)
+                    bpy.context.view_layer.objects.active = obj
+                    #bpy.ops.object.mode_set(mode='OBJECT')
 
-                        self.apply_all_modifiers(context, tmp_ob)
-                        base = tmp_ob
+                    tmp_ob = obj.copy()
+                    tmp_ob.data = obj.data.copy()
+                    bpy.context.collection.objects.link(tmp_ob)
+                    tmp_ob = delete_non_selected_verts(tmp_ob)
+
+                    self.apply_all_modifiers(context, tmp_ob)
+                    base = tmp_ob
 
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(base, use_world=local_world_spc)

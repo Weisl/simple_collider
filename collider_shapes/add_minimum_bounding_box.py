@@ -152,10 +152,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         for base_ob, obj in objs:
             bounding_box_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
-            else:  # self.obj_mode  == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
