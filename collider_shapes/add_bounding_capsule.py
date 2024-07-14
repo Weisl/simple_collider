@@ -109,7 +109,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL']:
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
                 # used_vertices uses local space.
                 coordinates = []
 
@@ -143,15 +143,14 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            # Scale has to be applied before location
-            center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
+                # Scale has to be applied before location
+                center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
 
-            # store data needed to generate a bounding box in a dictionary
-            bounding_capsule_data['parent'] = self.active_obj
-            bounding_capsule_data['verts_loc'] = verts_co
-            bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
-            collider_data.append(bounding_capsule_data)
+                # store data needed to generate a bounding box in a dictionary
+                bounding_capsule_data['parent'] = self.active_obj
+                bounding_capsule_data['verts_loc'] = verts_co
+                bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
+                collider_data.append(bounding_capsule_data)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 

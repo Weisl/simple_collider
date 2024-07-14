@@ -78,11 +78,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            convex_collision_data = {}
-            convex_collision_data['parent'] = self.active_obj
-            convex_collision_data['verts_loc'] = verts_co
-            collider_data = [convex_collision_data]
+                convex_collision_data = {}
+                convex_collision_data['parent'] = self.active_obj
+                convex_collision_data['verts_loc'] = verts_co
+                collider_data = [convex_collision_data]
 
         bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
