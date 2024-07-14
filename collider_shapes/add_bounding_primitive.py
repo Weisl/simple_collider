@@ -1069,6 +1069,7 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[
                     self.creation_mode_idx]
 
+                # Temp meshes for Loose islands
                 if self.use_loose_mesh:
                     base = obj
 
@@ -1077,13 +1078,18 @@ class OBJECT_OT_add_bounding_object():
 
                     tmp_ob = obj.copy()
                     tmp_ob.data = obj.data.copy()
-                    bpy.context.collection.objects.link(tmp_ob)
+                    col = self.add_to_collections(tmp_ob, 'tmp_mesh', hide=False,
+                                                  color=self.prefs.col_tmp_collection_color)
 
                     if self.obj_mode == 'EDIT':
                         tmp_ob = delete_non_selected_verts(tmp_ob)
 
+
                     self.apply_all_modifiers(context, tmp_ob)
                     base = tmp_ob
+
+                    self.tmp_meshes.append(tmp_ob)
+
 
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(base, use_world=local_world_spc)
