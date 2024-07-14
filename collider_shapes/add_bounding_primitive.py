@@ -1196,8 +1196,9 @@ class OBJECT_OT_add_bounding_object():
             group.links.new(geom_in.outputs[0], hull_node.inputs[0])
             group.links.new(hull_node.outputs[0], geom_out.inputs[0])
 
-        modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
-        modifier.node_group = group
+        if not self.join_primitives:
+            modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
+            modifier.node_group = group
 
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
