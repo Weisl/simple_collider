@@ -89,6 +89,15 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    default=False,
                                                    description="Set the default for using the modifier stack or not when creating colliders.")
 
+    default_use_loose_island: bpy.props.BoolProperty(name="Use Loose Islands",
+                                                   default=False,
+                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+
+    default_join_primitives: bpy.props.BoolProperty(name="Join Primitives",
+                                                   default=False,
+                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+
+
     default_keep_original_material: bpy.props.BoolProperty(name="Keep Original Materials",
                                                default=False,
                                                description="Set the default for using the modifier stack or not when creating colliders.")
@@ -111,7 +120,6 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     default_creation_mode: bpy.props.EnumProperty(name="Creation Mode",
                                                   items=(('INDIVIDUAL', "Individual", "Colliders are created per individual object."),
                                                          ('SELECTION', "Selection", "Colliders are created for the entire selection."),
-                                                         ('LOOSEMESH', "Loose Mesh", "Colliders are created per for connected meshes.")
                                                          ),
                                                   description="Colliders are generated per individual object or bounding the entire selection.",
                                                   default='INDIVIDUAL')

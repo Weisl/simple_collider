@@ -73,7 +73,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             # define cylinder axis
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode != 'LOOSEMESH':
+            if not self.use_loose_mesh:
                 self.cylinder_axis = event.type
                 self.execute(context)
 
@@ -109,7 +109,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
                 # used_vertices uses local space.
                 coordinates = []
 
@@ -123,7 +123,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    if self.cylinder_axis == 'Z' or creation_mode == 'LOOSEMESH':
+                    if self.cylinder_axis == 'Z' or self.use_loose_mesh:
                         coordinates.append([v.x, v.y, v.z])
                     elif self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z, v.x])
@@ -184,7 +184,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
 

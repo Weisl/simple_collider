@@ -201,7 +201,7 @@ def draw_viewport_overlay(self, context):
         value = str(self.cylinder_axis)
         creation_mode = self.creation_mode[
             self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
-        if creation_mode == 'LOOSEMESH':
+        if self.use_loose_mesh:
             type = 'disabled'
         else:
             type = 'enum'
@@ -241,11 +241,16 @@ def draw_viewport_overlay(self, context):
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
     items.append(item)
 
+    label = "Use Loose Islands"
+    value = str(self.use_loose_mesh)
+    item = {'label': label, 'value': value, 'key': '(I)', 'type': 'bool', 'highlight': False}
+    items.append(item)
+
     label = "Join Primitives"
     value = str(self.join_primitives)
     item = {'label': label, 'value': value, 'key': '(J)', 'type': 'bool', 'highlight': False}
-
     items.append(item)
+
     label = "Opacity"
     value = self.current_settings_dic['alpha']
     value = '{initial_value:.3f}'.format(initial_value=value)
@@ -1064,7 +1069,7 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[
                     self.creation_mode_idx]
 
-                if creation_mode == 'LOOSEMESH':
+                if self.use_loose_mesh:
                     base = obj
                     if self.use_modifier_stack and self.my_use_modifier_stack:
                         bpy.context.view_layer.objects.active = obj
@@ -1365,7 +1370,10 @@ class OBJECT_OT_add_bounding_object():
         self.my_use_modifier_stack = colSettings.default_modifier_stack
         self.x_ray = context.space_data.shading.show_xray
 
-        self.join_primitives = False
+        # Modal Bools
+        self.join_primitives = colSettings.default_join_primitives
+        self.use_loose_mesh = colSettings.default_use_loose_island
+
 
         # Modal MODIFIERS
         self.remesh_active = False
@@ -1404,7 +1412,7 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT', 'MATERIAL', 'SINGLE']
 
-        self.creation_mode = ['INDIVIDUAL', 'SELECTION', 'LOOSEMESH']
+        self.creation_mode = ['INDIVIDUAL', 'SELECTION']
         self.creation_mode_edit = ['INDIVIDUAL', 'SELECTION']
 
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
@@ -1575,10 +1583,13 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'J' and event.value == 'RELEASE':
             self.join_primitives = not self.join_primitives
             if self.join_primitives:
-
                 self.shape = "mesh_shape"
             else:
                 self.shape = self.initial_shape
+            self.execute(context)
+
+        elif event.type == 'I' and event.value == 'RELEASE':
+            self.use_loose_mesh = not self.use_loose_mesh
             self.execute(context)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
