@@ -2,7 +2,7 @@ import bpy
 import re
 
 from bpy.types import Operator
-from ..groups.user_groups import get_groups_color, set_object_color
+from ..groups.user_groups import get_groups_color, set_object_color, get_groups_identifier
 
 class OBJECT_OT_convert_from_name(Operator):
     """Convert selected colliders to mesh objects"""
@@ -20,6 +20,27 @@ class OBJECT_OT_convert_from_name(Operator):
 
         prefs = context.preferences.addons[__package__.split('.')[0]].preferences
 
+        col_prefix = prefs.collision_string_suffix
+        col_suffix = prefs.collision_string_prefix
+
+        separator = prefs.separator
+
+        user_group_01 = str(prefs.user_group_01)
+        user_group_02 = str(prefs.user_group_02)
+        user_group_03 = str(prefs.user_group_03)
+
+        print(user_group_01)
+        print(user_group_02)
+        print(user_group_03)
+
+        box_shape = prefs.box_shape
+        sphere_shape = prefs.sphere_shape
+        capsule_shape = prefs.capsule_shape
+        convex_shape = prefs.convex_shape
+        mesh_shape = prefs.mesh_shape
+
+        ignore_case = True
+
         for obj in bpy.context.selected_objects.copy():
 
             # skip if invalid object
@@ -30,70 +51,78 @@ class OBJECT_OT_convert_from_name(Operator):
 
             isCollider = False
 
-            if name.endswith(prefs.collision_string_suffix):
-                isCollider = True
-            if name.startswith(prefs.collision_string_prefix):
+            # Dynamically create the regex pattern
+            pattern1 = re.compile(fr'(^|{separator}){col_prefix}({separator}|$)', re.IGNORECASE)
+            pattern2 = re.compile(fr'(^|{separator}){col_suffix}({separator}|$)', re.IGNORECASE)
+
+            # Check for collider identifier
+            if (col_prefix and pattern1.search(name)) or (col_suffix and pattern2.search(name)):
                 isCollider = True
 
-            user_group_01 = prefs.user_group_01,
-            user_group_02 = prefs.user_group_02,
-            user_group_03 = prefs.user_group_03
-            color = [0, 0, 0]
-
+            # Check Collider Groups
             if prefs.collider_groups_enabled:
-                regexp = re.compile(str(user_group_03))
-                if regexp.search(name):
-                    obj['collider_group'] = 'USER_03'
-                    color = get_groups_color('USER_03')
-                    isCollider = True
+                color = [1, 1, 1, 1]
+                grouped = False
 
-                regexp = re.compile(str(user_group_02))
-                if regexp.search(name):
-                    obj['collider_group'] = 'USER_02'
-                    color = get_groups_color('USER_02')
-                    isCollider = True
+                # Dynamically create the regex pattern
+                pattern_group1 = re.compile(fr'(^|{separator}){user_group_01}({separator}|$)', re.IGNORECASE)
+                pattern_group2 = re.compile(fr'(^|{separator}){user_group_02}({separator}|$)', re.IGNORECASE)
+                pattern_group3 = re.compile(fr'(^|{separator}){user_group_03}({separator}|$)', re.IGNORECASE)
 
-                regexp = re.compile(str(user_group_01))
-                if regexp.search(name):
+                if user_group_01 and pattern_group1.search(name):
                     obj['collider_group'] = 'USER_01'
                     color = get_groups_color('USER_01')
                     isCollider = True
+                    grouped = True
 
-                alpha = prefs.user_groups_alpha
-                set_object_color(obj, (color[0], color[1], color[2], alpha))
+                elif user_group_02 and pattern_group2.search(name):
+                    obj['collider_group'] = 'USER_02'
+                    color = get_groups_color('USER_02')
+                    isCollider = True
+                    grouped = True
 
-            shape = prefs.box_shape
-            regexp = re.compile(str(shape))
-            if regexp.search(name):
+                elif user_group_03 and pattern_group3.search(name):
+                    obj['collider_group'] = 'USER_03'
+                    color = get_groups_color('USER_03')
+                    isCollider = True
+                    grouped = True
+
+                if grouped:
+                    alpha = prefs.user_groups_alpha
+                    set_object_color(obj, (color[0], color[1], color[2], alpha))
+
+
+            # Collider Shape
+            pattern_box_shape = re.compile(fr'(^|{separator}){box_shape}({separator}|$)', re.IGNORECASE)
+            pattern_sphere_shape = re.compile(fr'(^|{separator}){sphere_shape}({separator}|$)', re.IGNORECASE)
+            pattern_capsule_shape = re.compile(fr'(^|{separator}){capsule_shape}({separator}|$)', re.IGNORECASE)
+            pattern_convex_shape = re.compile(fr'(^|{separator}){convex_shape}({separator}|$)', re.IGNORECASE)
+            pattern_mesh_shape = re.compile(fr'(^|{separator}){mesh_shape}({separator}|$)', re.IGNORECASE)
+
+            if box_shape and pattern_box_shape.search(name):
                 obj['collider_shape'] = 'box_shape'
                 isCollider = True
 
-            shape = prefs.sphere_shape
-            regexp = re.compile(str(shape))
-            if regexp.search(name):
+            elif sphere_shape and pattern_sphere_shape.search(name):
                 obj['collider_shape'] = 'sphere_shape'
                 isCollider = True
 
-            shape = prefs.capsule_shape
-            regexp = re.compile(str(shape))
-            if regexp.search(name):
+            elif capsule_shape and pattern_capsule_shape.search(name):
                 obj['collider_shape'] = 'capsule_shape'
                 isCollider = True
 
-            shape = prefs.convex_shape
-            regexp = re.compile(str(shape))
-            if regexp.search(name):
+            elif convex_shape and pattern_convex_shape.search(name):
                 obj['collider_shape'] = 'convex_shape'
                 isCollider = True
 
-            shape = prefs.mesh_shape
-            regexp = re.compile(str(shape))
-            if regexp.search(name):
+            elif mesh_shape and pattern_mesh_shape.search(name):
                 obj['collider_shape'] = 'mesh_shape'
                 isCollider = True
 
+
             if isCollider:
                 obj['isCollider'] = True
+                count = count + 1
 
         if count == 0:
             self.report({'WARNING'}, 'No collider has been detected')
