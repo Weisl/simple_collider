@@ -121,7 +121,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION' and not self.use_loose_mesh:
             convex_collision_data = {}
             convex_collision_data['parent'] = self.active_obj
             convex_collision_data['mtx_world'] = self.active_obj.matrix_world.copy()
@@ -282,7 +282,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.name = super().collider_name(basename=parent.name)
 
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                    new_collider.matrix_world = mtx_world
+                    if not self.use_loose_mesh:
+                        new_collider.matrix_world = mtx_world
                     self.apply_transform(
                         new_collider, rotation=True, scale=True)
 
