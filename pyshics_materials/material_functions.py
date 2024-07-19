@@ -2,6 +2,8 @@ import bpy
 import bmesh
 import random
 
+from .. import __package__ as base_package
+
 def create_material(name, diffuse, fakeUser=True):
     '''Create a materials if none with the specified name already exists'''
     for mat in bpy.data.materials:
@@ -37,7 +39,7 @@ def remove_materials(obj):
 
 def create_default_material():
     '''Create a default material'''
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
 
     if prefs:
         default_mat_name = prefs.physics_material_name
@@ -96,7 +98,7 @@ def assign_physics_material(object, physics_material_name):
         set_material(object, mat)
 
 def set_default_active_mat():
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     default_mat_name = prefs.physics_material_name
 
     mat = bpy.data.materials.get(default_mat_name, create_default_material())

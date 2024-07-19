@@ -3,7 +3,7 @@ import random
 from bpy.props import StringProperty
 
 from .material_functions import assign_physics_material, remove_materials, create_material
-
+from .. import __package__ as base_package
 
 class MATERIAL_OT_physics_material_random_color(bpy.types.Operator):
     bl_idname = "material.random_physics_mat_color"
@@ -52,7 +52,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
         return color
 
     def invoke(self, context, event):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         self.mat_naming_position = prefs.material_naming_position
         self.final_name = ""
         if prefs.use_random_color:
@@ -67,7 +67,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
 
         scene = context.scene
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         row = layout.row()
         row.prop(self, "rgb_controller")

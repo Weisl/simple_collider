@@ -4,6 +4,7 @@ import platform
 import subprocess
 import textwrap
 from bpy.types import Menu
+from .. import __package__ as base_package
 
 from ..groups.user_groups import get_groups_color, get_groups_name, get_groups_identifier
 
@@ -26,8 +27,7 @@ def get_addon_name():
 
 
 def draw_auto_convex(layout, context):
-    prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-    # colSettings = context.scene.collider_tools
+    prefs = context.preferences.addons[base_package].preferences
     addon_name = get_addon_name()
 
 
@@ -130,7 +130,7 @@ def draw_visibility_selection_menu(context, layout):
     draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
     draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
 
-    prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = context.preferences.addons[base_package].preferences
 
     if prefs.collider_groups_enabled:
         split_left = layout.split(factor=split_factor, align=True)
@@ -244,7 +244,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         bpy.context.preferences.active_section = 'ADDONS'
         bpy.data.window_managers["WinMan"].addon_search = self.addon_name
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         prefs.prefs_tabs = self.prefs_tabs
 
         import addon_utils
@@ -411,7 +411,7 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
     def draw(self, context):
         layout = self.layout
         colSettings = context.scene.collider_tools
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         layout.label(text='Active Material')
         # self.draw_active_physics_material(colSettings, layout)

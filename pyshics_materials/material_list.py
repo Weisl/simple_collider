@@ -1,6 +1,7 @@
 import bpy
 from bpy.types import UIList
 from .material_functions import set_active_physics_material
+from .. import __package__ as base_package
 
 class BUTTON_OP_set_active_physics_material(bpy.types.Operator):
     """Tooltip"""
@@ -91,7 +92,7 @@ class MATERIAL_UL_physics_materials(UIList):
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             if self.set_initial_state:
-                prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+                prefs = context.preferences.addons[base_package].preferences
                 self.filter_name = prefs.physics_material_filter
 
                 self.set_initial_state = False

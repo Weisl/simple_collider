@@ -5,6 +5,7 @@ import numpy
 import time
 import mathutils
 import gpu
+from .. import __package__ as base_package
 
 from mathutils import Vector, Matrix, Quaternion
 from gpu_extras.batch import batch_for_shader
@@ -544,7 +545,7 @@ class OBJECT_OT_add_bounding_object():
 
     @classmethod
     def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
-        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = bpy.context.preferences.addons[base_package].preferences
         separator = prefs.separator
 
         if prefs.replace_name:
@@ -1001,7 +1002,7 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.parent = None
             bounding_object.matrix_world = mtx
 
-        prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = bpy.context.preferences.addons[base_package].preferences
         if context.scene.active_physics_material:
             mat_name = context.scene.active_physics_material.name
         elif prefs.physics_material_name:
@@ -1304,7 +1305,7 @@ class OBJECT_OT_add_bounding_object():
             return {'CANCELLED'}
 
         # get collision suffix from preferences
-        self.prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        self.prefs = context.preferences.addons[base_package].preferences
 
         # Active object
         if context.object is None:

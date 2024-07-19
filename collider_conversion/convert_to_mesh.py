@@ -3,6 +3,7 @@ from bpy.types import Operator
 
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import assign_physics_material, create_material, remove_materials
+from .. import __package__ as base_package
 
 default_shape = 'box_shape'
 default_group = 'USER_01'
@@ -72,7 +73,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                         assign_physics_material(obj, default_material.name)
 
                 # remove from collision collection
-                prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+                prefs = context.preferences.addons[base_package].preferences
                 collection_name = prefs.col_collection_name
 
                 # remove from collision collection

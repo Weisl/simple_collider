@@ -1,5 +1,5 @@
 from bpy.types import Operator
-
+from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..groups.user_groups import get_groups_identifier
 
@@ -27,7 +27,7 @@ class OBJECT_OT_regenerate_name(Operator):
         return count > 0
 
     def execute(self, context):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         count = 0
         for obj in context.selected_objects.copy():
 

@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import gettempdir
 
 import bpy
+from .. import __package__ as base_package
 
 from .naming_preset import COLLISION_preset
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -147,7 +148,7 @@ class BUTTON_OT_change_key(bpy.types.Operator):
         self.my_event = ''
 
     def invoke(self, context, event):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         self.prefs = prefs
         if self.menu_id == 'collision_pie':
             self.prefs.collision_pie_type = 'NONE'
@@ -189,7 +190,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
     # __package__ works on multifile and __name__ not
-    bl_idname = __package__.split('.')[0]
+    bl_idname = base_package
     bl_options = {'REGISTER'}
 
     prefs_tabs: bpy.props.EnumProperty(

@@ -1,5 +1,6 @@
 import bpy
 from bpy.types import Operator
+from .. import __package__ as base_package
 
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 default_shape = 'box_shape'
@@ -126,7 +127,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                 base_ob.name = base_ob.name + '_tmp'
             base_ob.hide_set(True)
             # naming
-            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+            prefs = context.preferences.addons[base_package].preferences
 
 
             print('original name = ' + original_name)

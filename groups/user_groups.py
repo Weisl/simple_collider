@@ -1,4 +1,5 @@
 import bpy
+from .. import __package__ as base_package
 
 default_groups_enum = [
     ('ALL_COLLIDER', "Colliders", "Show/Hide all objects that are colliders.", '', 1),
@@ -66,7 +67,7 @@ def update_selected(self, context):
 
 
 def get_groups_color(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     color = [1.0, 1.0, 1.0]
 
     if groups_identifier == 'USER_01':
@@ -136,7 +137,7 @@ class ColliderGroup(bpy.types.PropertyGroup):
 
 
 def get_groups_identifier(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     identifier = ''
 
     if groups_identifier == 'ALL_COLLIDER':
@@ -154,7 +155,7 @@ def get_groups_identifier(groups_identifier):
 
 
 def get_groups_name(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     name = ''
 
     if groups_identifier == 'ALL_COLLIDER':
@@ -196,7 +197,7 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
         return count > 0
 
     def execute(self, context):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         count = 0
         for obj in context.selected_objects.copy():

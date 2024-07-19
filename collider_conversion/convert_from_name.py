@@ -1,6 +1,7 @@
 import bpy
 import re
 
+from .. import __package__ as base_package
 from bpy.types import Operator
 from ..groups.user_groups import get_groups_color, set_object_color
 
@@ -18,7 +19,7 @@ class OBJECT_OT_convert_from_name(Operator):
         colSettings = context.scene.collider_tools
         count = 0
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         for obj in bpy.context.selected_objects.copy():
 

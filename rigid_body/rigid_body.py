@@ -1,5 +1,7 @@
 import bpy
 
+from .. import __package__ as base_package
+
 class OBJECT_OT_make_rigid_body(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.set_rigid_body"
@@ -11,7 +13,7 @@ class OBJECT_OT_make_rigid_body(bpy.types.Operator):
         return len(context.selected_objects) > 0
 
     def execute(self, context):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         for obj in bpy.context.selected_objects.copy():
             new_name = obj.name

@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-
+from .. import __package__ as base_package
 from . import properties_panels
 from . import popup
 from .properties_panels import collider_presets_folder
@@ -25,7 +25,7 @@ def get_preset_folder_path():
     path = Path(str(__file__))
     parent = path.parent.parent.parent.absolute()
 
-    collider_presets = str(__package__.split('.')[0])
+    collider_presets = str(base_package)
     return os.path.join(parent, collider_presets, "presets")
 
 
