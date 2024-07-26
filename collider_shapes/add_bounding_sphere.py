@@ -56,7 +56,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def calculate_bounding_sphere(obj, used_vertices):
-        # Get vertices wit min and may values
+        # Get vertices wit min and may value
         for i, vertex in enumerate(used_vertices):
 
             # convert to global space

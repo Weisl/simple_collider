@@ -39,7 +39,7 @@ else:
 
 
 def register():
-    # call the register function of the sub modules
+    # call the register function of the submodules.
     ui.register()
 
     collider_operators.register()
@@ -56,7 +56,7 @@ def register():
 
 
 def unregister():
-    # call unregister function of the sub-modules
+    # call unregister function of the submodules.
     preferences.unregister()
 
     rigid_body.unregister()

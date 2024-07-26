@@ -81,7 +81,7 @@ def assign_physics_material(object, physics_material_name):
 
         bm = bmesh.from_edit_mesh(object.data)  # Create bmesh object from object mesh
 
-        for face in bm.faces:  # Iterate over all of the object's faces
+        for face in bm.faces:  # Iterate over all the object's faces
             if face.select == True:
                 face.material_index = matIdx
 

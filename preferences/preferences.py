@@ -137,7 +137,7 @@ def get_default_executable_path():
     return ''
 
 class BUTTON_OT_change_key(bpy.types.Operator):
-    """UI button to assign a new key to a addon hotkey"""
+    """UI button to assign a new key to an addon hotkey"""
     bl_idname = "collider.key_selection_button"
     bl_label = "Press the button you want to assign to this operation."
     bl_options = {'REGISTER','INTERNAL'}

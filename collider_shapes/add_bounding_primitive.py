@@ -1389,7 +1389,7 @@ class OBJECT_OT_add_bounding_object():
 
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
 
-        # Should physics materials be assigned or not.
+        # Should physic materials be assigned or not.
         self.keep_original_material = colSettings.default_keep_original_material
         self.keep_original_name = colSettings.default_keep_original_name
 

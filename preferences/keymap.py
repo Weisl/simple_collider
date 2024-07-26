@@ -39,7 +39,7 @@ def remove_key(context, idname, properties_name):
             km.keymap_items.remove(kmi)
 
 def remove_keymap():
-    '''Removes keys from the keymap. Currently this is only called when unregistering the addon. '''
+    '''Removes keys from the keymap. Currently, this is only called when unregistering the addon. '''
     # only works for menues and pie menus
     wm = bpy.context.window_manager
     km = wm.keyconfigs.addon.keymaps['Window']

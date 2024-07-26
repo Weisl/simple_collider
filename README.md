@@ -5,9 +5,9 @@ Support me by purchasing the addon from following stores:
 * [Gumroad](https://weisl.gumroad.com/l/collider-tools "Gumroad")
 * [Blender Market](https://blendermarket.com/products/collider-tools "Blender Market")
 
-You are permitted to get a copy from this Github page and everything specified in the attached license (GPL 3.0). Creating addons is a lot of effort and work. The licensing and contribution of my future addons will also depend on the fairness of all of you.
+You are permitted to get a copy from this GitHub page and everything specified in the attached license (GPL 3.0). Creating addons is a lot of effort and work. The licensing and contribution of my future addons will also depend on the fairness of all of you.
 
-Alternatively, you can also make a donation via Paypal. Full support will only be available for customers of the stores though!
+Alternatively, you can also make a donation via PayPal. Full support will only be available for customers of the stores though!
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=Q6PL92LJX7836)
 
