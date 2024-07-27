@@ -702,7 +702,7 @@ class OBJECT_OT_add_bounding_object():
             # Bug: #249
             for mod in obj.modifiers:
                 mod.show_on_cage = True
-                mod.show_in_edit_mode = True
+                mod.show_in_editmode = True
             me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
             # Get mesh information with the modifiers applied
@@ -740,7 +740,7 @@ class OBJECT_OT_add_bounding_object():
             # Fix for Bug: #249
             for mod in obj.modifiers:
                 mod.show_on_cage = True
-                mod.show_in_edit_mode = True
+                mod.show_in_editmode = True
 
             me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
             depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -948,7 +948,7 @@ class OBJECT_OT_add_bounding_object():
         mods = []
 
         for mod in object.modifiers:
-            mods.append({"mod": mod, "show_viewport": mod.show_viewport, "show_in_edit_mode": mod.show_in_edit_mode})
+            mods.append({"mod": mod, "show_viewport": mod.show_viewport, "show_in_editmode": mod.show_in_editmode})
 
         return mods
 
@@ -957,14 +957,14 @@ class OBJECT_OT_add_bounding_object():
         for mod_entry in modifier_dic:
             modifier = mod_entry["mod"]
             modifier.show_viewport = mod_entry["show_viewport"]
-            modifier.show_in_edit_mode = mod_entry["show_in_edit_mode"]
+            modifier.show_in_editmode = mod_entry["show_in_editmode"]
 
     def convert_to_mesh(self, context, object, use_modifiers=False):
         mods = self.store_obj_mod_in_dic(object)
 
         for mod in object.modifiers:
             mod.show_viewport = use_modifiers
-            mod.show_in_edit_mode = use_modifiers
+            mod.show_in_editmode = use_modifiers
 
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
@@ -1658,7 +1658,7 @@ class OBJECT_OT_add_bounding_object():
                 for mod in self.displace_modifiers:
                     mod.strength = strenght
                     mod.show_on_cage = True
-                    mod.show_in_edit_mode = True
+                    mod.show_in_editmode = True
 
                 self.current_settings_dic['displace_offset'] = strenght
 
