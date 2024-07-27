@@ -76,7 +76,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
-            self.creation_mode_edit[self.creation_mode_idx]
+                self.creation_mode_edit[self.creation_mode_idx]
             if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)

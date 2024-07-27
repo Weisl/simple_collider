@@ -104,16 +104,13 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 new_mesh = self.mesh_from_selection(
                     obj, use_modifiers=self.my_use_modifier_stack)
 
-            if new_mesh == None:
+            if new_mesh is None:
                 continue
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
             if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
-                convex_collision_data = {}
-                convex_collision_data['parent'] = base_ob
-                convex_collision_data['mtx_world'] = base_ob.matrix_world.copy()
-                convex_collision_data['mesh'] = new_mesh
+                convex_collision_data = {'parent': base_ob, 'mtx_world': base_ob.matrix_world.copy(), 'mesh': new_mesh}
                 collider_data.append(convex_collision_data)
 
             # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
@@ -122,9 +119,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 matrices.append(obj.matrix_world)
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            convex_collision_data = {}
-            convex_collision_data['parent'] = self.active_obj
-            convex_collision_data['mtx_world'] = self.active_obj.matrix_world.copy()
+            convex_collision_data = {'parent': self.active_obj, 'mtx_world': self.active_obj.matrix_world.copy()}
 
             bmeshes = []
 
@@ -209,7 +204,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             exportTime = time.time()
 
-            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}').format(
+            cmd_line = '"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}'.format(
                 vhacd_exe,
                 obj_filename,
                 colSettings.maxHullAmount,
@@ -264,10 +259,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             for ob in imported:
                 ob.select_set(False)
 
-            convex_collisions_data = {}
-            convex_collisions_data['colliders'] = imported
-            convex_collisions_data['parent'] = parent
-            convex_collisions_data['mtx_world'] = parent.matrix_world.copy()
+            convex_collisions_data = {'colliders': imported, 'parent': parent, 'mtx_world': parent.matrix_world.copy()}
             convex_decomposition_data.append(convex_collisions_data)
 
         context.view_layer.objects.active = self.active_obj

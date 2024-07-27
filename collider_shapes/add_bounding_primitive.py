@@ -1003,7 +1003,7 @@ class OBJECT_OT_add_bounding_object():
             else:
                 self.report({'WARNING'}, 'Update to a newer Blender Version to access all addon features')
 
-        if self.prefs.use_parent_to == False:
+        if not self.prefs.use_parent_to:
             mtx = bounding_object.matrix_world
             bounding_object.parent = None
             bounding_object.matrix_world = mtx
