@@ -3,7 +3,7 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.box_creation import verts_faces_to_bbox_collider
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
+
 tmp_name = 'box_collider'
 
 
@@ -57,7 +57,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
-        objs = []
+        []
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
@@ -110,7 +110,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             mtx_world = bounding_box_data['mtx_world']
 
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc)
-            scene = context.scene
+            context.scene
 
             if self.my_space == 'LOCAL':
                 new_collider.matrix_world = mtx_world

@@ -356,8 +356,8 @@ def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, 
             for j in lons_range:
 
                 # The x and y coordinates should be the same. North z should
-                # be half_depth while South z should be -half_depth. So lerp
-                # between these is not strictly necessary.
+                # be half_depth while South z should be -half_depth. So interpolating
+                # between them is not strictly necessary.
                 v_equator_north = vs[idx_v_n_equator + j]
                 v_equator_south = vs[idx_v_s_equator + j]
                 vs[v_cyl_offset] = (

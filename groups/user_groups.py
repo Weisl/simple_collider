@@ -13,7 +13,7 @@ default_group = 'USER_01'
 
 
 def set_default_group_values():
-    from ..groups.user_groups import get_groups_identifier, get_groups_color, get_groups_name
+
 
     bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
     bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
@@ -37,10 +37,10 @@ def set_default_group_values():
 def update_hide(self, context):
     for ob in bpy.context.view_layer.objects:
         if self.mode == 'ALL_COLLIDER':
-            if ob.get('isCollider') == True:
+            if ob.get('isCollider'):
                 ob.hide_viewport = self.hide
         elif self.mode == 'OBJECTS':
-            if ob.get('isCollider') == None:
+            if ob.get('isCollider') is None:
                 ob.hide_viewport = self.hide
         else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_group') == self.mode:
@@ -50,7 +50,7 @@ def update_hide(self, context):
 def update_selected(self, context):
     print("self.select = " + str(self.selected))
     for ob in bpy.data.objects:
-        if self.selected == True:
+        if self.selected:
             ob.select_set(False)
         else:  # self.selected == False
             if self.mode == 'ALL_COLLIDER':

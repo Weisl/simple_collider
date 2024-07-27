@@ -1,7 +1,7 @@
 from bpy.types import Operator
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..groups.user_groups import get_groups_identifier
+
 
 default_shape = 'box_shape'
 default_group = 'USER_01'
@@ -52,6 +52,8 @@ class OBJECT_OT_regenerate_name(Operator):
                 basename = obj.name
 
             # get collider shape and group and set to default there is no previous data
+            from ..groups.user_groups import get_groups_identifier
+
             shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
             user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
             group_identifier = get_groups_identifier(user_group)

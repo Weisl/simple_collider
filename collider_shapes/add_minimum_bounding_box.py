@@ -3,7 +3,7 @@ import bpy
 import math
 import numpy as np
 from bpy.types import Operator
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 

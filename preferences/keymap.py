@@ -1,12 +1,9 @@
 import bpy
-
-# keys = []
-
+from .. import __package__ as base_package
 
 def add_keymap():
     km = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name="Window")
-    prefs = bpy.context.preferences.addons[__package__.split('.')[
-        0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
 
     # type, ctrl, shift, alt parameters are stored and retrived from the preferences.
     kmi = km.keymap_items.new(idname='wm.call_menu_pie', type=prefs.collision_pie_type, value='PRESS',

@@ -1,6 +1,5 @@
 import bpy
 import bmesh
-import random
 
 from .. import __package__ as base_package
 

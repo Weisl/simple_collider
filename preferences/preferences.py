@@ -99,8 +99,7 @@ def update_panel_category(self, context):
         except:
             pass
 
-        panel.bl_category = context.preferences.addons[__package__.split(
-            '.')[0]].preferences.collider_category
+        panel.bl_category = context.preferences.addons[base_package].preferences.collider_category
         bpy.utils.register_class(panel)
     return
 

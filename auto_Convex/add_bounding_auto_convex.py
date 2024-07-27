@@ -9,6 +9,7 @@ from bpy.types import Operator
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.mesh_edit import bmesh_join
 
+
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
@@ -106,7 +107,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh == None:
                 continue
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+            self.creation_mode_edit[self.creation_mode_idx]
             if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
                 convex_collision_data = {}
                 convex_collision_data['parent'] = base_ob
@@ -142,7 +144,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collision_data in collider_data:
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
-            mtx_world = convex_collision_data['mtx_world']
 
             joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
             bpy.context.scene.collection.objects.link(joined_obj)
@@ -164,7 +165,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             if io_use_addon:
                 import addon_utils
-                
+
                 # enable the obj addon if it's disabled
                 addon_name = 'io_scene_obj'
                 addon_utils.check(addon_name)
@@ -177,20 +178,28 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                     return self.cancel(context)
 
                 # Use export addon
-                bpy.ops.export_scene.obj(filepath=obj_filename, check_existing=False, filter_glob='*.obj;*.mtl', use_selection=True, use_animation=False, use_mesh_modifiers=True, use_edges=True, use_smooth_groups=False, use_smooth_groups_bitflags=False, use_normals=False,
-                                         use_uvs=False, use_materials=False, use_triangles=False, use_nurbs=False, use_vertex_groups=False, use_blen_objects=True, group_by_object=False, group_by_material=False, keep_vertex_order=False, global_scale=1.0, path_mode='AUTO', axis_forward='Y', axis_up='Z')
-                
+                bpy.ops.export_scene.obj(filepath=obj_filename, check_existing=False, filter_glob='*.obj;*.mtl',
+                                         use_selection=True, use_animation=False, use_mesh_modifiers=True,
+                                         use_edges=True, use_smooth_groups=False, use_smooth_groups_bitflags=False,
+                                         use_normals=False,
+                                         use_uvs=False, use_materials=False, use_triangles=False, use_nurbs=False,
+                                         use_vertex_groups=False, use_blen_objects=True, group_by_object=False,
+                                         group_by_material=False, keep_vertex_order=False, global_scale=1.0,
+                                         path_mode='AUTO', axis_forward='Y', axis_up='Z')
+
                 # Display a warning when Blender uses the small export instead of the fast one! 
                 self.report(
                     {'WARNING'}, "This version of Blender uses the slow exporter/importer. Update to version 3.3!")
 
             elif io_new_export_old_parameters:
-                bpy.ops.wm.obj_export(filepath=obj_filename,  check_existing=False, export_selected_objects=True, export_materials=False,
+                bpy.ops.wm.obj_export(filepath=obj_filename, check_existing=False, export_selected_objects=True,
+                                      export_materials=False,
                                       export_uv=False, export_normals=False, forward_axis='Y_FORWARD', up_axis='Z_UP')
 
-            else: # io_new_export
-                bpy.ops.wm.obj_export(filepath=obj_filename,  check_existing=False, export_selected_objects=True, export_materials=False,
-                        export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
+            else:  # io_new_export
+                bpy.ops.wm.obj_export(filepath=obj_filename, check_existing=False, export_selected_objects=True,
+                                      export_materials=False,
+                                      export_uv=False, export_normals=False, forward_axis='Y', up_axis='Z')
 
             if self.prefs.debug:
                 joined_obj.color = (1.0, 0.1, 0.1, 1.0)
@@ -200,19 +209,20 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             exportTime = time.time()
 
-            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}').format(vhacd_exe,
-                                                                                                                    obj_filename,
-                                                                                                                    colSettings.maxHullAmount,
-                                                                                                                    colSettings.maxHullVertCount,
-                                                                                                                    'obj', 1,
-                                                                                                                    colSettings.voxelResolution,
-                                                                                                                    self.prefs.vhacd_volumneErrorPercent,
-                                                                                                                    self.prefs.vhacd_maxRecursionDepth,
-                                                                                                                    "true" if colSettings.vhacd_shrinkwrap else "false",
-                                                                                                                    self.prefs.vhacd_fillMode,
-                                                                                                                    self.prefs.vhacd_minEdgeLength,
-                                                                                                                    "true" if self.prefs.vhacd_optimalSplitPlane else "false",
-                                                                                                                    "true")
+            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}').format(
+                vhacd_exe,
+                obj_filename,
+                colSettings.maxHullAmount,
+                colSettings.maxHullVertCount,
+                'obj', 1,
+                colSettings.voxelResolution,
+                self.prefs.vhacd_volumneErrorPercent,
+                self.prefs.vhacd_maxRecursionDepth,
+                "true" if colSettings.vhacd_shrinkwrap else "false",
+                self.prefs.vhacd_fillMode,
+                self.prefs.vhacd_minEdgeLength,
+                "true" if self.prefs.vhacd_optimalSplitPlane else "false",
+                "true")
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
@@ -237,13 +247,15 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             imported = []
             for obj_path in obj_list:
                 if io_use_addon:
-                    bpy.ops.import_scene.obj(filepath=obj_path, use_edges=True, use_smooth_groups=False, use_split_objects=True, use_split_groups=False,
-                                             use_groups_as_vgroups=False, use_image_search=False, split_mode='ON', global_clamp_size=0.0, axis_forward='Y', axis_up='Z')
+                    bpy.ops.import_scene.obj(filepath=obj_path, use_edges=True, use_smooth_groups=False,
+                                             use_split_objects=True, use_split_groups=False,
+                                             use_groups_as_vgroups=False, use_image_search=False, split_mode='ON',
+                                             global_clamp_size=0.0, axis_forward='Y', axis_up='Z')
                 elif io_new_export_old_parameters:
                     bpy.ops.wm.obj_import(filepath=obj_path, forward_axis='Y_FORWARD', up_axis='Z_UP')
-                else: #io_new_export
+                else:  # io_new_export
                     bpy.ops.wm.obj_import(filepath=obj_path, forward_axis='Y', up_axis='Z')
-                
+
                 imported.append(bpy.context.selected_objects)
 
             # flatten list

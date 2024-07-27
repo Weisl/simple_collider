@@ -1,14 +1,3 @@
-bl_info = {
-    "name": "Collider Tools",
-    "description": "Collider Tools is a Blender addon to create physics colliders for games and real-time applications.",
-    "author": "Matthias Patscheider",
-    "version": (1, 5, 0),
-    "blender": (3, 2, 0),
-    "location": "View3D > Collider Tools",
-    "doc_url": "https://weisl.github.io/collider-tools_overview/",
-    "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
-    "category": "Object"}
-
 # support reloading sub-modules
 if "bpy" in locals():
     import importlib

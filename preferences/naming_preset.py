@@ -1,6 +1,6 @@
 from bl_operators.presets import AddPresetBase
 from bpy.types import Operator
-
+from .. import __package__ as base_package
 
 class COLLISION_preset(AddPresetBase, Operator):
     '''Presets for collider creation'''
@@ -43,4 +43,4 @@ class COLLISION_preset(AddPresetBase, Operator):
     ]
 
     # where to store the preset
-    preset_subdir = "collider_tools"
+    preset_subdir = base_package

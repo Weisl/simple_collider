@@ -397,6 +397,27 @@ def get_sca_matrix(scale):
     return scale_mx
 
 
+def collision_dictionary(alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments,
+                         voxel_size, height_mult, width_mult):
+    dict = {}
+    dict['alpha'] = alpha
+    dict['discplace_offset'] = offset
+    dict['decimate'] = decimate
+    dict['sphere_segments'] = sphere_segments
+    dict['cylinder_segments'] = cylinder_segments
+    dict['capsule_segments'] = capsule_segments
+    dict['voxel_size'] = voxel_size
+    dict['height_mult'] = height_mult
+    dict['width_mult'] = width_mult
+
+    return dict
+
+
+def add_weld_modifier(context, bounding_object):
+    # add displacement modifier and safe it to manipulate the strenght in the modal operator
+    modifier = bounding_object.modifiers.new(name="Collision_weld", type='WELD')
+
+
 class OBJECT_OT_add_bounding_object():
     """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding object collider_shapes"""
     bl_options = {'REGISTER', 'UNDO', 'GRAB_CURSOR', 'BLOCKING'}
@@ -603,21 +624,6 @@ class OBJECT_OT_add_bounding_object():
         self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx].identifier
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
-
-    def collision_dictionary(self, alpha, offset, decimate, sphere_segments, cylinder_segments, capsule_segments,
-                             voxel_size, height_mult, width_mult):
-        dict = {}
-        dict['alpha'] = alpha
-        dict['discplace_offset'] = offset
-        dict['decimate'] = decimate
-        dict['sphere_segments'] = sphere_segments
-        dict['cylinder_segments'] = cylinder_segments
-        dict['capsule_segments'] = capsule_segments
-        dict['voxel_size'] = voxel_size
-        dict['height_mult'] = height_mult
-        dict['width_mult'] = width_mult
-
-        return dict
 
     def get_shape_name(self):
         """ Return Shape String """
@@ -976,7 +982,7 @@ class OBJECT_OT_add_bounding_object():
 
         self.set_viewport_drawing(context, bounding_object)
         if self.use_weld_modifier:
-            self.add_weld_modifier(context, bounding_object)
+            add_weld_modifier(context, bounding_object)
 
         self.add_displacement_modifier(context, bounding_object)
         self.set_collections(bounding_object, base_object_collections)
@@ -993,7 +999,7 @@ class OBJECT_OT_add_bounding_object():
 
         if self.use_geo_nodes_hull:
             if bpy.app.version >= (3, 2, 0):
-                self.add_geo_nodes_hull(context, bounding_object)
+                self.add_geo_nodes_hull(bounding_object)
             else:
                 self.report({'WARNING'}, 'Update to a newer Blender Version to access all addon features')
 
@@ -1154,10 +1160,6 @@ class OBJECT_OT_add_bounding_object():
 
         self.displace_modifiers.append(modifier)
 
-    def add_weld_modifier(self, context, bounding_object):
-        # add displacement modifier and safe it to manipulate the strenght in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_weld", type='WELD')
-
     def add_remesh_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strenght in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_remesh", type='REMESH')
@@ -1171,7 +1173,8 @@ class OBJECT_OT_add_bounding_object():
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
-    def add_geo_nodes_hull(self, context, bounding_object):
+    @staticmethod
+    def add_geo_nodes_hull(bounding_object):
 
         if bpy.data.node_groups.get('Convex_Hull'):
             group = bpy.data.node_groups['Convex_Hull']
@@ -1410,14 +1413,14 @@ class OBJECT_OT_add_bounding_object():
         default_height_mult = 1
         default_width_mult = 1
 
-        dict = self.collision_dictionary(default_alpha, default_offset, default_decimate,
+        dict = collision_dictionary(default_alpha, default_offset, default_decimate,
                                          colSettings.default_sphere_segments,
                                          colSettings.default_cylinder_segments, colSettings.default_capsule_segments,
                                          default_voxel_size, default_height_mult, default_width_mult)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
-        # the arguments we pass the the callback
+        # the arguments we pass to the callback
         args = (self, context)
         # Add the region OpenGL drawing callback
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'

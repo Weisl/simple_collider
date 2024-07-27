@@ -1,10 +1,10 @@
 import bpy
 import numpy as np
 
-from math import sqrt, radians
+from math import radians
 
 from bpy.types import Operator
-from mathutils import Matrix, Vector
+from mathutils import Vector
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 tmp_name = 'cylindrical_collider'
@@ -226,7 +226,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
-        colSettings = context.scene.collider_tools
+
 
         # change bounding object settings
         if event.type == 'G' and event.value == 'RELEASE':
@@ -252,11 +252,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
     def execute(self, context):
         # CLEANUP
         super().execute(context)
-        colSettings = context.scene.collider_tools
 
         collider_data = []
         verts_co = []
-        objs = []
 
         objs = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
 
@@ -331,10 +329,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
  
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            bounding_box, center = self.generate_bounding_box(verts_co)        
-            
-            if self.prefs.debug:
-                debug_obj = self.create_debug_object_from_verts(context, verts_co)
             
             coordinates = []
             height = []

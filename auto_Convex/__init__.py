@@ -1,5 +1,3 @@
-import bpy
-
 from . import add_bounding_auto_convex
 
 classes = (

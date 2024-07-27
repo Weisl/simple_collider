@@ -1,4 +1,5 @@
-from mathutils import Matrix, Vector
+from mathutils import Matrix
+
 
 def get_sca_matrix(scale):
     """get scale matrix"""
