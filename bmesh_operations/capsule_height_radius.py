@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def distance_to_capsule(params, points):
     points = np.array(points)
 

@@ -1,9 +1,11 @@
 from bl_operators.presets import AddPresetBase
 from bpy.types import Operator
+
 from .. import __package__ as base_package
 
+
 class COLLISION_preset(AddPresetBase, Operator):
-    '''Presets for collider creation'''
+    """Presets for collider creation"""
     bl_idname = "collision.collision_name_preset"
     bl_label = "Collision Naming Presets"
     preset_menu = "OBJECT_MT_collision_presets"

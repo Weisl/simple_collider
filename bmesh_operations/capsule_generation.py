@@ -1,9 +1,12 @@
 import math
+
 import bmesh
+
 
 # Function to calculate the distance between two points
 def distance(p1, p2):
     return math.sqrt(sum((p1[i] - p2[i]) ** 2 for i in range(len(p1))))
+
 
 # Function to calculate the distance between a point and a line segment
 def point_line_segment_distance(p, p1, p2):
@@ -13,6 +16,7 @@ def point_line_segment_distance(p, p1, p2):
     t = max(0, min(1, sum(w[i] * v[i] for i in range(len(v))) / sum(v[i] * v[i] for i in range(len(v)))))
     closest_point = [p1[i] + t * v[i] for i in range(len(p1))]
     return distance(p, closest_point)
+
 
 # Function to calculate the radius and height of the bounding capsule
 def calculate_radius_height(points):
@@ -27,9 +31,9 @@ def calculate_radius_height(points):
     height = max_distance - radius
     return radius, height
 
+
 @staticmethod
 def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
-
     # Validate arguments.
     verif_rad = max(0.0001, radius)
     verif_depth = max(0.0002, depth)
@@ -354,7 +358,6 @@ def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, 
 
             # Coordinates.
             for j in lons_range:
-
                 # The x and y coordinates should be the same. North z should
                 # be half_depth while South z should be -half_depth. So interpolating
                 # between them is not strictly necessary.
@@ -420,11 +423,11 @@ def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, 
             "vt_indices": vt_indices,
             "vn_indices": vn_indices}
 
+
 @staticmethod
 def mesh_data_to_bmesh(
         vs, vts, vns,
         v_indices, vt_indices, vn_indices):
-
     bm = bmesh.new()
 
     # Create BM vertices.

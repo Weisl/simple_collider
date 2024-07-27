@@ -1,11 +1,12 @@
+from math import radians
+
 import bpy
 from bpy.types import Operator
 from mathutils import Vector
-from ..bmesh_operations import capsule_generation as Capsule
-from math import radians
 
-from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
+from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
+from ..bmesh_operations import capsule_generation as Capsule
 
 tmp_name = 'capsule_collider'
 
@@ -72,7 +73,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             # define cylinder axis
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode != 'LOOSEMESH':
+            if creation_mode != 'LOOSE-MESH':
                 self.cylinder_axis = event.type
                 self.execute(context)
 
@@ -108,7 +109,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 # used_vertices uses local space.
                 coordinates = []
 
@@ -122,7 +123,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    if self.cylinder_axis == 'Z' or creation_mode == 'LOOSEMESH':
+                    if self.cylinder_axis == 'Z' or creation_mode == 'LOOSE-MESH':
                         coordinates.append([v.x, v.y, v.z])
                     elif self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z, v.x])
@@ -163,7 +164,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             # Calculate the radius and height of the bounding capsule
             radius, height = Capsule.calculate_radius_height(verts_loc)
             data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
-                                          latitudes=int(self.current_settings_dic['capsule_segments']), radius=radius * self.current_settings_dic['width_mult'],
+                                          latitudes=int(self.current_settings_dic['capsule_segments']),
+                                          radius=radius * self.current_settings_dic['width_mult'],
                                           depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
             bm = Capsule.mesh_data_to_bmesh(
                 vs=data["vs"],
@@ -183,7 +185,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
 

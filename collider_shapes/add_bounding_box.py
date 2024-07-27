@@ -7,8 +7,6 @@ from ..bmesh_operations.box_creation import verts_faces_to_bbox_collider
 tmp_name = 'box_collider'
 
 
-
-
 class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding box collisions based on the selection"""
     bl_idname = "mesh.add_bounding_box"
@@ -21,7 +19,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = 'box_shape'
-
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -78,8 +75,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+            self.creation_mode_edit[self.creation_mode_idx]
+            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
                 verts_loc, center_point = self.generate_bounding_box(co)
@@ -148,6 +146,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         bbox_verts, center_point = self.generate_bounding_box(verts_co)
         mtx_world = self.active_obj.matrix_world
 
-        bounding_box_data = {'parent': self.active_obj, 'verts_loc': bbox_verts, 'center_point': center_point, 'mtx_world': mtx_world}
+        bounding_box_data = {'parent': self.active_obj, 'verts_loc': bbox_verts, 'center_point': center_point,
+                             'mtx_world': mtx_world}
 
         return [bounding_box_data]

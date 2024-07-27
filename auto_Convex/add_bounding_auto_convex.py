@@ -6,8 +6,8 @@ import bmesh
 import bpy
 from bpy.types import Operator
 
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.mesh_edit import bmesh_join
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
@@ -18,7 +18,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def overwrite_executable_path(path):
-        '''Users can overwrite the default executable path. '''
+        """Users can overwrite the default executable path. """
         # Check executable path
         executable_path = bpy.path.abspath(path)
 
@@ -26,7 +26,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def set_temp_data_path(path):
-        '''Set folder to temporarily store the exported data. '''
+        """Set folder to temporarily store the exported data. """
         # Check data path
         data_path = bpy.path.abspath(path)
 
@@ -108,8 +108,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
-            self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+                self.creation_mode_edit[self.creation_mode_idx]
+            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 convex_collision_data = {}
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['mtx_world'] = base_ob.matrix_world.copy()

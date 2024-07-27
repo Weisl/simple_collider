@@ -1,14 +1,18 @@
-import bpy
 import os
 import platform
 import subprocess
 import textwrap
+
+import bpy
 from bpy.types import Menu
+
 from .. import __package__ as base_package
+
 
 # needed for adding direct link to settings
 def get_addon_name():
     return "Collider Tools"
+
 
 def collider_presets_folder():
     # Make sure there is a directory for presets
@@ -196,14 +200,14 @@ def draw_naming_presets(self, context):
 
     if platform.system() == 'Windows':
         op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-        op.dirpath = collider_presets_folder()
+        op.dir_path = collider_presets_folder()
 
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'NAMING'
 
 
-############## OPERATORS ##############################
+# OPERATORS 
 
 class EXPLORER_OT_open_directory_new(bpy.types.Operator):
     """Open render output directory in Explorer"""
@@ -211,12 +215,12 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator):
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
 
-    dirpath: bpy.props.StringProperty()
+    dir_path: bpy.props.StringProperty()
 
     def execute(self, context):
 
-        if os.path.isdir(self.dirpath):
-            subprocess.Popen(["explorer.exe", self.dirpath])
+        if os.path.isdir(self.dir_path):
+            subprocess.Popen(["explorer.exe", self.dir_path])
         else:
             self.report({'ERROR'}, 'Invalid Preset Path')
             return {'CANCELLED'}
@@ -262,7 +266,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 ############## PRESET ##############################
 
 class OBJECT_MT_collision_presets(Menu):
-    '''Collider preset dropdown'''
+    """Collider preset dropdown"""
 
     bl_label = "Presets"
     bl_description = "Specify creation preset used for the collider generation"
@@ -360,12 +364,12 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         layout = self.layout
         colSettings = context.scene.collider_tools
 
-        #Bools
+        # Bools
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
         row = layout.row(align=True)
 
-        #Dropdowns
+        # Dropdowns
 
         col = layout.column(align=True)
         row = col.row(align=True)

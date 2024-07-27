@@ -31,4 +31,3 @@ def unregister():
 
     for cls in reversed(classes):
         unregister_class(cls)
-

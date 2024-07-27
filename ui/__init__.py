@@ -1,10 +1,10 @@
 import os
-import shutil
 from pathlib import Path
-from .. import __package__ as base_package
-from . import properties_panels
+
 from . import popup
+from . import properties_panels
 from .properties_panels import collider_presets_folder
+from .. import __package__ as base_package
 
 classes = (
     properties_panels.EXPLORER_OT_open_directory_new,

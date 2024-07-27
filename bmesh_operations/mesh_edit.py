@@ -1,4 +1,6 @@
-import bpy, bmesh
+import bmesh
+import bpy
+
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
     # sourcery skip: use-contextlib-suppress

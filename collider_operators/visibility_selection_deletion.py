@@ -1,4 +1,5 @@
 import bpy
+
 from ..groups.user_groups import default_groups_enum
 
 

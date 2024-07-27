@@ -3,10 +3,9 @@ import bpy
 
 from bpy_extras.object_utils import object_data_add
 
-
 tmp_name = 'box_collider'
 
-# vertex indizes defining the faces of the cube
+# vertex indices defining the faces of the cube
 face_order = [
     (0, 1, 2, 3),
     (4, 7, 6, 5),

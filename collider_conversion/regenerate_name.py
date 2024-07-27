@@ -1,7 +1,7 @@
 from bpy.types import Operator
+
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
-
 
 default_shape = 'box_shape'
 default_group = 'USER_01'
