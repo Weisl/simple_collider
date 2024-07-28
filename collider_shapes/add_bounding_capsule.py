@@ -162,7 +162,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             center = bounding_capsule_data['center_point']
 
             # Calculate the radius and height of the bounding capsule
-            radius, height = Capsule.calculate_radius_height(verts_loc)
+            radius, height, center = Capsule.calculate_radius_height(verts_loc)
             data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
                                           latitudes=int(self.current_settings_dic['capsule_segments']),
                                           radius=radius * self.current_settings_dic['width_mult'],

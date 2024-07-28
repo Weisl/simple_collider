@@ -1,35 +1,46 @@
 import math
-
 import bmesh
+import numpy as np
+from mathutils import Vector
 
 
-# Function to calculate the distance between two points
-def distance(p1, p2):
-    return math.sqrt(sum((p1[i] - p2[i]) ** 2 for i in range(len(p1))))
-
-
-# Function to calculate the distance between a point and a line segment
-def point_line_segment_distance(p, p1, p2):
-    v = [p2[i] - p1[i] for i in range(len(p1))]
-    w = [p[i] - p1[i] for i in range(len(p1))]
-
-    t = max(0, min(1, sum(w[i] * v[i] for i in range(len(v))) / sum(v[i] * v[i] for i in range(len(v)))))
-    closest_point = [p1[i] + t * v[i] for i in range(len(p1))]
-    return distance(p, closest_point)
-
-
-# Function to calculate the radius and height of the bounding capsule
 def calculate_radius_height(points):
-    max_distance = 0
-    for i in range(len(points)):
-        for j in range(i + 1, len(points)):
-            d = distance(points[i], points[j])
-            if d > max_distance:
-                max_distance = d
+    if len(points) < 2:
+        raise ValueError("At least two points are required to define a capsule")
 
-    radius = max_distance / 2
-    height = max_distance - radius
-    return radius, height
+    # Convert points to numpy array
+    np_points = np.array(points)
+
+    # Perform Singular Value Decomposition (SVD) to find the principal axis
+    centered_points = np_points - np_points.mean(axis=0)
+    u, s, vh = np.linalg.svd(centered_points)
+    principal_axis = vh[0]
+
+    # Project points onto the principal axis
+    projections = np_points.dot(principal_axis)
+    min_projection = projections.min()
+    max_projection = projections.max()
+
+    # Calculate the capsule height
+    height = max_projection - min_projection
+
+    # Calculate the center of the capsule along the principal axis
+    center_along_axis = (min_projection + max_projection) / 2.0
+    capsule_center = np_points.mean(axis=0) + principal_axis * center_along_axis
+
+    # Calculate the radius as the maximum distance from the points to the principal axis
+    def distance_to_axis(point, axis_point, axis_dir):
+        v = point - axis_point
+        d = v - np.dot(v, axis_dir) * axis_dir
+        return np.linalg.norm(d)
+
+    axis_point = np_points.mean(axis=0)
+    radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
+
+    # Convert center back to Vector for Blender
+    center_vector = Vector(capsule_center)
+
+    return radius, height, center_vector
 
 
 @staticmethod
