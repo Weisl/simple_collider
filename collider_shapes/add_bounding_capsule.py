@@ -2,7 +2,7 @@ from math import radians
 
 import bpy
 from bpy.types import Operator
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
@@ -123,12 +123,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    if self.cylinder_axis == 'Z' or creation_mode == 'LOOSE-MESH':
-                        coordinates.append([v.x, v.y, v.z])
-                    elif self.cylinder_axis == 'X':
+                    if self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z, v.x])
                     elif self.cylinder_axis == 'Y':
                         coordinates.append([v.x, v.z, v.y])
+                    elif self.cylinder_axis == 'Z':
+                        coordinates.append([v.x, v.y, v.z])
 
                 center = sum((Vector(matrix_WS @ Vector(v)) for v in coordinates), Vector()) / len(used_vertices)
 
@@ -162,7 +162,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             center = bounding_capsule_data['center_point']
 
             # Calculate the radius and height of the bounding capsule
-            radius, height, center = Capsule.calculate_radius_height(verts_loc)
+            radius, height, center_capsule, rotation_matrix_4x4 = Capsule.calculate_radius_height(verts_loc)
             data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
                                           latitudes=int(self.current_settings_dic['capsule_segments']),
                                           radius=radius * self.current_settings_dic['width_mult'],
@@ -180,7 +180,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             bm.free()
 
             new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
-            new_collider.location = center
+
+
             # context.scene.collection.objects.link(new_collider)
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
@@ -188,7 +189,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
-
+                new_collider.matrix_world = rotation_matrix_4x4 @ Matrix.Translation(center_capsule)
+                new_collider.location = center
             if self.cylinder_axis == 'X':
                 new_collider.rotation_euler.rotate_axis("Y", radians(90))
             elif self.cylinder_axis == 'Y':

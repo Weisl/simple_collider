@@ -1,7 +1,7 @@
 import math
 import bmesh
 import numpy as np
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 def calculate_radius_height(points):
@@ -37,10 +37,28 @@ def calculate_radius_height(points):
     axis_point = np_points.mean(axis=0)
     radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
 
+
+    # Calculate rotation matrix
+    z_axis = principal_axis
+    y_axis = np.cross([1, 0, 0], z_axis)
+    if np.linalg.norm(y_axis) < 1e-6:
+        y_axis = np.cross([0, 1, 0], z_axis)
+    x_axis = np.cross(y_axis, z_axis)
+    y_axis /= np.linalg.norm(y_axis)
+    x_axis /= np.linalg.norm(x_axis)
+
+    rotation_matrix_3x3 = Matrix([
+        [x_axis[0], y_axis[0], z_axis[0]],
+        [x_axis[1], y_axis[1], z_axis[1]],
+        [x_axis[2], y_axis[2], z_axis[2]]
+    ])
+
     # Convert center back to Vector for Blender
     center_vector = Vector(capsule_center)
 
-    return radius, height, center_vector
+    rotation_matrix_4x4 = rotation_matrix_3x3.to_4x4()
+
+    return radius, height, center_vector, rotation_matrix_4x4
 
 
 @staticmethod
