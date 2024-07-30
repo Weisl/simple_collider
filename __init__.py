@@ -57,3 +57,7 @@ def unregister():
     properties.unregister()
     groups.unregister()
     ui.unregister()
+
+
+if __name__ == "__main__":
+    register()
