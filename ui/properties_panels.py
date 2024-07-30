@@ -268,7 +268,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
 class OBJECT_MT_collision_presets(Menu):
     """Collider preset dropdown"""
 
-    bl_label = "Presets"
+    bl_label = "Collider Presets"
     bl_description = "Specify creation preset used for the collider generation"
     preset_subdir = "collider_tools"
     preset_operator = "script.execute_preset"
