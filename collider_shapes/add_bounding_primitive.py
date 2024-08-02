@@ -1,22 +1,19 @@
-import time
-
 import blf
 import bmesh
 import bpy
 import gpu
 import mathutils
 import numpy
+import time
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix, Quaternion
 
 from .. import __package__ as base_package
+from ..bmesh_operations.mesh_edit import delete_non_selected_verts
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from ..groups.user_groups import set_object_color, set_default_group_values
-from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
-from ..bmesh_operations.mesh_edit import delete_non_selected_verts
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
-    set_active_physics_material
-from ..pyshics_materials.material_functions import set_material
+    set_active_physics_material, set_material
 
 
 def alignObjects(new, old):
@@ -46,8 +43,7 @@ def geometry_node_group_empty_new():
     output_node = group.nodes.new('NodeGroupOutput')
     output_node.is_active_output = True
 
-    input_node.select = False
-    output_node.select = False
+    input_node.select = output_node.select = False
 
     input_node.location.x = -200 - input_node.width
     output_node.location.x = 200
@@ -57,7 +53,8 @@ def geometry_node_group_empty_new():
     return group
 
 
-def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
+def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default',
+                    key='',
                     highlight=False):
     """Draw label in the 3D Viewport"""
 
@@ -349,7 +346,7 @@ def draw_viewport_overlay(self, context):
 
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
-    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale/ 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
     vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
@@ -366,7 +363,8 @@ def draw_viewport_overlay(self, context):
         draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, color)
 
     for i, item in enumerate(items):
-        draw_modal_item(self, context, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'], value=item['value'],
+        draw_modal_item(self, context, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'],
+                        value=item['value'],
                         key=item['key'], type=item['type'], highlight=item['highlight'])
 
 
@@ -1079,14 +1077,13 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[
                     self.creation_mode_idx]
 
-
                 # Temp meshes for Loose islands
                 if self.use_loose_mesh:
 
                     base = obj
 
                     bpy.context.view_layer.objects.active = obj
-                    #bpy.ops.object.mode_set(mode='OBJECT')
+                    # bpy.ops.object.mode_set(mode='OBJECT')
 
                     tmp_ob = obj.copy()
                     tmp_ob.data = obj.data.copy()
@@ -1096,12 +1093,10 @@ class OBJECT_OT_add_bounding_object():
                     if self.obj_mode == 'EDIT':
                         tmp_ob = delete_non_selected_verts(tmp_ob)
 
-
                     self.apply_all_modifiers(context, tmp_ob)
                     base = tmp_ob
 
                     self.tmp_meshes.append(tmp_ob)
-
 
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(base, use_world=local_world_spc)
@@ -1214,9 +1209,9 @@ class OBJECT_OT_add_bounding_object():
             group.links.new(geom_in.outputs[0], hull_node.inputs[0])
             group.links.new(hull_node.outputs[0], geom_out.inputs[0])
 
-        if not self.join_primitives:
-            modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
-            modifier.node_group = group
+        # if not self.join_primitives:
+        #     modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
+        #     modifier.node_group = group
 
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
@@ -1393,7 +1388,6 @@ class OBJECT_OT_add_bounding_object():
         self.join_primitives = colSettings.default_join_primitives
         self.use_loose_mesh = colSettings.default_use_loose_island
 
-
         # Modal MODIFIERS
         self.remesh_active = False
         self.remesh_modifiers = []
@@ -1430,7 +1424,6 @@ class OBJECT_OT_add_bounding_object():
         self.color_type = colSettings.default_color_type
         self.shading_idx = 0
         self.shading_modes = ['OBJECT', 'MATERIAL', 'SINGLE']
-
 
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
 
