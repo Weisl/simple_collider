@@ -1,12 +1,13 @@
+import bpy
 import os
 import platform
 from pathlib import Path
 from tempfile import gettempdir
 
-import bpy
-
 from .keymap import remove_key
 from .naming_preset import COLLISION_preset
+from .preset_operator import SetColliderToolsPreferencesOperator
+from .presets_data import presets
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
@@ -32,6 +33,22 @@ collection_colors = [
 
 def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie_ctrl, collision_pie_shift,
             collision_pie_alt, collision_pie_active):
+    """
+    Add a new keymap item to the specified keymap.
+
+    Args:
+        km (bpy.types.KeyMap): The keymap to which the new keymap item will be added.
+        idname (str): The operator identifier.
+        properties_name (str): The name property for the keymap item.
+        collision_pie_type (str): The type of key (e.g., 'A', 'B', etc.).
+        collision_pie_ctrl (bool): Whether the Ctrl key is pressed.
+        collision_pie_shift (bool): Whether the Shift key is pressed.
+        collision_pie_alt (bool): Whether the Alt key is pressed.
+        collision_pie_active (bool): Whether the keymap item is active.
+
+    Returns:
+        None
+    """
     kmi = km.keymap_items.new(idname=idname, type=collision_pie_type, value='PRESS',
                               ctrl=collision_pie_ctrl, shift=collision_pie_shift, alt=collision_pie_alt)
     kmi.properties.name = properties_name
@@ -39,6 +56,17 @@ def add_key(self, km, idname, properties_name, collision_pie_type, collision_pie
 
 
 def update_pie_key(self, context):
+    """
+    Update the hotkey assignment for the collision pie menu.
+
+    This function is called when the hotkey assignment is updated in the preferences.
+
+    Args:
+        context (bpy.types.Context): The current context.
+
+    Returns:
+        None
+    """
     # This functions gets called when the hotkey assignment is updated in the preferences
     wm = bpy.context.window_manager
     km = wm.keyconfigs.addon.keymaps["Window"]
@@ -52,6 +80,15 @@ def update_pie_key(self, context):
 
 
 def update_visibility_key(self, context):
+    """
+    Update the hotkey assignment for the collision visibility panel.
+
+    Args:
+        context (bpy.types.Context): The current context.
+
+    Returns:
+        None
+    """
     wm = bpy.context.window_manager
     km = context.window_manager.keyconfigs.addon.keymaps["Window"]
     collision_visibility_type = self.collision_visibility_type.upper()
@@ -66,6 +103,15 @@ def update_visibility_key(self, context):
 
 
 def update_material_key(self, context):
+    """
+    Update the hotkey assignment for the collision material panel.
+
+    Args:
+        context (bpy.types.Context): The current context.
+
+    Returns:
+        None
+    """
     wm = bpy.context.window_manager
     km = context.window_manager.keyconfigs.addon.keymaps["Window"]
     collision_material_type = self.collision_material_type.upper()
@@ -79,6 +125,15 @@ def update_material_key(self, context):
 
 
 def setDefaultTemp():
+    """
+    Set the default temporary directory for the collider tools addon.
+
+    This function creates a new directory in the system's temporary directory
+    for storing temporary files used by the collider tools addon.
+
+    Returns:
+        File path to the temporary directory
+    """
     system_temp_dir = gettempdir()
     path = os.path.join(system_temp_dir, "collider_tools")
 
@@ -369,6 +424,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
                                          description='Naming used to define triangle mesh colliders')
 
+    # Rigid Body
+    rigid_body_naming_position: bpy.props.EnumProperty(
+        name='Parent Extension',
+        items=(('PREFIX', "Prefix", "Prefix"),
+               ('SUFFIX', "Suffix", "Suffix")),
+        default='SUFFIX',
+        description='Add custom naming as prefix or suffix'
+    )
+
+    rigid_body_extension: bpy.props.StringProperty(name="Parent Extension", default="RB",
+                                                   description='String added to the parent naming')
+
+    rigid_body_separator: bpy.props.StringProperty(name="Separator", default="_",
+                                                   description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
+
+
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(
         name='Enable Collider Groups', description='', default=True)
@@ -566,20 +637,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                     description="Hide collider after creation.",
                                     default=False)
 
-    rigid_body_naming_position: bpy.props.EnumProperty(
-        name='Parent Extension',
-        items=(('PREFIX', "Prefix", "Prefix"),
-               ('SUFFIX', "Suffix", "Suffix")),
-        default='SUFFIX',
-        description='Add custom naming as prefix or suffix'
-    )
-
-    rigid_body_extension: bpy.props.StringProperty(name="Parent Extension", default="RB",
-                                                   description='String added to the parent naming')
-
-    rigid_body_separator: bpy.props.StringProperty(name="Separator", default="_",
-                                                   description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
-
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Debug mode only used for debuging during development",
@@ -746,9 +803,14 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
         if self.prefs_tabs == 'NAMING':
             box = layout.box()
-
+            row = box.row()
+            row.label(text="Default Presets")
             row = box.row(align=True)
-            row.label(text="Presets")
+            for preset_name in presets.keys():
+                op = row.operator(SetColliderToolsPreferencesOperator.bl_idname, text=f"{preset_name}")
+                op.preset_name = preset_name
+            row = box.row(align=True)
+            row.label(text="User Presets")
             row.menu(OBJECT_MT_collision_presets.__name__,
                      text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
