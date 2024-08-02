@@ -16,7 +16,8 @@ class COLLISION_preset(AddPresetBase, Operator):
 
     # Common variable used for all preset values
     preset_defines = [
-        f'prefs = bpy.context.preferences.addons["{ADDON_NAME}"].preferences'
+
+        f'prefs = bpy.context.preferences.addons["{ADDON_NAME}"].preferences',
     ]
 
     # properties to store in the preset
@@ -32,6 +33,9 @@ class COLLISION_preset(AddPresetBase, Operator):
         "prefs.capsule_shape",
         "prefs.convex_shape",
         "prefs.mesh_shape",
+        "prefs.rigid_body_naming_position",
+        "prefs.rigid_body_extension",
+        "prefs.rigid_body_separator",
         "prefs.collider_groups_enabled",
         "prefs.user_group_01",
         "prefs.user_group_02",

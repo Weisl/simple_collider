@@ -11,10 +11,22 @@ from .. import __package__ as base_package
 
 # needed for adding direct link to settings
 def get_addon_name():
+    """
+    Get the name of the addon.
+
+    Returns:
+        str: The name of the addon.
+    """
     return "Collider Tools"
 
 
 def collider_presets_folder():
+    """
+    Ensure the existence of the presets folder for the addon and return its path.
+
+    Returns:
+        str: The path to the collider presets directory.
+    """
     # Make sure there is a directory for presets
     collider_presets = "collider_tools"
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
@@ -27,6 +39,14 @@ def collider_presets_folder():
 
 
 def draw_auto_convex(layout, context):
+    """
+    Draw the auto convex options in the layout based on the current platform and preferences.
+
+    Args:
+        layout (Layout): The layout to draw the options on.
+        context (Context): The current context.
+    """
+
     prefs = context.preferences.addons[base_package].preferences
     addon_name = get_addon_name()
 
@@ -59,6 +79,13 @@ def draw_auto_convex(layout, context):
 
 
 def draw_auto_convex_settings(colSettings, layout):
+    """
+    Draw the settings for auto convex in the layout.
+
+    Args:
+        colSettings (UILayout): The column layout to draw the settings on.
+        layout (Layout): The parent layout.
+    """
     col = layout.column(align=True)
     row = col.row(align=True)
     row.prop(colSettings, 'vhacd_shrinkwrap')
@@ -70,6 +97,14 @@ def draw_auto_convex_settings(colSettings, layout):
 
 
 def label_multiline(context, text, parent):
+    """
+    Draw a label with multiline text in the layout.
+
+    Args:
+        context (Context): The current context.
+        text (str): The text to display.
+        parent (UILayout): The parent layout to add the label to.
+    """
     chars = int(context.region.width / 7)  # 7 pix on 1 character
     wrapper = textwrap.TextWrapper(width=chars)
     text_lines = wrapper.wrap(text=text)
@@ -78,6 +113,17 @@ def label_multiline(context, text, parent):
 
 
 def draw_group_properties(context, property, col_01, col_02, mode, user_group=False):
+    """
+    Draw the group properties in the layout.
+
+    Args:
+        context (Context): The current context.
+        property (Property): The property to display.
+        col_01 (UILayout): The first column layout.
+        col_02 (UILayout): The second column layout.
+        mode (str): The mode of the group.
+        user_group (bool, optional): Whether the group is a user group. Defaults to False.
+    """
     from ..groups.user_groups import get_groups_color, get_groups_name
 
     group_identifier = mode
@@ -119,6 +165,13 @@ def draw_group_properties(context, property, col_01, col_02, mode, user_group=Fa
 
 
 def draw_visibility_selection_menu(context, layout):
+    """
+    Draw the visibility selection menu in the layout.
+
+    Args:
+        context (Context): The current context.
+        layout (UILayout): The layout to draw the menu on.
+    """
     split_factor = 0.7
 
     split_left = layout.split(factor=split_factor, align=True)
@@ -146,6 +199,14 @@ def draw_visibility_selection_menu(context, layout):
 
 
 def draw_creation_menu(context, layout, settings=False):
+    """
+    Draw the creation menu in the layout.
+
+    Args:
+        context (Context): The current context.
+        layout (UILayout): The layout to draw the menu on.
+        settings (bool, optional): Whether to include settings. Defaults to False.
+    """
     colSettings = context.scene.collider_tools
 
     # layout.separator()
@@ -191,6 +252,13 @@ def draw_creation_menu(context, layout, settings=False):
 
 
 def draw_naming_presets(self, context):
+    """
+    Draw the naming presets menu in the layout.
+
+    Args:
+        self (UILayout): The UI layout.
+        context (Context): The current context.
+    """
     layout = self.layout
     row = layout.row(align=True)
 

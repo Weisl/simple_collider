@@ -11,6 +11,7 @@ if "bpy" in locals():
     importlib.reload(auto_Convex)
     importlib.reload(pyshics_materials)
     importlib.reload(rigid_body)
+    importlib.reload(presets)
     importlib.reload(preferences)
 
 
@@ -24,8 +25,8 @@ else:
     from . import auto_Convex
     from . import pyshics_materials
     from . import rigid_body
+    from . import presets
     from . import preferences
-
 
 def register():
     # call the register function of the submodules.
@@ -39,6 +40,7 @@ def register():
     rigid_body.register()
 
     # keymap and preferences should be last
+    presets.register()
     preferences.register()
     groups.register()
     properties.register()
@@ -47,7 +49,7 @@ def register():
 def unregister():
     # call unregister function of the submodules.
     preferences.unregister()
-
+    presets.unregister()
     rigid_body.unregister()
     pyshics_materials.unregister()
     auto_Convex.unregister()
