@@ -15,7 +15,6 @@ from ..ui.properties_panels import VIEW3D_PT_collision_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
-from ..ui.properties_panels import collider_presets_folder
 from ..ui.properties_panels import label_multiline
 
 collection_colors = [
@@ -818,10 +817,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                          icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
                          icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
-            if platform.system() == 'Windows':
-                op = row.operator("explorer.open_in_explorer",
-                                  text="", icon='FILE_FOLDER')
-                op.dir_path = collider_presets_folder()
 
             box_name = box.box()
             row = box.row()
