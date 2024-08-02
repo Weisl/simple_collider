@@ -77,8 +77,7 @@ class REMOVE_OT_hotkey(bpy.types.Operator):
     def execute(self, context):
         remove_key(context, self.idname, self.properties_name)
 
-        prefs = context.preferences.addons[__package__.split('.')[
-            0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         setattr(prefs, f'{self.property_prefix}_type', "NONE")
         setattr(prefs, f'{self.property_prefix}_ctrl', False)
         setattr(prefs, f'{self.property_prefix}_shift', False)
