@@ -21,20 +21,8 @@ classes = (
 )
 
 
-def get_preset_folder_path():
-    path = Path(str(__file__))
-    parent = path.parent.parent.parent.absolute()
-
-    collider_presets = str(base_package)
-    return os.path.join(parent, collider_presets, "presets")
-
-
 def initialize_presets():
     my_presets = collider_presets_folder()
-
-    # Get a list of all the files in your bundled presets folder
-    my_bundled_presets = get_preset_folder_path()
-    print("Preset Path: " + my_bundled_presets)
     print("My Presets: " + my_presets)
     # files = os.listdir(my_bundled_presets)
 
