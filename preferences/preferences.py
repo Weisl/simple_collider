@@ -811,7 +811,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 op.preset_name = preset_name
             row = box.row(align=True)
             row.label(text="User Presets")
-            row.menu(OBJECT_MT_collision_presets.__name__,
+            row = box.row(align=True)
+            op = row.operator('object.upgrade_collider_tools_presets')
+            row = box.row(align=True)
+            row.menu('OBJECT_MT_collision_presets',
                      text=OBJECT_MT_collision_presets.bl_label)
             row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
             row.operator(COLLISION_preset.bl_idname, text="",

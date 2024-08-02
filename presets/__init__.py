@@ -1,11 +1,12 @@
 from . import naming_preset
 from . import presets_data
 from . import preset_operator
-
+from . import convert_old_presets
 
 classes = (
     naming_preset.COLLISION_preset,
     preset_operator.SetColliderToolsPreferencesOperator,
+    convert_old_presets.UpgradeColliderToolsPresetsOperator
 )
 
 def register():

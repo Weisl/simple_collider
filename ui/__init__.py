@@ -1,5 +1,5 @@
-import os
 import bpy
+import os
 
 from . import popup
 from . import properties_panels
