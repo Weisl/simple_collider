@@ -10,6 +10,7 @@ from ..bmesh_operations.mesh_edit import bmesh_join
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
+
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
@@ -97,10 +98,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for base_ob, obj in objs:
             context.view_layer.objects.active = obj
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 new_mesh = self.get_mesh_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
-            else:  # mode == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
                 new_mesh = self.mesh_from_selection(
                     obj, use_modifiers=self.my_use_modifier_stack)
 
@@ -108,9 +109,11 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+
                 self.creation_mode_edit[self.creation_mode_idx]
             if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 convex_collision_data = {'parent': base_ob, 'mtx_world': base_ob.matrix_world.copy(), 'mesh': new_mesh}
+
                 collider_data.append(convex_collision_data)
 
             # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
@@ -118,8 +121,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
+
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             convex_collision_data = {'parent': self.active_obj, 'mtx_world': self.active_obj.matrix_world.copy()}
+
 
             bmeshes = []
 
@@ -204,6 +209,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             exportTime = time.time()
 
+
             cmd_line = '"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}'.format(
                 vhacd_exe,
                 obj_filename,
@@ -273,7 +279,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.name = super().collider_name(basename=parent.name)
 
                 if self.creation_mode[self.creation_mode_idx] == 'INDIVIDUAL':
-                    new_collider.matrix_world = mtx_world
+                    if not self.use_loose_mesh:
+                        new_collider.matrix_world = mtx_world
                     self.apply_transform(
                         new_collider, rotation=True, scale=True)
 
@@ -287,6 +294,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         if len(self.new_colliders_list) < 1:
             self.report({'WARNING'}, 'No meshes to process!')
             return {'CANCELLED'}
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()

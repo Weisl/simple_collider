@@ -17,6 +17,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         self.use_geo_nodes_hull = True
         self.use_modifier_stack = True
         self.shape = 'convex_shape'
+        self.initial_shape = 'convex_shape'
         self.use_recenter_origin = True
 
     def invoke(self, context, event):
@@ -53,10 +54,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             convex_collision_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
-            else:  # self.obj_mode  == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
@@ -67,7 +68,9 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 # duplicate object
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['verts_loc'] = ws_vtx_co
@@ -79,9 +82,11 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            convex_collision_data = {'parent': self.active_obj, 'verts_loc': verts_co}
-            collider_data = [convex_collision_data]
+                convex_collision_data = {}
+                convex_collision_data['parent'] = self.active_obj
+                convex_collision_data['verts_loc'] = verts_co
+                collider_data = [convex_collision_data]
+
 
         bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -120,6 +125,10 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)
             super().set_collider_name(new_collider, parent.name)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

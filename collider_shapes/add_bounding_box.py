@@ -19,6 +19,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = 'box_shape'
+        self.initial_shape = 'box_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -66,17 +67,20 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             bounding_box_data = {}
 
             # EDIT is only supported for 'MESH' type objects and only if the active object is a 'MESH'
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
+                # Use Mesh uses copies of edit mode meshes
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
-            else:  # self.obj_mode  == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
+
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 # used_vertices uses local space.
                 co = self.get_point_positions(obj, self.my_space, used_vertices)
                 verts_loc, center_point = self.generate_bounding_box(co)
@@ -93,9 +97,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
-
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            collider_data = self.selection_bbox_data(verts_co)
+                collider_data = self.selection_bbox_data(verts_co)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -127,6 +129,11 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             parent_name = parent.name
             super().set_collider_name(new_collider, parent_name)
+
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

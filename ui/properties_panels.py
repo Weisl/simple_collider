@@ -368,6 +368,10 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
         row = layout.row(align=True)
+        row.prop(colSettings, "default_use_loose_island")
+        row = layout.row(align=True)
+        row.prop(colSettings, "default_join_primitives")
+        row = layout.row(align=True)
 
         # Dropdowns
 

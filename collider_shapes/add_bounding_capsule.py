@@ -27,6 +27,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.use_height_multiplier = True
         self.use_width_multiplier = True
         self.shape = 'capsule_shape'
+        self.initial_shape = 'capsule_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -73,7 +74,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             # define cylinder axis
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode != 'LOOSE-MESH':
+
+            if not self.use_loose_mesh:
                 self.cylinder_axis = event.type
                 self.execute(context)
 
@@ -93,10 +95,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
             bounding_capsule_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
-            else:  # self.obj_mode  == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
                 used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
@@ -109,7 +111,8 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 # used_vertices uses local space.
                 coordinates = []
 
@@ -123,7 +126,11 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
 
-                    if self.cylinder_axis == 'X':
+
+                    if self.cylinder_axis == 'Z' or self.use_loose_mesh:
+                        coordinates.append([v.x, v.y, v.z])
+                    elif self.cylinder_axis == 'X':
+
                         coordinates.append([v.y, v.z, v.x])
                     elif self.cylinder_axis == 'Y':
                         coordinates.append([v.x, v.z, v.y])
@@ -143,15 +150,14 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            # Scale has to be applied before location
-            center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
+                # Scale has to be applied before location
+                center = sum((Vector(v_co) for v_co in verts_co), Vector()) / len(verts_co)
 
-            # store data needed to generate a bounding box in a dictionary
-            bounding_capsule_data['parent'] = self.active_obj
-            bounding_capsule_data['verts_loc'] = verts_co
-            bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
-            collider_data.append(bounding_capsule_data)
+                # store data needed to generate a bounding box in a dictionary
+                bounding_capsule_data['parent'] = self.active_obj
+                bounding_capsule_data['verts_loc'] = verts_co
+                bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
+                collider_data.append(bounding_capsule_data)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -186,7 +192,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
-            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+
+            if self.my_space == 'LOCAL' and creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 # Align the bounding capsule with the original object's rotation
                 new_collider.rotation_euler = parent.rotation_euler
                 new_collider.matrix_world = rotation_matrix_4x4 @ Matrix.Translation(center_capsule)
@@ -204,6 +212,10 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             parent_name = parent.name
             super().set_collider_name(new_collider, parent_name)
             self.custom_set_parent(context, parent, new_collider)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

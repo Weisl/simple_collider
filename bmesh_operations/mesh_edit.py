@@ -58,3 +58,24 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
     bm.to_mesh(me)
 
     return me
+
+def delete_non_selected_verts(obj):
+    # Create a BMesh from the object's mesh data
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+
+    # Select non-selected vertices
+    non_selected_verts = [v for v in bm.verts if not v.select]
+
+    # Remove non-selected vertices
+    bmesh.ops.delete(bm, geom=non_selected_verts, context='VERTS')
+
+    # Write the updated BMesh back to the mesh
+    bm.to_mesh(obj.data)
+    bm.free()
+
+    # Update the mesh to reflect changes
+    obj.data.update()
+
+    return obj
+

@@ -12,6 +12,8 @@ from mathutils import Vector, Matrix, Quaternion
 from .. import __package__ as base_package
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from ..groups.user_groups import set_object_color, set_default_group_values
+from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
+from ..bmesh_operations.mesh_edit import delete_non_selected_verts
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material
 from ..pyshics_materials.material_functions import set_material
@@ -55,7 +57,7 @@ def geometry_node_group_empty_new():
     return group
 
 
-def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
+def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default', key='',
                     highlight=False):
     """Draw label in the 3D Viewport"""
 
@@ -72,7 +74,7 @@ def draw_modal_item(self, font_id, i, vertical_px_offset, left_margin, label, va
     color_error = self.prefs.modal_color_error
 
     # padding bottom
-    font_size = int(self.prefs.modal_font_size / 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
 
     # padding_bottom = self.prefs.padding_bottom
     padding_bottom = 0
@@ -202,7 +204,8 @@ def draw_viewport_overlay(self, context):
         value = str(self.cylinder_axis)
         creation_mode = self.creation_mode[
             self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
-        if creation_mode == 'LOOSE-MESH':
+
+        if self.use_loose_mesh:
             type = 'disabled'
         else:
             type = 'enum'
@@ -240,6 +243,16 @@ def draw_viewport_overlay(self, context):
     label = "Toggle X Ray "
     value = str(self.x_ray)
     item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
+    items.append(item)
+
+    label = "Use Loose Islands"
+    value = str(self.use_loose_mesh)
+    item = {'label': label, 'value': value, 'key': '(I)', 'type': 'bool', 'highlight': False}
+    items.append(item)
+
+    label = "Join Primitives"
+    value = str(self.join_primitives)
+    item = {'label': label, 'value': value, 'key': '(J)', 'type': 'bool', 'highlight': False}
     items.append(item)
 
     label = "Opacity"
@@ -336,7 +349,7 @@ def draw_viewport_overlay(self, context):
 
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
-    font_size = int(self.prefs.modal_font_size / 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale/ 3.6)
     vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
@@ -353,7 +366,7 @@ def draw_viewport_overlay(self, context):
         draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, color)
 
     for i, item in enumerate(items):
-        draw_modal_item(self, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'], value=item['value'],
+        draw_modal_item(self, context, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'], value=item['value'],
                         key=item['key'], type=item['type'], highlight=item['highlight'])
 
 
@@ -1066,18 +1079,29 @@ class OBJECT_OT_add_bounding_object():
                     self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[
                     self.creation_mode_idx]
 
-                if creation_mode == 'LOOSE-MESH':
+
+                # Temp meshes for Loose islands
+                if self.use_loose_mesh:
+
                     base = obj
-                    if self.use_modifier_stack and self.my_use_modifier_stack:
-                        bpy.context.view_layer.objects.active = obj
-                        bpy.ops.object.mode_set(mode='OBJECT')
 
-                        tmp_ob = obj.copy()
-                        tmp_ob.data = obj.data.copy()
-                        bpy.context.collection.objects.link(tmp_ob)
+                    bpy.context.view_layer.objects.active = obj
+                    #bpy.ops.object.mode_set(mode='OBJECT')
 
-                        self.apply_all_modifiers(context, tmp_ob)
-                        base = tmp_ob
+                    tmp_ob = obj.copy()
+                    tmp_ob.data = obj.data.copy()
+                    col = self.add_to_collections(tmp_ob, 'tmp_mesh', hide=False,
+                                                  color=self.prefs.col_tmp_collection_color)
+
+                    if self.obj_mode == 'EDIT':
+                        tmp_ob = delete_non_selected_verts(tmp_ob)
+
+
+                    self.apply_all_modifiers(context, tmp_ob)
+                    base = tmp_ob
+
+                    self.tmp_meshes.append(tmp_ob)
+
 
                     if use_local and self.my_space == 'LOCAL':
                         split_objs = create_objs_from_island(base, use_world=local_world_spc)
@@ -1190,8 +1214,9 @@ class OBJECT_OT_add_bounding_object():
             group.links.new(geom_in.outputs[0], hull_node.inputs[0])
             group.links.new(hull_node.outputs[0], geom_out.inputs[0])
 
-        modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
-        modifier.node_group = group
+        if not self.join_primitives:
+            modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
+            modifier.node_group = group
 
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
@@ -1217,6 +1242,20 @@ class OBJECT_OT_add_bounding_object():
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
         except ValueError:
             pass
+
+    def join_primitives(self, context):
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        last_selected = None
+
+        for obj in self.new_colliders_list:
+            if obj:
+                obj.select_set(True)
+                context.view_layer.objects.active = self.new_colliders_list[0]
+                last_selected = obj
+
+        bpy.ops.object.join()
+        self.new_colliders_list = [self.new_colliders_list[0]]
 
     def create_debug_object_from_verts(self, context, verts):
         bm = bmesh.new()
@@ -1350,6 +1389,11 @@ class OBJECT_OT_add_bounding_object():
         self.my_use_modifier_stack = colSettings.default_modifier_stack
         self.x_ray = context.space_data.shading.show_xray
 
+        # Modal Bools
+        self.join_primitives = colSettings.default_join_primitives
+        self.use_loose_mesh = colSettings.default_use_loose_island
+
+
         # Modal MODIFIERS
         self.remesh_active = False
         self.remesh_modifiers = []
@@ -1387,7 +1431,9 @@ class OBJECT_OT_add_bounding_object():
         self.shading_idx = 0
         self.shading_modes = ['OBJECT', 'MATERIAL', 'SINGLE']
 
-        self.creation_mode = ['INDIVIDUAL', 'SELECTION', 'LOOSE-MESH']
+
+        self.creation_mode = ['INDIVIDUAL', 'SELECTION']
+
         self.creation_mode_edit = ['INDIVIDUAL', 'SELECTION']
 
         self.creation_mode_idx = self.creation_mode.index(colSettings.default_creation_mode)
@@ -1480,14 +1526,15 @@ class OBJECT_OT_add_bounding_object():
                 if not obj:
                     continue
 
-                if self.use_recenter_origin:
-                    # set origin causes issues. Does not work properly
-                    center = self.calculate_center_of_mass(obj)
-                    self.set_custom_origin_location(obj, center)
+                if not self.join_primitives:
+                    if self.use_recenter_origin:
+                        # set origin causes issues. Does not work properly
+                        center = self.calculate_center_of_mass(obj)
+                        self.set_custom_origin_location(obj, center)
 
-                if self.use_custom_rotation:
-                    if len(self.col_rotation_matrix_list) > 0:
-                        self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
+                    if self.use_custom_rotation:
+                        if len(self.col_rotation_matrix_list) > 0:
+                            self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
 
                 # remove modifiers if they have the default value
                 if self.current_settings_dic['displace_offset'] == 0.0:
@@ -1553,6 +1600,18 @@ class OBJECT_OT_add_bounding_object():
             context.space_data.shading.show_xray = self.x_ray
             # Another function needs to be called for the modal UI to update :(
             self.set_collisions_wire_preview(self.prefs.wireframe_mode)
+
+        elif event.type == 'J' and event.value == 'RELEASE':
+            self.join_primitives = not self.join_primitives
+            if self.join_primitives:
+                self.shape = "mesh_shape"
+            else:
+                self.shape = self.initial_shape
+            self.execute(context)
+
+        elif event.type == 'I' and event.value == 'RELEASE':
+            self.use_loose_mesh = not self.use_loose_mesh
+            self.execute(context)
 
         elif event.type == 'M' and event.value == 'RELEASE' and self.use_creation_mode:
             if self.obj_mode == 'OBJECT' and not self.is_mesh_to_collider:

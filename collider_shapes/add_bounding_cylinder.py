@@ -421,6 +421,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         self.use_cylinder_segments = True
         self.use_cylinder_axis = True
         self.shape = 'convex_shape'
+        self.initial_shape = 'convex_shape'
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -469,10 +470,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             bounding_cylinder_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 used_vertices = self.get_vertices_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
-            else:
+            else: # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
                 used_vertices = self.get_vertices_Object(
                     obj, use_modifiers=self.my_use_modifier_stack)
 
@@ -485,7 +486,9 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
 
                 coordinates = []
                 height = []
@@ -535,38 +538,42 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+                bounding_box, center = self.generate_bounding_box(verts_co)
 
-            coordinates = []
-            height = []
+                if self.prefs.debug:
+                    debug_obj = self.create_debug_object_from_verts(context, verts_co)
 
-            # Scale has to be applied before location
-            # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
-            bounding_box, center = self.generate_bounding_box(verts_co)
-            center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
+                coordinates = []
+                height = []
 
-            for v in verts_co:
-                if self.cylinder_axis == 'X':
-                    coordinates.append([v.y, v.z])
-                    height.append(v.x)
-                elif self.cylinder_axis == 'Y':
-                    coordinates.append([v.x, v.z])
-                    height.append(v.y)
-                elif self.cylinder_axis == 'Z':
-                    coordinates.append([v.x, v.y])
-                    height.append(v.z)
+                # Scale has to be applied before location
+                # v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                bounding_box, center = self.generate_bounding_box(verts_co)
+                center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
-            depth = abs(max(height) - min(height))
+                for v in verts_co:
+                    if self.cylinder_axis == 'X':
+                        coordinates.append([v.y, v.z])
+                        height.append(v.x)
+                    elif self.cylinder_axis == 'Y':
+                        coordinates.append([v.x, v.z])
+                        height.append(v.y)
+                    elif self.cylinder_axis == 'Z':
+                        coordinates.append([v.x, v.y])
+                        height.append(v.z)
 
-            nsphere = welzl(np.array(coordinates))
-            radius = np.sqrt(nsphere.sqr_radius)
+                depth = abs(max(height) - min(height))
 
-            bounding_cylinder_data['parent'] = self.active_obj
-            bounding_cylinder_data['radius'] = radius
-            bounding_cylinder_data['depth'] = depth
-            bounding_cylinder_data['center_point'] = [
-                center[0], center[1], center[2]]
-            collider_data = [bounding_cylinder_data]
+                nsphere = welzl(np.array(coordinates))
+                radius = np.sqrt(nsphere.sqradius)
+
+                bounding_cylinder_data['parent'] = self.active_obj
+                bounding_cylinder_data['radius'] = radius
+                bounding_cylinder_data['depth'] = depth
+                bounding_cylinder_data['center_point'] = [
+                        center[0], center[1], center[2]]
+                collider_data = [bounding_cylinder_data]
+
 
         bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -594,6 +601,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             super().set_collider_name(new_collider, parent.name)
             self.custom_set_parent(context, parent, new_collider)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
