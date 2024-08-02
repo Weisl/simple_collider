@@ -1,10 +1,10 @@
 import os
-import shutil
 from pathlib import Path
 
-from . import properties_panels
 from . import popup
+from . import properties_panels
 from .properties_panels import collider_presets_folder
+from .. import __package__ as base_package
 
 classes = (
     properties_panels.EXPLORER_OT_open_directory_new,
@@ -25,7 +25,7 @@ def get_preset_folder_path():
     path = Path(str(__file__))
     parent = path.parent.parent.parent.absolute()
 
-    collider_presets = str(__package__.split('.')[0])
+    collider_presets = str(base_package)
     return os.path.join(parent, collider_presets, "presets")
 
 
@@ -34,12 +34,14 @@ def initialize_presets():
 
     # Get a list of all the files in your bundled presets folder
     my_bundled_presets = get_preset_folder_path()
-    files = os.listdir(my_bundled_presets)
+    print("Preset Path: " + my_bundled_presets)
+    print("My Presets: " + my_presets)
+    # files = os.listdir(my_bundled_presets)
 
     # Copy them
-    for f in files:
-        filepath = os.path.join(my_bundled_presets, f)
-        shutil.copy2(filepath, my_presets)
+    # for f in files:
+    #     filepath = os.path.join(my_bundled_presets, f)
+    #     shutil.copy2(filepath, my_presets)
 
 
 def register():

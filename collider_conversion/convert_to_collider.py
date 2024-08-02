@@ -1,7 +1,9 @@
 import bpy
 from bpy.types import Operator
 
+from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
 default_shape = 'box_shape'
 default_group = 'USER_01'
 
@@ -14,7 +16,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def store_init_state(obj, name, user_collections):
-        obj['original_collections'] = obj.get('original_collections') if obj.get('original_collections') else user_collections
+        obj['original_collections'] = obj.get('original_collections') if obj.get(
+            'original_collections') else user_collections
         obj['original_name'] = obj.get('original_name') if obj.get('original_name') else name
 
     @classmethod
@@ -22,9 +25,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # Convert is only supported in object mode
         return False if context.mode != 'OBJECT' else super().poll(context)
 
-    def cancel_cleanup(self, context):
-        print('baseobjs = ' + str(self.baseobjs))
-        for obj in self.baseobjs:
+    def cancel_cleanup(self, context, **kwargs):
+        print('base_objs = ' + str(self.base_objs))
+        for obj in self.base_objs:
             obj.hide_set(False)
             if obj.get('original_name'):
                 name = obj.get('original_name')
@@ -61,7 +64,6 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_creation_mode = True
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
 
-
         self.shape = self.collider_shapes[self.collider_shapes_idx]
         return {'RUNNING_MODAL'}
 
@@ -72,7 +74,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
             if self.prefs.debug == False:
-                self.remove_objects(self.baseobjs)
+                self.remove_objects(self.base_objs)
                 self.remove_empty_collection('base_obj')
 
         status = super().modal(context, event)
@@ -87,23 +89,23 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
-
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
         # CLEANUP and INIT
         super().execute(context)
 
-        # list of coller
+        # list of collider
         collider_data = []
         # user collections of the objs
         user_collections = []
         # tmp collection for base objs
         base_collections = [self.create_collection('base_obj')]
-        self.baseobjs = []
+        self.base_objs = []
 
         # get list of objects to be converted
-        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True, add_to_tmp_meshes=False)
+        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=False, use_mesh_copy=True,
+                                                add_to_tmp_meshes=False)
 
         for base_ob, obj in objs:
 
@@ -112,7 +114,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             new_collider.data = new_mesh
 
             self.store_init_state(base_ob, base_ob.name, base_ob.users_collection)
-            self.baseobjs.append(base_ob)
+            self.base_objs.append(base_ob)
 
             user_collections = base_ob['original_collections']
             bpy.context.collection.objects.link(new_collider)
@@ -126,8 +128,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                 base_ob.name = base_ob.name + '_tmp'
             base_ob.hide_set(True)
             # naming
-            prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-
+            prefs = context.preferences.addons[base_package].preferences
 
             print('original name = ' + original_name)
 
@@ -146,9 +147,12 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             mesh_collider_data['new_collider'] = new_collider
             collider_data.append(mesh_collider_data)
 
-        creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+        creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+            self.creation_mode_edit[self.creation_mode_idx]
+
 
         if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
             for mesh_collider_data in collider_data:
                 basename = mesh_collider_data['basename']
                 new_collider = mesh_collider_data['new_collider']
@@ -162,7 +166,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
                 else:
                     super().set_collider_name(new_collider, basename)
 
-        else: # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+        else:  # self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             # Deselect all objects
             for obj in bpy.data.objects: obj.select_set(False)
 
@@ -184,11 +188,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             else:
                 super().set_collider_name(new_collider, basename)
 
-
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Convert to Collider", elapsed_time)
         self.report({'INFO'}, f"Convert to Collider: {float(elapsed_time)}")
 
         return {'RUNNING_MODAL'}
-
-

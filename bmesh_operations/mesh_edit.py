@@ -1,10 +1,20 @@
-import bpy, bmesh
+import bmesh
+import bpy
+
 
 def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
-    # sourcery skip: use-contextlib-suppress
-    """ takes as input a list of bm references and outputs a single merged bmesh
-    allows an additional 'normal_update=True' to force _normal_ calculations.
     """
+    Merge multiple BMesh objects into a single BMesh, with optional normal updates.
+
+    Parameters:
+    list_of_bmeshes (list of bmesh.types.BMesh): List of BMesh objects to be merged.
+    list_of_matrices (list of mathutils.Matrix): List of transformation matrices corresponding to each BMesh object.
+    normal_update (bool, optional): If True, update the normals of the resulting BMesh. Defaults to False.
+
+    Returns:
+    bpy.types.Mesh: A new Blender Mesh object containing the merged BMesh data.
+    """
+
     bm = bmesh.new()
     add_vert = bm.verts.new
     add_face = bm.faces.new
@@ -49,7 +59,6 @@ def bmesh_join(list_of_bmeshes, list_of_matrices, normal_update=False):
 
     return me
 
-
 def delete_non_selected_verts(obj):
     # Create a BMesh from the object's mesh data
     bm = bmesh.new()
@@ -69,3 +78,4 @@ def delete_non_selected_verts(obj):
     obj.data.update()
 
     return obj
+

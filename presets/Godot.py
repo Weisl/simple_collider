@@ -1,4 +1,5 @@
 import bpy
+
 prefs = bpy.context.preferences.addons['collider_tools'].preferences
 
 prefs.naming_position = 'SUFFIX'

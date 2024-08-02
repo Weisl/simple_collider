@@ -1,16 +1,22 @@
 from bl_operators.presets import AddPresetBase
 from bpy.types import Operator
 
+from .. import __package__ as base_package
+
+# Set ADDON_NAME based on __package__, with a fallback for direct script execution
+ADDON_NAME = base_package if base_package else "collider_tools"
+folder_name = 'collider_tools'
+
 
 class COLLISION_preset(AddPresetBase, Operator):
-    '''Presets for collider creation'''
+    """Presets for collider creation"""
     bl_idname = "collision.collision_name_preset"
     bl_label = "Collision Naming Presets"
     preset_menu = "OBJECT_MT_collision_presets"
 
-    # variable used for all preset values
+    # Common variable used for all preset values
     preset_defines = [
-        "prefs = bpy.context.preferences.addons['collider_tools'].preferences"
+        f'prefs = bpy.context.preferences.addons["{ADDON_NAME}"].preferences'
     ]
 
     # properties to store in the preset
@@ -42,5 +48,5 @@ class COLLISION_preset(AddPresetBase, Operator):
         "prefs.physics_material_filter",
     ]
 
-    # where to store the preset
-    preset_subdir = "collider_tools"
+    # Directory to store the presets
+    preset_subdir = folder_name

@@ -4,6 +4,7 @@ from bpy.types import Operator
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
+
 class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     """Create convex bounding collisions based on the selection"""
     bl_idname = "mesh.add_bounding_convex_hull"
@@ -64,9 +65,12 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
 
             ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+                self.creation_mode_edit[self.creation_mode_idx]
+
 
             if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 # duplicate object
                 convex_collision_data['parent'] = base_ob
                 convex_collision_data['verts_loc'] = ws_vtx_co
@@ -83,21 +87,22 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
                 convex_collision_data['verts_loc'] = verts_co
                 collider_data = [convex_collision_data]
 
+
         bpy.context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for convex_collision_data in collider_data:
             # get data from dictionary
             parent = convex_collision_data['parent']
-            verts_loc = convex_collision_data['verts_loc']            
+            verts_loc = convex_collision_data['verts_loc']
 
             if self.prefs.debug:
-                debug_obj = self.create_debug_object_from_verts(context, verts_loc)
-            
+                self.create_debug_object_from_verts(context, verts_loc)
+
             bm = bmesh.new()
             for v in verts_loc:
                 bm.verts.new(v)  # add a new vert
-            
+
             ch = bmesh.ops.convex_hull(bm, input=bm.verts)
 
             bmesh.ops.delete(

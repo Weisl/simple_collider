@@ -1,0 +1,37 @@
+schema_version = "1.0.0"
+
+id = "collider_tools"
+version = "2.0.0"
+name = "Collider Tools"
+tagline = "Collider Tools is a Blender addon to create physics colliders for games and real-time applications."
+maintainer = "Matthias Patscheider <patscheider.matthias@gmail.com>"
+type = "add-on"
+
+website = "https://weisl.github.io/collider-tools_overview/"
+
+tags = ["3D View", "Scene", "User Interface"]
+
+blender_version_min = "4.2.0"
+
+license = [
+    "SPDX:GPL-3.0-or-later",
+]
+
+copyright = [
+    "2023 Matthias Patscheider",
+]
+
+# Optional: bundle 3rd party Python modules.
+# https://docs.blender.org/manual/en/dev/advanced/extensions/python_wheels.html
+wheels = [
+    "./wheels/scipy-1.14.0-cp311-cp311-win_amd64.whl",
+]
+
+platforms = ["windows-x64", "linux-x64"]
+
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    "/.git/",
+    "/*.zip",
+]

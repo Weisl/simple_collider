@@ -6,8 +6,9 @@ import bmesh
 import bpy
 from bpy.types import Operator
 
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.mesh_edit import bmesh_join
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
 
 
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
@@ -18,7 +19,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def overwrite_executable_path(path):
-        '''Users can overwrite the default executable path. '''
+        """Users can overwrite the default executable path. """
         # Check executable path
         executable_path = bpy.path.abspath(path)
 
@@ -26,7 +27,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def set_temp_data_path(path):
-        '''Set folder to temporarily store the exported data. '''
+        """Set folder to temporarily store the exported data. """
         # Check data path
         data_path = bpy.path.abspath(path)
 
@@ -104,16 +105,15 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 new_mesh = self.mesh_from_selection(
                     obj, use_modifiers=self.my_use_modifier_stack)
 
-            if new_mesh == None:
+            if new_mesh is None:
                 continue
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
-            self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
-                convex_collision_data = {}
-                convex_collision_data['parent'] = base_ob
-                convex_collision_data['mtx_world'] = base_ob.matrix_world.copy()
-                convex_collision_data['mesh'] = new_mesh
+
+                self.creation_mode_edit[self.creation_mode_idx]
+            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+                convex_collision_data = {'parent': base_ob, 'mtx_world': base_ob.matrix_world.copy(), 'mesh': new_mesh}
+
                 collider_data.append(convex_collision_data)
 
             # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
@@ -121,10 +121,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION' and not self.use_loose_mesh:
-            convex_collision_data = {}
-            convex_collision_data['parent'] = self.active_obj
-            convex_collision_data['mtx_world'] = self.active_obj.matrix_world.copy()
+
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            convex_collision_data = {'parent': self.active_obj, 'mtx_world': self.active_obj.matrix_world.copy()}
+
 
             bmeshes = []
 
@@ -144,7 +144,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         for convex_collision_data in collider_data:
             parent = convex_collision_data['parent']
             mesh = convex_collision_data['mesh']
-            mtx_world = convex_collision_data['mtx_world']
 
             joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
             bpy.context.scene.collection.objects.link(joined_obj)
@@ -210,7 +209,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             exportTime = time.time()
 
-            cmd_line = ('"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}').format(
+
+            cmd_line = '"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}'.format(
                 vhacd_exe,
                 obj_filename,
                 colSettings.maxHullAmount,
@@ -265,10 +265,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             for ob in imported:
                 ob.select_set(False)
 
-            convex_collisions_data = {}
-            convex_collisions_data['colliders'] = imported
-            convex_collisions_data['parent'] = parent
-            convex_collisions_data['mtx_world'] = parent.matrix_world.copy()
+            convex_collisions_data = {'colliders': imported, 'parent': parent, 'mtx_world': parent.matrix_world.copy()}
             convex_decomposition_data.append(convex_collisions_data)
 
         context.view_layer.objects.active = self.active_obj

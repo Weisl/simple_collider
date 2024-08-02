@@ -1,11 +1,13 @@
 import bpy
 from bpy.types import Operator
 
+from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import assign_physics_material, create_material, remove_materials
 
 default_shape = 'box_shape'
 default_group = 'USER_01'
+
 
 class OBJECT_OT_convert_to_mesh(Operator):
     """Convert selected colliders to mesh objects"""
@@ -15,6 +17,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     mesh_name: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
     keep_original_material: bpy.props.BoolProperty(name="Keep Material", default=False)
+
     def invoke(self, context, event):
         wm = context.window_manager
         return wm.invoke_props_dialog(self)
@@ -53,16 +56,15 @@ class OBJECT_OT_convert_to_mesh(Operator):
         for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
                 count += 1
-                # Reste object properties to regular mesh
+                # Rest object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
                 obj.name = OBJECT_OT_add_bounding_object.unique_name(self.mesh_name)
                 obj.display_type = 'TEXTURED'
 
-
                 if self.keep_original_material == False:
                     remove_materials(obj)
-                    
+
                     # replace collision material
                     if colSettings.defaultMeshMaterial:
                         assign_physics_material(obj, colSettings.defaultMeshMaterial.name)
@@ -72,7 +74,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
                         assign_physics_material(obj, default_material.name)
 
                 # remove from collision collection
-                prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+                prefs = context.preferences.addons[base_package].preferences
                 collection_name = prefs.col_collection_name
 
                 # remove from collision collection

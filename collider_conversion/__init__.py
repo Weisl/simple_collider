@@ -1,7 +1,7 @@
+from . import convert_from_name
 from . import convert_to_collider
 from . import convert_to_mesh
 from . import regenerate_name
-from . import convert_from_name
 
 classes = (
     convert_to_collider.OBJECT_OT_convert_to_collider,

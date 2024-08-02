@@ -1,14 +1,3 @@
-bl_info = {
-    "name": "Collider Tools",
-    "description": "Collider Tools is a Blender addon to create physics colliders for games and real-time applications.",
-    "author": "Matthias Patscheider",
-    "version": (1, 6, 0),
-    "blender": (3, 2, 0),
-    "location": "View3D > Collider Tools",
-    "doc_url": "https://weisl.github.io/collider-tools_overview/",
-    "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
-    "category": "Object"}
-
 # support reloading sub-modules
 if "bpy" in locals():
     import importlib
@@ -39,7 +28,7 @@ else:
 
 
 def register():
-    # call the register function of the sub modules
+    # call the register function of the submodules.
     ui.register()
 
     collider_operators.register()
@@ -56,7 +45,7 @@ def register():
 
 
 def unregister():
-    # call unregister function of the sub-modules
+    # call unregister function of the submodules.
     preferences.unregister()
 
     rigid_body.unregister()
@@ -68,3 +57,7 @@ def unregister():
     properties.unregister()
     groups.unregister()
     ui.unregister()
+
+
+if __name__ == "__main__":
+    register()

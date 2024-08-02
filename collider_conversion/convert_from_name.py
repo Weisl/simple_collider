@@ -1,8 +1,13 @@
-import bpy
 import re
 
+import bpy
 from bpy.types import Operator
-from ..groups.user_groups import get_groups_color, set_object_color, get_groups_identifier
+
+
+from .. import __package__ as base_package
+from ..groups.user_groups import get_groups_color, set_object_color
+
+
 
 class OBJECT_OT_convert_from_name(Operator):
     """Convert selected colliders to mesh objects"""
@@ -18,7 +23,7 @@ class OBJECT_OT_convert_from_name(Operator):
         colSettings = context.scene.collider_tools
         count = 0
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         col_prefix = prefs.collision_string_suffix
         col_suffix = prefs.collision_string_prefix
