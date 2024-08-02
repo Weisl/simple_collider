@@ -16,7 +16,8 @@ class COLLISION_preset(AddPresetBase, Operator):
 
     # Common variable used for all preset values
     preset_defines = [
-        f'prefs = bpy.context.preferences.addons["{ADDON_NAME}"].preferences'
+
+        f'prefs = bpy.context.preferences.addons["{ADDON_NAME}"].preferences',
     ]
 
     # properties to store in the preset

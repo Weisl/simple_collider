@@ -1,12 +1,11 @@
 import os
 import bpy
-from pathlib import Path
 
 from . import popup
 from . import properties_panels
 from .properties_panels import collider_presets_folder
 from .. import __package__ as base_package
-from ..preferences.presets_data import presets
+from ..presets.presets_data import presets
 
 classes = (
     properties_panels.EXPLORER_OT_open_directory_new,

@@ -2,19 +2,15 @@ import bpy
 from bpy.app.handlers import persistent
 
 from . import keymap
-from . import naming_preset
 from . import preferences
-from . import preset_operator
 from .preferences import update_panel_category
 from ..groups.user_groups import set_default_group_values
 from ..pyshics_materials.material_functions import set_default_active_mat
 
 classes = (
-    naming_preset.COLLISION_preset,
     preferences.BUTTON_OT_change_key,
     preferences.CollisionAddonPrefs,
     keymap.REMOVE_OT_hotkey,
-    preset_operator.SetColliderToolsPreferencesOperator,
 )
 
 

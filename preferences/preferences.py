@@ -5,9 +5,10 @@ from pathlib import Path
 from tempfile import gettempdir
 
 from .keymap import remove_key
-from .naming_preset import COLLISION_preset
-from .preset_operator import SetColliderToolsPreferencesOperator
-from .presets_data import presets
+
+from ..presets.naming_preset import COLLISION_preset
+from ..presets.preset_operator import SetColliderToolsPreferencesOperator
+from ..presets.presets_data import presets
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
