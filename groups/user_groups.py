@@ -1,4 +1,5 @@
 import bpy
+
 from .. import __package__ as base_package
 
 default_groups_enum = [
@@ -13,8 +14,6 @@ default_group = 'USER_01'
 
 
 def set_default_group_values():
-    from ..groups.user_groups import get_groups_identifier, get_groups_color, get_groups_name
-
     bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
     bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
 
@@ -37,10 +36,10 @@ def set_default_group_values():
 def update_hide(self, context):
     for ob in bpy.context.view_layer.objects:
         if self.mode == 'ALL_COLLIDER':
-            if ob.get('isCollider') == True:
+            if ob.get('isCollider'):
                 ob.hide_viewport = self.hide
         elif self.mode == 'OBJECTS':
-            if ob.get('isCollider') == None:
+            if ob.get('isCollider') is None:
                 ob.hide_viewport = self.hide
         else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_group') == self.mode:
@@ -50,7 +49,7 @@ def update_hide(self, context):
 def update_selected(self, context):
     print("self.select = " + str(self.selected))
     for ob in bpy.data.objects:
-        if self.selected == True:
+        if self.selected:
             ob.select_set(False)
         else:  # self.selected == False
             if self.mode == 'ALL_COLLIDER':
@@ -83,7 +82,7 @@ def get_groups_color(groups_identifier):
 class ColliderGroup(bpy.types.PropertyGroup):
 
     def get_groups_enum(self):
-        '''Set name and description according to type'''
+        """Set name and description according to type"""
         for group in default_groups_enum:
             if group[4] == self["mode"]:
                 # self.identifier = get_complexity_suffix(group[0])

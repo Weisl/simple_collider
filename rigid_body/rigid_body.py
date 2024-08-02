@@ -2,6 +2,7 @@ import bpy
 
 from .. import __package__ as base_package
 
+
 class OBJECT_OT_make_rigid_body(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.set_rigid_body"
@@ -27,4 +28,3 @@ class OBJECT_OT_make_rigid_body(bpy.types.Operator):
 
             obj.name = new_name
         return {'FINISHED'}
-

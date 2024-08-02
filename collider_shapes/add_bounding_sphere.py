@@ -56,7 +56,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def calculate_bounding_sphere(obj, used_vertices):
-        # Get vertices wit min and may values
+        # Get vertices wit min and may value
         for i, vertex in enumerate(used_vertices):
 
             # convert to global space
@@ -186,9 +186,9 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             bounding_sphere_data = {}
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
-            self.creation_mode_edit[self.creation_mode_idx]
+                self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
                                                                                                                    used_vertices)
                 bounding_sphere_data['parent'] = base_ob

@@ -4,6 +4,7 @@ from bpy.types import Operator
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..pyshics_materials.material_functions import set_material
 
+
 class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     """Create a new bounding box object"""
     bl_idname = "mesh.add_mesh_collision"
@@ -17,7 +18,6 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_weld_modifier = True
         self.use_keep_original_materials = True
         self.shape = "mesh_shape"
-
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -95,7 +95,7 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.remove_all_modifiers(context, new_collider)
 
             # align objects
-            #new_collider.matrix_world = parent.matrix_world
+            # new_collider.matrix_world = parent.matrix_world
 
             super().set_collider_name(new_collider, parent.name)
 

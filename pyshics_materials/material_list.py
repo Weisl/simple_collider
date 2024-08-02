@@ -1,14 +1,16 @@
 import bpy
 from bpy.types import UIList
+
 from .material_functions import set_active_physics_material
 from .. import __package__ as base_package
+
 
 class BUTTON_OP_set_active_physics_material(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "material.set_active_physics_material"
     bl_label = "Simple Object Operator"
 
-    mat_name : bpy.props.StringProperty()
+    mat_name: bpy.props.StringProperty()
 
     def execute(self, context):
         print(self.mat_name)
@@ -35,13 +37,13 @@ class MATERIAL_UL_physics_materials(UIList):
     set_initial_state: bpy.props.BoolProperty(default=True)
 
     def filter_list(self, context):
-        '''
+        """
         Filter physics material by tag
         :param self:
         :param context:
         :return: flt_flags is a bit-flag containing the filtering and flt
                 flt_neworder defines the order of all cameras
-        '''
+        """
 
         helper_funcs = bpy.types.UI_UL_list
 
@@ -57,7 +59,7 @@ class MATERIAL_UL_physics_materials(UIList):
 
         # Filter by object type.
         for idx, mat in enumerate(materials):
-            #filter out greace pencil objects
+            # filter out greace pencil objects
             if self.filter_name not in mat.name:
                 flt_flags[idx] &= ~self.bitflag_filter_item
             elif mat.is_grease_pencil == True:

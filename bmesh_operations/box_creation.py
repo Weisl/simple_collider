@@ -3,10 +3,9 @@ import bpy
 
 from bpy_extras.object_utils import object_data_add
 
-
 tmp_name = 'box_collider'
 
-# vertex indizes defining the faces of the cube
+# vertex indices defining the faces of the cube
 face_order = [
     (0, 1, 2, 3),
     (4, 7, 6, 5),
@@ -18,7 +17,16 @@ face_order = [
 
 
 def add_box_object(context, vertices):
-    """Generate a new object from the given vertices"""
+    """
+    Generate a new object from the given vertices.
+
+    Parameters:
+    context (bpy.types.Context): The Blender context in which to create the object.
+    vertices (list of tuple of float): A list of tuples representing the vertex coordinates.
+
+    Returns:
+    bpy.types.Object: The newly created object.
+    """
 
     global tmp_name
 
@@ -33,7 +41,17 @@ def add_box_object(context, vertices):
 
 
 def verts_faces_to_bbox_collider(self, context, verts_loc):
-    """Create box collider for selected mesh area in edit mode"""
+    """
+    Create a box collider for the selected mesh area in edit mode.
+
+    Parameters:
+    self (object): Reference to the operator or class instance calling this method.
+    context (bpy.types.Context): The Blender context in which to create the collider.
+    verts_loc (list of tuple of float): A list of tuples representing the vertex coordinates.
+
+    Returns:
+    bpy.types.Object: The newly created collider object.
+    """
 
     global tmp_name
 

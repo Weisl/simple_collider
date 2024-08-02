@@ -1,9 +1,11 @@
-import bpy
 import re
 
-from .. import __package__ as base_package
+import bpy
 from bpy.types import Operator
+
+from .. import __package__ as base_package
 from ..groups.user_groups import get_groups_color, set_object_color
+
 
 class OBJECT_OT_convert_from_name(Operator):
     """Convert selected colliders to mesh objects"""
