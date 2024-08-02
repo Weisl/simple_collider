@@ -54,7 +54,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
         # CLEANUP and INIT
         super().execute(context)
 
-        []
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
         verts_co = []
@@ -108,7 +107,6 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             mtx_world = bounding_box_data['mtx_world']
 
             new_collider = verts_faces_to_bbox_collider(self, context, verts_loc)
-            context.scene
 
             if self.my_space == 'LOCAL':
                 new_collider.matrix_world = mtx_world

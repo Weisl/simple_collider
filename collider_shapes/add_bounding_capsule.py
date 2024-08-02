@@ -6,7 +6,7 @@ from mathutils import Vector, Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
-from ..bmesh_operations import capsule_generation as Capsule
+from ..bmesh_operations.capsule_generation import create_capsule, calculate_radius_height, mesh_data_to_bmesh
 
 tmp_name = 'capsule_collider'
 
@@ -162,12 +162,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             center = bounding_capsule_data['center_point']
 
             # Calculate the radius and height of the bounding capsule
-            radius, height, center_capsule, rotation_matrix_4x4 = Capsule.calculate_radius_height(verts_loc)
-            data = Capsule.create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
+            radius, height, center_capsule, rotation_matrix_4x4 = calculate_radius_height(verts_loc)
+            data = create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
                                           latitudes=int(self.current_settings_dic['capsule_segments']),
                                           radius=radius * self.current_settings_dic['width_mult'],
                                           depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
-            bm = Capsule.mesh_data_to_bmesh(
+            bm = mesh_data_to_bmesh(
                 vs=data["vs"],
                 vts=data["vts"],
                 vns=data["vns"],
