@@ -22,8 +22,7 @@ def alignObjects(new, old):
 
 
 def create_name_number(name, nr):
-    nr = str('_{num:{fill}{width}}'.format(num=(nr), fill='0', width=3))
-    return name + nr
+    return f"{name}_{nr:03}"
 
 
 def geometry_node_group_empty_new():
@@ -82,48 +81,28 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
     else:
         blf.size(font_id, font_size)
 
-    if type == 'error':
-        blf.color(font_id, color_error[0], color_error[1], color_error[2], color_error[3])
-    elif type == 'key_title':
-        if self.ignore_input or self.navigation:
-            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
-    elif type == 'disabled':
-        blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
-    elif self.ignore_input or self.navigation:
-        blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2], color_ignore_input[3])
-    elif type == 'title':
-        blf.color(font_id, color_title[0], color_title[1], color_title[2], color_title[3])
-    elif highlight:
-        blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
-    else:
-        blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+    color_map = {
+        'error': color_error,
+        'key_title': color_highlight if self.ignore_input or self.navigation else color_title,
+        'disabled': color_ignore_input,
+        'title': color_title,
+        'default': col_default,
+        'bool': color_bool,
+        'enum': color_enum,
+        'modal': color_modal
+    }
 
+    blf.color(font_id, *color_map.get(type, col_default))
     blf.position(font_id, left_margin, padding_bottom + (i * vertical_px_offset), 0)
     blf.draw(font_id, label)
 
     if key:
-        if self.ignore_input or self.navigation:
-            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
-                      color_ignore_input[3])
-        elif highlight:
-            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
-        elif type == 'bool':
-            blf.color(font_id, color_bool[0], color_bool[1], color_bool[2], color_bool[3])
-        elif type == 'enum':
-            blf.color(font_id, color_enum[0], color_enum[1], color_enum[2], color_enum[3])
-        elif type == 'modal':
-            blf.color(font_id, color_modal[0], color_modal[1], color_modal[2], color_modal[3])
-        elif type == 'disabled':
-            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
-                      color_ignore_input[3])
-        else:  # type == 'default':
-            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
-
+        blf.color(font_id,
+                  *color_ignore_input if self.ignore_input or self.navigation else color_map.get(type, col_default))
         blf.position(font_id, left_margin + 220 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, key)
 
     if value:
-
         if self.ignore_input or self.navigation:
             blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
                       color_ignore_input[3])
@@ -138,9 +117,7 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
         blf.position(font_id, left_margin + 290 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, value)
 
-    i += 1
-    return i
-
+    return i + 1
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
@@ -237,20 +214,9 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(N)', 'type': type, 'highlight': False}
         items.append(item)
 
-    label = "Toggle X Ray "
-    value = str(self.x_ray)
-    item = {'label': label, 'value': value, 'key': '(C)', 'type': 'bool', 'highlight': False}
-    items.append(item)
-
-    label = "Use Loose Islands"
-    value = str(self.use_loose_mesh)
-    item = {'label': label, 'value': value, 'key': '(I)', 'type': 'bool', 'highlight': False}
-    items.append(item)
-
-    label = "Join Primitives"
-    value = str(self.join_primitives)
-    item = {'label': label, 'value': value, 'key': '(J)', 'type': 'bool', 'highlight': False}
-    items.append(item)
+    items.append({'label': "Toggle X Ray", 'value': str(self.x_ray), 'key': '(C)', 'type': 'bool', 'highlight': False})
+    items.append({'label': "Use Loose Islands", 'value': str(self.use_loose_mesh), 'key': '(I)', 'type': 'bool', 'highlight': False})
+    items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool', 'highlight': False})
 
     label = "Opacity"
     value = self.current_settings_dic['alpha']
