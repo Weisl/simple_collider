@@ -1,6 +1,6 @@
 # Define the presets as dictionaries
 presets = {
-    "UE": {
+    "UE-default": {
         "naming_position": 'PREFIX',
         "replace_name": False,
         "obj_basename": 'geo',
@@ -30,7 +30,7 @@ presets = {
         "physics_material_name": 'MI_COL',
         "physics_material_filter": 'COL'
     },
-    "Unity": {
+    "Unity-default": {
         "naming_position": 'SUFFIX',
         "replace_name": True,
         "obj_basename": 'Collider',
@@ -60,7 +60,7 @@ presets = {
         "physics_material_name": 'COL_DEFAULT',
         "physics_material_filter": 'COL'
     },
-    "Northlight": {
+    "Northlight-default": {
         "naming_position": 'SUFFIX',
         "replace_name": False,
         "obj_basename": 'geo',
@@ -90,7 +90,7 @@ presets = {
         "physics_material_name": 'COL_DEFAULT',
         "physics_material_filter": 'COL'
     },
-    "Godot": {
+    "Godot-default": {
         "naming_position": 'SUFFIX',
         "replace_name": False,
         "obj_basename": 'geo',
