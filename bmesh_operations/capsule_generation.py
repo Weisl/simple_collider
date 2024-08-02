@@ -5,6 +5,23 @@ from mathutils import Vector, Matrix
 
 
 def calculate_radius_height(points):
+    """
+    Calculate the radius, height, center, and rotation matrix of a capsule that fits the given points.
+
+    Parameters:
+    points (list of float): A list of 3D points that define the capsule.
+
+    Returns:
+    tuple:
+        radius (float): The radius of the capsule.
+        height (float): The height of the capsule.
+        center_vector (Vector): The center of the capsule as a Blender Vector.
+        rotation_matrix_4x4 (Matrix): The rotation matrix for the capsule as a 4x4 Blender Matrix.
+
+    Raises:
+    ValueError: If less than two points are provided.
+    """
+
     if len(points) < 2:
         raise ValueError("At least two points are required to define a capsule")
 
@@ -37,7 +54,6 @@ def calculate_radius_height(points):
     axis_point = np_points.mean(axis=0)
     radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
 
-
     # Calculate rotation matrix
     z_axis = principal_axis
     y_axis = np.cross([1, 0, 0], z_axis)
@@ -63,6 +79,22 @@ def calculate_radius_height(points):
 
 @staticmethod
 def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
+    """
+    Create a capsule mesh data.
+
+    Parameters:
+    longitudes (int): Number of longitudinal segments.
+    latitudes (int): Number of latitudinal segments.
+    rings (int): Number of ring segments in the middle section of the capsule.
+    depth (float): The depth (height) of the capsule.
+    radius (float): The radius of the capsule.
+    uv_profile (str): UV mapping profile, can be "FIXED", "ASPECT", or "UNIFORM".
+
+    Returns:
+    dict: A dictionary containing the vertices (vs), texture coordinates (vts), normals (vns),
+          vertex indices (v_indices), texture coordinate indices (vt_indices), and normal indices (vn_indices).
+    """
+
     # Validate arguments.
     verif_rad = max(0.0001, radius)
     verif_depth = max(0.0002, depth)
@@ -458,6 +490,21 @@ def mesh_data_to_bmesh(
         vs, vts, vns,
         v_indices, vt_indices, vn_indices):
     bm = bmesh.new()
+    """
+    Convert mesh data into a Blender BMesh.
+
+    Parameters:
+    vs (list of tuple of float): List of vertex coordinates.
+    vts (list of tuple of float): List of texture coordinates.
+    vns (list of tuple of float): List of normal vectors.
+    v_indices (list of tuple of int): List of vertex indices for each face.
+    vt_indices (list of tuple of int): List of texture coordinate indices for each face.
+    vn_indices (list of tuple of int): List of normal indices for each face.
+
+    Returns:
+    bmesh.types.BMesh: A BMesh object containing the mesh data.
+
+    """
 
     # Create BM vertices.
     len_vs = len(vs)

@@ -6,6 +6,16 @@ import bpy
 
 # Simple - get all linked faces
 def get_linked_faces(f):
+    """
+    Recursively retrieve all faces linked to the given face.
+
+    Parameters:
+    f (bmesh.types.BMFace): The starting face from which to find all linked faces.
+
+    Returns:
+    list of bmesh.types.BMFace: A list of all faces linked to the starting face.
+    """
+
     sys.setrecursionlimit(10 ** 6)
     if f.tag:
         # If the face is already tagged, return empty list
@@ -31,6 +41,19 @@ def get_linked_faces(f):
 
 
 def construct_python_faces(bmesh_faces):
+    """
+    Construct a dictionary representation of the given BMesh faces with remapped indices.
+
+    Parameters:
+    bmesh_faces (list of bmesh.types.BMFace): A list of BMesh faces.
+
+    Returns:
+    dict: A dictionary containing the vertices, faces, and face material indices.
+          - 'py_verts': List of vertex coordinates.
+          - 'py_faces': List of faces, each face being a list of vertex indices.
+          - 'py_face_mat': List of material indices for each face.
+    """
+
     # this is more involved, as we have to remap the new index
     # to do this, we reconstruct a new vert list and only append new items to it
     dic = {}
@@ -63,18 +86,28 @@ def construct_python_faces(bmesh_faces):
 
 
 def get_face_islands(bm, faces, face_islands=[], i=0):
+    """
+    Retrieve all face islands (groups of connected faces) from the given BMesh.
+
+    Parameters:
+    bm (bmesh.types.BMesh): The BMesh object.
+    faces (list of bmesh.types.BMFace): The list of faces to process.
+    face_islands (list, optional): The list to store face islands. Defaults to an empty list.
+    i (int, optional): The current recursion depth. Defaults to 0.
+
+    Returns:
+    list: A list of dictionaries, each containing the vertices, faces, and face material indices for an island.
+    """
+
     if len(faces) == 0:
         return face_islands
     else:
         bm.faces.ensure_lookup_table()
-        # print('FACES ' + str(len(faces)))
 
         linked_faces = get_linked_faces(faces[0])
-        # print('LINKED FACES ' + str(len(linked_faces)))
         face_islands.append(construct_python_faces(linked_faces))
 
         remaining_faces = [face for face in faces if face not in linked_faces]
-        # print('REMAINING FACES ' + str(len(remaining_faces)))
 
         i = i + 1
         islands = get_face_islands(bm, remaining_faces, face_islands, i)
@@ -83,6 +116,17 @@ def get_face_islands(bm, faces, face_islands=[], i=0):
 
 
 def create_objs_from_island(obj, use_world=True):
+    """
+    Create separate objects from face islands of the given object in edit mode.
+
+    Parameters:
+    obj (bpy.types.Object): The Blender object to process.
+    use_world (bool, optional): If True, use the world matrix for transformations. Defaults to True.
+
+    Returns:
+    list of bpy.types.Object: A list of new objects created from the face islands.
+    """
+
     wld_mat = obj.matrix_world
 
     # change mode to editmode
