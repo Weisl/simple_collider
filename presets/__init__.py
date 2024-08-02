@@ -1,6 +1,3 @@
-import bpy
-from bpy.app.handlers import persistent
-
 from . import naming_preset
 from . import presets_data
 from . import preset_operator
