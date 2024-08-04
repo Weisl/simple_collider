@@ -3,13 +3,16 @@ import bmesh
 import numpy as np
 from mathutils import Vector, Matrix
 
+tmp_name = 'capsule_collider'
 
-def calculate_radius_height(points):
+
+def calculate_radius_height(points, cylinder_axis='Z'):
     """
     Calculate the radius, height, center, and rotation matrix of a capsule that fits the given points.
 
     Parameters:
     points (list of float): A list of 3D points that define the capsule.
+    cylinder_axis (str): The axis ('X', 'Y', 'Z') along which the capsule is oriented.
 
     Returns:
     tuple:
@@ -54,14 +57,25 @@ def calculate_radius_height(points):
     axis_point = np_points.mean(axis=0)
     radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
 
-    # Calculate rotation matrix
-    z_axis = principal_axis
-    y_axis = np.cross([1, 0, 0], z_axis)
+    # Calculate rotation matrix to align the principal axis with the selected cylinder axis
+    if cylinder_axis == 'X':
+        x_axis = principal_axis
+        y_axis = np.cross([0, 0, 1], x_axis)
+        z_axis = np.cross(x_axis, y_axis)
+    elif cylinder_axis == 'Y':
+        y_axis = principal_axis
+        x_axis = np.cross([0, 0, 1], y_axis)
+        z_axis = np.cross(x_axis, y_axis)
+    else:  # default is 'Z'
+        z_axis = principal_axis
+        x_axis = np.cross([0, 1, 0], z_axis)
+        y_axis = np.cross(z_axis, x_axis)
+
     if np.linalg.norm(y_axis) < 1e-6:
         y_axis = np.cross([0, 1, 0], z_axis)
-    x_axis = np.cross(y_axis, z_axis)
-    y_axis /= np.linalg.norm(y_axis)
     x_axis /= np.linalg.norm(x_axis)
+    y_axis /= np.linalg.norm(y_axis)
+    z_axis /= np.linalg.norm(z_axis)
 
     rotation_matrix_3x3 = Matrix([
         [x_axis[0], y_axis[0], z_axis[0]],
@@ -136,7 +150,7 @@ def mesh_data_to_bmesh(
 
 
 @staticmethod
-def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
+def create_capsule_data(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
     """
     Create a capsule mesh data.
 

@@ -1,12 +1,10 @@
 from math import radians
-
 import bpy
 from bpy.types import Operator
 from mathutils import Vector, Matrix
-
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
-from ..bmesh_operations.capsule_generation import create_capsule, calculate_radius_height, mesh_data_to_bmesh
+from .utilities import get_sca_matrix
+from ..bmesh_operations.capsule_generation import create_capsule_data, calculate_radius_height, mesh_data_to_bmesh
 
 tmp_name = 'capsule_collider'
 
@@ -82,20 +80,21 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
         # List for storing dictionaries of data used to generate the collision meshes
         collider_data = []
-        vertices_coordinates = []
+        selection_vertex_coords = []
 
         objects = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
 
+        # iterate over base objects
         for base_object, obj in objects:
 
             context.view_layer.objects.active = obj
             bounding_capsule_data = {}
 
             if self.obj_mode == "EDIT" and base_object.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
-                used_vertices = self.get_vertices_edit(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
-                used_vertices = self.get_object_vertices(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
@@ -107,99 +106,76 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
+            vertex_coords_local = self.get_vertex_coordinates(obj, 'LOCAL', used_vertices)
+            vertex_coords_global = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
+
             if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
-                # used_vertices uses local space.
-                coordinates = []
-
-                for vertex in used_vertices:
-                    if self.my_space == 'LOCAL':
-                        vertex_position = vertex.co @ get_sca_matrix(scale)
-                    else:
-                        vertex_position = vertex.co @ matrix_world_space
-
-                    if self.cylinder_axis == 'Z' or self.use_loose_mesh:
-                        coordinates.append([vertex_position.x, vertex_position.y, vertex_position.z])
-                    elif self.cylinder_axis == 'X':
-                        coordinates.append([vertex_position.y, vertex_position.z, vertex_position.x])
-                    elif self.cylinder_axis == 'Y':
-                        coordinates.append([vertex_position.x, vertex_position.z, vertex_position.y])
-
-                center = sum((Vector(matrix_world_space @ Vector(v)) for v in coordinates), Vector()) / len(
-                    used_vertices)
-
-                bounding_capsule_data['parent'] = base_object
-                bounding_capsule_data['verts_loc'] = coordinates
-                bounding_capsule_data['center_point'] = [center[0], center[1], center[2]]
+                vertex_coords = vertex_coords_global if self.my_space == 'GLOBAL' else vertex_coords_local
+                bounding_capsule_data = {'parent': base_object,
+                                         'vertex_coords': vertex_coords}
                 collider_data.append(bounding_capsule_data)
-            else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-                world_space_vertex_coords = self.get_point_positions(obj, 'GLOBAL', used_vertices)
-                vertices_coordinates.extend(world_space_vertex_coords)
 
-        if vertices_coordinates:
-            center = sum((Vector(v_co) for v_co in vertices_coordinates), Vector()) / len(vertices_coordinates)
-            bounding_capsule_data = {
-                'parent': self.active_obj,
-                'verts_loc': vertices_coordinates,
-                'center_point': [center[0], center[1], center[2]]
-            }
-            collider_data = [bounding_capsule_data]
+            else:  # creation_mode == 'SELECTION':
+                # add all vertices in global space to the list
+                selection_vertex_coords.extend(vertex_coords_global)
+
+        if creation_mode == 'SELECTION':
+            bounding_capsule_data = {'parent': self.active_obj,
+                                     'vertex_coords': selection_vertex_coords}
+            collider_data.append(bounding_capsule_data)
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
         for bounding_capsule_data in collider_data:
             parent = bounding_capsule_data['parent']
-            verts_loc = bounding_capsule_data['verts_loc']
-            center = bounding_capsule_data['center_point']
+            vertex_coords = bounding_capsule_data['vertex_coords']
 
-            radius, height, center_capsule, rotation_matrix_4x4 = calculate_radius_height(verts_loc, self.cylinder_axis)
-            data = create_capsule(longitudes=self.current_settings_dic['capsule_segments'],
-                                  latitudes=int(self.current_settings_dic['capsule_segments']),
-                                  radius=radius * self.current_settings_dic['width_mult'],
-                                  depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
-            bm = mesh_data_to_bmesh(
-                vs=data["vs"],
-                vts=data["vts"],
-                vns=data["vns"],
-                v_indices=data["v_indices"],
-                vt_indices=data["vt_indices"],
-                vn_indices=data["vn_indices"])
+            if creation_mode == 'INDIVIDUAL' or self.use_loose_mesh:
+                # coordinates are based on self.my_space
+                radius, height, center_capsule, rotation_matrix_4x4 = calculate_radius_height(vertex_coords, self.cylinder_axis)
 
-            mesh_data = bpy.data.meshes.new("Capsule")
-            bm.to_mesh(mesh_data)
-            bm.free()
+                capsule_data = create_capsule_data(longitudes=self.current_settings_dic['capsule_segments'],
+                                                   latitudes=int(self.current_settings_dic['capsule_segments']),
+                                                   radius=radius * self.current_settings_dic['width_mult'],
+                                                   depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
 
-            new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
+                bm = mesh_data_to_bmesh(
+                    vs=capsule_data["vs"],
+                    vts=capsule_data["vts"],
+                    vns=capsule_data["vns"],
+                    v_indices=capsule_data["v_indices"],
+                    vt_indices=capsule_data["vt_indices"],
+                    vn_indices=capsule_data["vn_indices"])
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
-                self.creation_mode_edit[self.creation_mode_idx]
+                mesh_data = bpy.data.meshes.new("Capsule")
+                bm.to_mesh(mesh_data)
+                bm.free()
 
-            if self.my_space == 'LOCAL' and (creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh):
-                new_collider.rotation_euler = parent.rotation_euler
-                new_collider.matrix_world = rotation_matrix_4x4 @ Matrix.Translation(center_capsule)
-                new_collider.location = center
-            else:
+                new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
+
+                # it works when the origin is centered
                 if self.my_space == 'LOCAL':
-                    active_obj_matrix_world = self.active_obj.matrix_world
-                    center = active_obj_matrix_world.inverted() @ Vector(center)
-                    new_collider.location = center
-                else:
-                    new_collider.location = center
+                    # align object to parent object
+                    new_collider.matrix_world = base_object.matrix_world.copy()
+                    # offset the object by the capsule center
+                    translation_matrix = Matrix.Translation(center_capsule)
+                    # Apply the translation matrix to the new collider
+                    new_collider.matrix_world = new_collider.matrix_world @ translation_matrix
+                    # Apply the rotation matrix to the new collider
+                    new_collider.matrix_world = new_collider.matrix_world @ rotation_matrix_4x4
 
-            if self.cylinder_axis == 'X':
-                new_collider.rotation_euler.rotate_axis("Y", radians(90))
-            elif self.cylinder_axis == 'Y':
-                new_collider.rotation_euler.rotate_axis("X", radians(90))
 
-            self.new_colliders_list.append(new_collider)
-            collections = parent.users_collection
-            self.primitive_postprocessing(context, new_collider, collections)
 
-            parent_name = parent.name
-            super().set_collider_name(new_collider, parent_name)
-            self.custom_set_parent(context, parent, new_collider)
+                self.new_colliders_list.append(new_collider)
+                collections = parent.users_collection
+                self.primitive_postprocessing(context, new_collider, collections)
 
-        if self.join_primitives:
-            super().join_primitives(context)
+                parent_name = parent.name
+                super().set_collider_name(new_collider, parent_name)
+                self.custom_set_parent(context, parent, new_collider)
+
+            if self.join_primitives:
+                super().join_primitives(context)
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
