@@ -474,7 +474,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 used_vertices = self.get_vertices_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
             else: # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
-                used_vertices = self.get_vertices_Object(
+                used_vertices = self.get_object_vertices(
                     obj, use_modifiers=self.my_use_modifier_stack)
 
             if not used_vertices:

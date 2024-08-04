@@ -99,7 +99,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
-                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_object_vertices(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
