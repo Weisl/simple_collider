@@ -37,15 +37,9 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
-
-        # Convert is only supported in object mode
-        if context.mode != 'OBJECT':
-            return False
-
-        # Objects need to be selected
         count = 0
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 count = count + 1
         return count > 0
 

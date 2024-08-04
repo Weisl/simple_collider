@@ -22,7 +22,7 @@ class OBJECT_OT_regenerate_name(Operator):
 
         count = 0
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 count = count + 1
         return count > 0
 
