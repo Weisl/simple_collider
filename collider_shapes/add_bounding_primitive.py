@@ -119,6 +119,7 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 
     return i + 1
 
+
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
     items = []
@@ -215,8 +216,10 @@ def draw_viewport_overlay(self, context):
         items.append(item)
 
     items.append({'label': "Toggle X Ray", 'value': str(self.x_ray), 'key': '(C)', 'type': 'bool', 'highlight': False})
-    items.append({'label': "Use Loose Islands", 'value': str(self.use_loose_mesh), 'key': '(I)', 'type': 'bool', 'highlight': False})
-    items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool', 'highlight': False})
+    items.append({'label': "Use Loose Islands", 'value': str(self.use_loose_mesh), 'key': '(I)', 'type': 'bool',
+                  'highlight': False})
+    items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool',
+                  'highlight': False})
 
     label = "Opacity"
     value = self.current_settings_dic['alpha']
@@ -1183,6 +1186,10 @@ class OBJECT_OT_add_bounding_object():
         t1 = time.time() - self.t0
         return t1
 
+    def reset_display(self, context):
+        context.space_data.shading.color_type = self.original_color_type
+        context.space_data.shading.type = self.original_shading_type
+
     def cancel_cleanup(self, context, delete_colliders=True):
         if delete_colliders:
             # Remove previously created collisions
@@ -1197,7 +1204,7 @@ class OBJECT_OT_add_bounding_object():
             self.remove_objects(self.tmp_meshes)
             self.remove_empty_collection('tmp_mesh')
 
-        context.space_data.shading.color_type = self.original_color_type
+        self.reset_display(context)
 
         try:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -1382,7 +1389,7 @@ class OBJECT_OT_add_bounding_object():
         # Display settings
         self.color_type = context.space_data.shading.color_type
         self.original_color_type = context.space_data.shading.color_type
-
+        self.original_shading_type = context.space_data.shading.type
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
             context.space_data.shading.color_type = colSettings.default_color_type
@@ -1527,7 +1534,8 @@ class OBJECT_OT_add_bounding_object():
                 bpy.ops.object.mode_set(mode='OBJECT')
 
             # restore display settings
-            context.space_data.shading.color_type = self.original_color_type
+            self.reset_display(context)
+
             return {'FINISHED'}
 
         # Set ref values when switching mode to avoid jumping of field of view.
