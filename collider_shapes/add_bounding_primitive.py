@@ -127,14 +127,8 @@ def draw_viewport_overlay(self, context):
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
     if self.use_space:
         label = "Global/Local"
-        # Global/Local switch is currently only supported for cylindrical collider in Global Space
-        if (self.shape == 'convex_shape' or self.shape == 'capsule_shape') and self.creation_mode[
-            self.creation_mode_idx] == 'SELECTION':
-            type = 'disabled'
-            value = "GLOBAL"
-        else:
-            type = 'enum'
-            value = "GLOBAL" if self.my_space == 'GLOBAL' else "LOCAL"
+        type = 'enum'
+        value = str(self.my_space)
         item = {'label': label, 'value': value, 'key': '(G/L)', 'type': type, 'highlight': False}
         items.append(item)
 
