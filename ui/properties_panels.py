@@ -264,6 +264,8 @@ def draw_naming_presets(self, context):
 
     row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
 
+
+
     addon_name = get_addon_name()
 
     if platform.system() == 'Windows':
@@ -339,7 +341,7 @@ class OBJECT_MT_collision_presets(Menu):
     bl_label = "Collider Presets"
     bl_description = "Specify creation preset used for the collider generation"
     preset_subdir = "collider_tools"
-    preset_operator = "script.execute_preset"
+    preset_operator = "collision.load_collision_preset"
     subclass = 'PresetMenu'
     draw = Menu.draw_preset
 

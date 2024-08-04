@@ -1,11 +1,33 @@
+import bpy
 from bl_operators.presets import AddPresetBase
 from bpy.types import Operator
 
 from .. import __package__ as base_package
 
-# Set ADDON_NAME based on __package__, with a fallback for direct script execution
 ADDON_NAME = base_package if base_package else "collider_tools"
 folder_name = 'collider_tools'
+
+
+class PRESET_OT_load_preset(Operator):
+    """Presets for collider creation"""
+    bl_idname = "collision.load_collision_preset"
+    bl_label = "Load Collision Preset"
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        try:
+            bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname="OBJECT_MT_collision_presets")
+            self.report({'INFO'}, "Preset loaded successfully.")
+        except:
+            print('preset_update')
+            bpy.ops.object.upgrade_collider_tools_presets()
+            bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname="OBJECT_MT_collision_presets")
+            self.report({'INFO'}, "Updated and loaded preset successfully")
+
+        return {'FINISHED'}
+
+
 
 
 class COLLISION_preset(AddPresetBase, Operator):
