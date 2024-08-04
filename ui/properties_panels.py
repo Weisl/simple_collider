@@ -225,6 +225,20 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.label(text='Convert')
 
+    row = layout.row(align=True)
+
+    shapes = [{'identifier': 'box_shape', 'text': '', 'icon': 'MESH_CUBE'},
+              {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
+              {'identifier': 'capsule_shape', 'text': '', 'icon': 'MESH_CAPSULE'},
+              {'identifier': 'convex_shape', 'text': '', 'icon': 'MESH_ICOSPHERE'},
+              {'identifier': 'mesh_shape', 'text': '', 'icon': 'MESH_MONKEY'},
+              ]
+
+    for shape in shapes:
+        op = row.operator('object.assign_collision_shape', text=shape['text'], icon=shape['icon'])
+        # op = row.operator('object.assign_collision_shape', text='')
+        op.shape_identifier = shape['identifier']
+
     col = layout.column(align=True)
     row = col.row(align=True)
     row.operator('object.convert_to_collider', icon='PHYSICS')
@@ -263,8 +277,6 @@ def draw_naming_presets(self, context):
     row = layout.row(align=True)
 
     row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
-
-
 
     addon_name = get_addon_name()
 

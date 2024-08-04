@@ -35,7 +35,7 @@ class OBJECT_OT_regenerate_name(Operator):
             if obj is None:
                 continue
 
-            if obj.type != "MESH":
+            if obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
                 continue
 
             if not obj.get('isCollider'):
