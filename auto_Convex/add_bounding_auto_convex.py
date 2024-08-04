@@ -1,6 +1,6 @@
 import os
 import time
-from subprocess import Popen
+import subprocess
 
 import bmesh
 import bpy
@@ -10,11 +10,11 @@ from ..bmesh_operations.mesh_edit import bmesh_join
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 
-
 class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.vhacd'
     bl_label = 'Convex Decomposition'
-    bl_description = 'Create multiple convex hull colliders to represent any object using Hierarchical Approximate Convex Decomposition'
+    bl_description = ('Create multiple convex hull colliders to represent any object using Hierarchical Approximate '
+                      'Convex Decomposition')
     bl_options = {'REGISTER', 'PRESET'}
 
     @staticmethod
@@ -80,7 +80,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         if not vhacd_exe or not data_path:
             if not vhacd_exe:
                 self.report({'ERROR'},
-                            'V-HACD executable is required for Auto Convex to work. Please follow the installation instructions and try it again')
+                            'V-HACD executable is required for Auto Convex to work. Please follow the installation '
+                            'instructions and try it again')
             if not data_path:
                 self.report({'ERROR'}, 'Invalid temporary data path')
 
@@ -108,7 +109,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             if new_mesh is None:
                 continue
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx]
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+            self.creation_mode_edit[self.creation_mode_idx]
             if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
                 convex_collision_data = {'parent': base_ob, 'mtx_world': base_ob.matrix_world.copy(), 'mesh': new_mesh}
 
@@ -119,10 +121,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 meshes.append(new_mesh)
                 matrices.append(obj.matrix_world)
 
-
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
             convex_collision_data = {'parent': self.active_obj, 'mtx_world': self.active_obj.matrix_world.copy()}
-
 
             bmeshes = []
 
@@ -207,7 +207,6 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             exportTime = time.time()
 
-
             cmd_line = '"{}" "{}" -h {} -v {} -o {} -g {} -r {} -e {} -d {} -s {} -f {} -l {} -p {} -g {}'.format(
                 vhacd_exe,
                 obj_filename,
@@ -225,8 +224,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
 
-            vhacd_process = Popen(cmd_line, bufsize=-1,
-                                  close_fds=True, shell=True)
+            vhacd_process = subprocess.Popen(cmd_line, bufsize=-1, close_fds=True, shell=True)
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
