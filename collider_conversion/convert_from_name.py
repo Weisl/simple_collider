@@ -52,17 +52,17 @@ class OBJECT_OT_convert_from_name(Operator):
             if obj is None:
                 continue
 
-            name = obj.name
+            obj_name = obj.name
 
-            isCollider = False
+            is_collider = False
 
             # Dynamically create the regex pattern
             pattern1 = re.compile(fr'(^|{separator}){col_prefix}({separator}|$)', re.IGNORECASE)
             pattern2 = re.compile(fr'(^|{separator}){col_suffix}({separator}|$)', re.IGNORECASE)
 
             # Check for collider identifier
-            if (col_prefix and pattern1.search(name)) or (col_suffix and pattern2.search(name)):
-                isCollider = True
+            if (col_prefix and pattern1.search(obj_name)) or (col_suffix and pattern2.search(obj_name)):
+                is_collider = True
 
             # Check Collider Groups
             if prefs.collider_groups_enabled:
@@ -74,22 +74,22 @@ class OBJECT_OT_convert_from_name(Operator):
                 pattern_group2 = re.compile(fr'(^|{separator}){user_group_02}({separator}|$)', re.IGNORECASE)
                 pattern_group3 = re.compile(fr'(^|{separator}){user_group_03}({separator}|$)', re.IGNORECASE)
 
-                if user_group_01 and pattern_group1.search(name):
+                if user_group_01 and pattern_group1.search(obj_name):
                     obj['collider_group'] = 'USER_01'
                     color = get_groups_color('USER_01')
-                    isCollider = True
+                    is_collider = True
                     grouped = True
 
-                elif user_group_02 and pattern_group2.search(name):
+                elif user_group_02 and pattern_group2.search(obj_name):
                     obj['collider_group'] = 'USER_02'
                     color = get_groups_color('USER_02')
-                    isCollider = True
+                    is_collider = True
                     grouped = True
 
-                elif user_group_03 and pattern_group3.search(name):
+                elif user_group_03 and pattern_group3.search(obj_name):
                     obj['collider_group'] = 'USER_03'
                     color = get_groups_color('USER_03')
-                    isCollider = True
+                    is_collider = True
                     grouped = True
 
                 if grouped:
@@ -104,28 +104,28 @@ class OBJECT_OT_convert_from_name(Operator):
             pattern_convex_shape = re.compile(fr'(^|{separator}){convex_shape}({separator}|$)', re.IGNORECASE)
             pattern_mesh_shape = re.compile(fr'(^|{separator}){mesh_shape}({separator}|$)', re.IGNORECASE)
 
-            if box_shape and pattern_box_shape.search(name):
+            if box_shape and pattern_box_shape.search(obj_name):
                 obj['collider_shape'] = 'box_shape'
-                isCollider = True
+                is_collider = True
 
-            elif sphere_shape and pattern_sphere_shape.search(name):
+            elif sphere_shape and pattern_sphere_shape.search(obj_name):
                 obj['collider_shape'] = 'sphere_shape'
-                isCollider = True
+                is_collider = True
 
-            elif capsule_shape and pattern_capsule_shape.search(name):
+            elif capsule_shape and pattern_capsule_shape.search(obj_name):
                 obj['collider_shape'] = 'capsule_shape'
-                isCollider = True
+                is_collider = True
 
-            elif convex_shape and pattern_convex_shape.search(name):
+            elif convex_shape and pattern_convex_shape.search(obj_name):
                 obj['collider_shape'] = 'convex_shape'
-                isCollider = True
+                is_collider = True
 
-            elif mesh_shape and pattern_mesh_shape.search(name):
+            elif mesh_shape and pattern_mesh_shape.search(obj_name):
                 obj['collider_shape'] = 'mesh_shape'
-                isCollider = True
+                is_collider = True
 
 
-            if isCollider:
+            if is_collider:
                 obj['isCollider'] = True
                 count = count + 1
 
