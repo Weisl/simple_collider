@@ -119,6 +119,7 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 
     return i + 1
 
+
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
     items = []
@@ -215,8 +216,10 @@ def draw_viewport_overlay(self, context):
         items.append(item)
 
     items.append({'label': "Toggle X Ray", 'value': str(self.x_ray), 'key': '(C)', 'type': 'bool', 'highlight': False})
-    items.append({'label': "Use Loose Islands", 'value': str(self.use_loose_mesh), 'key': '(I)', 'type': 'bool', 'highlight': False})
-    items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool', 'highlight': False})
+    items.append({'label': "Use Loose Islands", 'value': str(self.use_loose_mesh), 'key': '(I)', 'type': 'bool',
+                  'highlight': False})
+    items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool',
+                  'highlight': False})
 
     label = "Opacity"
     value = self.current_settings_dic['alpha']
@@ -396,7 +399,8 @@ def add_weld_modifier(context, bounding_object):
 
 
 class OBJECT_OT_add_bounding_object():
-    """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding object collider_shapes"""
+    """Abstract parent class for modal collider_shapes contain common methods and properties for all add bounding
+    object collider_shapes"""
     bl_options = {'REGISTER', 'UNDO', 'GRAB_CURSOR', 'BLOCKING'}
     # GRAB_CURSOR + BLOCKING enables wrap-around mouse feature.
     bm = []
@@ -413,7 +417,8 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def set_custom_origin_location(obj, center_point):
-        """Set the origin of an object to the custom origin location. Only works if the object is not rotated or scaled at the moment"""
+        """Set the origin of an object to the custom origin location. Only works if the object is not rotated or
+        scaled at the moment"""
         # https://blender.stackexchange.com/questions/35825/changing-object-origin-to-arbitrary-point-without-origin-set
         obj.data.transform(mathutils.Matrix.Translation(-center_point))
         obj.location += center_point
@@ -480,26 +485,26 @@ class OBJECT_OT_add_bounding_object():
 
         positionsX, positionsY, positionsZ = cls.split_coordinates_xyz(v_co)
 
-        minX = min(positionsX)
-        minY = min(positionsY)
-        minZ = min(positionsZ)
+        min_x = min(positionsX)
+        min_y = min(positionsY)
+        min_z = min(positionsZ)
 
-        maxX = max(positionsX)
-        maxY = max(positionsY)
-        maxZ = max(positionsZ)
+        max_x = max(positionsX)
+        max_y = max(positionsY)
+        max_z = max(positionsZ)
 
         verts = [
-            (maxX, maxY, minZ),
-            (maxX, minY, minZ),
-            (minX, minY, minZ),
-            (minX, maxY, minZ),
-            (maxX, maxY, maxZ),
-            (maxX, minY, maxZ),
-            (minX, minY, maxZ),
-            (minX, maxY, maxZ),
+            (max_x, max_y, min_z),
+            (max_x, min_y, min_z),
+            (min_x, min_y, min_z),
+            (min_x, max_y, min_z),
+            (max_x, max_y, max_z),
+            (max_x, min_y, max_z),
+            (min_x, min_y, max_z),
+            (min_x, max_y, max_z),
         ]
 
-        center_point = Vector(((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2))
+        center_point = Vector(((min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2))
 
         return verts, center_point
 
@@ -594,7 +599,7 @@ class OBJECT_OT_add_bounding_object():
 
         blf.color(font_id, font_color[0], font_color[1], font_color[2], font_color[3])
         blf.position(font_id, 100, 100, 0)
-        face_label = str(sum(self.facecounts))
+        face_label = str(sum(self.face_counts))
         blf.draw(font_id, face_label)
 
     def collider_name(self, basename='Basename'):
@@ -671,7 +676,8 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def get_mesh_Edit(obj, use_modifiers=False):
-        """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return """
+        """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no
+        vertices to return"""
         me = obj.data
         new_mesh = bpy.data.meshes.new('')
 
@@ -680,7 +686,8 @@ class OBJECT_OT_add_bounding_object():
             for mod in obj.modifiers:
                 mod.show_on_cage = True
                 mod.show_in_editmode = True
-            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (
+            # adding, deleting, transforming)
 
             # Get mesh information with the modifiers applied
             depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -689,7 +696,8 @@ class OBJECT_OT_add_bounding_object():
 
         else:  # use_modifiers == False
             # Get a BMesh representation
-            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
+            me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (
+            # adding, deleting, transforming)
             bm_orig = bmesh.from_edit_mesh(me)
             bm = bm_orig.copy()
 
@@ -706,7 +714,8 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def get_vertices_Edit(obj, use_modifiers=False):
-        """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return """
+        """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no
+        vertices to return"""
         me = obj.data
 
         # len(obj.modifiers) has to be bigger than 0. If there are no modifiers are assigned to the object the simple mesh can be used.
@@ -739,7 +748,7 @@ class OBJECT_OT_add_bounding_object():
         return used_vertices
 
     @staticmethod
-    def get_vertices_Object(obj, use_modifiers=False):
+    def get_object_vertices(obj, use_modifiers=False):
         """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return """
         # bpy.ops.object.mode_set(mode='EDIT')
         me = obj.data
@@ -1139,21 +1148,21 @@ class OBJECT_OT_add_bounding_object():
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
     def add_displacement_modifier(self, context, bounding_object):
-        # add displacement modifier and safe it to manipulate the strenght in the modal operator
+        # add displacement modifier and safe it to manipulate the strength in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_displace", type='DISPLACE')
         modifier.strength = self.current_settings_dic['displace_offset']
 
         self.displace_modifiers.append(modifier)
 
     def add_remesh_modifier(self, context, bounding_object):
-        # add decimation modifier and safe it to manipulate the strenght in the modal operator
+        # add decimation modifier and safe it to manipulate the strength in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_remesh", type='REMESH')
         modifier.mode = 'VOXEL'
         modifier.voxel_size = self.current_settings_dic['voxel_size']
         self.remesh_modifiers.append(modifier)
 
     def add_decimate_modifier(self, context, bounding_object):
-        # add decimation modifier and safe it to manipulate the strenght in the modal operator
+        # add decimation modifier and safe it to manipulate the strength in the modal operator
         modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
@@ -1183,6 +1192,10 @@ class OBJECT_OT_add_bounding_object():
         t1 = time.time() - self.t0
         return t1
 
+    def reset_display(self, context):
+        context.space_data.shading.color_type = self.original_color_type
+        context.space_data.shading.type = self.original_shading_type
+
     def cancel_cleanup(self, context, delete_colliders=True):
         if delete_colliders:
             # Remove previously created collisions
@@ -1197,7 +1210,7 @@ class OBJECT_OT_add_bounding_object():
             self.remove_objects(self.tmp_meshes)
             self.remove_empty_collection('tmp_mesh')
 
-        context.space_data.shading.color_type = self.original_color_type
+        self.reset_display(context)
 
         try:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -1342,9 +1355,9 @@ class OBJECT_OT_add_bounding_object():
         self.my_space = colSettings.default_space
 
         # Decimate face count display
-        # self.facecountall = 0
-        self.facecounts = []
-        self.facecountall = 0
+        # self.face_countall = 0
+        self.face_counts = []
+        self.face_countall = 0
 
         # Modal Settings
         self.my_use_modifier_stack = colSettings.default_modifier_stack
@@ -1382,7 +1395,7 @@ class OBJECT_OT_add_bounding_object():
         # Display settings
         self.color_type = context.space_data.shading.color_type
         self.original_color_type = context.space_data.shading.color_type
-
+        self.original_shading_type = context.space_data.shading.type
         # Set up scene
         if context.space_data.shading.type == 'SOLID':
             context.space_data.shading.color_type = colSettings.default_color_type
@@ -1523,11 +1536,12 @@ class OBJECT_OT_add_bounding_object():
             except ValueError:
                 pass
 
-            if self.is_mesh_to_collider == False:
+            if not self.is_mesh_to_collider:
                 bpy.ops.object.mode_set(mode='OBJECT')
 
             # restore display settings
-            context.space_data.shading.color_type = self.original_color_type
+            self.reset_display(context)
+
             return {'FINISHED'}
 
         # Set ref values when switching mode to avoid jumping of field of view.
@@ -1607,10 +1621,9 @@ class OBJECT_OT_add_bounding_object():
 
             self.execute(context)
 
-        elif event.type == 'N' and event.value == 'RELEASE' and self.use_keep_original_name == True:
+        elif event.type == 'N' and event.value == 'RELEASE' and self.use_keep_original_name:
             self.keep_original_name = not self.keep_original_name
             self.execute(context)
-
 
         elif event.type == 'S' and event.value == 'RELEASE':
 
@@ -1627,7 +1640,6 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'A' and event.value == 'RELEASE':
             self.set_modal_state(opacity_active=not self.opacity_active)
             self.mouse_initial_x = event.mouse_x
-
 
         elif event.type == 'E' and event.value == 'RELEASE':
             self.set_modal_state(cylinder_segments_active=not self.cylinder_segments_active)
@@ -1671,14 +1683,14 @@ class OBJECT_OT_add_bounding_object():
 
             if self.displace_active:
                 offset = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
-                strenght = self.ref_settings_dic['displace_offset'] - offset
+                strength = self.ref_settings_dic['displace_offset'] - offset
 
                 for mod in self.displace_modifiers:
-                    mod.strength = strenght
+                    mod.strength = strength
                     mod.show_on_cage = True
                     mod.show_in_editmode = True
 
-                self.current_settings_dic['displace_offset'] = strenght
+                self.current_settings_dic['displace_offset'] = strength
 
             if self.decimate_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
@@ -1689,26 +1701,26 @@ class OBJECT_OT_add_bounding_object():
                     self.current_settings_dic['decimate'] = dec_amount
                     # I had to iterate over all object because it crashed when just iterating over the modifiers.
 
-                    self.facecounts = []
+                    self.face_counts = []
 
                     for obj in self.new_colliders_list:
 
                         for mod in obj.modifiers:
                             if mod in self.decimate_modifiers:
                                 mod.ratio = dec_amount
-                                facecount = mod.face_count
-                                self.facecounts.append(facecount)
+                                face_count = mod.face_count
+                                self.face_counts.append(face_count)
 
                                 ## More accurate but less efficient face calculation
                                 # bmesh for getting triangle data
                                 # bm=bmesh.new()
                                 # depsgraph = bpy.context.evaluated_depsgraph_get()
                                 # bm.from_object(obj, depsgraph)
-                                # facecount = len(bm.faces)
-                                # self.polycount.append(str(facecount))
+                                # face_count = len(bm.faces)
+                                # self.polycount.append(str(face_count))
                                 # bm.free()
 
-                    self.report({'INFO'}, "Total collider face count:" + str(sum(self.facecounts)))
+                    self.report({'INFO'}, "Total collider face count:" + str(sum(self.face_counts)))
                     self.draw_callback_px(context)
 
             if self.remesh_active:
@@ -1744,10 +1756,10 @@ class OBJECT_OT_add_bounding_object():
                     self.execute(context)
 
             if self.height_active:
-                # delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precission=1)
+                # delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
                 offset = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
-                strenght = self.ref_settings_dic['height_mult'] - offset
-                height_mult = strenght
+                strength = self.ref_settings_dic['height_mult'] - offset
+                height_mult = strength
                 height_mult = numpy.clip(height_mult, 0, 10.0)
 
                 if self.current_settings_dic['height_mult'] != height_mult:
@@ -1756,8 +1768,8 @@ class OBJECT_OT_add_bounding_object():
 
             if self.width_active:
                 offset = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
-                strenght = self.ref_settings_dic['width_mult'] - offset
-                width_mult = strenght
+                strength = self.ref_settings_dic['width_mult'] - offset
+                width_mult = strength
                 width_mult = numpy.clip(width_mult, 0, 10.0)
 
                 if self.current_settings_dic['width_mult'] != width_mult:
@@ -1814,7 +1826,7 @@ class OBJECT_OT_add_bounding_object():
         self.original_obj_data = []
         self.tmp_meshes = []
 
-        # original data to be restored on cancelation or deleted on accept
+        # original data to be restored on cancellation or deleted on accept
         self.original_obj_data = []
 
         # reset previously stored displace modifiers when creating a new object

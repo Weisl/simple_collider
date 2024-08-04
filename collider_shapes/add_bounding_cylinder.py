@@ -474,7 +474,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 used_vertices = self.get_vertices_Edit(
                     obj, use_modifiers=self.my_use_modifier_stack)
             else: # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
-                used_vertices = self.get_vertices_Object(
+                used_vertices = self.get_object_vertices(
                     obj, use_modifiers=self.my_use_modifier_stack)
 
             if not used_vertices:
@@ -486,10 +486,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-
             if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
-
-
                 coordinates = []
                 height = []
 
@@ -534,6 +531,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 collider_data.append(bounding_cylinder_data)
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+
                 # get list of all vertex coordinates in global space
                 ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
@@ -565,7 +563,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                 depth = abs(max(height) - min(height))
 
                 nsphere = welzl(np.array(coordinates))
-                radius = np.sqrt(nsphere.sqradius)
+                radius = np.sqrt(nsphere.sqr_radius)
 
                 bounding_cylinder_data['parent'] = self.active_obj
                 bounding_cylinder_data['radius'] = radius

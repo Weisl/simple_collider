@@ -17,7 +17,12 @@ class OBJECT_OT_convert_from_name(Operator):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+                count = count + 1
+        return count > 0
+
 
     def execute(self, context):
         colSettings = context.scene.collider_tools

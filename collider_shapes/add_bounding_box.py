@@ -71,7 +71,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 # Use Mesh uses copies of edit mode meshes
                 used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
             else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh:
-                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_object_vertices(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue

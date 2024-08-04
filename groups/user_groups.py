@@ -201,7 +201,7 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
         count = 0
         for obj in context.selected_objects.copy():
             # skip if invalid object
-            if obj is None or obj.type != "MESH" or not obj.get('isCollider'):
+            if obj is None or obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] or not obj.get('isCollider'):
                 continue
             count += 1
 
