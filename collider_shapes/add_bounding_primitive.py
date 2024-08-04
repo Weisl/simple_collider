@@ -707,7 +707,7 @@ class OBJECT_OT_add_bounding_object():
         return new_mesh
 
     @staticmethod
-    def get_vertices_Edit(obj, use_modifiers=False):
+    def get_edit_mode_vertices_local_space(obj, use_modifiers=False):
         """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no
         vertices to return"""
         me = obj.data
@@ -742,7 +742,7 @@ class OBJECT_OT_add_bounding_object():
         return used_vertices
 
     @staticmethod
-    def get_object_vertices(obj, use_modifiers=False):
+    def get_object_mode_vertices_local_space(obj, use_modifiers=False):
         """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return """
         # bpy.ops.object.mode_set(mode='EDIT')
         me = obj.data
@@ -779,7 +779,7 @@ class OBJECT_OT_add_bounding_object():
         return ws_vertex_co
 
     @staticmethod
-    def get_point_positions(obj, space, used_vertices):
+    def get_vertex_coordinates(obj, space, used_vertices):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
 
         # Modify the BMesh, can do anything here...

@@ -69,9 +69,9 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             # EDIT is only supported for 'MESH' type objects and only if the active object is a 'MESH'
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 # Use Mesh uses copies of edit mode meshes
-                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
             else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh:
-                used_vertices = self.get_object_vertices(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
@@ -82,7 +82,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
             if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
 
                 # used_vertices uses local space.
-                co = self.get_point_positions(obj, self.my_space, used_vertices)
+                co = self.get_vertex_coordinates(obj, self.my_space, used_vertices)
                 verts_loc, center_point = self.generate_bounding_box(co)
 
                 # store data needed to generate a bounding box in a dictionary
@@ -95,7 +95,7 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
                 collider_data = self.selection_bbox_data(verts_co)
 

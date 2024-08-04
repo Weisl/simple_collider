@@ -55,15 +55,15 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
             convex_collision_data = {}
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
-                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh:
-                used_vertices = self.get_object_vertices(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+            ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]

@@ -154,10 +154,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             bounding_box_data = {}
 
             if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
-                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
-                used_vertices = self.get_object_vertices(obj, use_modifiers=self.my_use_modifier_stack)
+                used_vertices = self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
@@ -173,7 +173,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
                     continue
 
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'LOCAL', used_vertices)
+                ws_vtx_co = self.get_vertex_coordinates(obj, 'LOCAL', used_vertices)
 
                 # used_vertices uses local space.
                 # store data needed to generate a bounding box in a dictionary
@@ -184,7 +184,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
