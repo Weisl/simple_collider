@@ -17,7 +17,7 @@ def get_addon_name():
     Returns:
         str: The name of the addon.
     """
-    return "Collider Tools"
+    return "Simple Collider"
 
 
 def collider_presets_folder():
@@ -28,7 +28,7 @@ def collider_presets_folder():
         str: The path to the collider presets directory.
     """
     # Make sure there is a directory for presets
-    collider_presets = "collider_tools"
+    collider_presets = "simple_collider"
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
     collider_preset_paths = bpy.utils.preset_paths(collider_presets)
 
@@ -329,7 +329,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         prefs.prefs_tabs = self.prefs_tabs
 
         import addon_utils
-        mod = addon_utils.addons_fake_modules.get('collider_tools')
+        mod = addon_utils.addons_fake_modules.get('simple_collider')
 
         # mod is None the first time the operation is called :/
         if mod:
@@ -352,7 +352,7 @@ class OBJECT_MT_collision_presets(Menu):
 
     bl_label = "Collider Presets"
     bl_description = "Specify creation preset used for the collider generation"
-    preset_subdir = "collider_tools"
+    preset_subdir = "simple_collider"
     preset_operator = "collision.load_collision_preset"
     subclass = 'PresetMenu'
     draw = Menu.draw_preset
@@ -365,7 +365,7 @@ class VIEW3D_PT_collision(bpy.types.Panel):
 
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Collider Tools"
+    bl_category = "Simple Collider"
 
 
 # abstract class
@@ -377,7 +377,7 @@ class VIEW3D_PT_init():
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Collider Tools"
+    bl_label = "Simple Collider"
 
     def draw_header(self, context):
         layout = self.layout

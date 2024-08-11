@@ -24,7 +24,7 @@ classes = (
 
 def set_preferences(preset):
     """
-    Set the preferences for the 'collider_tools' addon based on the given preset.
+    Set the preferences for the 'simple_collider' addon based on the given preset.
 
     Args:
         preset (dict): The preset containing preference settings.

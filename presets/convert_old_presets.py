@@ -3,7 +3,7 @@ from bpy.types import Operator
 from .. import __package__ as base_package
 from .naming_preset import COLLISION_preset
 from ..ui.properties_panels import collider_presets_folder
-folder_name = "collider_tools"
+folder_name = "simple_collider"
 
 
 def get_default_preferences(context):

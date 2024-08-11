@@ -4,8 +4,8 @@ from bpy.types import Operator
 
 from .. import __package__ as base_package
 
-ADDON_NAME = base_package if base_package else "collider_tools"
-folder_name = 'collider_tools'
+ADDON_NAME = base_package if base_package else "simple_collider"
+folder_name = 'simple_collider'
 
 
 class PRESET_OT_load_preset(Operator):

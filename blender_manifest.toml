@@ -2,8 +2,8 @@ schema_version = "1.0.0"
 
 id = "collider_tools"
 version = "2.0.0"
-name = "Collider Tools"
-tagline = "Collider Tools is a Blender addon to create physics colliders for games and real-time applications."
+name = "Simple Collider"
+tagline = "Simple Collider is a Blender addon to create physics colliders for games and real-time applications."
 maintainer = "Matthias Patscheider <patscheider.matthias@gmail.com>"
 type = "add-on"
 
