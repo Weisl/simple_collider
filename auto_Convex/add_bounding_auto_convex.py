@@ -152,7 +152,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
 
-            colSettings = context.scene.collider_tools
+            colSettings = context.scene.simple_collider
 
             print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
 

@@ -44,7 +44,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
         return count > 0
 
     def execute(self, context):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         count = 0
 
         for obj in bpy.context.selected_objects.copy():

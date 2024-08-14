@@ -15,7 +15,7 @@ def register():
 
     # Pointer Properties have to be initialized after classes
     scene = bpy.types.Scene
-    scene.collider_tools = bpy.props.PointerProperty(
+    scene.simple_collider = bpy.props.PointerProperty(
         type=ColliderTools_Properties)
 
 
@@ -26,4 +26,4 @@ def unregister():
         unregister_class(cls)
 
     scene = bpy.types.Scene
-    del scene.collider_tools
+    del scene.simple_collider

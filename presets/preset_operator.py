@@ -7,7 +7,7 @@ class SetColliderToolsPreferencesOperator(bpy.types.Operator):
     """
     Operator to set the preferences for the 'simple_collider' addon based on a selected preset.
     """
-    bl_idname = "object.set_collider_tools_prefs"
+    bl_idname = "object.set_simple_collider_prefs"
     bl_label = "Set Simple Collider Preferences"
     preset_name: bpy.props.StringProperty()
 

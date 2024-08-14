@@ -23,7 +23,7 @@ class UpgradeColliderToolsPresetsOperator(Operator):
     """
     Operator to upgrade old collider tools preset files to the new format.
     """
-    bl_idname = "object.upgrade_collider_tools_presets"
+    bl_idname = "object.upgrade_simple_collider_presets"
     bl_label = "Upgrade Presets"
 
     def execute(self, context):

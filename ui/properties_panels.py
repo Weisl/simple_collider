@@ -178,7 +178,7 @@ def draw_visibility_selection_menu(context, layout):
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
-    colSettings = context.scene.collider_tools
+    colSettings = context.scene.simple_collider
 
     draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
     draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
@@ -207,7 +207,7 @@ def draw_creation_menu(context, layout, settings=False):
         layout (UILayout): The layout to draw the menu on.
         settings (bool, optional): Whether to include settings. Defaults to False.
     """
-    colSettings = context.scene.collider_tools
+    colSettings = context.scene.simple_collider
 
     # layout.separator()
     col = layout.column(align=True)
@@ -371,8 +371,8 @@ class VIEW3D_PT_collision(bpy.types.Panel):
 # abstract class
 class VIEW3D_PT_init():
     def __init__(self):
-        bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-        bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
+        bpy.context.scene.simple_collider.visibility_toggle_all.mode = 'ALL_COLLIDER'
+        bpy.context.scene.simple_collider.visibility_toggle_obj.mode = 'OBJECTS'
 
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
@@ -444,7 +444,7 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
 
     def draw(self, context):
         layout = self.layout
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         # Bools
         row = layout.row(align=True)
@@ -495,7 +495,7 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
 
     def draw(self, context):
         layout = self.layout
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         prefs = context.preferences.addons[base_package].preferences
 
         layout.label(text='Active Material')
@@ -578,7 +578,7 @@ class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
         draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')

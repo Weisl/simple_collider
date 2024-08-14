@@ -1304,7 +1304,7 @@ class OBJECT_OT_add_bounding_object():
         self.width_active = width_active
 
     def invoke(self, context, event):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         self.collider_groups = [colSettings.visibility_toggle_user_group_01,
                                 colSettings.visibility_toggle_user_group_02,
@@ -1448,7 +1448,7 @@ class OBJECT_OT_add_bounding_object():
         self.execute(context)
 
     def modal(self, context, event):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         self.navigation = False
 
@@ -1806,7 +1806,7 @@ class OBJECT_OT_add_bounding_object():
         except AttributeError:
             print("AttributeError: bug #328")
 
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         if not colSettings.get('visibility_toggle_user_group_01'):
             set_default_group_values()

@@ -21,7 +21,7 @@ class PRESET_OT_load_preset(Operator):
             self.report({'INFO'}, "Preset loaded successfully.")
         except:
             print('preset_update')
-            bpy.ops.object.upgrade_collider_tools_presets()
+            bpy.ops.object.upgrade_simple_collider_presets()
             bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname="OBJECT_MT_collision_presets")
             self.report({'INFO'}, "Updated and loaded preset successfully")
 
