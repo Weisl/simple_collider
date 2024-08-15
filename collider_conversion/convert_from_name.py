@@ -25,7 +25,7 @@ class OBJECT_OT_convert_from_name(Operator):
 
 
     def execute(self, context):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         count = 0
 
         prefs = context.preferences.addons[base_package].preferences

@@ -135,7 +135,7 @@ def setDefaultTemp():
         File path to the temporary directory
     """
     system_temp_dir = gettempdir()
-    path = os.path.join(system_temp_dir, "collider_tools")
+    path = os.path.join(system_temp_dir, "simple_collider")
 
     # Check whether the specified path exists or not
     if not os.path.exists(path):
@@ -244,7 +244,7 @@ class BUTTON_OT_change_key(bpy.types.Operator):
 
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
-    """Addon preferences for Collider Tools"""
+    """Addon preferences for Simple Collider"""
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
     # Has to be named like the main addon folder
@@ -269,7 +269,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     collider_category: bpy.props.StringProperty(name="Category Tab",
                                                 description="The category name used to organize the addon in the properties panel for all the addons",
-                                                default='Collider Tools',
+                                                default='Simple Collider',
                                                 update=update_panel_category)  # update = update_panel_position,
     # Parent to base
     use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base",
@@ -486,7 +486,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                     default='MI_COL',
                                                     # type=bpy.types.Material,
                                                     # poll=scene_my_collision_material_poll,
-                                                    description='Physical Materials are used in game engines to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Collider Tools will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned')
+                                                    description='Physical Materials are used in game engines to define different responses of a physical object when interacting with other elements of the game world. They can be used to trigger different audio, VFX or gameplay events depending on the material. Simple Collider will create a simple semi transparent material called "COL_DEFAULT" if no material is assigned')
 
     physics_material_filter: bpy.props.StringProperty(name='Physics Material Filter',
                                                       default="COL",
@@ -812,7 +812,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row = box.row(align=True)
             row.label(text="User Presets")
             row = box.row(align=True)
-            op = row.operator('object.upgrade_collider_tools_presets')
+            op = row.operator('object.upgrade_simple_collider_presets')
             row = box.row(align=True)
             row.menu('OBJECT_MT_collision_presets',
                      text=OBJECT_MT_collision_presets.bl_label)

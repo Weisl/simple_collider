@@ -127,14 +127,8 @@ def draw_viewport_overlay(self, context):
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
     if self.use_space:
         label = "Global/Local"
-        # Global/Local switch is currently only supported for cylindrical collider in Global Space
-        if (self.shape == 'convex_shape' or self.shape == 'capsule_shape') and self.creation_mode[
-            self.creation_mode_idx] == 'SELECTION':
-            type = 'disabled'
-            value = "GLOBAL"
-        else:
-            type = 'enum'
-            value = "GLOBAL" if self.my_space == 'GLOBAL' else "LOCAL"
+        type = 'enum'
+        value = str(self.my_space)
         item = {'label': label, 'value': value, 'key': '(G/L)', 'type': type, 'highlight': False}
         items.append(item)
 
@@ -713,7 +707,7 @@ class OBJECT_OT_add_bounding_object():
         return new_mesh
 
     @staticmethod
-    def get_vertices_Edit(obj, use_modifiers=False):
+    def get_edit_mode_vertices_local_space(obj, use_modifiers=False):
         """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no
         vertices to return"""
         me = obj.data
@@ -748,7 +742,7 @@ class OBJECT_OT_add_bounding_object():
         return used_vertices
 
     @staticmethod
-    def get_object_vertices(obj, use_modifiers=False):
+    def get_object_mode_vertices_local_space(obj, use_modifiers=False):
         """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return """
         # bpy.ops.object.mode_set(mode='EDIT')
         me = obj.data
@@ -785,7 +779,7 @@ class OBJECT_OT_add_bounding_object():
         return ws_vertex_co
 
     @staticmethod
-    def get_point_positions(obj, space, used_vertices):
+    def get_vertex_coordinates(obj, space, used_vertices):
         """ returns vertex and face information for the bounding box based on the given coordinate space (e.g., world or local)"""
 
         # Modify the BMesh, can do anything here...
@@ -1310,7 +1304,7 @@ class OBJECT_OT_add_bounding_object():
         self.width_active = width_active
 
     def invoke(self, context, event):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         self.collider_groups = [colSettings.visibility_toggle_user_group_01,
                                 colSettings.visibility_toggle_user_group_02,
@@ -1454,7 +1448,7 @@ class OBJECT_OT_add_bounding_object():
         self.execute(context)
 
     def modal(self, context, event):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         self.navigation = False
 
@@ -1812,7 +1806,7 @@ class OBJECT_OT_add_bounding_object():
         except AttributeError:
             print("AttributeError: bug #328")
 
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         if not colSettings.get('visibility_toggle_user_group_01'):
             set_default_group_values()

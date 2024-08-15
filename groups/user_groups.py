@@ -14,23 +14,23 @@ default_group = 'USER_01'
 
 
 def set_default_group_values():
-    bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-    bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
+    bpy.context.scene.simple_collider.visibility_toggle_all.mode = 'ALL_COLLIDER'
+    bpy.context.scene.simple_collider.visibility_toggle_obj.mode = 'OBJECTS'
 
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.name = get_groups_name('USER_01')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.identifier = get_groups_identifier('USER_01')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.color = get_groups_color('USER_01')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.mode = 'USER_01'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.name = get_groups_name('USER_01')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.identifier = get_groups_identifier('USER_01')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.color = get_groups_color('USER_01')
 
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.name = get_groups_name('USER_02')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.identifier = get_groups_identifier('USER_02')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.color = get_groups_color('USER_02')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.mode = 'USER_02'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.name = get_groups_name('USER_02')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.identifier = get_groups_identifier('USER_02')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.color = get_groups_color('USER_02')
 
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.name = get_groups_name('USER_03')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.identifier = get_groups_identifier('USER_03')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.color = get_groups_color('USER_03')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.mode = 'USER_03'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.name = get_groups_name('USER_03')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.identifier = get_groups_identifier('USER_03')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.color = get_groups_color('USER_03')
 
 
 def update_hide(self, context):

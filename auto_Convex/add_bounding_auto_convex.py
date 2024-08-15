@@ -111,7 +111,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
             self.creation_mode_edit[self.creation_mode_idx]
-            if creation_mode in ['INDIVIDUAL', 'LOOSE-MESH']:
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
                 convex_collision_data = {'parent': base_ob, 'mtx_world': base_ob.matrix_world.copy(), 'mesh': new_mesh}
 
                 collider_data.append(convex_collision_data)
@@ -152,7 +152,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
             obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
 
-            colSettings = context.scene.collider_tools
+            colSettings = context.scene.simple_collider
 
             print('\nExporting mesh for V-HACD: {}...'.format(obj_filename))
 

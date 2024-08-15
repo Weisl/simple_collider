@@ -17,7 +17,7 @@ def get_addon_name():
     Returns:
         str: The name of the addon.
     """
-    return "Collider Tools"
+    return "Simple Collider"
 
 
 def collider_presets_folder():
@@ -28,7 +28,7 @@ def collider_presets_folder():
         str: The path to the collider presets directory.
     """
     # Make sure there is a directory for presets
-    collider_presets = "collider_tools"
+    collider_presets = "simple_collider"
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
     collider_preset_paths = bpy.utils.preset_paths(collider_presets)
 
@@ -178,7 +178,7 @@ def draw_visibility_selection_menu(context, layout):
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
-    colSettings = context.scene.collider_tools
+    colSettings = context.scene.simple_collider
 
     draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
     draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
@@ -207,7 +207,7 @@ def draw_creation_menu(context, layout, settings=False):
         layout (UILayout): The layout to draw the menu on.
         settings (bool, optional): Whether to include settings. Defaults to False.
     """
-    colSettings = context.scene.collider_tools
+    colSettings = context.scene.simple_collider
 
     # layout.separator()
     col = layout.column(align=True)
@@ -329,7 +329,7 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         prefs.prefs_tabs = self.prefs_tabs
 
         import addon_utils
-        mod = addon_utils.addons_fake_modules.get('collider_tools')
+        mod = addon_utils.addons_fake_modules.get('simple_collider')
 
         # mod is None the first time the operation is called :/
         if mod:
@@ -352,7 +352,7 @@ class OBJECT_MT_collision_presets(Menu):
 
     bl_label = "Collider Presets"
     bl_description = "Specify creation preset used for the collider generation"
-    preset_subdir = "collider_tools"
+    preset_subdir = "simple_collider"
     preset_operator = "collision.load_collision_preset"
     subclass = 'PresetMenu'
     draw = Menu.draw_preset
@@ -365,19 +365,19 @@ class VIEW3D_PT_collision(bpy.types.Panel):
 
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Collider Tools"
+    bl_category = "Simple Collider"
 
 
 # abstract class
 class VIEW3D_PT_init():
     def __init__(self):
-        bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-        bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
+        bpy.context.scene.simple_collider.visibility_toggle_all.mode = 'ALL_COLLIDER'
+        bpy.context.scene.simple_collider.visibility_toggle_obj.mode = 'OBJECTS'
 
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Collider Tools"
+    bl_label = "Simple Collider"
 
     def draw_header(self, context):
         layout = self.layout
@@ -444,7 +444,7 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
 
     def draw(self, context):
         layout = self.layout
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         # Bools
         row = layout.row(align=True)
@@ -495,7 +495,7 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
 
     def draw(self, context):
         layout = self.layout
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         prefs = context.preferences.addons[base_package].preferences
 
         layout.label(text='Active Material')
@@ -546,7 +546,7 @@ class VIEW3D_MT_collision_creation(Menu):
 
 class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
     # label is displayed at the center of the pie menu.
-    bl_label = "Collision Pie"
+    bl_label = "Collider Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
     def __init__(self):
@@ -578,7 +578,7 @@ class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
         draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')

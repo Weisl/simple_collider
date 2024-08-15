@@ -8,7 +8,7 @@ class VIEW3D_OT_object_view(bpy.types.Operator):
     bl_description = 'Change Display type to: Collider Groups'
 
     def execute(self, context):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         colSettings.display_type = 'SOLID'
 
         context.space_data.shading.type = 'SOLID'
@@ -23,7 +23,7 @@ class VIEW3D_OT_material_view(bpy.types.Operator):
     bl_description = 'Change Display type to: Physics Material'
 
     def execute(self, context):
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         colSettings.display_type = 'SOLID'
 
         context.space_data.shading.type = 'SOLID'

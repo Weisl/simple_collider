@@ -3,7 +3,7 @@ from bpy.types import Operator
 from .. import __package__ as base_package
 from .naming_preset import COLLISION_preset
 from ..ui.properties_panels import collider_presets_folder
-folder_name = "collider_tools"
+folder_name = "simple_collider"
 
 
 def get_default_preferences(context):
@@ -23,7 +23,7 @@ class UpgradeColliderToolsPresetsOperator(Operator):
     """
     Operator to upgrade old collider tools preset files to the new format.
     """
-    bl_idname = "object.upgrade_collider_tools_presets"
+    bl_idname = "object.upgrade_simple_collider_presets"
     bl_label = "Upgrade Presets"
 
     def execute(self, context):

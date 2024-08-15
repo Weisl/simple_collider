@@ -4,8 +4,8 @@ from bpy.types import Operator
 
 from .. import __package__ as base_package
 
-ADDON_NAME = base_package if base_package else "collider_tools"
-folder_name = 'collider_tools'
+ADDON_NAME = base_package if base_package else "simple_collider"
+folder_name = 'simple_collider'
 
 
 class PRESET_OT_load_preset(Operator):
@@ -21,7 +21,7 @@ class PRESET_OT_load_preset(Operator):
             self.report({'INFO'}, "Preset loaded successfully.")
         except:
             print('preset_update')
-            bpy.ops.object.upgrade_collider_tools_presets()
+            bpy.ops.object.upgrade_simple_collider_presets()
             bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname="OBJECT_MT_collision_presets")
             self.report({'INFO'}, "Updated and loaded preset successfully")
 

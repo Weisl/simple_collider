@@ -3,13 +3,16 @@ import bmesh
 import numpy as np
 from mathutils import Vector, Matrix
 
+tmp_name = 'capsule_collider'
 
-def calculate_radius_height(points):
+
+def calculate_radius_height(points, cylinder_axis='Z'):
     """
     Calculate the radius, height, center, and rotation matrix of a capsule that fits the given points.
 
     Parameters:
     points (list of float): A list of 3D points that define the capsule.
+    cylinder_axis (str): The axis ('X', 'Y', 'Z') along which the capsule is oriented.
 
     Returns:
     tuple:
@@ -54,14 +57,25 @@ def calculate_radius_height(points):
     axis_point = np_points.mean(axis=0)
     radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
 
-    # Calculate rotation matrix
-    z_axis = principal_axis
-    y_axis = np.cross([1, 0, 0], z_axis)
+    # Calculate rotation matrix to align the principal axis with the selected cylinder axis
+    if cylinder_axis == 'X':
+        x_axis = principal_axis
+        y_axis = np.cross([0, 0, 1], x_axis)
+        z_axis = np.cross(x_axis, y_axis)
+    elif cylinder_axis == 'Y':
+        y_axis = principal_axis
+        x_axis = np.cross([0, 0, 1], y_axis)
+        z_axis = np.cross(x_axis, y_axis)
+    else:  # default is 'Z'
+        z_axis = principal_axis
+        x_axis = np.cross([0, 1, 0], z_axis)
+        y_axis = np.cross(z_axis, x_axis)
+
     if np.linalg.norm(y_axis) < 1e-6:
         y_axis = np.cross([0, 1, 0], z_axis)
-    x_axis = np.cross(y_axis, z_axis)
-    y_axis /= np.linalg.norm(y_axis)
     x_axis /= np.linalg.norm(x_axis)
+    y_axis /= np.linalg.norm(y_axis)
+    z_axis /= np.linalg.norm(z_axis)
 
     rotation_matrix_3x3 = Matrix([
         [x_axis[0], y_axis[0], z_axis[0]],
@@ -78,7 +92,65 @@ def calculate_radius_height(points):
 
 
 @staticmethod
-def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
+def mesh_data_to_bmesh(
+        vs, vts, vns,
+        v_indices, vt_indices, vn_indices):
+    bm = bmesh.new()
+    """
+    Convert mesh data into a Blender BMesh.
+
+    Parameters:
+    vs (list of tuple of float): List of vertex coordinates.
+    vts (list of tuple of float): List of texture coordinates.
+    vns (list of tuple of float): List of normal vectors.
+    v_indices (list of tuple of int): List of vertex indices for each face.
+    vt_indices (list of tuple of int): List of texture coordinate indices for each face.
+    vn_indices (list of tuple of int): List of normal indices for each face.
+
+    Returns:
+    bmesh.types.BMesh: A BMesh object containing the mesh data.
+
+    """
+
+    # Create BM vertices.
+    len_vs = len(vs)
+    bm_verts = [None] * len_vs
+    for i in range(0, len_vs):
+        v = vs[i]
+        bm_verts[i] = bm.verts.new(v)
+
+    # Create BM faces.
+    len_v_indices = len(v_indices)
+    bm_faces = [None] * len_v_indices
+    uv_layer = bm.loops.layers.uv.verify()
+
+    for i in range(0, len_v_indices):
+        v_loop = v_indices[i]
+        vt_loop = vt_indices[i]
+        vn_loop = vn_indices[i]
+
+        # Find list of vertices per face.
+        len_v_loop = len(v_loop)
+        face_verts = [None] * len_v_loop
+        for j in range(0, len_v_loop):
+            face_verts[j] = bm_verts[v_loop[j]]
+
+        # Create BM face.
+        bm_face = bm.faces.new(face_verts)
+        bm_faces[i] = bm_face
+        bm_face_loops = list(bm_face.loops)
+
+        # Assign texture coordinates and normals.
+        for k in range(0, len_v_loop):
+            bm_face_loop = bm_face_loops[k]
+            bm_face_loop[uv_layer].uv = vts[vt_loop[k]]
+            bm_face_loop.vert.normal = vns[vn_loop[k]]
+
+    return bm
+
+
+@staticmethod
+def create_capsule_data(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
     """
     Create a capsule mesh data.
 
@@ -483,61 +555,3 @@ def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, 
             "v_indices": v_indices,
             "vt_indices": vt_indices,
             "vn_indices": vn_indices}
-
-
-@staticmethod
-def mesh_data_to_bmesh(
-        vs, vts, vns,
-        v_indices, vt_indices, vn_indices):
-    bm = bmesh.new()
-    """
-    Convert mesh data into a Blender BMesh.
-
-    Parameters:
-    vs (list of tuple of float): List of vertex coordinates.
-    vts (list of tuple of float): List of texture coordinates.
-    vns (list of tuple of float): List of normal vectors.
-    v_indices (list of tuple of int): List of vertex indices for each face.
-    vt_indices (list of tuple of int): List of texture coordinate indices for each face.
-    vn_indices (list of tuple of int): List of normal indices for each face.
-
-    Returns:
-    bmesh.types.BMesh: A BMesh object containing the mesh data.
-
-    """
-
-    # Create BM vertices.
-    len_vs = len(vs)
-    bm_verts = [None] * len_vs
-    for i in range(0, len_vs):
-        v = vs[i]
-        bm_verts[i] = bm.verts.new(v)
-
-    # Create BM faces.
-    len_v_indices = len(v_indices)
-    bm_faces = [None] * len_v_indices
-    uv_layer = bm.loops.layers.uv.verify()
-
-    for i in range(0, len_v_indices):
-        v_loop = v_indices[i]
-        vt_loop = vt_indices[i]
-        vn_loop = vn_indices[i]
-
-        # Find list of vertices per face.
-        len_v_loop = len(v_loop)
-        face_verts = [None] * len_v_loop
-        for j in range(0, len_v_loop):
-            face_verts[j] = bm_verts[v_loop[j]]
-
-        # Create BM face.
-        bm_face = bm.faces.new(face_verts)
-        bm_faces[i] = bm_face
-        bm_face_loops = list(bm_face.loops)
-
-        # Assign texture coordinates and normals.
-        for k in range(0, len_v_loop):
-            bm_face_loop = bm_face_loops[k]
-            bm_face_loop[uv_layer].uv = vts[vt_loop[k]]
-            bm_face_loop.vert.normal = vns[vn_loop[k]]
-
-    return bm
