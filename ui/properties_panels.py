@@ -238,11 +238,11 @@ def draw_creation_menu(context, layout, settings=False):
     button_amount = len(shapes)
 
     # Use layout.split() to divide the row into equal parts
-    split = layout.split(factor=1.0 / button_amount)
+    split = layout.split(factor=1.0 / button_amount, align=True)
 
     for shape in shapes:
         # Create a column for each button
-        col = split.column()
+        col = split.column(align=True)
         op = col.operator('object.assign_collision_shape', text=shape['text'], icon=shape['icon'])
         op.shape_identifier = shape['identifier']
 
