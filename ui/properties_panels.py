@@ -223,9 +223,10 @@ def draw_creation_menu(context, layout, settings=False):
     draw_auto_convex(row, context)
 
     row = layout.row(align=True)
-    row.label(text='Convert')
+    row.label(text='Convert Shape')
 
     row = layout.row(align=True)
+    row.scale_x = 1.0  # Ensure buttons take up the full width
 
     shapes = [{'identifier': 'box_shape', 'text': '', 'icon': 'MESH_CUBE'},
               {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
@@ -234,10 +235,19 @@ def draw_creation_menu(context, layout, settings=False):
               {'identifier': 'mesh_shape', 'text': '', 'icon': 'MESH_MONKEY'},
               ]
 
+    button_amount = len(shapes)
+
+    # Use layout.split() to divide the row into equal parts
+    split = layout.split(factor=1.0 / button_amount)
+
     for shape in shapes:
-        op = row.operator('object.assign_collision_shape', text=shape['text'], icon=shape['icon'])
-        # op = row.operator('object.assign_collision_shape', text='')
+        # Create a column for each button
+        col = split.column()
+        op = col.operator('object.assign_collision_shape', text=shape['text'], icon=shape['icon'])
         op.shape_identifier = shape['identifier']
+
+    row = layout.row(align=True)
+    row.label(text='Convert')
 
     col = layout.column(align=True)
     row = col.row(align=True)
@@ -246,10 +256,10 @@ def draw_creation_menu(context, layout, settings=False):
     row.operator('object.convert_to_mesh', icon='WINDOW')
 
     row = layout.row(align=True)
-    row.operator('object.regenerate_name', icon='FILE_REFRESH')
+    row.operator('object.convert_from_name', icon='NONE')
 
     row = layout.row(align=True)
-    row.operator('object.convert_from_name', icon='NONE')
+    row.operator('object.regenerate_name', icon='FILE_REFRESH')
 
     layout.separator()
 

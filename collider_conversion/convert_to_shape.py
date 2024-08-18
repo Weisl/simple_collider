@@ -25,6 +25,7 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
 
         # get naming presets:
         separator = prefs.separator
+        naming_position = prefs.naming_position
 
         box_shape = prefs.box_shape
         sphere_shape = prefs.sphere_shape
@@ -41,7 +42,6 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
         regex_list = [pattern_box_shape, pattern_sphere_shape, pattern_capsule_shape, pattern_convex_shape,
                       pattern_mesh_shape]
 
-
         count = 0
         for obj in context.selected_objects.copy():
             # skip if invalid object
@@ -51,12 +51,17 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
 
             new_name = obj.name
             for regex in regex_list:
-                re.sub(regex, '', new_name)
+                new_name = re.sub(regex, '', new_name)  # Assign the result back to new_name
 
             obj['collider_shape'] = self.shape_identifier
             shape_name = OBJECT_OT_add_bounding_object.get_shape_pre_suffix(prefs, self.shape_identifier)
 
-            new_name = f'{new_name}{separator}){shape_name}'
+            # Add the shape_name as prefix or suffix depending on naming_position
+            if naming_position == 'PREFIX':
+                new_name = f'{shape_name}{separator}{new_name}'
+            else:  # 'SUFFIX'
+                new_name = f'{new_name}{separator}{shape_name}'
+
             obj.name = new_name
             OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
