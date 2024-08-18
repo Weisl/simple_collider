@@ -464,7 +464,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         verts_co = []
 
-        objs = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
+        objs = self.get_pre_processed_mesh_objs(context)
 
         for base_ob, obj in objs:
 
