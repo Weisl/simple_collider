@@ -408,6 +408,12 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
         return new_collider
 
+    def get_used_vertices(self, base_ob, obj):
+        if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
+            return self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
+        else:
+            return self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
+
     def __init__(self):
         """
         Initialize the OBJECT_OT_add_bounding_cylinder operator.
@@ -458,28 +464,30 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         return {'RUNNING_MODAL'}
 
     def execute(self, context):
-        # CLEANUP
+        # Call the parent class's execute method for any necessary initialization or cleanup
         super().execute(context)
 
+        # Initialize lists to store collider data and vertex coordinates
         collider_data = []
         verts_co = []
 
+        # Get the pre-processed mesh objects from the context
         objs = self.get_pre_processed_mesh_objs(context)
 
+        # Iterate through each base object and its corresponding processed object
         for base_ob, obj in objs:
-
+            # Initialize a dictionary to store data for the bounding cylinder
             bounding_cylinder_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
-                used_vertices = self.get_edit_mode_vertices_local_space(
-                    obj, use_modifiers=self.my_use_modifier_stack)
-            else: # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
-                used_vertices = self.get_object_mode_vertices_local_space(
-                    obj, use_modifiers=self.my_use_modifier_stack)
+            # Get the vertices that will be used for processing based on the mode and object type
+            used_vertices = self.get_used_vertices(base_ob, obj)
 
+            # If no vertices are found, skip to the next object
             if not used_vertices:
                 continue
 
+
+            # Decompose the object's world matrix into location, rotation, and scale components
             matrix_WS = obj.matrix_world
             loc, rot, sca = matrix_WS.decompose()
 
@@ -532,14 +540,12 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
 
-                # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
+                if self.shape == 'LOCAL':
+                    ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
+                    verts_co = verts_co + self.transform_vertex_space(ws_vtx_co, self.active_obj)
+                else:
+                    ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
-
-                bounding_box, center = self.generate_bounding_box(verts_co)
-
-                if self.prefs.debug:
-                    debug_obj = self.create_debug_object_from_verts(context, verts_co)
 
                 coordinates = []
                 height = []
@@ -584,7 +590,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
             depth = bounding_cylinder_data['depth']
             center = bounding_cylinder_data['center_point']
 
-            if self.my_space == 'GLOBAL' or self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+            if self.my_space == 'GLOBAL':
                 new_collider = self.generate_cylinder_object(
                     context, radius, depth, center)
 
