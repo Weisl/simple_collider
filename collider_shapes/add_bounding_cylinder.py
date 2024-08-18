@@ -507,14 +507,10 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                     # Ignore Scale
                     if self.my_space == 'LOCAL':
                         v = vertex.co @ get_sca_matrix(sca)
-                        center = sum((Vector(matrix_WS @ Vector(b))
-                                      for b in bounding_box), Vector()) / 8.0
                     else:
                         # Scale has to be applied before location
                         v = vertex.co @ get_sca_matrix(
                             sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
-                        center = sum((Vector(b)
-                                      for b in bounding_box), Vector()) / 8.0
 
                     if self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z])
@@ -526,8 +522,15 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
                         coordinates.append([v.x, v.y])
                         height.append(v.z)
 
-                depth = abs(max(height) - min(height))
 
+                if self.my_space == 'LOCAL':
+                    center = sum((Vector(matrix_WS @ Vector(b))
+                                  for b in bounding_box), Vector()) / 8.0
+                else:
+                    center = sum((Vector(b)
+                                  for b in bounding_box), Vector()) / 8.0
+
+                depth = abs(max(height) - min(height))
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqr_radius)
 

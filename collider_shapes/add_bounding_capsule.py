@@ -50,15 +50,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             return {'PASS_THROUGH'}
 
         # change bounding object settings
-        if event.type == 'G' and event.value == 'RELEASE':
-            self.my_space = 'GLOBAL'
-            self.execute(context)
-
-        elif event.type == 'L' and event.value == 'RELEASE':
-            self.my_space = 'LOCAL'
-            self.execute(context)
-
-        # change bounding object settings
         if event.type == 'R' and event.value == 'RELEASE':
             self.set_modal_state(capsule_segments_active=not self.capsule_segments_active)
             self.execute(context)
@@ -82,7 +73,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         collider_data = []
         selection_vertex_coords = []
 
-        objects = self.get_pre_processed_mesh_objs(context, default_world_spc=True)
+        objects = self.get_pre_processed_mesh_objs(context)
 
         # iterate over base objects
         for base_object, obj in objects:
@@ -106,14 +97,16 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
 
-            vertex_coords_local = self.get_vertex_coordinates(obj, 'LOCAL', used_vertices)
             vertex_coords_global = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
 
             if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
-                vertex_coords = vertex_coords_global if self.my_space == 'GLOBAL' else vertex_coords_local
-                bounding_capsule_data = {'parent': base_object,
-                                         'vertex_coords': vertex_coords}
+                vertex_coords = vertex_coords_global
+
+
+                bounding_capsule_data = {'parent': base_object, 'vertex_coords': vertex_coords}
                 collider_data.append(bounding_capsule_data)
+
+
 
             else:  # creation_mode == 'SELECTION':
                 # add all vertices in global space to the list
@@ -132,12 +125,14 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             if creation_mode == 'INDIVIDUAL' or self.use_loose_mesh:
                 # coordinates are based on self.my_space
-                radius, height, center_capsule, rotation_matrix_4x4 = calculate_radius_height(vertex_coords, self.cylinder_axis)
+                radius, height, center_capsule, rotation_matrix_4x4 = calculate_radius_height(vertex_coords,
+                                                                                              self.cylinder_axis)
 
                 capsule_data = create_capsule_data(longitudes=self.current_settings_dic['capsule_segments'],
                                                    latitudes=int(self.current_settings_dic['capsule_segments']),
                                                    radius=radius * self.current_settings_dic['width_mult'],
-                                                   depth=height * self.current_settings_dic['height_mult'], uv_profile="FIXED")
+                                                   depth=height * self.current_settings_dic['height_mult'],
+                                                   uv_profile="FIXED")
 
                 bm = mesh_data_to_bmesh(
                     vs=capsule_data["vs"],
@@ -154,17 +149,14 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
 
                 # it works when the origin is centered
-                if self.my_space == 'LOCAL':
-                    # align object to parent object
-                    new_collider.matrix_world = base_object.matrix_world.copy()
-                    # offset the object by the capsule center
-                    translation_matrix = Matrix.Translation(center_capsule)
-                    # Apply the translation matrix to the new collider
-                    new_collider.matrix_world = new_collider.matrix_world @ translation_matrix
-                    # Apply the rotation matrix to the new collider
-                    new_collider.matrix_world = new_collider.matrix_world @ rotation_matrix_4x4
-
-
+                # align object to parent object
+                # new_collider.matrix_world = base_object.matrix_world.copy()
+                # offset the object by the capsule center
+                translation_matrix = Matrix.Translation(center_capsule)
+                # Apply the translation matrix to the new collider
+                new_collider.matrix_world = new_collider.matrix_world @ translation_matrix
+                # Apply the rotation matrix to the new collider
+                # new_collider.matrix_world = new_collider.matrix_world @ rotation_matrix_4x4
 
                 self.new_colliders_list.append(new_collider)
                 collections = parent.users_collection
