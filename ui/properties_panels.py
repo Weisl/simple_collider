@@ -33,7 +33,7 @@ def draw_auto_convex(layout, context):
 
     # row.label(text='Auto Convex')
 
-    if platform.system() not in ['Windows', 'Linux']:
+    if platform.system() not in ['Windows', 'Linux', 'Darwin']:
         op = layout.operator("preferences.addon_search", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
