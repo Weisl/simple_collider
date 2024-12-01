@@ -11,7 +11,7 @@ folder_name = 'simple_collider'
 class PRESET_OT_load_preset(Operator):
     """Presets for collider creation"""
     bl_idname = "collision.load_collision_preset"
-    bl_label = "Load Collision Preset"
+    bl_label = "Load Collider Preset"
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -33,7 +33,7 @@ class PRESET_OT_load_preset(Operator):
 class COLLISION_preset(AddPresetBase, Operator):
     """Presets for collider creation"""
     bl_idname = "collision.collision_name_preset"
-    bl_label = "Collision Naming Presets"
+    bl_label = "Collider Naming Presets"
     preset_menu = "OBJECT_MT_collision_presets"
 
     # Common variable used for all preset values
