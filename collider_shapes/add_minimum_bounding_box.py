@@ -1,9 +1,10 @@
+import math
+
 import bmesh
 import bpy
-import math
 import numpy as np
 from bpy.types import Operator
-from mathutils import Matrix, Vector
+from mathutils import Matrix
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
@@ -113,6 +114,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = "box_shape"
+        self.initial_shape = "box_shape"
         self.use_recenter_origin = True
         self.use_custom_rotation = True
 
@@ -151,24 +153,27 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         for base_ob, obj in objs:
             bounding_box_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
-                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
+                used_vertices = self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
-            else:  # self.obj_mode  == "OBJECT":
-                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
+                used_vertices = self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices == None:  # Skip object if there is no Mesh data to create the collider
                 continue
 
-            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else self.creation_mode_edit[self.creation_mode_idx] 
+            creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
+                self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 # Don't add object if it consists of less than 3 vertices
                 if len(used_vertices) < 3:
                     continue
 
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'LOCAL', used_vertices)
+                ws_vtx_co = self.get_vertex_coordinates(obj, 'LOCAL', used_vertices)
 
                 # used_vertices uses local space.
                 # store data needed to generate a bounding box in a dictionary
@@ -179,7 +184,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
         if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
@@ -232,6 +237,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             self.primitive_postprocessing(context, new_collider, collections)
 
             super().set_collider_name(new_collider, parent.name)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

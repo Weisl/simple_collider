@@ -1,5 +1,7 @@
 import bpy
+
 from .properties_panels import draw_auto_convex_settings
+
 
 class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
     """Tooltip"""
@@ -9,10 +11,9 @@ class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
     bl_region_type = "WINDOW"
 
     def draw(self, context):
-
         layout = self.layout
 
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
         draw_auto_convex_settings(colSettings, layout)
         layout.label(text='May take up to a few minutes', icon='ERROR')
         layout.operator("collision.vhacd", text="Auto Convex", icon='MESH_ICOSPHERE')

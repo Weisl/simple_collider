@@ -1,8 +1,10 @@
-import bpy
 import random
+
+import bpy
 from bpy.props import StringProperty
 
 from .material_functions import assign_physics_material, remove_materials, create_material
+from .. import __package__ as base_package
 
 
 class MATERIAL_OT_physics_material_random_color(bpy.types.Operator):
@@ -21,6 +23,7 @@ class MATERIAL_OT_physics_material_random_color(bpy.types.Operator):
 
     def execute(self, context):
         return {"FINISHED"}
+
 
 class MATERIAL_OT_physics_material_create(bpy.types.Operator):
     bl_idname = "material.create_physics_material"
@@ -52,7 +55,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
         return color
 
     def invoke(self, context, event):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         self.mat_naming_position = prefs.material_naming_position
         self.final_name = ""
         if prefs.use_random_color:
@@ -67,7 +70,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
 
         scene = context.scene
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         row = layout.row()
         row.prop(self, "rgb_controller")
@@ -82,7 +85,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
         if self.mat_naming_position == 'PREFIX':
             row = layout.row()
             row.label(
-            text="Name = Material Prefix + Basename")
+                text="Name = Material Prefix + Basename")
             name = prefs.physics_material_filter + prefs.physics_material_separator + self.my_baseName
         elif self.mat_naming_position == 'SUFFIX':  # self.naming_position == 'SUFFIX':
             row = layout.row()
@@ -99,6 +102,7 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
     def execute(self, context):
         create_material(self.final_name, self.rgb_controller)
         return {"FINISHED"}
+
 
 class MATERIAL_OT_set_physics_material(bpy.types.Operator):
     """Tooltip"""
@@ -125,6 +129,3 @@ class MATERIAL_OT_set_physics_material(bpy.types.Operator):
                     print(f'ERROR assigning physics material: {str(e)}')
 
         return {'FINISHED'}
-
-
-

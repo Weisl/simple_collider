@@ -1,11 +1,22 @@
-import bpy
-import bmesh
 import sys
+
+import bmesh
+import bpy
 
 
 # Simple - get all linked faces
 def get_linked_faces(f):
-    sys.setrecursionlimit(10**6)
+    """
+    Recursively retrieve all faces linked to the given face.
+
+    Parameters:
+    f (bmesh.types.BMFace): The starting face from which to find all linked faces.
+
+    Returns:
+    list of bmesh.types.BMFace: A list of all faces linked to the starting face.
+    """
+
+    sys.setrecursionlimit(10 ** 6)
     if f.tag:
         # If the face is already tagged, return empty list
         return []
@@ -28,10 +39,24 @@ def get_linked_faces(f):
 
     return f_linked
 
+
 def construct_python_faces(bmesh_faces):
+    """
+    Construct a dictionary representation of the given BMesh faces with remapped indices.
+
+    Parameters:
+    bmesh_faces (list of bmesh.types.BMFace): A list of BMesh faces.
+
+    Returns:
+    dict: A dictionary containing the vertices, faces, and face material indices.
+          - 'py_verts': List of vertex coordinates.
+          - 'py_faces': List of faces, each face being a list of vertex indices.
+          - 'py_face_mat': List of material indices for each face.
+    """
+
     # this is more involved, as we have to remap the new index
     # to do this, we reconstruct a new vert list and only append new items to it
-    dic={}
+    dic = {}
     py_verts = []
     py_faces = []
     py_face_mat = []
@@ -58,19 +83,31 @@ def construct_python_faces(bmesh_faces):
     dic['py_face_mat'] = py_face_mat
 
     return dic
-def get_face_islands(bm, faces, face_islands = [], i=0):
+
+
+def get_face_islands(bm, faces, face_islands=[], i=0):
+    """
+    Retrieve all face islands (groups of connected faces) from the given BMesh.
+
+    Parameters:
+    bm (bmesh.types.BMesh): The BMesh object.
+    faces (list of bmesh.types.BMFace): The list of faces to process.
+    face_islands (list, optional): The list to store face islands. Defaults to an empty list.
+    i (int, optional): The current recursion depth. Defaults to 0.
+
+    Returns:
+    list: A list of dictionaries, each containing the vertices, faces, and face material indices for an island.
+    """
+
     if len(faces) == 0:
         return face_islands
     else:
         bm.faces.ensure_lookup_table()
-        #print('FACES ' + str(len(faces)))
 
         linked_faces = get_linked_faces(faces[0])
-        #print('LINKED FACES ' + str(len(linked_faces)))
         face_islands.append(construct_python_faces(linked_faces))
 
         remaining_faces = [face for face in faces if face not in linked_faces]
-        #print('REMAINING FACES ' + str(len(remaining_faces)))
 
         i = i + 1
         islands = get_face_islands(bm, remaining_faces, face_islands, i)
@@ -78,8 +115,18 @@ def get_face_islands(bm, faces, face_islands = [], i=0):
         return islands
 
 
+def create_objs_from_island(obj, use_world=True):
+    """
+    Create separate objects from face islands of the given object in edit mode.
 
-def create_objs_from_island(obj, use_world = True):
+    Parameters:
+    obj (bpy.types.Object): The Blender object to process.
+    use_world (bool, optional): If True, use the world matrix for transformations. Defaults to True.
+
+    Returns:
+    list of bpy.types.Object: A list of new objects created from the face islands.
+    """
+
     wld_mat = obj.matrix_world
 
     # change mode to editmode
@@ -92,7 +139,6 @@ def create_objs_from_island(obj, use_world = True):
     bm.free()
     # print('Face Islands: ' + str(face_islands))
     objs = []
-
 
     for island in face_islands:
         py_verts = island['py_verts']
@@ -112,11 +158,7 @@ def create_objs_from_island(obj, use_world = True):
         # create a new object, and link it to the current view layer for display
         ob = bpy.data.objects.new(name='output', object_data=me)
         ob.select_set(False)
-        #bpy.context.view_layer.active_layer_collection.collection.objects.link(ob)
+        # bpy.context.view_layer.active_layer_collection.collection.objects.link(ob)
         objs.append(ob)
-    
+
     return objs
-
-
-
-

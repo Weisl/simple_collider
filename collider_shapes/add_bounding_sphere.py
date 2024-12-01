@@ -18,6 +18,7 @@ def midpoint(p1, p2):
 
 
 def create_sphere(pos, diameter, segments):
+    """Create a UV sphere at the given position with the specified diameter and segments."""
     global tmp_sphere_name
 
     # Create an empty mesh and the object.
@@ -39,7 +40,8 @@ def create_sphere(pos, diameter, segments):
     else:
         bmesh.ops.create_uvsphere(bm, u_segments=segments * 2, v_segments=segments, diameter=diameter)
 
-    for f in bm.faces: f.smooth = True
+    for f in bm.faces:
+        f.smooth = True
 
     bm.to_mesh(mesh)
     mesh.update()
@@ -56,7 +58,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def calculate_bounding_sphere(obj, used_vertices):
-        # Get vertices wit min and may values
+        # Get vertices wit min and may value
         for i, vertex in enumerate(used_vertices):
 
             # convert to global space
@@ -125,6 +127,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
         self.use_sphere_segments = True
         self.shape = "sphere_shape"
+        self.initial_shape = "sphere_shape"
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -174,11 +177,11 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             context.view_layer.objects.active = obj
             scene = context.scene
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
-                used_vertices = self.get_vertices_Edit(obj, use_modifiers=self.my_use_modifier_stack)
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
+                used_vertices = self.get_edit_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
-            else:  # mode == "OBJECT":
-                used_vertices = self.get_vertices_Object(obj, use_modifiers=self.my_use_modifier_stack)
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
+                used_vertices = self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
             if used_vertices is None:  # Skip object if there is no Mesh data to create the collider
                 continue
@@ -186,9 +189,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             bounding_sphere_data = {}
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
-            self.creation_mode_edit[self.creation_mode_idx]
+                self.creation_mode_edit[self.creation_mode_idx]
 
-            if creation_mode in ['INDIVIDUAL', 'LOOSEMESH']:
+            if creation_mode in ['INDIVIDUAL'] or self.use_loose_mesh:
+
                 bounding_sphere_data['mid_point'], bounding_sphere_data['radius'] = self.calculate_bounding_sphere(obj,
                                                                                                                    used_vertices)
                 bounding_sphere_data['parent'] = base_ob
@@ -196,11 +200,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
                 # get list of all vertex coordinates in global space
-                ws_vtx_co = self.get_point_positions(obj, 'GLOBAL', used_vertices)
+                ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
                 verts_co = verts_co + ws_vtx_co
 
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-            collider_data = self.bounding_sphere_data_selection(verts_co)
+                collider_data = self.bounding_sphere_data_selection(verts_co)
 
         for bounding_sphere_data in collider_data:
             mid_point = bounding_sphere_data['mid_point']
@@ -216,6 +219,10 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
             self.primitive_postprocessing(context, new_collider, collections)
 
             super().set_collider_name(new_collider, parent.name)
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)
