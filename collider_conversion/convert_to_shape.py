@@ -22,7 +22,6 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
 
         # Get naming presets
         separator = prefs.separator
-        naming_position = prefs.naming_position
 
         # Retrieve all shape names
         shapes = [
@@ -39,17 +38,16 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             for shape in shapes
         }
 
-
         def replace_shape(name, from_shape, to_shape):
             """Replace a specific shape with another in the object name."""
             pattern = regex_search_patterns[from_shape]
+            # Handle replacements, preserving separators
             return pattern.sub(
-                lambda m: f"{separator}{to_shape}{separator}".strip(separator), name
+                lambda m: f"{m.group(0).replace(from_shape, to_shape)}", name
             )
 
         count = 0
         for obj in context.selected_objects.copy():
-
             # Skip invalid objects
             if (
                 obj is None
@@ -71,7 +69,6 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
                 if from_shape != self.shape_identifier:  # Only replace different shapes
                     new_name = replace_shape(new_name, from_shape, shape_name)
 
-
             # Assign the new name to the object
             obj.name = new_name
 
@@ -84,4 +81,3 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             return {'CANCELLED'}
 
         return {'FINISHED'}
-
