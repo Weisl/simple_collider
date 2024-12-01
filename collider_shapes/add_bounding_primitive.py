@@ -1503,10 +1503,11 @@ class OBJECT_OT_add_bounding_object():
                             self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
 
                 # remove modifiers if they have the default value
-                if self.current_settings_dic['displace_offset'] == 0.0:
-                    self.del_displace_modifier(obj)
-                if self.current_settings_dic['decimate'] == 1.0:
-                    self.del_decimate_modifier(obj)
+                if not self.prefs.keep_modifier_defaults:
+                    if self.current_settings_dic['displace_offset'] == 0.0:
+                        self.del_displace_modifier(obj)
+                    if self.current_settings_dic['decimate'] == 1.0:
+                        self.del_decimate_modifier(obj)
 
                 # set the display settings for the collider objects
                 obj.display_type = colSettings.display_type

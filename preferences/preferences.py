@@ -265,16 +265,25 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         description='Settings category:')
 
     ###################################################################
-    # GENERAL
 
     collider_category: bpy.props.StringProperty(name="Category Tab",
                                                 description="The category name used to organize the addon in the properties panel for all the addons",
                                                 default='Simple Collider',
                                                 update=update_panel_category)  # update = update_panel_position,
+
+    ############################
+    # GENERAL
     # Parent to base
-    use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base",
+    use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base Objects",
                                           description="Parent the newly generated collider to the base mesh it was created from.",
                                           default=True)
+
+    # Modifiers
+    keep_modifier_defaults: bpy.props.BoolProperty(name="Keep Collider Modifiers with default values",
+                                               description="Keep the collider modifiers using the default values and don't manipulate the geometry.",
+                                               default=True)
+
+
     # Collections
     use_col_collection: bpy.props.BoolProperty(name="Add Collider Collection",
                                                description="Link all collision objects to a specific Collection for collisions. It will create a collider collection with the given name if it doesn't already exist",
@@ -643,6 +652,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                   default=False)
     general_props = [
         "use_parent_to",
+        "keep_modifier_defaults",
     ]
 
     props = [
