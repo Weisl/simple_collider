@@ -32,12 +32,6 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             prefs.mesh_shape,
         ]
 
-        # Precompile regex patterns for all shapes
-        regex_search_patterns = {
-            shape: re.compile(fr'(?:^|{separator})({shape})(?:{separator}|$)', re.IGNORECASE)
-            for shape in shapes
-        }
-
         def replace_shape(name, from_shape, to_shape):
             """Replace a specific shape with another in the object name."""
             pattern = regex_search_patterns[from_shape]
@@ -45,6 +39,12 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             return pattern.sub(
                 lambda m: f"{m.group(0).replace(from_shape, to_shape)}", name
             )
+
+        # Precompile regex patterns for all shapes
+        regex_search_patterns = {
+            shape: re.compile(fr'(?:^|{separator})({shape})(?:{separator}|$)', re.IGNORECASE)
+            for shape in shapes
+        }
 
         count = 0
         for obj in context.selected_objects.copy():
@@ -64,10 +64,12 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             obj['collider_shape'] = self.shape_identifier
             shape_name = OBJECT_OT_add_bounding_object.get_shape_pre_suffix(prefs, self.shape_identifier)
 
+
             # Remove existing shapes and replace them with the selected one
             for from_shape in shapes:
                 if from_shape != self.shape_identifier:  # Only replace different shapes
-                    new_name = replace_shape(new_name, from_shape, shape_name)
+                    if from_shape and shape_name:   # only replace if both contain a string
+                        new_name = replace_shape(new_name, from_shape, shape_name)
 
             # Assign the new name to the object
             obj.name = new_name
