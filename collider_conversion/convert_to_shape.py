@@ -12,13 +12,40 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
 
     shape_identifier: bpy.props.StringProperty()
 
+    regex_search_patterns = None  # Class-level cache for regex patterns
+
     @classmethod
     def poll(cls, context):
-        # Ensure at least one valid object is selected
+        """Ensure at least one valid object is selected."""
         return any(obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] for obj in context.selected_objects)
+
+    def compile_regex_patterns(self, shapes, separator):
+        """Precompile regex patterns for all shapes."""
+        if not self.regex_search_patterns:
+            self.regex_search_patterns = {
+                shape: re.compile(fr'(?:^|{separator})({shape})(?:{separator}|$)', re.IGNORECASE)
+                for shape in shapes if shape
+            }
+
+    def is_valid_object(self, obj):
+        """Check if the object is valid for processing."""
+        return obj and obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] and obj.get('isCollider')
+
+    def replace_shape(self, name, from_shape, to_shape):
+        """Replace a specific shape with another in the object name."""
+        if not from_shape or not to_shape:
+            return name
+
+        pattern = self.regex_search_patterns.get(from_shape)
+        if not pattern:
+            return name
+
+        # Perform the replacement, preserving separators
+        return pattern.sub(lambda m: f"{m.group(0).replace(from_shape, to_shape)}", name)
 
     def execute(self, context):
         prefs = context.preferences.addons[base_package].preferences
+
 
         # Get naming presets
         separator = prefs.separator
@@ -32,28 +59,13 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             prefs.mesh_shape,
         ]
 
-        def replace_shape(name, from_shape, to_shape):
-            """Replace a specific shape with another in the object name."""
-            pattern = regex_search_patterns[from_shape]
-            # Handle replacements, preserving separators
-            return pattern.sub(
-                lambda m: f"{m.group(0).replace(from_shape, to_shape)}", name
-            )
-
-        # Precompile regex patterns for all shapes
-        regex_search_patterns = {
-            shape: re.compile(fr'(?:^|{separator})({shape})(?:{separator}|$)', re.IGNORECASE)
-            for shape in shapes
-        }
+        # Compile regex patterns once
+        self.compile_regex_patterns(shapes, separator)
 
         count = 0
-        for obj in context.selected_objects.copy():
+        for obj in list(context.selected_objects):
             # Skip invalid objects
-            if (
-                obj is None
-                or obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
-                or not obj.get('isCollider')
-            ):
+            if not self.is_valid_object(obj):
                 continue
 
             count += 1
@@ -61,25 +73,20 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             # Start with the current object name
             new_name = obj.name
 
+            # Assign collider shape
             obj['collider_shape'] = self.shape_identifier
             shape_name = OBJECT_OT_add_bounding_object.get_shape_pre_suffix(prefs, self.shape_identifier)
 
-
-            # Remove existing shapes and replace them with the selected one
+            # Replace shapes in the object name
             for from_shape in shapes:
-                if from_shape != self.shape_identifier:  # Only replace different shapes
-                    if from_shape and shape_name:   # only replace if both contain a string
-                        new_name = replace_shape(new_name, from_shape, shape_name)
+                new_name = self.replace_shape(new_name, from_shape, shape_name)
 
-            # Assign the new name to the object
+            # Update object name and data name
             obj.name = new_name
-
-            # Update the object's data name
             OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
-        # Report if no colliders were found
         if count == 0:
-            self.report({'WARNING'}, "No collider found to change the shape type.")
+            self.report({'WARNING'}, "No valid colliders found to change the shape type.")
             return {'CANCELLED'}
 
         return {'FINISHED'}
