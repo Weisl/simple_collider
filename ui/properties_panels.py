@@ -245,7 +245,7 @@ def draw_creation_menu(context, layout, settings=False):
     for shape in shapes:
         # Create a column for each button
         col = split.column(align=True)
-        op = col.operator('object.assign_collision_shape', text=shape['text'], icon=shape['icon'])
+        op = col.operator('object.assign_collider_shape', text=shape['text'], icon=shape['icon'])
         op.shape_identifier = shape['identifier']
 
     row = layout.row(align=True)

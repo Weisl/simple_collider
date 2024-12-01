@@ -260,7 +260,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     bl_options = {'REGISTER'}
 
     prefs_tabs: bpy.props.EnumProperty(
-        name='Collision Settings',
+        name='Collider Settings',
         items=(('SETTINGS', "General", "General addon settings"),
                ('NAMING', "Presets",
                 "Presets settings: Create, change and modify presets"),
@@ -272,16 +272,25 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         description='Settings category:')
 
     ###################################################################
-    # GENERAL
 
     collider_category: bpy.props.StringProperty(name="Category Tab",
                                                 description="The category name used to organize the addon in the properties panel for all the addons",
                                                 default='Simple Collider',
                                                 update=update_panel_category)  # update = update_panel_position,
+
+    ############################
+    # GENERAL
     # Parent to base
-    use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base",
+    use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base Objects",
                                           description="Parent the newly generated collider to the base mesh it was created from.",
                                           default=True)
+
+    # Modifiers
+    keep_modifier_defaults: bpy.props.BoolProperty(name="Keep Collider Modifiers with default values",
+                                               description="Keep the collider modifiers using the default values and don't manipulate the geometry.",
+                                               default=True)
+
+
     # Collections
     use_col_collection: bpy.props.BoolProperty(name="Add Collider Collection",
                                                description="Link all collision objects to a specific Collection for collisions. It will create a collider collection with the given name if it doesn't already exist",
@@ -289,7 +298,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     col_collection_name: bpy.props.StringProperty(name='Collection Name',
                                                   description='Name of the collider collection newly created collisions are added to',
-                                                  default='Collisions')
+                                                  default='Colliders')
 
     col_collection_color: bpy.props.EnumProperty(name='Collection Color',
                                                  items=collection_colors,
@@ -413,22 +422,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     separator: bpy.props.StringProperty(name="Separator", default="_",
                                         description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
 
-    collision_string_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
+    collision_string_prefix: bpy.props.StringProperty(name="Collider Prefix", default="",
                                                       description='Simple string added to the beginning of the collider suffix/prefix')
 
-    collision_string_suffix: bpy.props.StringProperty(name="Collision Suffix", default="",
+    collision_string_suffix: bpy.props.StringProperty(name="Collider Suffix", default="",
                                                       description='Simple string added to the end of the collider suffix/prefix')
 
     # Collider Shapes
-    box_shape: bpy.props.StringProperty(name="Box Collision", default="UBX",
+    box_shape: bpy.props.StringProperty(name="Box Collider", default="UBX",
                                         description='Naming used to define box colliders')
-    sphere_shape: bpy.props.StringProperty(name="Sphere Collision", default="USP",
+    sphere_shape: bpy.props.StringProperty(name="Sphere Collider", default="USP",
                                            description='Naming used to define sphere colliders')
-    capsule_shape: bpy.props.StringProperty(name="Capsule Collision", default="UCP",
+    capsule_shape: bpy.props.StringProperty(name="Capsule Collider", default="UCP",
                                             description='Naming used to define capsule colliders')
-    convex_shape: bpy.props.StringProperty(name="Convex Collision", default="UCX",
+    convex_shape: bpy.props.StringProperty(name="Convex Collider", default="UCX",
                                            description='Naming used to define convex colliders')
-    mesh_shape: bpy.props.StringProperty(name="Mesh Collision", default="",
+    mesh_shape: bpy.props.StringProperty(name="Mesh Collider", default="",
                                          description='Naming used to define triangle mesh colliders')
 
     # Rigid Body
@@ -486,7 +495,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     use_random_color: bpy.props.BoolProperty(name="Use Random Color", default=True)
 
-    physics_material_su_prefix: bpy.props.StringProperty(name="Collision Prefix", default="",
+    physics_material_su_prefix: bpy.props.StringProperty(name="Collider Prefix", default="",
                                                          description='Simple string added to the beginning of the collider suffix/prefix')
 
     physics_material_name: bpy.props.StringProperty(name='Default Physics Material',
@@ -650,6 +659,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                   default=False)
     general_props = [
         "use_parent_to",
+        "keep_modifier_defaults",
     ]
 
     props = [
@@ -836,10 +846,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row = box_name.row()
             if self.naming_position == 'PREFIX':
                 row.label(
-                    text="Name = Collision Prefix + Shape + Group + Collision Suffix + Basename + Numbering")
+                    text="Name = Collider Prefix + Shape + Group + Collider Suffix + Basename + Numbering")
             else:  # self.naming_position == 'SUFFIX':
                 row.label(
-                    text="Name = Basename + Collision Prefix + Shape + Group + Collision Suffix + Numbering")
+                    text="Name = Basename + Collider Prefix + Shape + Group + Collider Suffix + Numbering")
 
             row = box_name.row()
             row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier='box_shape',

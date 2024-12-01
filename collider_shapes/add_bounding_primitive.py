@@ -389,7 +389,7 @@ def collision_dictionary(alpha, offset, decimate, sphere_segments, cylinder_segm
 
 def add_weld_modifier(context, bounding_object):
     # add displacement modifier and safe it to manipulate the strength in the modal operator
-    modifier = bounding_object.modifiers.new(name="Collision_weld", type='WELD')
+    modifier = bounding_object.modifiers.new(name="Collider_weld", type='WELD')
 
 
 class OBJECT_OT_add_bounding_object():
@@ -894,18 +894,18 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def del_displace_modifier(bounding_object):
-        """Delete displace modifiers called 'Collision_displace'"""
+        """Delete displace modifiers called 'Collider_displace'"""
         if bounding_object:
-            if bounding_object.modifiers.get('Collision_displace'):
-                mod = bounding_object.modifiers['Collision_displace']
+            if bounding_object.modifiers.get('Collider_displace'):
+                mod = bounding_object.modifiers['Collider_displace']
                 bounding_object.modifiers.remove(mod)
 
     @staticmethod
     def del_decimate_modifier(bounding_object):
-        """Delete modifiers called 'Collision_decimate'"""
+        """Delete modifiers called 'Collider_decimate'"""
         if bounding_object:
-            if bounding_object.modifiers.get('Collision_decimate'):
-                mod = bounding_object.modifiers['Collision_decimate']
+            if bounding_object.modifiers.get('Collider_decimate'):
+                mod = bounding_object.modifiers['Collider_decimate']
                 bounding_object.modifiers.remove(mod)
 
     # Time classes
@@ -1143,21 +1143,21 @@ class OBJECT_OT_add_bounding_object():
 
     def add_displacement_modifier(self, context, bounding_object):
         # add displacement modifier and safe it to manipulate the strength in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_displace", type='DISPLACE')
+        modifier = bounding_object.modifiers.new(name="Collider_displace", type='DISPLACE')
         modifier.strength = self.current_settings_dic['displace_offset']
 
         self.displace_modifiers.append(modifier)
 
     def add_remesh_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strength in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_remesh", type='REMESH')
+        modifier = bounding_object.modifiers.new(name="Collider_remesh", type='REMESH')
         modifier.mode = 'VOXEL'
         modifier.voxel_size = self.current_settings_dic['voxel_size']
         self.remesh_modifiers.append(modifier)
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strength in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collision_decimate", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name="Collider_decimate", type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
@@ -1503,10 +1503,11 @@ class OBJECT_OT_add_bounding_object():
                             self.set_custom_rotation(obj, self.col_rotation_matrix_list[i])
 
                 # remove modifiers if they have the default value
-                if self.current_settings_dic['displace_offset'] == 0.0:
-                    self.del_displace_modifier(obj)
-                if self.current_settings_dic['decimate'] == 1.0:
-                    self.del_decimate_modifier(obj)
+                if not self.prefs.keep_modifier_defaults:
+                    if self.current_settings_dic['displace_offset'] == 0.0:
+                        self.del_displace_modifier(obj)
+                    if self.current_settings_dic['decimate'] == 1.0:
+                        self.del_decimate_modifier(obj)
 
                 # set the display settings for the collider objects
                 obj.display_type = colSettings.display_type

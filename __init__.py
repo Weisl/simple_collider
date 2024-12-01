@@ -31,7 +31,6 @@ else:
 def register():
     # call the register function of the submodules.
     ui.register()
-
     collider_operators.register()
     collider_shapes.register()
     collider_conversion.register()
@@ -47,6 +46,8 @@ def register():
 
 
 def unregister():
+    properties.unregister()
+    groups.unregister()
     # call unregister function of the submodules.
     preferences.unregister()
     presets.unregister()
@@ -56,8 +57,8 @@ def unregister():
     collider_conversion.unregister()
     collider_shapes.unregister()
     collider_operators.unregister()
-    properties.unregister()
-    groups.unregister()
+
+
     ui.unregister()
 
 
