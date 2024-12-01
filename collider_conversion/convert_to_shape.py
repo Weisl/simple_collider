@@ -66,7 +66,7 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
             OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
         if count == 0:
-            self.report({'WARNING'}, "No collider found to change the user group.")
+            self.report({'WARNING'}, "No collider found to change the shape type.")
             return {'CANCELLED'}
 
         return {'FINISHED'}
