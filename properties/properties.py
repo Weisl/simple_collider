@@ -1,9 +1,10 @@
 import bpy
+
 from ..groups import user_groups
 
 
 def update_display_colliders(self, context):
-    '''Toggle between solid and wireframe displaytype'''
+    """Toggle between solid and wireframe display type"""
     for obj in bpy.data.objects:
         if obj.get('isCollider'):
             obj.display_type = self.display_type
@@ -31,13 +32,13 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     # -h
     maxHullAmount: bpy.props.IntProperty(name='Hulls',
                                          description='Maximum number of output convex hulls',
-                                         default=8, 
-                                         min=1, 
-                                         soft_max =128,
+                                         default=8,
+                                         min=1,
+                                         soft_max=128,
                                          max=4096)
 
     # -v
-    maxHullVertCount: bpy.props.IntProperty(name='Verts per Piece',
+    maxHullVertCount: bpy.props.IntProperty(name='Vert per Piece',
                                             description='Maximum number of vertices in the output convex hull',
                                             default=16,
                                             min=8,
@@ -69,7 +70,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                          default="SOLID",
                                          update=update_display_colliders)
 
-    # Tranformation space to be used for creating the bounding object.
+    # Transformation space to be used for creating the bounding object.
     my_space: bpy.props.EnumProperty(name="Generation Space",
                                      items=(('LOCAL', "Local",
                                              "Generate colliders based on the local space of the object."),
@@ -77,7 +78,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                              "Generate the collision based on the global space of the object.")),
                                      default="LOCAL")
 
-    # Tranformation space to be used for creating the bounding object.
+    # Transformation space to be used for creating the bounding object.
     default_space: bpy.props.EnumProperty(name="Transform Space",
                                           items=(('LOCAL', "Local",
                                                   "Generate colliders based on the local or object transform space."),
@@ -89,15 +90,22 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    default=False,
                                                    description="Set the default for using the modifier stack or not when creating colliders.")
 
+    default_use_loose_island: bpy.props.BoolProperty(name="Use Loose Islands",
+                                                   default=False,
+                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+
+    default_join_primitives: bpy.props.BoolProperty(name="Join Primitives",
+                                                   default=False,
+                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+
+
     default_keep_original_material: bpy.props.BoolProperty(name="Keep Original Materials",
-                                               default=False,
-                                               description="Set the default for using the modifier stack or not when creating colliders.")
+                                                           default=False,
+                                                           description="Set the default for using the modifier stack or not when creating colliders.")
 
     default_keep_original_name: bpy.props.BoolProperty(name="Keep Original Name",
-                                               default=False,
-                                               description="Keep the original object name and don't use the automatic collider renaming")
-
-
+                                                       default=False,
+                                                       description="Keep the original object name and don't use the automatic collider renaming")
 
     default_user_group: bpy.props.EnumProperty(name="Default User Group",
                                                items=(('USER_01', "User Group 01",
@@ -111,7 +119,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     default_creation_mode: bpy.props.EnumProperty(name="Creation Mode",
                                                   items=(('INDIVIDUAL', "Individual", "Colliders are created per individual object."),
                                                          ('SELECTION', "Selection", "Colliders are created for the entire selection."),
-                                                         ('LOOSEMESH', "Loose Mesh", "Colliders are created per for connected meshes.")
+
                                                          ),
                                                   description="Colliders are generated per individual object or bounding the entire selection.",
                                                   default='INDIVIDUAL')
@@ -135,16 +143,16 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    )
 
     default_capsule_segments: bpy.props.IntProperty(name="Capsule Segments",
-                                                   description="Amount of sphere segments.",
-                                                   default=16,
-                                                   )
+                                                    description="Amount of sphere segments.",
+                                                    default=16,
+                                                    )
 
     default_color_type: bpy.props.EnumProperty(name="Color Type",
-                                         items=(('OBJECT', 'Collider Groups', 'Color Type: Collider Groups'),
-                                                ('MATERIAL', 'Physics Material', 'Color Type: Physic Materials'),
-                                                ('SINGLE', 'Single', 'Color Type: Single Color')),
-                                         description="Set Color Type",
-                                         default='OBJECT')
+                                               items=(('OBJECT', 'Collider Groups', 'Color Type: Collider Groups'),
+                                                      ('MATERIAL', 'Physics Material', 'Color Type: Physic Materials'),
+                                                      ('SINGLE', 'Single', 'Color Type: Single Color')),
+                                               description="Set Color Type",
+                                               default='OBJECT')
 
     material_list_index: bpy.props.IntProperty(name="Index for material list",
                                                min=0,
@@ -159,4 +167,3 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
         name='Default Mesh Material',
         description='The default mesh material will be assigned to any mesh that is converted from a collider to a mesh object'
     )
-

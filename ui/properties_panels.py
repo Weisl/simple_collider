@@ -1,15 +1,34 @@
-import bpy
 import os
 import platform
 import subprocess
 import textwrap
+
+import bpy
 from bpy.types import Menu
 
-from ..groups.user_groups import get_groups_color, get_groups_name, get_groups_identifier
+from .. import __package__ as base_package
+
+
+# needed for adding direct link to settings
+def get_addon_name():
+    """
+    Get the name of the addon.
+
+    Returns:
+        str: The name of the addon.
+    """
+    return "Simple Collider"
+
 
 def collider_presets_folder():
+    """
+    Ensure the existence of the presets folder for the addon and return its path.
+
+    Returns:
+        str: The path to the collider presets directory.
+    """
     # Make sure there is a directory for presets
-    collider_presets = "collider_tools"
+    collider_presets = "simple_collider"
     collider_preset_directory = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", collider_presets)
     collider_preset_paths = bpy.utils.preset_paths(collider_presets)
 
@@ -19,17 +38,17 @@ def collider_presets_folder():
     return collider_preset_directory
 
 
-def get_addon_name():
-    # Get Addon Name
-    from .. import bl_info
-    return bl_info["name"]
-
-
 def draw_auto_convex(layout, context):
-    prefs = context.preferences.addons[__package__.split('.')[0]].preferences
-    # colSettings = context.scene.collider_tools
-    addon_name = get_addon_name()
+    """
+    Draw the auto convex options in the layout based on the current platform and preferences.
 
+    Args:
+        layout (Layout): The layout to draw the options on.
+        context (Context): The current context.
+    """
+
+    prefs = context.preferences.addons[base_package].preferences
+    addon_name = get_addon_name()
 
     # row.label(text='Auto Convex')
 
@@ -60,6 +79,13 @@ def draw_auto_convex(layout, context):
 
 
 def draw_auto_convex_settings(colSettings, layout):
+    """
+    Draw the settings for auto convex in the layout.
+
+    Args:
+        colSettings (UILayout): The column layout to draw the settings on.
+        layout (Layout): The parent layout.
+    """
     col = layout.column(align=True)
     row = col.row(align=True)
     row.prop(colSettings, 'vhacd_shrinkwrap')
@@ -71,6 +97,14 @@ def draw_auto_convex_settings(colSettings, layout):
 
 
 def label_multiline(context, text, parent):
+    """
+    Draw a label with multiline text in the layout.
+
+    Args:
+        context (Context): The current context.
+        text (str): The text to display.
+        parent (UILayout): The parent layout to add the label to.
+    """
     chars = int(context.region.width / 7)  # 7 pix on 1 character
     wrapper = textwrap.TextWrapper(width=chars)
     text_lines = wrapper.wrap(text=text)
@@ -79,6 +113,19 @@ def label_multiline(context, text, parent):
 
 
 def draw_group_properties(context, property, col_01, col_02, mode, user_group=False):
+    """
+    Draw the group properties in the layout.
+
+    Args:
+        context (Context): The current context.
+        property (Property): The property to display.
+        col_01 (UILayout): The first column layout.
+        col_02 (UILayout): The second column layout.
+        mode (str): The mode of the group.
+        user_group (bool, optional): Whether the group is a user group. Defaults to False.
+    """
+    from ..groups.user_groups import get_groups_color, get_groups_name
+
     group_identifier = mode
     group_name = get_groups_name(mode)
     color = get_groups_color(mode)
@@ -113,41 +160,57 @@ def draw_group_properties(context, property, col_01, col_02, mode, user_group=Fa
     op.select = True
     op.mode = group_identifier
 
-
     op = row.operator("object.all_delete_collisions", icon=str(property.delete_icon), text=str(property.delete_text))
     op.mode = group_identifier
 
 
 def draw_visibility_selection_menu(context, layout):
+    """
+    Draw the visibility selection menu in the layout.
+
+    Args:
+        context (Context): The current context.
+        layout (UILayout): The layout to draw the menu on.
+    """
     split_factor = 0.7
 
     split_left = layout.split(factor=split_factor, align=True)
     col_01 = split_left.column(align=True)
     col_02 = split_left.column(align=True)
 
-    colSettings = context.scene.collider_tools
+    colSettings = context.scene.simple_collider
 
     draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
     draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
 
-    prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = context.preferences.addons[base_package].preferences
 
     if prefs.collider_groups_enabled:
         split_left = layout.split(factor=split_factor, align=True)
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_01, col_01, col_02, 'USER_01', user_group=True)
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_02, col_01, col_02, 'USER_02', user_group=True)
-        draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, 'USER_03', user_group=True)
-
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_01, col_01, col_02, 'USER_01',
+                              user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_02, col_01, col_02, 'USER_02',
+                              user_group=True)
+        draw_group_properties(context, colSettings.visibility_toggle_user_group_03, col_01, col_02, 'USER_03',
+                              user_group=True)
 
 
 def draw_creation_menu(context, layout, settings=False):
-    colSettings = context.scene.collider_tools
+    """
+    Draw the creation menu in the layout.
+
+    Args:
+        context (Context): The current context.
+        layout (UILayout): The layout to draw the menu on.
+        settings (bool, optional): Whether to include settings. Defaults to False.
+    """
+    colSettings = context.scene.simple_collider
 
     # layout.separator()
-    col =layout.column(align=True)
+    col = layout.column(align=True)
     row = col.row(align=True)
     row.operator("mesh.add_bounding_capsule", icon='MESH_CAPSULE')
     row = col.row(align=True)
@@ -155,11 +218,33 @@ def draw_creation_menu(context, layout, settings=False):
     row = col.row(align=True)
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
-
-
     # layout.separator()
     row = col.row(align=True)
     draw_auto_convex(row, context)
+
+    row = layout.row(align=True)
+    row.label(text='Convert Shape')
+
+    row = layout.row(align=True)
+    row.scale_x = 1.0  # Ensure buttons take up the full width
+
+    shapes = [{'identifier': 'box_shape', 'text': '', 'icon': 'MESH_CUBE'},
+              {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
+              {'identifier': 'capsule_shape', 'text': '', 'icon': 'MESH_CAPSULE'},
+              {'identifier': 'convex_shape', 'text': '', 'icon': 'MESH_ICOSPHERE'},
+              {'identifier': 'mesh_shape', 'text': '', 'icon': 'MESH_MONKEY'},
+              ]
+
+    button_amount = len(shapes)
+
+    # Use layout.split() to divide the row into equal parts
+    split = layout.split(factor=1.0 / button_amount, align=True)
+
+    for shape in shapes:
+        # Create a column for each button
+        col = split.column(align=True)
+        op = col.operator('object.assign_collision_shape', text=shape['text'], icon=shape['icon'])
+        op.shape_identifier = shape['identifier']
 
     row = layout.row(align=True)
     row.label(text='Convert')
@@ -171,10 +256,10 @@ def draw_creation_menu(context, layout, settings=False):
     row.operator('object.convert_to_mesh', icon='WINDOW')
 
     row = layout.row(align=True)
-    row.operator('object.regenerate_name', icon='FILE_REFRESH')
+    row.operator('object.convert_from_name', icon='NONE')
 
     row = layout.row(align=True)
-    row.operator('object.convert_from_name', icon='NONE')
+    row.operator('object.regenerate_name', icon='FILE_REFRESH')
 
     layout.separator()
 
@@ -184,7 +269,6 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.operator('object.set_rigid_body', icon='NONE')
 
-
     row = layout.row(align=True)
     row.label(text='Display as')
     row.prop(colSettings, 'display_type', text='')
@@ -192,6 +276,13 @@ def draw_creation_menu(context, layout, settings=False):
 
 
 def draw_naming_presets(self, context):
+    """
+    Draw the naming presets menu in the layout.
+
+    Args:
+        self (UILayout): The UI layout.
+        context (Context): The current context.
+    """
     layout = self.layout
     row = layout.row(align=True)
 
@@ -201,14 +292,14 @@ def draw_naming_presets(self, context):
 
     if platform.system() == 'Windows':
         op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-        op.dirpath = collider_presets_folder()
+        op.dir_path = collider_presets_folder()
 
     op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'NAMING'
 
 
-############## OPERATORS ##############################
+# OPERATORS 
 
 class EXPLORER_OT_open_directory_new(bpy.types.Operator):
     """Open render output directory in Explorer"""
@@ -216,12 +307,12 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator):
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
 
-    dirpath: bpy.props.StringProperty()
+    dir_path: bpy.props.StringProperty()
 
     def execute(self, context):
 
-        if os.path.isdir(self.dirpath):
-            subprocess.Popen(["explorer.exe", self.dirpath])
+        if os.path.isdir(self.dir_path):
+            subprocess.Popen(["explorer.exe", self.dir_path])
         else:
             self.report({'ERROR'}, 'Invalid Preset Path')
             return {'CANCELLED'}
@@ -244,11 +335,11 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
         bpy.context.preferences.active_section = 'ADDONS'
         bpy.data.window_managers["WinMan"].addon_search = self.addon_name
 
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
         prefs.prefs_tabs = self.prefs_tabs
 
         import addon_utils
-        mod = addon_utils.addons_fake_modules.get('collider_tools')
+        mod = addon_utils.addons_fake_modules.get('simple_collider')
 
         # mod is None the first time the operation is called :/
         if mod:
@@ -260,19 +351,19 @@ class PREFERENCES_OT_open_addon(bpy.types.Operator):
                     if area.type == 'USER_PREFERENCES':
                         area.tag_redraw()
 
-        # bpy.ops.preferences.addon_expand(module=self.addon_name)
+        bpy.ops.preferences.addon_expand(module=self.addon_name)
         return {'FINISHED'}
 
 
 ############## PRESET ##############################
 
 class OBJECT_MT_collision_presets(Menu):
-    '''Collider preset dropdown'''
+    """Collider preset dropdown"""
 
-    bl_label = "Presets"
+    bl_label = "Collider Presets"
     bl_description = "Specify creation preset used for the collider generation"
-    preset_subdir = "collider_tools"
-    preset_operator = "script.execute_preset"
+    preset_subdir = "simple_collider"
+    preset_operator = "collision.load_collision_preset"
     subclass = 'PresetMenu'
     draw = Menu.draw_preset
 
@@ -284,19 +375,19 @@ class VIEW3D_PT_collision(bpy.types.Panel):
 
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Collider Tools"
+    bl_category = "Simple Collider"
+
 
 # abstract class
 class VIEW3D_PT_init():
     def __init__(self):
-        bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-        bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
-
+        bpy.context.scene.simple_collider.visibility_toggle_all.mode = 'ALL_COLLIDER'
+        bpy.context.scene.simple_collider.visibility_toggle_obj.mode = 'OBJECTS'
 
 
 class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Collider Tools"
+    bl_label = "Simple Collider"
 
     def draw_header(self, context):
         layout = self.layout
@@ -350,6 +441,7 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
         draw_visibility_selection_menu(context, layout)
         layout.separator()
 
+
 class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
     """Creates a Panel in the Object properties window"""
 
@@ -362,14 +454,18 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
 
     def draw(self, context):
         layout = self.layout
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
-        #Bools
+        # Bools
         row = layout.row(align=True)
         row.prop(colSettings, "default_modifier_stack")
         row = layout.row(align=True)
+        row.prop(colSettings, "default_use_loose_island")
+        row = layout.row(align=True)
+        row.prop(colSettings, "default_join_primitives")
+        row = layout.row(align=True)
 
-        #Dropdowns
+        # Dropdowns
 
         col = layout.column(align=True)
         row = col.row(align=True)
@@ -384,7 +480,7 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         row = col.row(align=True)
         col.separator
         row.prop(colSettings, "default_user_group")
-        
+
         col = layout.column(align=True)
         row = col.row(align=True)
         row.prop(colSettings, "default_cylinder_axis")
@@ -392,7 +488,6 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         row.prop(colSettings, "default_cylinder_segments")
         row = col.row(align=True)
         row.prop(colSettings, "default_sphere_segments")
-        
 
 
 class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
@@ -410,8 +505,8 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
 
     def draw(self, context):
         layout = self.layout
-        colSettings = context.scene.collider_tools
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        colSettings = context.scene.simple_collider
+        prefs = context.preferences.addons[base_package].preferences
 
         layout.label(text='Active Material')
         # self.draw_active_physics_material(colSettings, layout)
@@ -428,7 +523,7 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         if prefs.use_physics_material:
             layout.label(text='Material List')
             layout.template_list("MATERIAL_UL_physics_materials", "", bpy.data, "materials", colSettings,
-                              "material_list_index")
+                                 "material_list_index")
 
             box = layout.box()
             col = box.column(align=True)
@@ -461,7 +556,7 @@ class VIEW3D_MT_collision_creation(Menu):
 
 class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
     # label is displayed at the center of the pie menu.
-    bl_label = "Collision Pie"
+    bl_label = "Collider Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
     def __init__(self):
@@ -493,11 +588,10 @@ class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
         col_01 = split_left.column(align=True)
         col_02 = split_left.column(align=True)
 
-        colSettings = context.scene.collider_tools
+        colSettings = context.scene.simple_collider
 
         draw_group_properties(context, colSettings.visibility_toggle_all, col_01, col_02, 'ALL_COLLIDER')
         draw_group_properties(context, colSettings.visibility_toggle_obj, col_01, col_02, 'OBJECTS')
-
 
         # North
         pie.operator("mesh.add_bounding_convex_hull", icon='MESH_ICOSPHERE')
@@ -507,6 +601,7 @@ class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
 
         # NorthEast
         pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
+
 
 class BUTTON_OT_auto_convex(bpy.types.Operator):
     """Print object name in Console"""

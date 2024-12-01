@@ -1,34 +1,171 @@
 import math
 import bmesh
+import numpy as np
+from mathutils import Vector, Matrix
 
-# Function to calculate the distance between two points
-def distance(p1, p2):
-    return math.sqrt(sum((p1[i] - p2[i]) ** 2 for i in range(len(p1))))
+tmp_name = 'capsule_collider'
 
-# Function to calculate the distance between a point and a line segment
-def point_line_segment_distance(p, p1, p2):
-    v = [p2[i] - p1[i] for i in range(len(p1))]
-    w = [p[i] - p1[i] for i in range(len(p1))]
 
-    t = max(0, min(1, sum(w[i] * v[i] for i in range(len(v))) / sum(v[i] * v[i] for i in range(len(v)))))
-    closest_point = [p1[i] + t * v[i] for i in range(len(p1))]
-    return distance(p, closest_point)
+def calculate_radius_height(points, cylinder_axis='Z'):
+    """
+    Calculate the radius, height, center, and rotation matrix of a capsule that fits the given points.
 
-# Function to calculate the radius and height of the bounding capsule
-def calculate_radius_height(points):
-    max_distance = 0
-    for i in range(len(points)):
-        for j in range(i + 1, len(points)):
-            d = distance(points[i], points[j])
-            if d > max_distance:
-                max_distance = d
+    Parameters:
+    points (list of float): A list of 3D points that define the capsule.
+    cylinder_axis (str): The axis ('X', 'Y', 'Z') along which the capsule is oriented.
 
-    radius = max_distance / 2
-    height = max_distance - radius
-    return radius, height
+    Returns:
+    tuple:
+        radius (float): The radius of the capsule.
+        height (float): The height of the capsule.
+        center_vector (Vector): The center of the capsule as a Blender Vector.
+        rotation_matrix_4x4 (Matrix): The rotation matrix for the capsule as a 4x4 Blender Matrix.
+
+    Raises:
+    ValueError: If less than two points are provided.
+    """
+
+    if len(points) < 2:
+        raise ValueError("At least two points are required to define a capsule")
+
+    # Convert points to numpy array
+    np_points = np.array(points)
+
+    # Perform Singular Value Decomposition (SVD) to find the principal axis
+    centered_points = np_points - np_points.mean(axis=0)
+    u, s, vh = np.linalg.svd(centered_points)
+    principal_axis = vh[0]
+
+    # Project points onto the principal axis
+    projections = np_points.dot(principal_axis)
+    min_projection = projections.min()
+    max_projection = projections.max()
+
+    # Calculate the capsule height
+    height = max_projection - min_projection
+
+    # Calculate the center of the capsule along the principal axis
+    center_along_axis = (min_projection + max_projection) / 2.0
+    capsule_center = np_points.mean(axis=0) + principal_axis * center_along_axis
+
+    # Calculate the radius as the maximum distance from the points to the principal axis
+    def distance_to_axis(point, axis_point, axis_dir):
+        v = point - axis_point
+        d = v - np.dot(v, axis_dir) * axis_dir
+        return np.linalg.norm(d)
+
+    axis_point = np_points.mean(axis=0)
+    radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
+
+    # Calculate rotation matrix to align the principal axis with the selected cylinder axis
+    if cylinder_axis == 'X':
+        x_axis = principal_axis
+        y_axis = np.cross([0, 0, 1], x_axis)
+        z_axis = np.cross(x_axis, y_axis)
+    elif cylinder_axis == 'Y':
+        y_axis = principal_axis
+        x_axis = np.cross([0, 0, 1], y_axis)
+        z_axis = np.cross(x_axis, y_axis)
+    else:  # default is 'Z'
+        z_axis = principal_axis
+        x_axis = np.cross([0, 1, 0], z_axis)
+        y_axis = np.cross(z_axis, x_axis)
+
+    if np.linalg.norm(y_axis) < 1e-6:
+        y_axis = np.cross([0, 1, 0], z_axis)
+    x_axis /= np.linalg.norm(x_axis)
+    y_axis /= np.linalg.norm(y_axis)
+    z_axis /= np.linalg.norm(z_axis)
+
+    rotation_matrix_3x3 = Matrix([
+        [x_axis[0], y_axis[0], z_axis[0]],
+        [x_axis[1], y_axis[1], z_axis[1]],
+        [x_axis[2], y_axis[2], z_axis[2]]
+    ])
+
+    # Convert center back to Vector for Blender
+    center_vector = Vector(capsule_center)
+
+    rotation_matrix_4x4 = rotation_matrix_3x3.to_4x4()
+
+    return radius, height, center_vector, rotation_matrix_4x4
+
 
 @staticmethod
-def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
+def mesh_data_to_bmesh(
+        vs, vts, vns,
+        v_indices, vt_indices, vn_indices):
+    bm = bmesh.new()
+    """
+    Convert mesh data into a Blender BMesh.
+
+    Parameters:
+    vs (list of tuple of float): List of vertex coordinates.
+    vts (list of tuple of float): List of texture coordinates.
+    vns (list of tuple of float): List of normal vectors.
+    v_indices (list of tuple of int): List of vertex indices for each face.
+    vt_indices (list of tuple of int): List of texture coordinate indices for each face.
+    vn_indices (list of tuple of int): List of normal indices for each face.
+
+    Returns:
+    bmesh.types.BMesh: A BMesh object containing the mesh data.
+
+    """
+
+    # Create BM vertices.
+    len_vs = len(vs)
+    bm_verts = [None] * len_vs
+    for i in range(0, len_vs):
+        v = vs[i]
+        bm_verts[i] = bm.verts.new(v)
+
+    # Create BM faces.
+    len_v_indices = len(v_indices)
+    bm_faces = [None] * len_v_indices
+    uv_layer = bm.loops.layers.uv.verify()
+
+    for i in range(0, len_v_indices):
+        v_loop = v_indices[i]
+        vt_loop = vt_indices[i]
+        vn_loop = vn_indices[i]
+
+        # Find list of vertices per face.
+        len_v_loop = len(v_loop)
+        face_verts = [None] * len_v_loop
+        for j in range(0, len_v_loop):
+            face_verts[j] = bm_verts[v_loop[j]]
+
+        # Create BM face.
+        bm_face = bm.faces.new(face_verts)
+        bm_faces[i] = bm_face
+        bm_face_loops = list(bm_face.loops)
+
+        # Assign texture coordinates and normals.
+        for k in range(0, len_v_loop):
+            bm_face_loop = bm_face_loops[k]
+            bm_face_loop[uv_layer].uv = vts[vt_loop[k]]
+            bm_face_loop.vert.normal = vns[vn_loop[k]]
+
+    return bm
+
+
+@staticmethod
+def create_capsule_data(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, uv_profile="FIXED"):
+    """
+    Create a capsule mesh data.
+
+    Parameters:
+    longitudes (int): Number of longitudinal segments.
+    latitudes (int): Number of latitudinal segments.
+    rings (int): Number of ring segments in the middle section of the capsule.
+    depth (float): The depth (height) of the capsule.
+    radius (float): The radius of the capsule.
+    uv_profile (str): UV mapping profile, can be "FIXED", "ASPECT", or "UNIFORM".
+
+    Returns:
+    dict: A dictionary containing the vertices (vs), texture coordinates (vts), normals (vns),
+          vertex indices (v_indices), texture coordinate indices (vt_indices), and normal indices (vn_indices).
+    """
 
     # Validate arguments.
     verif_rad = max(0.0001, radius)
@@ -354,10 +491,9 @@ def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, 
 
             # Coordinates.
             for j in lons_range:
-
                 # The x and y coordinates should be the same. North z should
-                # be half_depth while South z should be -half_depth. So lerp
-                # between these is not strictly necessary.
+                # be half_depth while South z should be -half_depth. So interpolating
+                # between them is not strictly necessary.
                 v_equator_north = vs[idx_v_n_equator + j]
                 v_equator_south = vs[idx_v_s_equator + j]
                 vs[v_cyl_offset] = (
@@ -419,46 +555,3 @@ def create_capsule(longitudes=32, latitudes=16, rings=0, depth=1.0, radius=0.5, 
             "v_indices": v_indices,
             "vt_indices": vt_indices,
             "vn_indices": vn_indices}
-
-@staticmethod
-def mesh_data_to_bmesh(
-        vs, vts, vns,
-        v_indices, vt_indices, vn_indices):
-
-    bm = bmesh.new()
-
-    # Create BM vertices.
-    len_vs = len(vs)
-    bm_verts = [None] * len_vs
-    for i in range(0, len_vs):
-        v = vs[i]
-        bm_verts[i] = bm.verts.new(v)
-
-    # Create BM faces.
-    len_v_indices = len(v_indices)
-    bm_faces = [None] * len_v_indices
-    uv_layer = bm.loops.layers.uv.verify()
-
-    for i in range(0, len_v_indices):
-        v_loop = v_indices[i]
-        vt_loop = vt_indices[i]
-        vn_loop = vn_indices[i]
-
-        # Find list of vertices per face.
-        len_v_loop = len(v_loop)
-        face_verts = [None] * len_v_loop
-        for j in range(0, len_v_loop):
-            face_verts[j] = bm_verts[v_loop[j]]
-
-        # Create BM face.
-        bm_face = bm.faces.new(face_verts)
-        bm_faces[i] = bm_face
-        bm_face_loops = list(bm_face.loops)
-
-        # Assign texture coordinates and normals.
-        for k in range(0, len_v_loop):
-            bm_face_loop = bm_face_loops[k]
-            bm_face_loop[uv_layer].uv = vts[vt_loop[k]]
-            bm_face_loop.vert.normal = vns[vn_loop[k]]
-
-    return bm

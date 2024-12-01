@@ -19,6 +19,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.use_keep_original_materials = True
         self.use_remesh = True
         self.shape = "mesh_shape"
+        self.initial_shape = "mesh_shape"
 
     def invoke(self, context, event):
         super().invoke(context, event)
@@ -69,13 +70,13 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
         for base_ob, obj in objs:
             mesh_collider_data = {}
 
-            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH':
+            if self.obj_mode == "EDIT" and base_ob.type == 'MESH' and self.active_obj.type == 'MESH' and not self.use_loose_mesh:
                 new_mesh = self.get_mesh_Edit(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = bpy.data.objects.new("", new_mesh)
                 for mat in base_ob.material_slots:
                     set_material(new_collider, mat.material)
 
-            else:  # mode == "OBJECT":
+            else:  # self.obj_mode  == "OBJECT" or self.use_loose_mesh == True:
                 new_mesh = self.mesh_from_selection(obj, use_modifiers=self.my_use_modifier_stack)
                 new_collider = obj.copy()
                 new_collider.data = new_mesh
@@ -115,7 +116,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
             self.new_colliders_list.append(new_collider)
 
         # Merge all collider objects
-        if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
+        if self.creation_mode[self.creation_mode_idx] == 'SELECTION' and not self.use_loose_mesh:
             bpy.ops.object.select_all(action='DESELECT')
             last_selected = None
 
@@ -128,6 +129,10 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
             bpy.ops.object.join()
 
             self.new_colliders_list = [last_selected] if last_selected else []
+
+        # Merge all collider objects
+        if self.join_primitives:
+            super().join_primitives(context)
 
         # Initial state has to be restored for the modal operator to work. If not, the result will break once changing the parameters
         super().reset_to_initial_state(context)

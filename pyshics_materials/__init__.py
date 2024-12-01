@@ -2,8 +2,8 @@ import bpy
 import bpy.types
 
 from . import material_functions
-from . import physics_materials
 from . import material_list
+from . import physics_materials
 
 classes = (
     material_list.BUTTON_OP_set_active_physics_material,
@@ -12,7 +12,6 @@ classes = (
     physics_materials.MATERIAL_OT_set_physics_material,
     physics_materials.MATERIAL_OT_physics_material_random_color,
 )
-
 
 
 def register():

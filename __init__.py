@@ -1,14 +1,3 @@
-bl_info = {
-    "name": "Collider Tools",
-    "description": "Collider Tools is a Blender addon to create physics colliders for games and real-time applications.",
-    "author": "Matthias Patscheider",
-    "version": (1, 5, 0),
-    "blender": (3, 2, 0),
-    "location": "View3D > Collider Tools",
-    "doc_url": "https://weisl.github.io/collider-tools_overview/",
-    "tracker_url": "https://github.com/Weisl/Collider-Tools/issues",
-    "category": "Object"}
-
 # support reloading sub-modules
 if "bpy" in locals():
     import importlib
@@ -22,6 +11,7 @@ if "bpy" in locals():
     importlib.reload(auto_Convex)
     importlib.reload(pyshics_materials)
     importlib.reload(rigid_body)
+    importlib.reload(presets)
     importlib.reload(preferences)
 
 
@@ -35,11 +25,11 @@ else:
     from . import auto_Convex
     from . import pyshics_materials
     from . import rigid_body
+    from . import presets
     from . import preferences
 
-
 def register():
-    # call the register function of the sub modules
+    # call the register function of the submodules.
     ui.register()
 
     collider_operators.register()
@@ -50,15 +40,16 @@ def register():
     rigid_body.register()
 
     # keymap and preferences should be last
+    presets.register()
     preferences.register()
     groups.register()
     properties.register()
 
 
 def unregister():
-    # call unregister function of the sub-modules
+    # call unregister function of the submodules.
     preferences.unregister()
-
+    presets.unregister()
     rigid_body.unregister()
     pyshics_materials.unregister()
     auto_Convex.unregister()
@@ -68,3 +59,7 @@ def unregister():
     properties.unregister()
     groups.unregister()
     ui.unregister()
+
+
+if __name__ == "__main__":
+    register()

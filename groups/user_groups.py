@@ -1,5 +1,7 @@
 import bpy
 
+from .. import __package__ as base_package
+
 default_groups_enum = [
     ('ALL_COLLIDER', "Colliders", "Show/Hide all objects that are colliders.", '', 1),
     ('OBJECTS', "Non Colliders", "Show/Hide all objects that are not colliders.", '', 2),
@@ -12,34 +14,32 @@ default_group = 'USER_01'
 
 
 def set_default_group_values():
-    from ..groups.user_groups import get_groups_identifier, get_groups_color, get_groups_name
+    bpy.context.scene.simple_collider.visibility_toggle_all.mode = 'ALL_COLLIDER'
+    bpy.context.scene.simple_collider.visibility_toggle_obj.mode = 'OBJECTS'
 
-    bpy.context.scene.collider_tools.visibility_toggle_all.mode = 'ALL_COLLIDER'
-    bpy.context.scene.collider_tools.visibility_toggle_obj.mode = 'OBJECTS'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.mode = 'USER_01'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.name = get_groups_name('USER_01')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.identifier = get_groups_identifier('USER_01')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_01.color = get_groups_color('USER_01')
 
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.mode = 'USER_01'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.name = get_groups_name('USER_01')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.identifier = get_groups_identifier('USER_01')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_01.color = get_groups_color('USER_01')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.mode = 'USER_02'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.name = get_groups_name('USER_02')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.identifier = get_groups_identifier('USER_02')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_02.color = get_groups_color('USER_02')
 
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.mode = 'USER_02'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.name = get_groups_name('USER_02')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.identifier = get_groups_identifier('USER_02')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_02.color = get_groups_color('USER_02')
-
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.mode = 'USER_03'
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.name = get_groups_name('USER_03')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.identifier = get_groups_identifier('USER_03')
-    bpy.context.scene.collider_tools.visibility_toggle_user_group_03.color = get_groups_color('USER_03')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.mode = 'USER_03'
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.name = get_groups_name('USER_03')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.identifier = get_groups_identifier('USER_03')
+    bpy.context.scene.simple_collider.visibility_toggle_user_group_03.color = get_groups_color('USER_03')
 
 
 def update_hide(self, context):
     for ob in bpy.context.view_layer.objects:
         if self.mode == 'ALL_COLLIDER':
-            if ob.get('isCollider') == True:
+            if ob.get('isCollider'):
                 ob.hide_viewport = self.hide
         elif self.mode == 'OBJECTS':
-            if ob.get('isCollider') == None:
+            if ob.get('isCollider') is None:
                 ob.hide_viewport = self.hide
         else:  # if self.mode == 'USER_02' or self.mode == 'USER_03'
             if ob.get('isCollider') and ob.get('collider_group') == self.mode:
@@ -49,7 +49,7 @@ def update_hide(self, context):
 def update_selected(self, context):
     print("self.select = " + str(self.selected))
     for ob in bpy.data.objects:
-        if self.selected == True:
+        if self.selected:
             ob.select_set(False)
         else:  # self.selected == False
             if self.mode == 'ALL_COLLIDER':
@@ -66,7 +66,7 @@ def update_selected(self, context):
 
 
 def get_groups_color(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     color = [1.0, 1.0, 1.0]
 
     if groups_identifier == 'USER_01':
@@ -82,7 +82,7 @@ def get_groups_color(groups_identifier):
 class ColliderGroup(bpy.types.PropertyGroup):
 
     def get_groups_enum(self):
-        '''Set name and description according to type'''
+        """Set name and description according to type"""
         for group in default_groups_enum:
             if group[4] == self["mode"]:
                 # self.identifier = get_complexity_suffix(group[0])
@@ -136,7 +136,7 @@ class ColliderGroup(bpy.types.PropertyGroup):
 
 
 def get_groups_identifier(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     identifier = ''
 
     if groups_identifier == 'ALL_COLLIDER':
@@ -154,7 +154,7 @@ def get_groups_identifier(groups_identifier):
 
 
 def get_groups_name(groups_identifier):
-    prefs = bpy.context.preferences.addons[__package__.split('.')[0]].preferences
+    prefs = bpy.context.preferences.addons[base_package].preferences
     name = ''
 
     if groups_identifier == 'ALL_COLLIDER':
@@ -196,12 +196,12 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
         return count > 0
 
     def execute(self, context):
-        prefs = context.preferences.addons[__package__.split('.')[0]].preferences
+        prefs = context.preferences.addons[base_package].preferences
 
         count = 0
         for obj in context.selected_objects.copy():
             # skip if invalid object
-            if obj is None or obj.type != "MESH" or not obj.get('isCollider'):
+            if obj is None or obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] or not obj.get('isCollider'):
                 continue
             count += 1
 
