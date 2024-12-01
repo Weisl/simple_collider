@@ -25,6 +25,47 @@ def create_name_number(name, nr):
     return f"{name}_{nr:03}"
 
 
+def set_origin_to_center_of_mass(obj):
+    """
+    Sets the origin of the given object to its center of mass.
+
+    Parameters:
+    obj (bpy.types.Object): The object whose origin will be set to the center of mass.
+    """
+    if obj.type != 'MESH':
+        print(f"Object '{obj.name}' is not a mesh. Cannot calculate center of mass.")
+        return
+
+    # Ensure the object has up-to-date evaluated data
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    obj_eval = obj.evaluated_get(depsgraph)
+    mesh = obj_eval.data
+
+    # Calculate center of mass
+    com = mathutils.Vector((0.0, 0.0, 0.0))
+    total_mass = 0.0
+
+    for vertex in mesh.vertices:
+        com += obj.matrix_world @ vertex.co  # Convert local coordinates to world
+        total_mass += 1
+
+    if total_mass > 0:
+        com /= total_mass  # Average position of all vertices
+    else:
+        print(f"Object '{obj.name}' has no vertices. Cannot calculate center of mass.")
+        return
+
+    # Calculate the offset
+    offset = obj.matrix_world.inverted() @ com
+
+    # Apply the offset to the object's data
+    for vertex in obj.data.vertices:
+        vertex.co -= offset
+
+    # Move the object's origin to the center of mass
+    obj.location = com
+
+
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
     if bpy.app.version < (4, 00):
@@ -1275,6 +1316,7 @@ class OBJECT_OT_add_bounding_object():
         self.ignore_input = False
 
         self.use_recenter_origin = False
+        self.debug_parenting_off = False
         self.use_custom_rotation = False
 
         self.valid_object_types = ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
@@ -1495,8 +1537,10 @@ class OBJECT_OT_add_bounding_object():
                 if not self.join_primitives:
                     if self.use_recenter_origin:
                         # set origin causes issues. Does not work properly
-                        center = self.calculate_center_of_mass(obj)
-                        self.set_custom_origin_location(obj, center)
+                        set_origin_to_center_of_mass(obj)
+                        # center = self.calculate_center_of_mass(obj)
+                        # if not self.debug_parenting_off:
+                        #     self.set_custom_origin_location(obj, center)
 
                     if self.use_custom_rotation:
                         if len(self.col_rotation_matrix_list) > 0:
