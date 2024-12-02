@@ -785,7 +785,6 @@ class OBJECT_OT_add_bounding_object():
     @staticmethod
     def get_object_mode_vertices_local_space(obj, use_modifiers=False):
         """ Get vertices from the bmesh. Returns a list of all or selected vertices. Returns None if there are no vertices to return """
-        # bpy.ops.object.mode_set(mode='EDIT')
         me = obj.data
         me.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
 
@@ -1093,7 +1092,6 @@ class OBJECT_OT_add_bounding_object():
                     base = obj
 
                     bpy.context.view_layer.objects.active = obj
-                    # bpy.ops.object.mode_set(mode='OBJECT')
 
                     tmp_ob = obj.copy()
                     tmp_ob.data = obj.data.copy()
