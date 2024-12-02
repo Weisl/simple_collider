@@ -6,89 +6,39 @@ from mathutils import Vector, Matrix
 tmp_name = 'capsule_collider'
 
 
-def calculate_radius_height(points, cylinder_axis='Z'):
+from mathutils import Vector
+
+from mathutils import Vector
+
+def calculate_capsule_dimensions(vertices, alignment_axis='Z'):
     """
-    Calculate the radius, height, center, and rotation matrix of a capsule that fits the given points.
+    Calculate the capsule dimensions that tightly enclose the given vertex coordinates.
 
     Parameters:
-    points (list of float): A list of 3D points that define the capsule.
-    cylinder_axis (str): The axis ('X', 'Y', 'Z') along which the capsule is oriented.
+    vertices (list of Vector): List of vertex coordinates.
+    alignment_axis (str): The axis to align the capsule ('X', 'Y', or 'Z').
 
     Returns:
-    tuple:
-        radius (float): The radius of the capsule.
-        height (float): The height of the capsule.
-        center_vector (Vector): The center of the capsule as a Blender Vector.
-        rotation_matrix_4x4 (Matrix): The rotation matrix for the capsule as a 4x4 Blender Matrix.
-
-    Raises:
-    ValueError: If less than two points are provided.
+    tuple: (radius, height) where radius is the capsule radius and height is the capsule height.
     """
+    if not vertices:
+        raise ValueError("The vertices list is empty.")
 
-    if len(points) < 2:
-        raise ValueError("At least two points are required to define a capsule")
+    # Determine alignment axis
+    axis_map = {'X': 0, 'Y': 1, 'Z': 2}
+    align_idx = axis_map[alignment_axis.upper()]
+    perp_axes = [(align_idx + 1) % 3, (align_idx + 2) % 3]  # Perpendicular axes
 
-    # Convert points to numpy array
-    np_points = np.array(points)
+    # Calculate the radius as the maximum distance from the center axis in perpendicular directions
+    radius = max((v[perp_axes[0]]**2 + v[perp_axes[1]]**2)**0.5 for v in vertices)
 
-    # Perform Singular Value Decomposition (SVD) to find the principal axis
-    centered_points = np_points - np_points.mean(axis=0)
-    u, s, vh = np.linalg.svd(centered_points)
-    principal_axis = vh[0]
+    # Calculate the height as the difference in the aligned axis plus 2 * radius
+    min_axis = min(v[align_idx] for v in vertices)
+    max_axis = max(v[align_idx] for v in vertices)
+    height = max_axis - min_axis + 2 * radius  # Extend height to include hemispheres
 
-    # Project points onto the principal axis
-    projections = np_points.dot(principal_axis)
-    min_projection = projections.min()
-    max_projection = projections.max()
+    return radius, height
 
-    # Calculate the capsule height
-    height = max_projection - min_projection
-
-    # Calculate the center of the capsule along the principal axis
-    center_along_axis = (min_projection + max_projection) / 2.0
-    capsule_center = np_points.mean(axis=0) + principal_axis * center_along_axis
-
-    # Calculate the radius as the maximum distance from the points to the principal axis
-    def distance_to_axis(point, axis_point, axis_dir):
-        v = point - axis_point
-        d = v - np.dot(v, axis_dir) * axis_dir
-        return np.linalg.norm(d)
-
-    axis_point = np_points.mean(axis=0)
-    radius = max(distance_to_axis(p, axis_point, principal_axis) for p in np_points)
-
-    # Calculate rotation matrix to align the principal axis with the selected cylinder axis
-    if cylinder_axis == 'X':
-        x_axis = principal_axis
-        y_axis = np.cross([0, 0, 1], x_axis)
-        z_axis = np.cross(x_axis, y_axis)
-    elif cylinder_axis == 'Y':
-        y_axis = principal_axis
-        x_axis = np.cross([0, 0, 1], y_axis)
-        z_axis = np.cross(x_axis, y_axis)
-    else:  # default is 'Z'
-        z_axis = principal_axis
-        x_axis = np.cross([0, 1, 0], z_axis)
-        y_axis = np.cross(z_axis, x_axis)
-
-    if np.linalg.norm(y_axis) < 1e-6:
-        y_axis = np.cross([0, 1, 0], z_axis)
-    x_axis /= np.linalg.norm(x_axis)
-    y_axis /= np.linalg.norm(y_axis)
-    z_axis /= np.linalg.norm(z_axis)
-
-    rotation_matrix_3x3 = Matrix([
-        [x_axis[0], y_axis[0], z_axis[0]],
-        [x_axis[1], y_axis[1], z_axis[1]],
-        [x_axis[2], y_axis[2], z_axis[2]]
-    ])
-
-    # Convert center back to Vector for Blender
-    center_vector = Vector(capsule_center)
-
-    rotation_matrix_4x4 = rotation_matrix_3x3.to_4x4()
-
-    return radius, height, center_vector, rotation_matrix_4x4
 
 
 @staticmethod

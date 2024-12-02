@@ -114,7 +114,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
                 new_collider.matrix_world = mtx_world
                 # align collider with parent
                 self.custom_set_parent(context, parent, new_collider)
-                self.use_recenter_origin = False
+                self.use_recenter_origin = True
+
 
             else:  # self.my_space == 'GLOBAL':
                 self.custom_set_parent(context, parent, new_collider)
