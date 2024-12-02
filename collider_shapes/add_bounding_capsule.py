@@ -1,3 +1,5 @@
+from math import radians
+
 import bpy
 import numpy as np
 from bpy.types import Operator
@@ -9,6 +11,7 @@ from ..bmesh_operations.capsule_generation import create_capsule_data, mesh_data
 from ..bmesh_operations.cylinder_generation import welzl
 
 tmp_name = 'capsule_collider'
+
 
 class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding capsule collider based on the selection"""
@@ -215,14 +218,25 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                                                    uv_profile="FIXED")
 
             bm = mesh_data_to_bmesh(vs=capsule_data["vs"], vts=capsule_data["vts"], vns=capsule_data["vns"],
-                                v_indices=capsule_data["v_indices"], vt_indices=capsule_data["vt_indices"],
-                                vn_indices=capsule_data["vn_indices"], )
+                                    v_indices=capsule_data["v_indices"], vt_indices=capsule_data["vt_indices"],
+                                    vn_indices=capsule_data["vn_indices"], )
 
             mesh_data = bpy.data.meshes.new("Capsule")
             bm.to_mesh(mesh_data)
             bm.free()
 
             new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
+
+            new_collider.location = center
+            rotation_euler = parent.rotation_euler
+
+            if rotation_euler:
+                new_collider.rotation_euler = rotation_euler
+
+            if self.cylinder_axis == 'X':
+                new_collider.rotation_euler.rotate_axis("Y", radians(90))
+            elif self.cylinder_axis == 'Y':
+                new_collider.rotation_euler.rotate_axis("X", radians(90))
 
             self.new_colliders_list.append(new_collider)
             collections = parent.users_collection
