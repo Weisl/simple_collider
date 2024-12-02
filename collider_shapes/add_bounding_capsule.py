@@ -10,7 +10,6 @@ from ..bmesh_operations.cylinder_generation import welzl
 
 tmp_name = 'capsule_collider'
 
-
 class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
     """Create bounding capsule collider based on the selection"""
     bl_idname = "mesh.add_bounding_capsule"
@@ -155,7 +154,6 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 collider_data.append(bounding_capsule_data)
 
             else:  # if self.creation_mode[self.creation_mode_idx] == 'SELECTION':
-
                 if self.shape == 'LOCAL':
                     ws_vtx_co = self.get_vertex_coordinates(obj, 'GLOBAL', used_vertices)
                     verts_co = verts_co + self.transform_vertex_space(ws_vtx_co, self.active_obj)
@@ -216,9 +214,9 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                                                    depth=depth * self.current_settings_dic['height_mult'],
                                                    uv_profile="FIXED")
 
-                bm = mesh_data_to_bmesh(vs=capsule_data["vs"], vts=capsule_data["vts"], vns=capsule_data["vns"],
-                                        v_indices=capsule_data["v_indices"], vt_indices=capsule_data["vt_indices"],
-                                        vn_indices=capsule_data["vn_indices"], )
+            bm = mesh_data_to_bmesh(vs=capsule_data["vs"], vts=capsule_data["vts"], vns=capsule_data["vns"],
+                                v_indices=capsule_data["v_indices"], vt_indices=capsule_data["vt_indices"],
+                                vn_indices=capsule_data["vn_indices"], )
 
             mesh_data = bpy.data.meshes.new("Capsule")
             bm.to_mesh(mesh_data)
