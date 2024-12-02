@@ -1573,8 +1573,8 @@ class OBJECT_OT_add_bounding_object():
             except ValueError:
                 pass
 
-            if not self.is_mesh_to_collider:
-                bpy.ops.object.mode_set(mode='OBJECT')
+            # if not self.is_mesh_to_collider:
+            #     bpy.ops.object.mode_set(mode='OBJECT')
 
             # restore display settings
             self.reset_display(context)
