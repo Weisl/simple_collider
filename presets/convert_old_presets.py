@@ -19,7 +19,7 @@ def get_default_preferences(context):
     return default_prefs
 
 
-class UpgradeColliderToolsPresetsOperator(Operator):
+class UpgradeSimpleColliderPresetsOperator(Operator):
     """
     Operator to upgrade old collider tools preset files to the new format.
     """

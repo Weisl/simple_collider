@@ -7,7 +7,7 @@ from tempfile import gettempdir
 from .keymap import remove_key
 
 from ..presets.naming_preset import COLLISION_preset
-from ..presets.preset_operator import SetColliderToolsPreferencesOperator
+from ..presets.preset_operator import SetSimpleColliderPreferencesOperator
 from ..presets.presets_data import presets
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
@@ -824,7 +824,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.label(text="Default Presets")
             row = box.row(align=True)
             for preset_name in presets.keys():
-                op = row.operator(SetColliderToolsPreferencesOperator.bl_idname, text=f"{preset_name}")
+                op = row.operator(SetSimpleColliderPreferencesOperator.bl_idname, text=f"{preset_name}")
                 op.preset_name = preset_name
             row = box.row(align=True)
             row.label(text="User Presets")

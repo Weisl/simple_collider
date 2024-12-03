@@ -3,7 +3,7 @@ from .presets_data import presets
 from .. import __package__ as base_package
 
 
-class SetColliderToolsPreferencesOperator(bpy.types.Operator):
+class SetSimpleColliderPreferencesOperator(bpy.types.Operator):
     """
     Operator to set the preferences for the 'simple_collider' addon based on a selected preset.
     """
