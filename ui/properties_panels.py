@@ -1,12 +1,10 @@
 import os
 import platform
-import subprocess
 import textwrap
 
 import bpy
 from bpy.types import Menu
 from bpy_extras.io_utils import ImportHelper
-from ..groups.user_groups import get_groups_color, get_groups_name, get_groups_identifier
 
 from .. import __package__ as base_package
 
