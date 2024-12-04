@@ -53,7 +53,7 @@ def draw_auto_convex(layout, context):
     # row.label(text='Auto Convex')
 
     if platform.system() not in ['Windows', 'Linux', 'Darwin']:
-        op = layout.operator("preferences.addon_search", text="", icon='PREFERENCES')
+        op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
 
@@ -69,11 +69,11 @@ def draw_auto_convex(layout, context):
         if prefs.executable_path or prefs.default_executable_path:
 
             layout.operator("button.auto_convex", text="Auto Convex", icon='WINDOW')
-            op = layout.operator("preferences.addon_search", text="", icon='PREFERENCES')
+            op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
             op.addon_name = addon_name
             op.prefs_tabs = 'VHACD'
         else:
-            op = layout.operator("preferences.addon_search", text="Setup V-HACD", icon='ERROR')
+            op = layout.operator("simple_collider.open_preferences", text="Setup V-HACD", icon='ERROR')
             op.addon_name = addon_name
             op.prefs_tabs = 'VHACD'
 
@@ -293,7 +293,7 @@ def draw_naming_presets(self, context):
     op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
     op.dirpath = collider_presets_folder()
 
-    op = row.operator("preferences.addon_search", text="", icon='PREFERENCES')
+    op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
     op.addon_name = addon_name
     op.prefs_tabs = 'NAMING'
 
@@ -337,7 +337,7 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
 
 class PREFERENCES_OT_open_addon(bpy.types.Operator):
     """Tooltip"""
-    bl_idname = "preferences.addon_search"
+    bl_idname = "simple_collider.open_preferences"
     bl_label = "Open Addon preferences"
 
     addon_name: bpy.props.StringProperty()
