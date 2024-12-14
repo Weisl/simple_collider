@@ -19,15 +19,15 @@ from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
 from ..ui.properties_panels import label_multiline
 
 collection_colors = [
-    ("NONE", "White", "", "OUTLINER_COLLECTION", 0),
-    ("COLOR_01", "Red", "", "COLLECTION_COLOR_01", 1),
-    ("COLOR_02", "Orange", "", "COLLECTION_COLOR_02", 2),
-    ("COLOR_03", "Yellow", "", "COLLECTION_COLOR_03", 3),
-    ("COLOR_04", "Green", "", "COLLECTION_COLOR_04", 4),
-    ("COLOR_05", "Blue", "", "COLLECTION_COLOR_05", 5),
-    ("COLOR_06", "Violet", "", "COLLECTION_COLOR_06", 6),
-    ("COLOR_07", "Pink", "", "COLLECTION_COLOR_07", 7),
-    ("COLOR_08", "Brown", "", "COLLECTION_COLOR_08", 8),
+    ("NONE", "White", "Default collection color", "OUTLINER_COLLECTION", 0),
+    ("COLOR_01", "Red", "Red collection color", "COLLECTION_COLOR_01", 1),
+    ("COLOR_02", "Orange", "Orange collection color", "COLLECTION_COLOR_02", 2),
+    ("COLOR_03", "Yellow", "Yellow collection color", "COLLECTION_COLOR_03", 3),
+    ("COLOR_04", "Green", "Green collection color", "COLLECTION_COLOR_04", 4),
+    ("COLOR_05", "Blue", "Blue collection color", "COLLECTION_COLOR_05", 5),
+    ("COLOR_06", "Violet", "Violet collection color", "COLLECTION_COLOR_06", 6),
+    ("COLOR_07", "Pink", "Pink collection color", "COLLECTION_COLOR_07", 7),
+    ("COLOR_08", "Brown", "Brown collection color", "COLLECTION_COLOR_08", 8),
 ]
 
 
@@ -262,12 +262,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     prefs_tabs: bpy.props.EnumProperty(
         name='Collider Settings',
         items=(('SETTINGS', "General", "General addon settings"),
-               ('NAMING', "Presets",
-                "Presets settings: Create, change and modify presets"),
-               ('KEYMAP', "Keymap",
-                "Change the hotkeys for tools associated with this addon."),
+               ('NAMING', "Presets","Presets settings: Create, change and modify presets"),
+               ('KEYMAP', "Keymap","Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
-               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation.")),
+               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),),
         default='SETTINGS',
         description='Settings category:')
 
