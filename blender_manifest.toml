@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "simple_collider"
-version = "2.0.0"
+version = "1.0.0"
 name = "Simple Collider"
 tagline = "Simple Collider is a Blender addon to create physics colliders for games and real-time applications."
 maintainer = "Matthias Patscheider <patscheider.matthias@gmail.com>"
@@ -23,6 +23,7 @@ copyright = [
 
 [permissions]
 files = "Write/Read .py preset files from/to disk, copying the Auto Convex executable to execute to avoid the need of manual installation and export/import OBJ files from/to disk for the auto convex generation"
+
 
 [build]
 paths_exclude_pattern = [
