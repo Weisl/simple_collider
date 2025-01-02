@@ -52,7 +52,7 @@ def draw_auto_convex(layout, context):
 
     # row.label(text='Auto Convex')
 
-    if platform.system() not in ['Windows', 'Linux', 'Darwin']:
+    if platform.system() not in ['Windows', 'Linux']:
         op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
@@ -290,8 +290,9 @@ def draw_naming_presets(self, context):
 
     addon_name = get_addon_name()
 
-    op = row.operator("explorer.open_in_explorer", text="", icon='FILE_FOLDER')
-    op.dirpath = collider_presets_folder()
+    op = row.operator("file.external_operation", text='', icon='FILE_FOLDER')
+    op.operation = 'FOLDER_OPEN'
+    op.filepath = collider_presets_folder()
 
     op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
     op.addon_name = addon_name

@@ -5,12 +5,11 @@ from pathlib import Path
 from tempfile import gettempdir
 
 from .keymap import remove_key
-
+from .. import __package__ as base_package
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..presets.naming_preset import COLLISION_preset
 from ..presets.preset_operator import SetSimpleColliderPreferencesOperator
 from ..presets.presets_data import presets
-from .. import __package__ as base_package
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..ui.properties_panels import OBJECT_MT_collision_presets
 from ..ui.properties_panels import VIEW3D_PT_collision_material_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_panel
@@ -172,7 +171,7 @@ def get_default_executable_path():
 
     vhacd_app_folder = "v-hacd_app"
 
-    if platform.system() not in ['Windows', 'Linux', 'Darwin']:
+    if platform.system() not in ['Windows', 'Linux']:
         return ''
 
     OS_folder = ''
@@ -184,13 +183,6 @@ def get_default_executable_path():
     elif platform.system() == 'Linux':
         OS_folder = 'Linux'
         app_name = 'VHACD'
-    elif platform.system() == 'Darwin':
-        if platform.machine() == 'arm64':
-            OS_folder = 'Darwin-arm64'
-            app_name = 'VHACD'
-        else:
-            OS_folder = 'Darwin-x86_64'
-            app_name = 'VHACD'
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
@@ -262,8 +254,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     prefs_tabs: bpy.props.EnumProperty(
         name='Collider Settings',
         items=(('SETTINGS', "General", "General addon settings"),
-               ('NAMING', "Presets","Presets settings: Create, change and modify presets"),
-               ('KEYMAP', "Keymap","Change the hotkeys for tools associated with this addon."),
+               ('NAMING', "Presets", "Presets settings: Create, change and modify presets"),
+               ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
                ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),),
         default='SETTINGS',
@@ -285,9 +277,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     # Modifiers
     keep_modifier_defaults: bpy.props.BoolProperty(name="Keep Collider Modifiers with default values",
-                                               description="Keep the collider modifiers using the default values and don't manipulate the geometry.",
-                                               default=True)
-
+                                                   description="Keep the collider modifiers using the default values and don't manipulate the geometry.",
+                                                   default=True)
 
     # Collections
     use_col_collection: bpy.props.BoolProperty(name="Add Collider Collection",
@@ -452,7 +443,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
 
     rigid_body_separator: bpy.props.StringProperty(name="Separator", default="_",
                                                    description="Separator character used to divide different suffixes (Empty field removes the separator from the naming)")
-
 
     # Collider Groups
     collider_groups_enabled: bpy.props.BoolProperty(
@@ -837,6 +827,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator("wm.url_open", text="",
                          icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
 
+            from ..ui.properties_panels import collider_presets_folder
+            op = row.operator("file.external_operation", text='', icon='FILE_FOLDER')
+            op.operation = 'FOLDER_OPEN'
+            op.filepath = collider_presets_folder()
+
             box_name = box.box()
             row = box.row()
             row.prop(self, "naming_position", expand=True)
@@ -951,7 +946,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'VHACD':
-            texts = ["The auto convex collision generation requires the V-hacd library to work. "]
+            text = "Auto convex is only supported for Windows and Linux at this moment."
+            texts = [text]
+            if platform.system() not in ['Windows', 'Linux']:
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=layout
+                    )
+                return
+
+            text = "The auto convex collision generation requires the V-hacd library to work. "
+            texts.append(text)
 
             box = layout.box()
             row = box.row()
