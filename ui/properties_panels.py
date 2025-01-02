@@ -52,7 +52,7 @@ def draw_auto_convex(layout, context):
 
     # row.label(text='Auto Convex')
 
-    if platform.system() not in ['Windows', 'Linux', 'Darwin']:
+    if platform.system() not in ['Windows', 'Linux']:
         op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'

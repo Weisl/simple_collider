@@ -172,7 +172,7 @@ def get_default_executable_path():
 
     vhacd_app_folder = "v-hacd_app"
 
-    if platform.system() not in ['Windows', 'Linux', 'Darwin']:
+    if platform.system() not in ['Windows', 'Linux']:
         return ''
 
     OS_folder = ''
@@ -184,13 +184,6 @@ def get_default_executable_path():
     elif platform.system() == 'Linux':
         OS_folder = 'Linux'
         app_name = 'VHACD'
-    elif platform.system() == 'Darwin':
-        if platform.machine() == 'arm64':
-            OS_folder = 'Darwin-arm64'
-            app_name = 'VHACD'
-        else:
-            OS_folder = 'Darwin-x86_64'
-            app_name = 'VHACD'
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
@@ -951,7 +944,19 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 row.prop(self, propName)
 
         elif self.prefs_tabs == 'VHACD':
-            texts = ["The auto convex collision generation requires the V-hacd library to work. "]
+            text = "Auto convex is only supported for Windows and Linux at this moment."
+            texts = [text]
+            if platform.system() not in ['Windows', 'Linux']:
+                for text in texts:
+                    label_multiline(
+                        context=context,
+                        text=text,
+                        parent=layout
+                    )
+                return
+
+            text = "The auto convex collision generation requires the V-hacd library to work. "
+            texts.append(text)
 
             box = layout.box()
             row = box.row()
