@@ -30,8 +30,8 @@ class OBJECT_OT_convert_to_mesh(Operator):
         row = col.row()
         row.prop(self, "mesh_name")
 
-        row = col.row()
-        row.prop(scene, "DefaultMeshMaterial", text='Material')
+        # row = col.row()
+        # row.prop(data, "DefaultMeshMaterial", text='Material')
         row = col.row()
         row.prop(self, "keep_original_material", text='Keep Material')
 
