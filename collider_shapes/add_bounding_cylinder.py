@@ -67,7 +67,6 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         """
         Initialize the OBJECT_OT_add_bounding_cylinder operator.
         """
-        super().__init__()
         self.shape = 'convex_shape'
         self.initial_shape = 'convex_shape'
 
