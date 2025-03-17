@@ -33,8 +33,8 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         return data_path if os.path.isdir(data_path) else False
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_decimation = True
         self.use_geo_nodes_hull = True
         self.use_modifier_stack = True

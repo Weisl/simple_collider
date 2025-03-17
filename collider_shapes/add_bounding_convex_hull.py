@@ -11,8 +11,8 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Convex Hull"
     bl_description = 'Create convex colliders based on the selection'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_decimation = True
         self.use_geo_nodes_hull = True
         self.use_modifier_stack = True
