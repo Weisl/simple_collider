@@ -13,8 +13,8 @@ class OBJECT_OT_add_bounding_box(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Box"
     bl_description = 'Create bounding box colliders based on the selection'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_space = True
         self.use_modifier_stack = True
         self.use_global_local_switches = True

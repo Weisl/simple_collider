@@ -204,7 +204,8 @@ class BUTTON_OT_change_key(bpy.types.Operator):
 
     menu_id: bpy.props.StringProperty()
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.my_event = ''
 
     def invoke(self, context, event):

@@ -122,8 +122,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
         return mid_point, radius
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_modifier_stack = True
         self.use_sphere_segments = True
         self.shape = "sphere_shape"

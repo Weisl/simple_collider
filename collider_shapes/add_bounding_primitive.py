@@ -1280,7 +1280,8 @@ class OBJECT_OT_add_bounding_object():
 
         return debug_obj
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # has to be in --init
 
         # operator settings

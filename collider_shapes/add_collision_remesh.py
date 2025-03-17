@@ -11,8 +11,8 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Re-meshed"
     bl_description = 'Create a triangle mesh colliders based on the voxel re-meshed target'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_decimation = True
         self.use_modifier_stack = True
         self.use_weld_modifier = True

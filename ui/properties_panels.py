@@ -396,7 +396,8 @@ class VIEW3D_PT_collision(bpy.types.Panel):
 
 # abstract class
 class VIEW3D_PT_init():
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         bpy.context.scene.simple_collider.visibility_toggle_all.mode = 'ALL_COLLIDER'
         bpy.context.scene.simple_collider.visibility_toggle_obj.mode = 'OBJECTS'
 
@@ -441,8 +442,8 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
     # bl_label = "Collider Groups"
     bl_label = ""
 
-    def __init__(self):
-        super(VIEW3D_PT_init).__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def draw_header(self, context):
         layout = self.layout
@@ -575,8 +576,8 @@ class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
     bl_label = "Collider Pie"
     bl_idname = "COLLISION_MT_pie_menu"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def draw(self, context):
         layout = self.layout

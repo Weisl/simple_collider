@@ -47,8 +47,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
 
         return super().cancel_cleanup(context, delete_colliders=False)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.is_mesh_to_collider = True
 
         self.use_shape_change = True
