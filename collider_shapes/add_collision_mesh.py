@@ -11,8 +11,8 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Mesh"
     bl_description = 'Create triangle mesh colliders based on the selection'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_decimation = True
         self.use_modifier_stack = True
         self.use_weld_modifier = True

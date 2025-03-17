@@ -62,7 +62,8 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
         else:
             return self.get_object_mode_vertices_local_space(obj, use_modifiers=self.my_use_modifier_stack)
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         """
         Initialize the OBJECT_OT_add_bounding_cylinder operator.
         """

@@ -19,11 +19,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
     bl_label = "Add Capsule (Beta)"
     bl_description = 'Create bounding capsule colliders based on the selection'
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.shape = 'capsule_shape'
         self.initial_shape = 'capsule_shape'
 
-        super().__init__()
+
+        super().__init__(*args, **kwargs)
         self.use_space = True
         self.use_modifier_stack = True
         self.use_global_local_switches = True

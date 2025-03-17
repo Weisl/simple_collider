@@ -109,8 +109,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
         return bb_obj, rotation_matrix
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_modifier_stack = True
         self.use_global_local_switches = True
         self.shape = "box_shape"
