@@ -44,6 +44,9 @@ def create_default_material():
     prefs = bpy.context.preferences.addons[base_package].preferences
 
     if prefs:
+        if prefs.skip_material:
+            return None
+
         default_mat_name = prefs.physics_material_name
 
         if not default_mat_name:
@@ -93,12 +96,14 @@ def assign_physics_material(object, physics_material_name):
     elif object.mode == 'OBJECT':
         remove_materials(object)
         mat = create_physics_material(physics_material_name)
-        set_material(object, mat)
+        if mat:
+            set_material(object, mat)
     else:
         bpy.ops.object.mode_set(mode='OBJECT')
         remove_materials(object)
         mat = create_physics_material(physics_material_name)
-        set_material(object, mat)
+        if mat:
+            set_material(object, mat)
 
 
 def set_default_active_mat():

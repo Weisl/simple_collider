@@ -1034,7 +1034,8 @@ class OBJECT_OT_add_bounding_object():
         elif prefs.physics_material_name:
             mat_name = prefs.physics_material_name
             mat = create_default_material()
-            set_active_physics_material(context, mat.name)
+            if mat:
+                set_active_physics_material(context, mat.name)
         else:
             mat_name = ''
 
