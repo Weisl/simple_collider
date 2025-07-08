@@ -125,10 +125,10 @@ def update_material_key(self, context):
 
 def setDefaultTemp():
     """
-    Set the default temporary directory for the collider tools addon.
+    Set the default temporary directory for the simple collider addon.
 
     This function creates a new directory in the system's temporary directory
-    for storing temporary files used by the collider tools addon.
+    for storing temporary files used by the simple collider addon.
 
     Returns:
         File path to the temporary directory
