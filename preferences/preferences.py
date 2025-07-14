@@ -418,6 +418,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     collision_string_suffix: bpy.props.StringProperty(name="Collider Suffix", default="",
                                                       description='Simple string added to the end of the collider suffix/prefix')
 
+    collision_digits: bpy.props.IntProperty(
+        name="Suffix Digits",
+        description="Defines the number of digits used for numerating.",
+        default=3,
+    )
+
     # Collider Shapes
     box_shape: bpy.props.StringProperty(name="Box Collider", default="UBX",
                                         description='Naming used to define box colliders')
@@ -655,6 +661,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
         "separator",
         "collision_string_prefix",
         "collision_string_suffix",
+        "collision_digits",
     ]
 
     props_shapes = [

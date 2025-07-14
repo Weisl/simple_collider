@@ -21,8 +21,8 @@ def alignObjects(new, old):
     new.matrix_world = old.matrix_world
 
 
-def create_name_number(name, nr):
-    return f"{name}_{nr:03}"
+def create_name_number(name, nr, digits=3):
+    return f"{name}_{nr:0{digits}}"
 
 
 def set_origin_to_center_of_mass(obj):
@@ -554,14 +554,15 @@ class OBJECT_OT_add_bounding_object():
         return data_name
 
     @staticmethod
-    def unique_name(name):
-        """recursive function to find unique name"""
+    def unique_name(name, digits=3):
+        """Function to find a unique name using a loop"""
         count = 1
-        new_name = name
+        new_name = create_name_number(name, count, digits)
 
         while new_name in bpy.data.objects:
-            new_name = create_name_number(name, count)
-            count = count + 1
+            count += 1
+            new_name = create_name_number(name, count, digits)
+
         return new_name
 
     @staticmethod
@@ -618,7 +619,8 @@ class OBJECT_OT_add_bounding_object():
                     name_pre_suffix = name_pre_suffix + comp + separator
             new_name = name_pre_suffix + name
 
-        return cls.unique_name(new_name)
+        digits = prefs.collision_digits
+        return cls.unique_name(new_name, digits)
 
     def draw_callback_px(self, context):
 

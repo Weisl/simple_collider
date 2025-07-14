@@ -50,6 +50,7 @@ class COLLISION_preset(AddPresetBase, Operator):
         "prefs.separator",
         "prefs.collision_string_prefix",
         "prefs.collision_string_suffix",
+        "prefs.collision_digits",
         "prefs.box_shape",
         "prefs.sphere_shape",
         "prefs.capsule_shape",
