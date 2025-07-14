@@ -1,8 +1,7 @@
+import bpy
 import os
 import platform
 import textwrap
-
-import bpy
 from bpy.types import Menu
 from bpy_extras.io_utils import ImportHelper
 
@@ -270,6 +269,11 @@ def draw_creation_menu(context, layout, settings=False):
     row.operator('object.set_rigid_body', icon='NONE')
 
     row = layout.row(align=True)
+    row.label(text='Operators')
+    row = layout.row(align=True)
+    row.menu("OBJECT_MT_adjust_decimation_menu", text="Adjust Decimation", icon='MOD_DECIM')
+
+    row = layout.row(align=True)
     row.label(text='Display as')
     row.prop(colSettings, 'display_type', text='')
     row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
@@ -306,13 +310,13 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
-    
-    dirpath: bpy.props.StringProperty(default = '/')
+
+    dirpath: bpy.props.StringProperty(default='/')
     filename_ext = ".py"
     filter_glob: bpy.props.StringProperty(
-        default = '*.py',
-        options = {'HIDDEN'}
-        )
+        default='*.py',
+        options={'HIDDEN'}
+    )
 
     def check(self, context):
         # Ensure that the selected file is actually a Python file
@@ -636,3 +640,12 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex")
         return {'FINISHED'}
+
+
+class OBJECT_MT_adjust_decimation_menu(Menu):
+    bl_label = "Adjust Decimation"
+    bl_idname = "OBJECT_MT_adjust_decimation_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('object.adjust_decimation', text="Limit to 256 Tris")

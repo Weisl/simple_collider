@@ -1,3 +1,4 @@
+from . import utility_operators
 from . import visibility_selection_deletion
 from . import visibility_settings
 
@@ -16,6 +17,7 @@ classes = (
     visibility_selection_deletion.COLLISION_OT_non_collider_delete,
     visibility_settings.VIEW3D_OT_object_view,
     visibility_settings.VIEW3D_OT_material_view,
+    utility_operators.COLLISION_OT_adjust_decimation,
 )
 
 
