@@ -876,8 +876,9 @@ class OBJECT_OT_add_bounding_object():
         """Add an object to a collection"""
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
-            bpy.context.scene.collection.children.link(collection)
-
+            # Link the collection to all scenes
+            for scene in bpy.data.scenes:
+                scene.collection.children.link(collection)
         col = bpy.data.collections[collection_name]
         return col
 
