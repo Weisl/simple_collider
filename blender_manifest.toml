@@ -1,6 +1,7 @@
 schema_version = "1.0.0"
 
 id = "simple_collider"
+
 version = "1.1.0"
 name = "Simple Collider"
 tagline = "Simple Collider is a Blender addon to create physics colliders for games and real-time applications."

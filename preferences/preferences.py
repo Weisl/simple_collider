@@ -473,6 +473,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
     use_physics_material: bpy.props.BoolProperty(
         name='Enable Physics Materials List', description='', default=False)
 
+    skip_material: bpy.props.BoolProperty(
+        name='Skip Physics Material', description='Skip the generation and assignment of physics materials', default=False)
+
     material_naming_position: bpy.props.EnumProperty(
         name='Physics Material',
         items=(('PREFIX', "Prefix", "Prefix"),
@@ -913,6 +916,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             box = box.box()
             row = box.row()
             row.prop(self, "use_physics_material")
+
+            row = box.row()
+            row.prop(self, "skip_material")
+
             col = box.column()
             if not self.use_physics_material:
                 col.enabled = False
