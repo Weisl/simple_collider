@@ -224,8 +224,8 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.label(text='Convert Shape')
 
-    row = layout.row(align=True)
-    row.scale_x = 1.0  # Ensure buttons take up the full width
+    # row = layout.row(align=True)
+    # row.scale_x = 1.0  # Ensure buttons take up the full width
 
     shapes = [{'identifier': 'box_shape', 'text': '', 'icon': 'MESH_CUBE'},
               {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
@@ -271,7 +271,7 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.label(text='Operators')
     row = layout.row(align=True)
-    row.menu("OBJECT_MT_adjust_decimation_menu", text="Adjust Decimation", icon='MOD_DECIM')
+    row.menu("OBJECT_MT_adjust_decimation_menu", text="Collider Cleanup", icon='MODIFIER')
 
     row = layout.row(align=True)
     row.label(text='Display as')
@@ -643,9 +643,10 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
 
 
 class OBJECT_MT_adjust_decimation_menu(Menu):
-    bl_label = "Adjust Decimation"
+    bl_label = "Collider Cleanup"
     bl_idname = "OBJECT_MT_adjust_decimation_menu"
 
     def draw(self, context):
         layout = self.layout
-        layout.operator('object.adjust_decimation', text="Limit to 256 Tris")
+        layout.operator('object.adjust_decimation')
+        layout.operator('object.origin_to_parent')

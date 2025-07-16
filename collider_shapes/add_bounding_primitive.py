@@ -14,7 +14,7 @@ from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from ..groups.user_groups import set_object_color, set_default_group_values
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material, set_material
-
+from ..properties.constants import DECIMATE_NAME
 
 def alignObjects(new, old):
     """Align two objects"""
@@ -956,8 +956,8 @@ class OBJECT_OT_add_bounding_object():
     def del_decimate_modifier(bounding_object):
         """Delete modifiers called 'Collider_decimate'"""
         if bounding_object:
-            if bounding_object.modifiers.get('Collider_decimate'):
-                mod = bounding_object.modifiers['Collider_decimate']
+            if bounding_object.modifiers.get(DECIMATE_NAME):
+                mod = bounding_object.modifiers[DECIMATE_NAME]
                 bounding_object.modifiers.remove(mod)
 
     # Time classes
@@ -1209,7 +1209,7 @@ class OBJECT_OT_add_bounding_object():
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strength in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collider_decimate", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
