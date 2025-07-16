@@ -873,14 +873,23 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def create_collection(collection_name):
-        """Add an object to a collection"""
+        """Create a collection if it doesn't exist and link it to the current scene if not already linked."""
+        import bpy
+
+        # Create the collection if it doesn't exist
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
-            # Link the collection to all scenes
-            for scene in bpy.data.scenes:
-                scene.collection.children.link(collection)
-        col = bpy.data.collections[collection_name]
-        return col
+        else:
+            collection = bpy.data.collections[collection_name]
+
+        # Get the current scene
+        current_scene = bpy.context.scene
+
+        # Link to current scene if not already linked
+        if collection.name not in current_scene.collection.children:
+            current_scene.collection.children.link(collection)
+
+        return collection
 
     # Collections
     @classmethod
