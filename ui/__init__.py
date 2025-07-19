@@ -17,6 +17,7 @@ classes = (
     properties_panels.VIEW3D_PT_collision_settings_panel,
     properties_panels.VIEW3D_PT_collision_visibility_panel,
     properties_panels.VIEW3D_PT_collision_material_panel,
+    properties_panels.OBJECT_MT_adjust_decimation_menu,
     properties_panels.VIEW3D_MT_PIE_template,
     popup.VIEW3D_PT_auto_convex_popup,
 )

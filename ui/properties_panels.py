@@ -1,8 +1,7 @@
+import bpy
 import os
 import platform
 import textwrap
-
-import bpy
 from bpy.types import Menu
 from bpy_extras.io_utils import ImportHelper
 
@@ -225,8 +224,8 @@ def draw_creation_menu(context, layout, settings=False):
     row = layout.row(align=True)
     row.label(text='Convert Shape')
 
-    row = layout.row(align=True)
-    row.scale_x = 1.0  # Ensure buttons take up the full width
+    # row = layout.row(align=True)
+    # row.scale_x = 1.0  # Ensure buttons take up the full width
 
     shapes = [{'identifier': 'box_shape', 'text': '', 'icon': 'MESH_CUBE'},
               {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
@@ -270,6 +269,11 @@ def draw_creation_menu(context, layout, settings=False):
     row.operator('object.set_rigid_body', icon='NONE')
 
     row = layout.row(align=True)
+    row.label(text='Operators')
+    row = layout.row(align=True)
+    row.menu("OBJECT_MT_adjust_decimation_menu", text="Collider Cleanup", icon='MODIFIER')
+
+    row = layout.row(align=True)
     row.label(text='Display as')
     row.prop(colSettings, 'display_type', text='')
     row.prop(colSettings, 'toggle_wireframe', text='', icon='SHADING_WIRE')
@@ -306,13 +310,13 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
-    
-    dirpath: bpy.props.StringProperty(default = '/')
+
+    dirpath: bpy.props.StringProperty(default='/')
     filename_ext = ".py"
     filter_glob: bpy.props.StringProperty(
-        default = '*.py',
-        options = {'HIDDEN'}
-        )
+        default='*.py',
+        options={'HIDDEN'}
+    )
 
     def check(self, context):
         # Ensure that the selected file is actually a Python file
@@ -535,7 +539,8 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         col_02 = split_left.column(align=True)
 
         col_01.prop_search(scene, "active_physics_material", bpy.data, "materials", text='')
-        col_02.prop(activeMat, 'diffuse_color', text='')
+        if activeMat:
+            col_02.prop(activeMat, 'diffuse_color', text='')
 
         if prefs.use_physics_material:
             layout.label(text='Material List')
@@ -636,3 +641,13 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex")
         return {'FINISHED'}
+
+
+class OBJECT_MT_adjust_decimation_menu(Menu):
+    bl_label = "Collider Cleanup"
+    bl_idname = "OBJECT_MT_adjust_decimation_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('object.adjust_decimation')
+        layout.operator('object.origin_to_parent')

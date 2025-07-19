@@ -1,0 +1,1 @@
+DECIMATE_NAME = 'Collider_decimate'

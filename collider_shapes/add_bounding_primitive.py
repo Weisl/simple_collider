@@ -14,15 +14,15 @@ from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from ..groups.user_groups import set_object_color, set_default_group_values
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material, set_material
-
+from ..properties.constants import DECIMATE_NAME
 
 def alignObjects(new, old):
     """Align two objects"""
     new.matrix_world = old.matrix_world
 
 
-def create_name_number(name, nr):
-    return f"{name}_{nr:03}"
+def create_name_number(name, nr, digits=3):
+    return f"{name}_{nr:0{digits}}"
 
 
 def set_origin_to_center_of_mass(obj):
@@ -554,14 +554,15 @@ class OBJECT_OT_add_bounding_object():
         return data_name
 
     @staticmethod
-    def unique_name(name):
-        """recursive function to find unique name"""
+    def unique_name(name, digits=3):
+        """Function to find a unique name using a loop"""
         count = 1
-        new_name = name
+        new_name = create_name_number(name, count, digits)
 
         while new_name in bpy.data.objects:
-            new_name = create_name_number(name, count)
-            count = count + 1
+            count += 1
+            new_name = create_name_number(name, count, digits)
+
         return new_name
 
     @staticmethod
@@ -618,7 +619,8 @@ class OBJECT_OT_add_bounding_object():
                     name_pre_suffix = name_pre_suffix + comp + separator
             new_name = name_pre_suffix + name
 
-        return cls.unique_name(new_name)
+        digits = prefs.collision_digits
+        return cls.unique_name(new_name, digits)
 
     def draw_callback_px(self, context):
 
@@ -871,13 +873,23 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def create_collection(collection_name):
-        """Add an object to a collection"""
+        """Create a collection if it doesn't exist and link it to the current scene if not already linked."""
+        import bpy
+
+        # Create the collection if it doesn't exist
         if collection_name not in bpy.data.collections:
             collection = bpy.data.collections.new(collection_name)
-            bpy.context.scene.collection.children.link(collection)
+        else:
+            collection = bpy.data.collections[collection_name]
 
-        col = bpy.data.collections[collection_name]
-        return col
+        # Get the current scene
+        current_scene = bpy.context.scene
+
+        # Link to current scene if not already linked
+        if collection.name not in current_scene.collection.children:
+            current_scene.collection.children.link(collection)
+
+        return collection
 
     # Collections
     @classmethod
@@ -944,8 +956,8 @@ class OBJECT_OT_add_bounding_object():
     def del_decimate_modifier(bounding_object):
         """Delete modifiers called 'Collider_decimate'"""
         if bounding_object:
-            if bounding_object.modifiers.get('Collider_decimate'):
-                mod = bounding_object.modifiers['Collider_decimate']
+            if bounding_object.modifiers.get(DECIMATE_NAME):
+                mod = bounding_object.modifiers[DECIMATE_NAME]
                 bounding_object.modifiers.remove(mod)
 
     # Time classes
@@ -1034,7 +1046,8 @@ class OBJECT_OT_add_bounding_object():
         elif prefs.physics_material_name:
             mat_name = prefs.physics_material_name
             mat = create_default_material()
-            set_active_physics_material(context, mat.name)
+            if mat:
+                set_active_physics_material(context, mat.name)
         else:
             mat_name = ''
 
@@ -1196,7 +1209,7 @@ class OBJECT_OT_add_bounding_object():
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strength in the modal operator
-        modifier = bounding_object.modifiers.new(name="Collider_decimate", type='DECIMATE')
+        modifier = bounding_object.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 

@@ -1,11 +1,11 @@
-# Collider-Tools
+# Simple Collider
 
 ## Stores
 
 Support me by purchasing the addon from following stores:
 
-* [Gumroad](https://weisl.gumroad.com/l/collider-tools "Gumroad")
-* [Blender Market](https://blendermarket.com/products/collider-tools "Blender Market")
+* [Gumroad](https://github.com/Weisl/simple_collider "Gumroad")
+* [Superhive](https://superhivemarket.com/products/simple-collider "Superhive")
 
 You are permitted to get a copy from this GitHub page and everything specified in the attached license (GPL 3.0).
 Creating addons is a lot of effort and work. The licensing and contribution of my future addons will also depend on the
