@@ -539,7 +539,8 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         col_02 = split_left.column(align=True)
 
         col_01.prop_search(scene, "active_physics_material", bpy.data, "materials", text='')
-        col_02.prop(activeMat, 'diffuse_color', text='')
+        if activeMat:
+            col_02.prop(activeMat, 'diffuse_color', text='')
 
         if prefs.use_physics_material:
             layout.label(text='Material List')
