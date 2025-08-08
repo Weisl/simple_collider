@@ -836,7 +836,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             row.operator(COLLISION_preset.bl_idname, text="",
                          icon='REMOVE').remove_active = True
             row.operator("wm.url_open", text="",
-                         icon='HELP').url = "https://weisl.github.io/collider-tools_import_engines/"
+                         icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
 
             from ..ui.properties_panels import collider_presets_folder
             op = row.operator("file.external_operation", text='', icon='FILE_FOLDER')
