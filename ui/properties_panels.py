@@ -576,7 +576,7 @@ class VIEW3D_MT_collision_creation(Menu):
 
 ############## PIE ##############################
 
-class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
+class COLLISION_MT_pie_menu(Menu, VIEW3D_PT_init):
     # label is displayed at the center of the pie menu.
     bl_label = "Collider Pie"
     bl_idname = "COLLISION_MT_pie_menu"
