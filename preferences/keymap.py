@@ -50,9 +50,9 @@ def add_keymap():
     context = bpy.context
     prefs = context.preferences.addons[base_package].preferences
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
+    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
     if not addon_km:
-        addon_km = wm.keyconfigs.addon.keymaps.new(name="Window")
+        addon_km = wm.keyconfigs.addon.keymaps.new(name="3D View")
 
     # Remove existing keymap items for this addon
     for kmi in addon_km.keymap_items[:]:

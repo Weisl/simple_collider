@@ -108,42 +108,41 @@ def get_default_executable_path():
 
 def update_keymap(self, context, keymap_name):
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get("3D View")  # Use "3D View" instead of "Window" for view3d operators
+    addon_km = wm.keyconfigs.addon.keymaps.get("3D View")
     if not addon_km:
         return
 
-    # Get the relevant dictionary entry
     from .keymap import keymaps_items_dict
     item = keymaps_items_dict[keymap_name]
-    name = item["name"]  # e.g., 'collision_pie'
-    idname = item["idname"]  # e.g., 'wm.call_menu_pie'
-    operator = item["operator"]  # e.g., 'COLLISION_MT_pie_menu'
+    name = item["name"]
+    idname = item["idname"]
+    operator = item["operator"]
 
-    # Get the current values from the preferences
+    # Get current values from preferences
     key_type = getattr(self, f"{name}_type").upper()
     ctrl = getattr(self, f"{name}_ctrl")
     shift = getattr(self, f"{name}_shift")
     alt = getattr(self, f"{name}_alt")
-    active = getattr(self, f"{name}_active")
+    active = getattr(self, f"{name}_active")  # Get the active state
 
-    # Remove existing keymap items for this addon
+    # Remove existing keymap items for this operator
     for kmi in addon_km.keymap_items[:]:
         if kmi.idname == idname and hasattr(kmi.properties, 'name') and kmi.properties.name == operator:
             addon_km.keymap_items.remove(kmi)
 
-    # Add new keymap item if type is not 'NONE'
+    # Only add a new keymap item if the type is not 'NONE'
     if key_type != 'NONE':
         kmi = addon_km.keymap_items.new(
             idname=idname,
             type=key_type,
-            value=item["value"],  # Use the value from the dictionary
+            value=item["value"],
             ctrl=ctrl,
             shift=shift,
             alt=alt,
         )
-        kmi.properties.name = operator  # Use the operator's bl_idname, not the dictionary's "name"
-        kmi.active = active
-
+        kmi.properties.name = operator
+        kmi.active = active  # Set the active state here
+    wm.keyconfigs.update()  # Refresh keymaps to apply changes
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
     """Addon preferences for Simple Collider"""
