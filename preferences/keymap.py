@@ -19,9 +19,9 @@ keymaps_items_dict = {"Collider Pie Menu": {"name": 'collision_pie', "idname": '
 
 def add_key(context, idname, type, ctrl, shift, alt, operator, active):
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
+    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
     if not addon_km:
-        addon_km = wm.keyconfigs.addon.keymaps.new(name="Window")
+        addon_km = wm.keyconfigs.addon.keymaps.new(name="3D View")
     kmi = addon_km.keymap_items.new(idname=idname, type=type, value='PRESS', ctrl=ctrl, shift=shift, alt=alt)
     if operator != '':
         kmi.properties.name = operator
@@ -31,7 +31,7 @@ def add_key(context, idname, type, ctrl, shift, alt, operator, active):
 def remove_key(context, idname, properties_name):
     """Removes addon hotkeys from the keymap"""
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
+    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
     if not addon_km:
         return
     items_to_remove = []
@@ -82,7 +82,7 @@ def add_keymap():
 
 def remove_keymap():
     wm = bpy.context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
+    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
     if not addon_km:
         return
     items_to_remove = []

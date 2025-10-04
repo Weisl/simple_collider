@@ -123,25 +123,29 @@ def update_keymap(self, context, keymap_name):
     ctrl = getattr(self, f"{name}_ctrl")
     shift = getattr(self, f"{name}_shift")
     alt = getattr(self, f"{name}_alt")
-    active = getattr(self, f"{name}_active")  # Get the active state
+    active = getattr(self, f"{name}_active")  # Get the active state from preferences
 
     # Remove existing keymap items for this operator
     for kmi in addon_km.keymap_items[:]:
         if kmi.idname == idname and hasattr(kmi.properties, 'name') and kmi.properties.name == operator:
             addon_km.keymap_items.remove(kmi)
 
-    # Only add a new keymap item if the type is not 'NONE'
+    # Add new keymap item if type is not 'NONE'
     if key_type != 'NONE':
         kmi = addon_km.keymap_items.new(
             idname=idname,
             type=key_type,
-            value=item["value"],
+            value='PRESS',
             ctrl=ctrl,
             shift=shift,
             alt=alt,
         )
         kmi.properties.name = operator
-        kmi.active = active  # Set the active state here
+        kmi.active = active  # Set the active state from preferences
+    else:
+        # If type is 'NONE', ensure no keymap item exists
+        pass
+
     wm.keyconfigs.update()  # Refresh keymaps to apply changes
 
 class CollisionAddonPrefs(bpy.types.AddonPreferences):
