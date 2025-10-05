@@ -652,3 +652,7 @@ class OBJECT_MT_adjust_decimation_menu(Menu):
         layout = self.layout
         layout.operator('object.adjust_decimation')
         layout.operator('object.origin_to_parent')
+        layout.operator('object.fix_collider_transform')
+        # Use a warning icon for Blender 4.3 and above, else use error icon
+        icon = 'WARNING_LARGE' if bpy.app.version >= (4, 3, 0) else 'ERROR'
+        layout.operator('collision.replace_with_clean_mesh', icon=icon)
