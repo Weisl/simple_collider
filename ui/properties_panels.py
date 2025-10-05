@@ -270,8 +270,8 @@ def draw_creation_menu(context, layout, settings=False):
 
     row = layout.row(align=True)
     row.label(text='Operators')
-    row = layout.row(align=True)
-    row.menu("OBJECT_MT_adjust_decimation_menu", text="Collider Cleanup", icon='MODIFIER')
+    box = layout.box()
+    box.menu("OBJECT_MT_adjust_decimation_menu", text="Cleanup Collider", icon='COLLAPSEMENU')
 
     row = layout.row(align=True)
     row.label(text='Display as')
@@ -646,6 +646,7 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
 class OBJECT_MT_adjust_decimation_menu(Menu):
     bl_label = "Collider Cleanup"
     bl_idname = "OBJECT_MT_adjust_decimation_menu"
+    bl_description = "Clean up collider geometry (remove doubles, optimize, etc.)"
 
     def draw(self, context):
         layout = self.layout
