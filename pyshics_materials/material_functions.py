@@ -16,9 +16,33 @@ def create_material(name, diffuse, fakeUser=True):
     mat.diffuse_color = diffuse
     mat.isPhysicsMaterial = True
 
+    create_material_nodes(diffuse, mat)
+
     if fakeUser == True:
         mat.use_fake_user = True
 
+    return mat
+
+
+def create_material_nodes(diffuse, mat):
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    nodes.clear()
+
+    # Create Principled BSDF shader
+    bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
+    bsdf.inputs['Base Color'].default_value = diffuse  # Use the full RGBA vector
+    bsdf.location = (0, 0)
+
+    # Create Output node
+    output = nodes.new(type='ShaderNodeOutputMaterial')
+    output.location = (200, 0)
+
+    # Link nodes
+    mat.node_tree.links.new(
+        bsdf.outputs['BSDF'],
+        output.inputs['Surface']
+    )
     return mat
 
 
