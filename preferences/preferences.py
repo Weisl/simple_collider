@@ -163,7 +163,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                ('NAMING', "Presets", "Presets settings: Create, change and modify presets"),
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
-               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),),
+               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),
+               ('SUPPORT', "Support", "Get support and help with the addon and help improve it"),
+               ),
         default='SETTINGS',
         description='Settings category:')
 
@@ -920,6 +922,65 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                 for propName in self.vhacd_props_config:
                     row = box.row()
                     row.prop(self, propName)
+
+        elif self.prefs_tabs == 'SUPPORT':
+            # Cross Promotion
+            box = layout.box()
+
+            ### SIMPLE Camera Manager
+            col = box.column(align=True)
+            row = col.row()
+            row.label(text="♥♥♥ Leave a Review or Rating! ♥♥♥")
+            row = col.row()
+            row.label(text='Support & Feedback')
+            row = col.row(align=True)
+            row.label(text="Simple Collider")
+            row.operator("wm.url_open", text="Superhive",
+                         icon="URL").url = "https://superhivemarket.com/products/simple-collider"
+            row.operator("wm.url_open", text="Gumroad",
+                         icon="URL").url = "https://weisl.gumroad.com/l/simple_collider"
+
+            col = box.column(align=True)
+            row = col.row()
+            row.label(text='Join the Discussion!')
+            row = col.row()
+            row.operator("wm.url_open", text="Join Discord", icon="URL").url = "https://discord.gg/VRzdcFpczm"
+
+
+            ### SIMPLE TOOLS PROMOTION
+
+            box = layout.box()
+            col = box.column(align=True)
+            text = "Explore my other Blender Addons designed for more efficient game asset workflows!"
+            label_multiline(
+                context=context,
+                text=text,
+                parent=col
+            )
+
+            box.label(text="Simple Tools ($)")
+            col = box.column(align=True)
+
+            row = col.row(align=True)
+            row.label(text="Simple Camera Manager")
+            row.operator("wm.url_open", text="Superhive",
+                         icon="URL").url = "https://superhivemarket.com/products/simple-camera-manager"
+            row.operator("wm.url_open", text="Gumroad",
+                         icon="URL").url = "https://weisl.gumroad.com/l/simple_camera_manager"
+
+            row = col.row(align=True)
+            row.label(text="Simple Export")
+            row.operator("wm.url_open", text="Gumroad",
+                         icon="URL").url = "https://weisl.gumroad.com/l/simple_export"
+
+            box.label(text="Simple Tools (Free)")
+            col = box.column(align=True)
+            row = col.row(align=True)
+            row.label(text="Simple Renaming")
+            row.operator("wm.url_open", text="Blender Extensions",
+                         icon="URL").url = "https://extensions.blender.org/add-ons/simple-renaming-panel/"
+            row.operator("wm.url_open", text="Gumroad",
+                         icon="URL").url = "https://weisl.gumroad.com/l/simple_renaming"
 
 
 classes = (
