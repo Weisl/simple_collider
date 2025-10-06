@@ -1,4 +1,5 @@
 import bpy
+import math # for isclose
 from bpy.props import IntProperty
 
 from ..properties.constants import DECIMATE_NAME
@@ -167,7 +168,6 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
                 if prop in obj:
                     new_obj[prop] = obj[prop]
 
-
             # Add the new object to the selection
             new_obj.select_set(True)
 
@@ -179,6 +179,34 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
 
         self.report({'INFO'}, "Objects replaced with clean mesh")
         return {'FINISHED'}
+
+
+def fix_inverse_matrix(obj):
+    mesh = obj.data
+    # Make a copy of the object's original world matrix before we reset any of its transform matrices
+    ob_matrix_orig = obj.matrix_world.copy()
+    # Reset parent inverse matrix
+    obj.matrix_parent_inverse.identity()
+    # Calculate the difference between the parent and child world transforms and
+    # set the object's basis matrix to the value of this difference
+    obj.matrix_basis = obj.parent.matrix_world.inverted() @ ob_matrix_orig
+    # Apply the object's basis matrix to the mesh vertices
+    transformed_vertices = [obj.matrix_basis @ v.co for v in mesh.vertices]
+    mesh.vertices.foreach_set("co", [coord for v in transformed_vertices for coord in v])
+
+    # Reset the object's basis matrix and local matrix
+    obj.matrix_basis.identity()
+    obj.matrix_local.identity()
+
+    mesh.update()
+
+    # Tag the object and its data for update
+    obj.update_tag()
+    mesh.update()
+    # Force dependency graph update
+    bpy.context.view_layer.update()
+
+    return
 
 
 class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
@@ -195,24 +223,17 @@ class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
         for obj in selected_objects:
             if obj.type != 'MESH' or not obj.parent:
                 continue
+            parent = obj.parent
+            if parent:  # only if there is a parent
+                scale_x, scale_y, scale_z = parent.scale
+                if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z, rel_tol=1e-5):
+                    from ..collider_operators.utility_operators import fix_inverse_matrix
+                    fix_inverse_matrix(obj)
+                    # Force update
 
-            mesh = obj.data
-            # Make a copy of the object's original world matrix before we reset any of its transform matrices
-            ob_matrix_orig = obj.matrix_world.copy()
-            # Reset parent inverse matrix
-            obj.matrix_parent_inverse.identity()
-            # Calculate the difference between the parent and child world transforms and
-            # set the object's basis matrix to the value of this difference
-            obj.matrix_basis = obj.parent.matrix_world.inverted() @ ob_matrix_orig
-            # Apply the object's basis matrix to the mesh vertices
-            transformed_vertices = [obj.matrix_basis @ v.co for v in mesh.vertices]
-            mesh.vertices.foreach_set("co", [coord for v in transformed_vertices for coord in v])
-
-            # Reset the object's basis matrix and local matrix
-            obj.matrix_basis.identity()
-            obj.matrix_local.identity()
-
-            mesh.update()
+                else:
+                    print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
+                    self.report({'WARNING'}, f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
 
         self.report({'INFO'}, "Fixed collider transform for selected objects")
         return {'FINISHED'}
