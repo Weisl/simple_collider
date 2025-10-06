@@ -177,6 +177,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                                 update=update_panel_category)  # update = update_panel_position,
 
     ############################
+    #Generation
+    fix_parent_inverse_mtrx: bpy.props.BoolProperty(name="Fix Parent Inverse Matrix",
+                                          description="Fix the parent inverse matrix of the collider if the collider is parented to another object. This will ensure that the collider is correctly positioned relative to its parent.",
+                                          default=True)
+
     # GENERAL
     # Parent to base
     use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base Objects",
@@ -694,6 +699,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
             box = layout.box()
             row = box.row()
             row.label(text='General')
+
+
 
             for propName in self.general_props:
                 row = box.row()

@@ -91,6 +91,7 @@ class COLLISION_OT_MoveOriginToParentOperator(bpy.types.Operator):
 class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
     bl_idname = "collision.replace_with_clean_mesh"
     bl_label = "Replace with Clean Mesh"
+    bl_description = "Replace selected objects with new meshes that have clean transformation and matrices while preserving materials, modifiers, and custom properties."
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -154,9 +155,18 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
                         if not prop.is_readonly:
                             setattr(new_modifier, prop.identifier, getattr(modifier, prop.identifier))
 
-            # Copy custom properties from the original object to the new one
-            if obj.get('custom_properties') is not None:
-                new_obj['custom_properties'] = obj['custom_properties']
+            # Explicitly copy only the custom properties we care about
+            custom_props_to_copy = ["collider_group", "collider_shape", "isCollider"]
+            for prop in custom_props_to_copy:
+                if prop in obj:
+                    new_obj[prop] = obj[prop]
+
+            # Set the display type to wireframe for better visibility
+            display_props = ["display_type", "color", "show_wire", "show_all_edges"]
+            for prop in display_props:
+                if prop in obj:
+                    new_obj[prop] = obj[prop]
+
 
             # Add the new object to the selection
             new_obj.select_set(True)
@@ -172,8 +182,8 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
 
 
 class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
-    bl_idname = "object.fix_collider_transform"
-    bl_label = "Fix Collider Transform"
+    bl_idname = "object.fix_parent_inverse_transform"
+    bl_label = "Fix Parent Inverse Matrix"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod

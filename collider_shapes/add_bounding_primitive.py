@@ -1041,6 +1041,9 @@ class OBJECT_OT_add_bounding_object():
             bounding_object.parent = None
             bounding_object.matrix_world = mtx
 
+        if self.prefs.fix_parent_inverse_mtrx:
+            pass
+
         prefs = bpy.context.preferences.addons[base_package].preferences
         if context.scene.active_physics_material:
             mat_name = context.scene.active_physics_material.name
