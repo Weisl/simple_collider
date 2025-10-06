@@ -562,6 +562,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                                   description="Debug mode only used for debuging during development",
                                   default=False)
     general_props = [
+        "fix_parent_inverse_mtrx",
         "use_parent_to",
         "keep_modifier_defaults",
     ]
