@@ -2,6 +2,7 @@ import blf
 import bmesh
 import bpy
 import gpu
+import math
 import mathutils
 import numpy
 import time
@@ -12,9 +13,10 @@ from .. import __package__ as base_package
 from ..bmesh_operations.mesh_edit import delete_non_selected_verts
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from ..groups.user_groups import set_object_color, set_default_group_values
+from ..properties.constants import DECIMATE_NAME
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material, set_material
-from ..properties.constants import DECIMATE_NAME
+
 
 def alignObjects(new, old):
     """Align two objects"""
@@ -1033,7 +1035,7 @@ class OBJECT_OT_add_bounding_object():
             if bpy.app.version >= (3, 2, 0):
                 self.add_geo_nodes_hull(bounding_object)
             else:
-                self.report({'WARNING'}, 'Update to a newer Blender Version to access all addon features')
+                print("Update to a newer Blender Version to access all addon features")
 
         if not self.prefs.use_parent_to:
             mtx = bounding_object.matrix_world
@@ -1213,8 +1215,7 @@ class OBJECT_OT_add_bounding_object():
         modifier.ratio = self.current_settings_dic['decimate']
         self.decimate_modifiers.append(modifier)
 
-    @staticmethod
-    def add_geo_nodes_hull(bounding_object):
+    def add_geo_nodes_hull(self, bounding_object):
 
         if bpy.data.node_groups.get('Convex_Hull'):
             group = bpy.data.node_groups['Convex_Hull']
@@ -1230,9 +1231,8 @@ class OBJECT_OT_add_bounding_object():
             group.links.new(geom_in.outputs[0], hull_node.inputs[0])
             group.links.new(hull_node.outputs[0], geom_out.inputs[0])
 
-        # if not self.join_primitives:
-        #     modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
-        #     modifier.node_group = group
+        modifier = bounding_object.modifiers.new(name="Convex_Hull", type='NODES')
+        modifier.node_group = group
 
     def get_time_elapsed(self):
         t1 = time.time() - self.t0
@@ -1275,7 +1275,9 @@ class OBJECT_OT_add_bounding_object():
                 last_selected = obj
 
         bpy.ops.object.join()
-        self.new_colliders_list = [self.new_colliders_list[0]]
+        new_collider = self.new_colliders_list[0]
+        self.new_colliders_list = [new_collider]
+        return new_collider
 
     def create_debug_object_from_verts(self, context, verts):
         bm = bmesh.new()
@@ -1577,6 +1579,26 @@ class OBJECT_OT_add_bounding_object():
                 else:
                     obj.show_wire = False
 
+                if self.prefs.fix_parent_inverse_mtrx:
+                    bpy.context.view_layer.update()
+                    parent = obj.parent
+
+                    if parent:  # only if there is a parent
+                        scale_x, scale_y, scale_z = parent.scale
+                        if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z,
+                                                                                         rel_tol=1e-5):
+                            from ..collider_operators.utility_operators import fix_inverse_matrix
+                            fix_inverse_matrix(obj)
+
+                            obj.location = (0, 0, 0)
+                            obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
+                            obj.scale = (1, 1, 1)
+
+                        else:
+                            print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
+                            self.report({'WARNING'},
+                                        f"Cannot fix inverse matrix. {parent.name} has non-uniform scale.")
+
             # Delete temporary generated meshes
             if self.prefs.debug == False:
                 self.remove_objects(self.tmp_meshes)
@@ -1586,9 +1608,6 @@ class OBJECT_OT_add_bounding_object():
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             except ValueError:
                 pass
-
-            # if not self.is_mesh_to_collider:
-            #     bpy.ops.object.mode_set(mode='OBJECT')
 
             # restore display settings
             self.reset_display(context)

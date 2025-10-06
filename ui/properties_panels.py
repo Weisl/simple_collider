@@ -270,8 +270,8 @@ def draw_creation_menu(context, layout, settings=False):
 
     row = layout.row(align=True)
     row.label(text='Operators')
-    row = layout.row(align=True)
-    row.menu("OBJECT_MT_adjust_decimation_menu", text="Collider Cleanup", icon='MODIFIER')
+    box = layout.box()
+    box.menu("OBJECT_MT_adjust_decimation_menu", text="Cleanup Collider", icon='COLLAPSEMENU')
 
     row = layout.row(align=True)
     row.label(text='Display as')
@@ -576,7 +576,7 @@ class VIEW3D_MT_collision_creation(Menu):
 
 ############## PIE ##############################
 
-class VIEW3D_MT_PIE_template(Menu, VIEW3D_PT_init):
+class COLLISION_MT_pie_menu(Menu, VIEW3D_PT_init):
     # label is displayed at the center of the pie menu.
     bl_label = "Collider Pie"
     bl_idname = "COLLISION_MT_pie_menu"
@@ -646,8 +646,13 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
 class OBJECT_MT_adjust_decimation_menu(Menu):
     bl_label = "Collider Cleanup"
     bl_idname = "OBJECT_MT_adjust_decimation_menu"
+    bl_description = "Clean up collider geometry (remove doubles, optimize, etc.)"
 
     def draw(self, context):
         layout = self.layout
         layout.operator('object.adjust_decimation')
         layout.operator('object.origin_to_parent')
+        layout.operator('object.fix_parent_inverse_transform')
+        # Use a warning icon for Blender 4.3 and above, else use error icon
+        icon = 'WARNING_LARGE' if bpy.app.version >= (4, 3, 0) else 'ERROR'
+        layout.operator('collision.replace_with_clean_mesh', icon=icon)
