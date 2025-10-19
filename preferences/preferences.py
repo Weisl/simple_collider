@@ -108,7 +108,7 @@ def get_default_executable_path():
 
 def update_keymap(self, context, keymap_name):
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get("3D View")
+    addon_km = wm.keyconfigs.active.keymaps.get("3D View")
     if not addon_km:
         return
 
