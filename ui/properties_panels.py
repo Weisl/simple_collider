@@ -1,7 +1,8 @@
-import bpy
 import os
 import platform
 import textwrap
+
+import bpy
 from bpy.types import Menu
 from bpy_extras.io_utils import ImportHelper
 
@@ -294,9 +295,7 @@ def draw_naming_presets(self, context):
 
     addon_name = get_addon_name()
 
-    op = row.operator("file.external_operation", text='', icon='FILE_FOLDER')
-    op.operation = 'FOLDER_OPEN'
-    op.filepath = collider_presets_folder()
+    row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
 
     op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
     op.addon_name = addon_name

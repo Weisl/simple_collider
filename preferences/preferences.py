@@ -748,9 +748,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences):
                          icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
 
             from ..ui.properties_panels import collider_presets_folder
-            op = row.operator("file.external_operation", text='', icon='FILE_FOLDER')
-            op.operation = 'FOLDER_OPEN'
-            op.filepath = collider_presets_folder()
+            row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
 
             box_name = box.box()
             row = box.row()
