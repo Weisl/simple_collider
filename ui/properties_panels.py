@@ -295,7 +295,9 @@ def draw_naming_presets(self, context):
 
     addon_name = get_addon_name()
 
-    row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
+    filepath = collider_presets_folder()
+    if filepath:
+        row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = filepath
 
     op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
     op.addon_name = addon_name
