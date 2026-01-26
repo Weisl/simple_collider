@@ -4,7 +4,7 @@
 
 Support me by purchasing the addon from following stores:
 
-* [Gumroad](https://github.com/Weisl/simple_collider "Gumroad")
+* [Gumroad](https://weisl.gumroad.com/l/simple_collider "Gumroad")
 * [Superhive](https://superhivemarket.com/products/simple-collider "Superhive")
 
 You are permitted to get a copy from this GitHub page and everything specified in the attached license (GPL 3.0).
