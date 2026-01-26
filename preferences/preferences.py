@@ -36,22 +36,10 @@ collection_colors = [
 def setDefaultTemp():
     """
     Set the default temporary directory for the simple collider addon.
-
-    This function creates a new directory in the system's temporary directory
-    for storing temporary files used by the simple collider addon.
-
-    Returns:
-        File path to the temporary directory
+    Returns the system's temp directory as a fallback.
     """
-    system_temp_dir = gettempdir()
-    path = os.path.join(system_temp_dir, "simple_collider")
-
-    # Check whether the specified path exists or not
-    if not os.path.exists(path):
-        # Create a new directory because it does not exist
-        os.makedirs(path)
-
-    return path
+    import tempfile
+    return tempfile.gettempdir()  # Always returns the system temp directory
 
 
 def update_panel_category(self, context):
