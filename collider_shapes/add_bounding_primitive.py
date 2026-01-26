@@ -589,6 +589,17 @@ class OBJECT_OT_add_bounding_object():
         prefs = bpy.context.preferences.addons[base_package].preferences
         separator = prefs.separator
 
+        # Ignore rigid body extension/prefix in the base name when renaming
+        if prefs.rigid_body_extension and basename:
+            if prefs.rigid_body_naming_position == 'SUFFIX':
+                end = prefs.rigid_body_separator + prefs.rigid_body_extension
+                if basename.endswith(end):
+                    basename = basename[:-(len(end))]
+            else:
+                start = prefs.rigid_body_extension + prefs.rigid_body_separator
+                if basename.startswith(start):
+                    basename = basename[len(start):]
+
         if prefs.replace_name:
             name = prefs.obj_basename
         else:
