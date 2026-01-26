@@ -30,8 +30,13 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         """Set folder to temporarily store the exported data. """
         # Check data path
         data_path = bpy.path.abspath(path)
-
-        return data_path if os.path.isdir(data_path) else False
+        if os.path.isdir(data_path):
+            return data_path
+        else:
+            # Fallback to system temp directory
+            import tempfile
+            return tempfile.gettempdir()
+        
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -151,6 +156,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
 
             obj_filename = os.path.join(data_path, '{}.obj'.format(filename))
+
 
             colSettings = context.scene.simple_collider
 
