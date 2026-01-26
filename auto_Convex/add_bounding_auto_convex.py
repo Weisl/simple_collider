@@ -28,10 +28,25 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     @staticmethod
     def set_temp_data_path(path):
         """Set folder to temporarily store the exported data. """
-        # Check data path
-        data_path = bpy.path.abspath(path)
+        # If path is empty or invalid, use the system temp directory
+        if not path or not os.path.isdir(os.path.normpath(bpy.path.abspath(path))):
+            import tempfile
+            fallback_path = tempfile.gettempdir()
+            print(f"Warning: Path is invalid or not set. Falling back to: {fallback_path}")
+            return fallback_path
 
-        return data_path if os.path.isdir(data_path) else False
+        # Normalize and convert to absolute path
+        data_path = os.path.normpath(bpy.path.abspath(path))
+
+        # Check if the path exists and is writable
+        if os.path.isdir(data_path) and os.access(data_path, os.W_OK):
+            return data_path
+        else:
+            import tempfile
+            fallback_path = tempfile.gettempdir()
+            print(f"Warning: Path '{data_path}' is not writable. Falling back to: {fallback_path}")
+            return fallback_path
+        
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,6 +91,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         overwrite_path = self.overwrite_executable_path(self.prefs.executable_path)
         vhacd_exe = self.prefs.default_executable_path if not overwrite_path else overwrite_path
         data_path = self.set_temp_data_path(self.prefs.data_path)
+        print(f"Using data path: {data_path}")  # Debug: Print the resolved path
 
         if not vhacd_exe or not data_path:
             if not vhacd_exe:
@@ -223,8 +239,17 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 "true")
 
             print('Running V-HACD...\n{}\n'.format(cmd_line))
+            print(f"Using data path for V-HACD: {data_path}")
 
-            vhacd_process = subprocess.Popen(cmd_line, bufsize=-1, close_fds=True, shell=True)
+
+            vhacd_process = subprocess.Popen(
+                cmd_line,
+                bufsize=-1,
+                close_fds=True,
+                shell=True,
+                cwd=data_path  # Set working directory to data_path
+            )
+
             bpy.data.meshes.remove(mesh)
             vhacd_process.wait()
 
@@ -294,7 +319,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # Merge all collider objects
         if self.join_primitives:
             super().join_primitives(context)
-
+#
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
         super().print_generation_time("Auto Convex Colliders", elapsed_time)
