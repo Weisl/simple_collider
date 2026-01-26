@@ -516,15 +516,15 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         col.separator
         row.prop(colSettings, "default_user_group")
 
-        col = layout.column(align=True)
-        row = col.row(align=True)
-        row.prop(colSettings, "default_voxel_size")        
+        col = layout.column(align=True)  
         row = col.row(align=True)
         row.prop(colSettings, "default_cylinder_axis")
-        row = col.row(align=True)
+        row = col.row(align=True)#
         row.prop(colSettings, "default_cylinder_segments")
         row = col.row(align=True)
         row.prop(colSettings, "default_sphere_segments")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_voxel_size")      
 
 
 class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):

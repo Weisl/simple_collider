@@ -137,10 +137,10 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                      default=12,
                                                      )
 
-    default_voxel_size: bpy.props.FloatProperty(name="Voxel Size",
-                                                     description="Size of the voxels.",
+    default_voxel_size: bpy.props.FloatProperty(name="Voxel Size Multiplier",
+                                                     description="Multiplier for voxel size relative to object size.",
                                                      min=0.001,
-                                                     default=0.1,
+                                                     default=0.05,
                                                      )
 
 
