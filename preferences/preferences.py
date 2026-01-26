@@ -89,10 +89,10 @@ def get_default_executable_path():
 
     if platform.system() == 'Windows':
         OS_folder = 'Win'
-        app_name = 'VHACD-4_1.exe'
+        app_name = 'vhacd_4_1_win_amd64.exe'
     elif platform.system() == 'Linux':
         OS_folder = 'Linux'
-        app_name = 'VHACD'
+        app_name = 'vhacd_4_1_linux_amd64'
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
