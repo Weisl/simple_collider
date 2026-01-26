@@ -186,6 +186,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 if file_time > export_time:
                     obj_list.append(obj_path)
 
+        # Exclude the input OBJ file and any variants (e.g., Cube000.obj)
+        input_basename = os.path.splitext(os.path.basename(obj_filename))[0]
+        obj_list = [p for p in obj_list if not os.path.basename(p).startswith(input_basename)]
+
         return obj_list
 
     def import_decomposed_meshes(self, obj_list):
@@ -231,7 +235,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         if not vhacd_exe or not data_path:
             return self.cancel(context)
 
-        for obj in self.selected_objects:
+        for obj in self.selected_objects.copy():
             obj.select_set(False)
 
         collider_data = self.preprocess_objects_and_collect_data(context)
