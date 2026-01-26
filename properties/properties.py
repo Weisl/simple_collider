@@ -137,6 +137,13 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                      default=12,
                                                      )
 
+    default_voxel_size: bpy.props.FloatProperty(name="Voxel Size",
+                                                     description="Size of the voxels.",
+                                                     min=0.001,
+                                                     default=0.1,
+                                                     )
+
+
     default_sphere_segments: bpy.props.IntProperty(name="Sphere Segments",
                                                    description="Amount of sphere segments.",
                                                    default=16,

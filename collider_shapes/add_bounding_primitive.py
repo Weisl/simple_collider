@@ -1487,7 +1487,6 @@ class OBJECT_OT_add_bounding_object():
 
         default_alpha = 0.5
         default_decimate = 1.0
-        default_voxel_size = 0.1
         default_offset = 0
         default_height_mult = 1
         default_width_mult = 1
@@ -1495,7 +1494,7 @@ class OBJECT_OT_add_bounding_object():
         dict = collision_dictionary(default_alpha, default_offset, default_decimate,
                                     colSettings.default_sphere_segments,
                                     colSettings.default_cylinder_segments, colSettings.default_capsule_segments,
-                                    default_voxel_size, default_height_mult, default_width_mult)
+                                    colSettings.default_voxel_size, default_height_mult, default_width_mult)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 

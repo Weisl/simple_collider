@@ -518,6 +518,8 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
 
         col = layout.column(align=True)
         row = col.row(align=True)
+        row.prop(colSettings, "default_voxel_size")        
+        row = col.row(align=True)
         row.prop(colSettings, "default_cylinder_axis")
         row = col.row(align=True)
         row.prop(colSettings, "default_cylinder_segments")
