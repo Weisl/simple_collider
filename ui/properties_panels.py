@@ -412,9 +412,22 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     bl_label = "Simple Collider"
 
     def draw_header(self, context):
+        # Open documentation
         layout = self.layout
         row = layout.row(align=True)
         row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
+       
+        # Open Preferences
+        addon_name = get_addon_name()
+        op = row.operator("simple_camera.open_preferences", text="", icon='PREFERENCES')
+        op.addon_name = addon_name
+        op.prefs_tabs = 'GENERAL'
+
+        # Open Export Popup
+        op = row.operator("wm.call_menu_pie", text="", icon="WINDOW")
+        op.name = "COLLISION_MT_pie_menu"
+
+
 
     def draw(self, context):
         layout = self.layout
