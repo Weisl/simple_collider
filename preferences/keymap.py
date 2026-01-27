@@ -19,9 +19,9 @@ keymaps_items_dict = {"Collider Pie Menu": {"name": 'collision_pie', "idname": '
 
 def add_key(context, idname, type, ctrl, shift, alt, operator, active):
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
+    addon_km = wm.keyconfigs.addon.keymaps.get('Window') # Using Window instead of 3D View to fix issue of keymap not working on Linux
     if not addon_km:
-        addon_km = wm.keyconfigs.addon.keymaps.new(name="3D View")
+        addon_km = wm.keyconfigs.addon.keymaps.new(name="Window")
     kmi = addon_km.keymap_items.new(idname=idname, type=type, value='PRESS', ctrl=ctrl, shift=shift, alt=alt)
     if operator != '':
         kmi.properties.name = operator
@@ -31,7 +31,7 @@ def add_key(context, idname, type, ctrl, shift, alt, operator, active):
 def remove_key(context, idname, properties_name):
     """Removes addon hotkeys from the keymap"""
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
+    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
     if not addon_km:
         return
     items_to_remove = []
@@ -50,9 +50,9 @@ def add_keymap():
     context = bpy.context
     prefs = context.preferences.addons[base_package].preferences
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
+    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
     if not addon_km:
-        addon_km = wm.keyconfigs.addon.keymaps.new(name="3D View")
+        addon_km = wm.keyconfigs.addon.keymaps.new(name="Window")
 
     # Remove existing keymap items for this addon
     for kmi in addon_km.keymap_items[:]:
@@ -82,7 +82,7 @@ def add_keymap():
 
 def remove_keymap():
     wm = bpy.context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get('3D View')
+    addon_km = wm.keyconfigs.addon.keymaps.get('Window')
     if not addon_km:
         return
     items_to_remove = []

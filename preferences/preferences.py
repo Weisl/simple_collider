@@ -36,22 +36,10 @@ collection_colors = [
 def setDefaultTemp():
     """
     Set the default temporary directory for the simple collider addon.
-
-    This function creates a new directory in the system's temporary directory
-    for storing temporary files used by the simple collider addon.
-
-    Returns:
-        File path to the temporary directory
+    Returns the system's temp directory as a fallback.
     """
-    system_temp_dir = gettempdir()
-    path = os.path.join(system_temp_dir, "simple_collider")
-
-    # Check whether the specified path exists or not
-    if not os.path.exists(path):
-        # Create a new directory because it does not exist
-        os.makedirs(path)
-
-    return path
+    import tempfile
+    return tempfile.gettempdir()  # Always returns the system temp directory
 
 
 def update_panel_category(self, context):
@@ -89,10 +77,10 @@ def get_default_executable_path():
 
     if platform.system() == 'Windows':
         OS_folder = 'Win'
-        app_name = 'VHACD-4_1.exe'
+        app_name = 'vhacd_4_1_win_amd64.exe'
     elif platform.system() == 'Linux':
         OS_folder = 'Linux'
-        app_name = 'VHACD'
+        app_name = 'vhacd_4_1_linux_amd64'
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
@@ -108,7 +96,7 @@ def get_default_executable_path():
 
 def update_keymap(self, context, keymap_name):
     wm = context.window_manager
-    addon_km = wm.keyconfigs.addon.keymaps.get("3D View")
+    addon_km = wm.keyconfigs.addon.keymaps.get("Window") # Using Window instead of 3D View to fix issue of keymap not working on Linux
     if not addon_km:
         return
 

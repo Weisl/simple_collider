@@ -412,9 +412,22 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
     bl_label = "Simple Collider"
 
     def draw_header(self, context):
+        # Open documentation
         layout = self.layout
         row = layout.row(align=True)
         row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
+       
+        # Open Preferences
+        addon_name = get_addon_name()
+        op = row.operator("simple_camera.open_preferences", text="", icon='PREFERENCES')
+        op.addon_name = addon_name
+        op.prefs_tabs = 'GENERAL'
+
+        # Open Export Popup
+        op = row.operator("wm.call_menu_pie", text="", icon="WINDOW")
+        op.name = "COLLISION_MT_pie_menu"
+
+
 
     def draw(self, context):
         layout = self.layout
@@ -503,13 +516,15 @@ class VIEW3D_PT_collision_settings_panel(VIEW3D_PT_collision):
         col.separator
         row.prop(colSettings, "default_user_group")
 
-        col = layout.column(align=True)
+        col = layout.column(align=True)  
         row = col.row(align=True)
         row.prop(colSettings, "default_cylinder_axis")
-        row = col.row(align=True)
+        row = col.row(align=True)#
         row.prop(colSettings, "default_cylinder_segments")
         row = col.row(align=True)
         row.prop(colSettings, "default_sphere_segments")
+        row = col.row(align=True)
+        row.prop(colSettings, "default_voxel_size")      
 
 
 class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):

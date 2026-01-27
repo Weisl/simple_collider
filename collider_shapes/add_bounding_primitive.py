@@ -258,11 +258,12 @@ def draw_viewport_overlay(self, context):
     items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool',
                   'highlight': False})
 
-    label = "Opacity"
-    value = self.current_settings_dic['alpha']
-    value = '{initial_value:.3f}'.format(initial_value=value)
-    item = {'label': label, 'value': value, 'key': '(A)', 'type': 'modal', 'highlight': self.opacity_active}
-    items.append(item)
+    if self.shading_modes[self.shading_idx] == 'OBJECT':
+        label = "Opacity"
+        value = self.current_settings_dic['alpha']
+        value = '{initial_value:.3f}'.format(initial_value=value)
+        item = {'label': label, 'value': value, 'key': '(A)', 'type': 'modal', 'highlight': self.opacity_active}
+        items.append(item)
 
     label = "Shrink/Inflate"
     value = self.current_settings_dic['displace_offset']
@@ -316,7 +317,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_remesh:
         label = "Voxel Size"
-        value = str(self.current_settings_dic['voxel_size'])
+        value = str(self.current_settings_dic['voxel_size_multiplier'])
         key = '(R)'
         type = 'modal'
         highlight = self.remesh_active
@@ -423,7 +424,7 @@ def collision_dictionary(alpha, offset, decimate, sphere_segments, cylinder_segm
     dict['sphere_segments'] = sphere_segments
     dict['cylinder_segments'] = cylinder_segments
     dict['capsule_segments'] = capsule_segments
-    dict['voxel_size'] = voxel_size
+    dict['voxel_size_multiplier'] = voxel_size
     dict['height_mult'] = height_mult
     dict['width_mult'] = width_mult
 
@@ -546,6 +547,11 @@ class OBJECT_OT_add_bounding_object():
         return verts, center_point
 
     @staticmethod
+    def get_object_max_dimension(obj):
+        """Get the maximum dimension of an object"""
+        return max(obj.dimensions)
+
+    @staticmethod
     def set_data_name(obj, new_name, data_suffix):
         """name object data based on object name"""
         data_name = new_name + data_suffix
@@ -588,6 +594,17 @@ class OBJECT_OT_add_bounding_object():
     def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
         prefs = bpy.context.preferences.addons[base_package].preferences
         separator = prefs.separator
+
+        # Ignore rigid body extension/prefix in the base name when renaming
+        if prefs.rigid_body_extension and basename:
+            if prefs.rigid_body_naming_position == 'SUFFIX':
+                end = prefs.rigid_body_separator + prefs.rigid_body_extension
+                if basename.endswith(end):
+                    basename = basename[:-(len(end))]
+            else:
+                start = prefs.rigid_body_extension + prefs.rigid_body_separator
+                if basename.startswith(start):
+                    basename = basename[len(start):]
 
         if prefs.replace_name:
             name = prefs.obj_basename
@@ -1206,8 +1223,10 @@ class OBJECT_OT_add_bounding_object():
         # add decimation modifier and safe it to manipulate the strength in the modal operator
         modifier = bounding_object.modifiers.new(name="Collider_remesh", type='REMESH')
         modifier.mode = 'VOXEL'
-        modifier.voxel_size = self.current_settings_dic['voxel_size']
+        max_dim = self.get_object_max_dimension(bounding_object)
+        modifier.voxel_size = self.current_settings_dic['voxel_size_multiplier'] * max_dim
         self.remesh_modifiers.append(modifier)
+        self.remesh_data.append((modifier, max_dim))
 
     def add_decimate_modifier(self, context, bounding_object):
         # add decimation modifier and safe it to manipulate the strength in the modal operator
@@ -1323,6 +1342,8 @@ class OBJECT_OT_add_bounding_object():
         self.use_height_multiplier = False
         self.use_width_multiplier = False
 
+        self.remesh_data = []
+
         # default shape init
         self.shape = ''
 
@@ -1420,6 +1441,7 @@ class OBJECT_OT_add_bounding_object():
         # Modal MODIFIERS
         self.remesh_active = False
         self.remesh_modifiers = []
+        self.remesh_data = []
 
         self.height_active = False
         self.width_active = False
@@ -1476,7 +1498,6 @@ class OBJECT_OT_add_bounding_object():
 
         default_alpha = 0.5
         default_decimate = 1.0
-        default_voxel_size = 0.1
         default_offset = 0
         default_height_mult = 1
         default_width_mult = 1
@@ -1484,7 +1505,7 @@ class OBJECT_OT_add_bounding_object():
         dict = collision_dictionary(default_alpha, default_offset, default_decimate,
                                     colSettings.default_sphere_segments,
                                     colSettings.default_cylinder_segments, colSettings.default_capsule_segments,
-                                    default_voxel_size, default_height_mult, default_width_mult)
+                                    colSettings.default_voxel_size, default_height_mult, default_width_mult)
         self.current_settings_dic = dict.copy()
         self.ref_settings_dic = dict.copy()
 
@@ -1795,16 +1816,16 @@ class OBJECT_OT_add_bounding_object():
 
             if self.remesh_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
-                voxel_size = (self.ref_settings_dic['voxel_size'] + delta)
-                voxel_size = numpy.clip(voxel_size, 0.01, 1.0)
+                multiplier = (self.ref_settings_dic['voxel_size_multiplier'] + delta)
+                multiplier = numpy.clip(multiplier, 0.001, 1.0)
 
-                if self.current_settings_dic['voxel_size'] != voxel_size:
-                    self.current_settings_dic['voxel_size'] = voxel_size
+                if self.current_settings_dic['voxel_size_multiplier'] != multiplier:
+                    self.current_settings_dic['voxel_size_multiplier'] = multiplier
 
-                    for mod in self.remesh_modifiers:
-                        mod.voxel_size = voxel_size
+                    for mod, max_dim in self.remesh_data:
+                        mod.voxel_size = multiplier * max_dim
 
-            if self.opacity_active:
+            if self.opacity_active and self.shading_modes[self.shading_idx] == 'OBJECT':
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
                 color_alpha = self.ref_settings_dic['alpha'] - delta
                 color_alpha = numpy.clip(color_alpha, 0.00, 1.0)
@@ -1902,6 +1923,7 @@ class OBJECT_OT_add_bounding_object():
         # reset previously stored displace modifiers when creating a new object
         self.displace_modifiers = []
         self.remesh_modifiers = []
+        self.remesh_data = []
 
         # Create the bounding geometry, depending on edit or object mode.
         self.old_objs = set(context.scene.objects)

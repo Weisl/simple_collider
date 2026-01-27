@@ -6,6 +6,8 @@ from ..ui.properties_panels import collider_presets_folder
 folder_name = "simple_collider"
 
 
+
+
 def get_default_preferences(context):
     """
     Get the default preferences for the addon.
