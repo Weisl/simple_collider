@@ -258,11 +258,12 @@ def draw_viewport_overlay(self, context):
     items.append({'label': "Join Primitives", 'value': str(self.join_primitives), 'key': '(J)', 'type': 'bool',
                   'highlight': False})
 
-    label = "Opacity"
-    value = self.current_settings_dic['alpha']
-    value = '{initial_value:.3f}'.format(initial_value=value)
-    item = {'label': label, 'value': value, 'key': '(A)', 'type': 'modal', 'highlight': self.opacity_active}
-    items.append(item)
+    if self.shading_modes[self.shading_idx] == 'OBJECT':
+        label = "Opacity"
+        value = self.current_settings_dic['alpha']
+        value = '{initial_value:.3f}'.format(initial_value=value)
+        item = {'label': label, 'value': value, 'key': '(A)', 'type': 'modal', 'highlight': self.opacity_active}
+        items.append(item)
 
     label = "Shrink/Inflate"
     value = self.current_settings_dic['displace_offset']
@@ -1824,7 +1825,7 @@ class OBJECT_OT_add_bounding_object():
                     for mod, max_dim in self.remesh_data:
                         mod.voxel_size = multiplier * max_dim
 
-            if self.opacity_active:
+            if self.opacity_active and self.shading_modes[self.shading_idx] == 'OBJECT':
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
                 color_alpha = self.ref_settings_dic['alpha'] - delta
                 color_alpha = numpy.clip(color_alpha, 0.00, 1.0)
