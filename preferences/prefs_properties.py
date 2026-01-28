@@ -360,13 +360,13 @@ class CollisionAddonPrefsProperties():
     ###################################################################
     # VHACD
     # if platform.system() == 'Windows':
-    default_executable_path: bpy.props.StringProperty(name='Default Executable',
+    default_executable_path: bpy.props.StringProperty(name='Default VHACD Build',
                                                       description='Path to the V-Hacd executable distributed with this addon. (read-only)',
                                                       default=get_default_executable_path(),
                                                       subtype='FILE_PATH',
                                                       )
 
-    executable_path: bpy.props.StringProperty(name='Overwrite Executable',
+    executable_path: bpy.props.StringProperty(name='Custom VHACD Build',
                                               description='Specify a path to another V-hacd executable if you want to use a custom build',
                                               default='',
                                               subtype='FILE_PATH'

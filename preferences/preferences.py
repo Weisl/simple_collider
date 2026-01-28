@@ -1,3 +1,4 @@
+from multiprocessing import context
 import bpy
 import os
 import platform
@@ -19,6 +20,7 @@ from ..ui.properties_panels import VIEW3D_PT_collision_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
 from ..ui.properties_panels import label_multiline
+from ..ui.properties_panels import collider_presets_folder
 
 collection_colors = [
     ("NONE", "White", "Default collection color", "OUTLINER_COLLECTION", 0),
@@ -298,24 +300,32 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             row.prop(self, propName)
 
     def draw_vhacd_panel(self, layout, context):
-        """Draw the VHACD panel"""
-        text = "Auto convex is only supported for Windows and Linux at this moment."
-        texts = [text]
-        if platform.system() not in ['Windows', 'Linux']:
-            for text in texts:
-                label_multiline(context=context, text=text, parent=layout)
-            return
-
-        text = "The auto convex collision generation requires the V-hacd library to work. "
-        texts.append(text)
+        """Draw the VHACD panel with platform-specific support information and settings."""
 
         box = layout.box()
-        row = box.row()
-        row.label(text="Information about the executable: V-Hacd Github")
-        row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
 
-        for text in texts:
+        ## intro text
+        text = "Auto convex relies on an external application called VHACD. The addon comes with a pre-compiled version of the VHACD executable for Windows and Linux Mint (Ubuntu). It also supports custom builds for other operating systems."
+        label_multiline(context=context, text=text, parent=box)
+
+        row = box.row()
+        row.label(text="V-HACD Source Code")
+        row.operator("wm.url_open", text="V-HACD GitHub", icon='URL').url = "https://github.com/kmammou/v-hacd" 
+        layout.separator()
+        
+        if platform.system() == 'Windows':
+            text = "The V-HACD library is built and tested on Windows 10 and 11. You can also build the library from source and specify it in the executable path."
             label_multiline(context=context, text=text, parent=box)
+
+        elif platform.system() == 'Linux':
+            text = "The V-HACD library is built and tested on Linux Mint. For other Linux distributions, you may need to manually compile the library. Refer to the V-HACD GitHub repository for build instructions."
+            label_multiline(context=context, text=text, parent=box)
+        
+        
+        else: # platform.system() == 'Darwin' (MacOS) or others
+            text = "Mac is currently not supported."
+            label_multiline(context=context, text=text, parent=box)
+
 
         row = layout.row()
         row.enabled = False
@@ -327,9 +337,13 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         row = layout.row()
         if self.data_path:
             row.prop(self, "data_path")
-        else:
+        else:  # temp folder is missing
             box = layout.box()
-            text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
+            text = (
+                "The auto convex collider requires temporary files to be stored on your PC "
+                "to allow communication between Blender and the V-HACD executable. "
+                "Change the directory for temporary data here."
+            )
             label_multiline(context=context, text=text, parent=box)
             row.prop(self, "data_path", icon="ERROR")
 
@@ -337,10 +351,12 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             layout.separator()
             box = layout.box()
             row = box.row()
-            row.label(text="Generation Settings")
+            row.label(text="VHACD Settings")
+
             row = box.row()
             row.label(text="Parameter Information")
-            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+            row.operator("wm.url_open", text="V-HACD GitHub", icon='URL').url = "https://github.com/kmammou/v-hacd"
+
             for propName in self.vhacd_props_config:
                 row = box.row()
                 row.prop(self, propName)
@@ -433,10 +449,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         if self.prefs_tabs == 'SETTINGS':
             self.draw_settings_panel(layout)
 
-        if self.prefs_tabs == 'NAMING':
+        elif self.prefs_tabs == 'NAMING':
             self.draw_naming_panel(layout)
 
-
+        elif self.prefs_tabs == 'VHACD':
+            self.draw_vhacd_panel(layout, context)
 
         elif self.prefs_tabs == 'KEYMAP':
             self.draw_keymap_panel(layout)
