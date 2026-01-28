@@ -146,6 +146,249 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
     bl_idname = base_package
     bl_options = {'REGISTER'}
 
+
+    def draw_settings_panel(self, layout):
+        """Draw the settings panel"""
+        box = layout.box()
+        row = box.row()
+        row.label(text='General')
+        for propName in self.general_props:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        row = box.row()
+        row.label(text='Collections')
+        for propName in self.col_props:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        row = box.row(align=True)
+        row.label(text="Collider Display")
+        for propName in self.display_config:
+            row = box.row()
+            row.prop(self, propName)
+
+        row = layout.row()
+        row.prop(self, 'debug')
+
+    def draw_naming_panel(self, layout):
+        """Draw the naming panel"""
+        box = layout.box()
+        row = box.row()
+        row.label(text="Default Presets")
+        row = box.row(align=True)
+        for preset_name in presets.keys():
+            op = row.operator(SetSimpleColliderPreferencesOperator.bl_idname, text=f"{preset_name}")
+            op.preset_name = preset_name
+        row = box.row(align=True)
+        row.label(text="User Presets")
+        row = box.row(align=True)
+        op = row.operator('object.upgrade_simple_collider_presets')
+        row = box.row(align=True)
+        row.menu('OBJECT_MT_collision_presets', text=OBJECT_MT_collision_presets.bl_label)
+        row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
+        row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
+
+        row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
+
+        box_name = box.box()
+        row = box.row()
+        row.prop(self, "naming_position", expand=True)
+
+        row = box_name.row()
+        if self.naming_position == 'PREFIX':
+            row.label(text="Name = Collider Prefix + Shape + Group + Collider Suffix + Basename + Numbering")
+        else:
+            row.label(text="Name = Basename + Collider Prefix + Shape + Group + Collider Suffix + Numbering")
+
+        row = box_name.row()
+        row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier='box_shape',
+                                                                                   user_group='USER_01',
+                                                                                   basename='Suzanne'))
+
+        row = box.row()
+        row.prop(self, "replace_name")
+        row = box.row()
+        if not self.replace_name:
+            row.enabled = False
+        row.prop(self, "obj_basename")
+
+        for propName in self.props:
+            row = box.row()
+            row.prop(self, propName)
+
+        box2 = layout.box()
+        box2.label(text="Shape")
+        for propName in self.props_shapes:
+            row = box2.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        box.label(text="Rigid Body")
+        for propName in self.props_parent:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        box.label(text="Collider Groups")
+        for propName in self.props_collider_groups:
+            row = box.row()
+            row.prop(self, propName)
+
+        col = box.column()
+        if not self.collider_groups_enabled:
+            col.enabled = False
+
+        for count, (prop_01, prop_02) in enumerate(
+                zip(self.props_collider_groups_name, self.props_collider_groups_identifier), start=1):
+            split = col.split(align=True, factor=0.1)
+            split.label(text=f"Group_{str(count)}:")
+            split = split.split(align=True, factor=0.5)
+            split.prop(self, prop_01)
+            split.prop(self, prop_02)
+
+        box = layout.box()
+        box.label(text="Physics Materials")
+        for propName in self.props_physics_materials:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = box.box()
+        row = box.row()
+        row.prop(self, "use_physics_material")
+        row = box.row()
+        row.prop(self, "skip_material")
+
+        col = box.column()
+        if not self.use_physics_material:
+            col.enabled = False
+
+        row = col.row()
+        row.prop(self, "material_naming_position", expand=True)
+        for propName in self.props_advanced_physics_materials:
+            row = col.row()
+            row.prop(self, propName)
+
+    def draw_keymap_panel(self, layout):
+        """Draw the keymap panel"""
+        for key, value in keymaps_items_dict.items():
+            self.keymap_ui(layout, key, value['name'], value['idname'], value['operator'])
+
+    def draw_ui_panel(self, layout):
+        """Draw the UI panel"""
+        row = layout.row()
+        row.prop(self, "collider_category", expand=True)
+
+        layout.separator()
+        row = layout.row()
+        row.label(text="3D Viewport Colors")
+
+        for propName in self.ui_col_colors:
+            row = layout.row()
+            row.prop(self, propName)
+
+        row = layout.row()
+        row.label(text="UI Settings")
+
+        for propName in self.ui_props:
+            row = layout.row()
+            row.prop(self, propName)
+
+    def draw_vhacd_panel(self, layout, context):
+        """Draw the VHACD panel"""
+        text = "Auto convex is only supported for Windows and Linux at this moment."
+        texts = [text]
+        if platform.system() not in ['Windows', 'Linux']:
+            for text in texts:
+                label_multiline(context=context, text=text, parent=layout)
+            return
+
+        text = "The auto convex collision generation requires the V-hacd library to work. "
+        texts.append(text)
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="Information about the executable: V-Hacd Github")
+        row.operator("wm.url_open", text="", icon='URL').url = "https://github.com/kmammou/v-hacd"
+
+        for text in texts:
+            label_multiline(context=context, text=text, parent=box)
+
+        row = layout.row()
+        row.enabled = False
+        row.prop(self, 'default_executable_path')
+
+        row = layout.row()
+        row.prop(self, 'executable_path')
+
+        row = layout.row()
+        if self.data_path:
+            row.prop(self, "data_path")
+        else:
+            box = layout.box()
+            text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
+            label_multiline(context=context, text=text, parent=box)
+            row.prop(self, "data_path", icon="ERROR")
+
+        if self.executable_path or self.default_executable_path:
+            layout.separator()
+            box = layout.box()
+            row = box.row()
+            row.label(text="Generation Settings")
+            row = box.row()
+            row.label(text="Parameter Information")
+            row.operator("wm.url_open", text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
+            for propName in self.vhacd_props_config:
+                row = box.row()
+                row.prop(self, propName)
+
+    def draw_support_panel(self, layout, context):
+        """Draw the support panel"""
+        box = layout.box()
+
+        col = box.column(align=True)
+        row = col.row()
+        row.label(text="♥♥♥ Leave a Review or Rating! ♥♥♥")
+        row = col.row()
+        row.label(text='Support & Feedback')
+        row = col.row(align=True)
+        row.label(text="Simple Collider")
+        row.operator("wm.url_open", text="Superhive", icon="URL").url = "https://superhivemarket.com/products/simple-collider"
+        row.operator("wm.url_open", text="Gumroad", icon="URL").url = "https://weisl.gumroad.com/l/simple_collider"
+
+        col = box.column(align=True)
+        row = col.row()
+        row.label(text='Join the Discussion!')
+        row = col.row()
+        row.operator("wm.url_open", text="Join Discord", icon="URL").url = "https://discord.gg/VRzdcFpczm"
+
+        box = layout.box()
+        col = box.column(align=True)
+        text = "Explore my other Blender Addons designed for more efficient game asset workflows!"
+        label_multiline(context=context, text=text, parent=col)
+
+        box.label(text="Simple Tools ($)")
+        col = box.column(align=True)
+
+        row = col.row(align=True)
+        row.label(text="Simple Camera Manager")
+        row.operator("wm.url_open", text="Superhive", icon="URL").url = "https://superhivemarket.com/products/simple-camera-manager"
+        row.operator("wm.url_open", text="Gumroad", icon="URL").url = "https://weisl.gumroad.com/l/simple_camera_manager"
+
+        row = col.row(align=True)
+        row.label(text="Simple Export")
+        row.operator("wm.url_open", text="Gumroad", icon="URL").url = "https://weisl.gumroad.com/l/simple_export"
+
+        box.label(text="Simple Tools (Free)")
+        col = box.column(align=True)
+        row = col.row(align=True)
+        row.label(text="Simple Renaming")
+        row.operator("wm.url_open", text="Blender Extensions", icon="URL").url = "https://extensions.blender.org/add-ons/simple-renaming-panel/"
+        row.operator("wm.url_open", text="Gumroad", icon="URL").url = "https://weisl.gumroad.com/l/simple_renaming"
+
     def keymap_ui(self, layout, title, property_prefix, id_name, properties_name):
         box = layout.box()
         split = box.split(align=True, factor=0.5)
@@ -188,298 +431,21 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         row.prop(self, "prefs_tabs", expand=True)
 
         if self.prefs_tabs == 'SETTINGS':
-
-            box = layout.box()
-            row = box.row()
-            row.label(text='General')
-
-
-
-            for propName in self.general_props:
-                row = box.row()
-                row.prop(self, propName)
-
-            box = layout.box()
-            row = box.row()
-            row.label(text='Collections')
-
-            for propName in self.col_props:
-                row = box.row()
-                row.prop(self, propName)
-
-            box = layout.box()
-            row = box.row(align=True)
-            row.label(text="Collider Display")
-
-            for propName in self.display_config:
-                row = box.row()
-                row.prop(self, propName)
-
-            row = layout.row()
-            row.prop(self, 'debug')
+            self.draw_settings_panel(layout)
 
         if self.prefs_tabs == 'NAMING':
-            box = layout.box()
-            row = box.row()
-            row.label(text="Default Presets")
-            row = box.row(align=True)
-            for preset_name in presets.keys():
-                op = row.operator(SetSimpleColliderPreferencesOperator.bl_idname, text=f"{preset_name}")
-                op.preset_name = preset_name
-            row = box.row(align=True)
-            row.label(text="User Presets")
-            row = box.row(align=True)
-            op = row.operator('object.upgrade_simple_collider_presets')
-            row = box.row(align=True)
-            row.menu('OBJECT_MT_collision_presets',
-                     text=OBJECT_MT_collision_presets.bl_label)
-            row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
-            row.operator(COLLISION_preset.bl_idname, text="",
-                         icon='REMOVE').remove_active = True
-            row.operator("wm.url_open", text="",
-                         icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
-
-            from ..ui.properties_panels import collider_presets_folder
-            row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
-
-            box_name = box.box()
-            row = box.row()
-            row.prop(self, "naming_position", expand=True)
-
-            row = box_name.row()
-            if self.naming_position == 'PREFIX':
-                row.label(
-                    text="Name = Collider Prefix + Shape + Group + Collider Suffix + Basename + Numbering")
-            else:  # self.naming_position == 'SUFFIX':
-                row.label(
-                    text="Name = Basename + Collider Prefix + Shape + Group + Collider Suffix + Numbering")
-
-            row = box_name.row()
-            row.label(text="E.g. " + OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier='box_shape',
-                                                                                       user_group='USER_01',
-                                                                                       basename='Suzanne'))
-
-            row = box.row()
-            row.prop(self, "replace_name")
-
-            row = box.row()
-
-            if not self.replace_name:
-                row.enabled = False
-            row.prop(self, "obj_basename")
-
-            for propName in self.props:
-                row = box.row()
-                row.prop(self, propName)
-
-            box2 = layout.box()
-            box2.label(text="Shape")
-            for propName in self.props_shapes:
-                row = box2.row()
-                row.prop(self, propName)
-
-            box = layout.box()
-            box.label(text="Rigid Body")
-
-            for propName in self.props_parent:
-                row = box.row()
-                row.prop(self, propName)
-
-            box = layout.box()
-            box.label(text="Collider Groups")
-
-            for propName in self.props_collider_groups:
-                row = box.row()
-                row.prop(self, propName)
-
-            col = box.column()
-            if not self.collider_groups_enabled:
-                col.enabled = False
-
-            for count, (prop_01, prop_02) in enumerate(
-                    zip(self.props_collider_groups_name, self.props_collider_groups_identifier), start=1):
-                split = col.split(align=True, factor=0.1)
-                split.label(text=f"Group_{str(count)}:")
-
-                split = split.split(align=True, factor=0.5)
-                split.prop(self, prop_01)
-                split.prop(self, prop_02)
-
-            box = layout.box()
-            box.label(text="Physics Materials")
-
-            for propName in self.props_physics_materials:
-                row = box.row()
-                row.prop(self, propName)
-
-            box = box.box()
-            row = box.row()
-            row.prop(self, "use_physics_material")
-
-            row = box.row()
-            row.prop(self, "skip_material")
-
-            col = box.column()
-            if not self.use_physics_material:
-                col.enabled = False
-
-            row = col.row()
-            row.prop(self, "material_naming_position", expand=True)
-            for propName in self.props_advanced_physics_materials:
-                row = col.row()
-                row.prop(self, propName)
+            self.draw_naming_panel(layout)
 
 
 
         elif self.prefs_tabs == 'KEYMAP':
-            from .keymap import keymaps_items_dict
-            for key, value in keymaps_items_dict.items():
-                self.keymap_ui(layout, key, value['name'], value['idname'], value['operator'])
-
+            self.draw_keymap_panel(layout)
 
         elif self.prefs_tabs == 'UI':
-
-            row = layout.row()
-            row.prop(self, "collider_category", expand=True)
-
-            layout.separator()
-            row = layout.row()
-            row.label(text="3D Viewport Colors")
-
-            for propName in self.ui_col_colors:
-                row = layout.row()
-                row.prop(self, propName)
-
-            row = layout.row()
-            row.label(text="UI Settings")
-
-            for propName in self.ui_props:
-                row = layout.row()
-                row.prop(self, propName)
-
-        elif self.prefs_tabs == 'VHACD':
-            text = "Auto convex is only supported for Windows and Linux at this moment."
-            texts = [text]
-            if platform.system() not in ['Windows', 'Linux']:
-                for text in texts:
-                    label_multiline(
-                        context=context,
-                        text=text,
-                        parent=layout
-                    )
-                return
-
-            text = "The auto convex collision generation requires the V-hacd library to work. "
-            texts.append(text)
-
-            box = layout.box()
-            row = box.row()
-            row.label(text="Information about the executable: V-Hacd Github")
-            row.operator("wm.url_open", text="",
-                         icon='URL').url = "https://github.com/kmammou/v-hacd"
-
-            for text in texts:
-                label_multiline(
-                    context=context,
-                    text=text,
-                    parent=box
-                )
-
-            row = layout.row()
-            row.enabled = False
-            row.prop(self, 'default_executable_path')
-
-            row = layout.row()
-            row.prop(self, 'executable_path')
-
-            row = layout.row()
-            if self.data_path:
-                row.prop(self, "data_path")
-            else:  # temp folder is missing
-                box = layout.box()
-                text = "The auto convex collider requires temporary files to be stored on your pc to allow for the communication of Blender and the V-hacd executable. You can change the directory for storing the temporary data from here."
-                label_multiline(
-                    context=context,
-                    text=text,
-                    parent=box
-                )
-                row.prop(self, "data_path", icon="ERROR")
-
-            if self.executable_path or self.default_executable_path:
-
-                layout.separator()
-
-                box = layout.box()
-                row = box.row()
-                row.label(text="Generation Settings")
-                row = box.row()
-                row.label(text="Parameter Information")
-
-                row.operator("wm.url_open",
-                             text="Github: Kmammou V-hacd").url = "https://github.com/kmammou/v-hacd"
-                for propName in self.vhacd_props_config:
-                    row = box.row()
-                    row.prop(self, propName)
+            self.draw_ui_panel(layout)
 
         elif self.prefs_tabs == 'SUPPORT':
-            # Cross Promotion
-            box = layout.box()
-
-            ### SIMPLE Camera Manager
-            col = box.column(align=True)
-            row = col.row()
-            row.label(text="♥♥♥ Leave a Review or Rating! ♥♥♥")
-            row = col.row()
-            row.label(text='Support & Feedback')
-            row = col.row(align=True)
-            row.label(text="Simple Collider")
-            row.operator("wm.url_open", text="Superhive",
-                         icon="URL").url = "https://superhivemarket.com/products/simple-collider"
-            row.operator("wm.url_open", text="Gumroad",
-                         icon="URL").url = "https://weisl.gumroad.com/l/simple_collider"
-
-            col = box.column(align=True)
-            row = col.row()
-            row.label(text='Join the Discussion!')
-            row = col.row()
-            row.operator("wm.url_open", text="Join Discord", icon="URL").url = "https://discord.gg/VRzdcFpczm"
-
-
-            ### SIMPLE TOOLS PROMOTION
-
-            box = layout.box()
-            col = box.column(align=True)
-            text = "Explore my other Blender Addons designed for more efficient game asset workflows!"
-            label_multiline(
-                context=context,
-                text=text,
-                parent=col
-            )
-
-            box.label(text="Simple Tools ($)")
-            col = box.column(align=True)
-
-            row = col.row(align=True)
-            row.label(text="Simple Camera Manager")
-            row.operator("wm.url_open", text="Superhive",
-                         icon="URL").url = "https://superhivemarket.com/products/simple-camera-manager"
-            row.operator("wm.url_open", text="Gumroad",
-                         icon="URL").url = "https://weisl.gumroad.com/l/simple_camera_manager"
-
-            row = col.row(align=True)
-            row.label(text="Simple Export")
-            row.operator("wm.url_open", text="Gumroad",
-                         icon="URL").url = "https://weisl.gumroad.com/l/simple_export"
-
-            box.label(text="Simple Tools (Free)")
-            col = box.column(align=True)
-            row = col.row(align=True)
-            row.label(text="Simple Renaming")
-            row.operator("wm.url_open", text="Blender Extensions",
-                         icon="URL").url = "https://extensions.blender.org/add-ons/simple-renaming-panel/"
-            row.operator("wm.url_open", text="Gumroad",
-                         icon="URL").url = "https://weisl.gumroad.com/l/simple_renaming"
-
+            self.draw_support_panel(layout, context)
 
 classes = (
     CollisionAddonPrefs,
@@ -510,6 +476,8 @@ def register():
 
 def unregister():
     from bpy.utils import unregister_class
+    from ..ui.properties_panels import collider_presets_folder
+    from .keymap import keymaps_items_dict
 
     for cls in reversed(classes):
         unregister_class(cls)
