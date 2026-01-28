@@ -310,11 +310,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         elif platform.system() == 'Linux':
             box.label(text="Supported (Linux Mint/Ubuntu).")
             box.label(text="You can also use a custom build of vhacd compiled for your Linux distribution.")
-            
-            # Info about execute permissions
-            row = box.row()
-            row.label(text="Make sure to give execute permissions to the vhacd executable")
-            row.operator("wm.url_open", text="How to guide", icon='HELP').url = "https://weisl.github.io"
         
         else:
             box.label(text="Auto Conevx is currently not supported on MacOS", icon='ERROR')
@@ -323,10 +318,26 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
 
         box = layout.box()
         box.label(text="Executable Paths", icon='FILE_FOLDER')
-        row = box.row()
-        row.enabled = False
-        row.label(text="Default Executable:")
-        row.prop(self, 'default_executable_path', text="")
+        
+
+
+        if os.path.exists(self.default_executable_path) and os.access(self.default_executable_path, os.X_OK):
+            row = box.row() 
+            row.enabled = False
+            row.prop(self, 'default_executable_path', icon='CHECKMARK')
+        else:
+            box.label(text="Missing Permission", icon='ERROR')
+            row = box.row()
+            row.alert = True
+            row.prop(self, 'default_executable_path', icon='ERROR')
+            row = box.row()
+            row.operator(
+                "wm.url_open",
+                text="How to Fix",
+                icon='URL'
+            ).url = "https://weisl.github.io/collider_auto_convex/"
+            row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.default_executable_path)
+
         
         row = box.row()
         row.label(text="Custom Executable (Optional):")
