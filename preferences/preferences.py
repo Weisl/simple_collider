@@ -335,7 +335,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 "wm.url_open",
                 text="How to Fix",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/"
+            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
             row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.default_executable_path)
 
         

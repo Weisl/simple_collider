@@ -34,5 +34,5 @@ class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
                 "wm.url_open",
                 text="Solution",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/"
+            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
         return
