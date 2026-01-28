@@ -415,7 +415,7 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         # Open documentation
         layout = self.layout
         row = layout.row(align=True)
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_overview/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "hhttps://weisl.github.io/collider_overview/"
        
         # Open Preferences
         addon_name = get_addon_name()
@@ -467,7 +467,7 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
         layout = self.layout
         row = layout.row(align=True)
         row.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider-tools_groups/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_overview/"
 
     def draw(self, context):
         layout = self.layout
@@ -538,7 +538,7 @@ class VIEW3D_PT_collision_material_panel(VIEW3D_PT_collision):
         row = layout.row(align=True)
         row.operator('view.collider_view_material', icon='HIDE_OFF', text='Physics Materials')
         row.operator("wm.url_open", text="",
-                     icon='HELP').url = "https://weisl.github.io/collider-tools_physics_materials/"
+                     icon='HELP').url = "https://weisl.github.io/collider_physics_materials/"
 
     def draw(self, context):
         layout = self.layout
