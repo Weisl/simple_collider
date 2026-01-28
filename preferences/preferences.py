@@ -300,66 +300,53 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             row.prop(self, propName)
 
     def draw_vhacd_panel(self, layout, context):
-        """Draw the VHACD panel with platform-specific support information and settings."""
 
         box = layout.box()
+        box.label(text="Platform Support", icon='INFO')
 
-        ## intro text
-        text = "Auto convex relies on an external application called VHACD. The addon comes with a pre-compiled version of the VHACD executable for Windows and Linux Mint (Ubuntu). It also supports custom builds for other operating systems."
-        label_multiline(context=context, text=text, parent=box)
-
-        row = box.row()
-        row.label(text="V-HACD Source Code")
-        row.operator("wm.url_open", text="V-HACD GitHub", icon='URL').url = "https://github.com/kmammou/v-hacd" 
-        layout.separator()
-        
         if platform.system() == 'Windows':
-            text = "The V-HACD library is built and tested on Windows 10 and 11. You can also build the library from source and specify it in the executable path."
-            label_multiline(context=context, text=text, parent=box)
+            box.label(text="Supported (Windows 10/11)")
 
         elif platform.system() == 'Linux':
-            text = "The V-HACD library is built and tested on Linux Mint. For other Linux distributions, you may need to manually compile the library. Refer to the V-HACD GitHub repository for build instructions."
-            label_multiline(context=context, text=text, parent=box)
+            box.label(text="Supported (Linux Mint/Ubuntu).")
+            box.label(text="You can also use a custom build of vhacd compiled for your Linux distribution.")
+            
+            # Info about execute permissions
+            row = box.row()
+            row.label(text="Make sure to give execute permissions to the vhacd executable")
+            row.operator("wm.url_open", text="How to guide", icon='HELP').url = "https://weisl.github.io"
         
-        
-        else: # platform.system() == 'Darwin' (MacOS) or others
-            text = "Mac is currently not supported."
-            label_multiline(context=context, text=text, parent=box)
+        else:
+            box.label(text="Auto Conevx is currently not supported on MacOS", icon='ERROR')
 
 
-        row = layout.row()
+
+        box = layout.box()
+        box.label(text="Executable Paths", icon='FILE_FOLDER')
+        row = box.row()
         row.enabled = False
-        row.prop(self, 'default_executable_path')
+        row.label(text="Default Executable:")
+        row.prop(self, 'default_executable_path', text="")
+        
+        row = box.row()
+        row.label(text="Custom Executable (Optional):")
+        row.prop(self, 'executable_path', text="")
 
-        row = layout.row()
-        row.prop(self, 'executable_path')
-
-        row = layout.row()
-        if self.data_path:
-            row.prop(self, "data_path")
-        else:  # temp folder is missing
-            box = layout.box()
-            text = (
-                "The auto convex collider requires temporary files to be stored on your PC "
-                "to allow communication between Blender and the V-HACD executable. "
-                "Change the directory for temporary data here."
-            )
-            label_multiline(context=context, text=text, parent=box)
-            row.prop(self, "data_path", icon="ERROR")
+        box = layout.box()
+        box.label(text="Temporary Data", icon='FILE_FOLDER')
+        box.label(text="Directory used to store temporary vhacd files during convex hull generation.")
+        row = box.row()
+        if not self.data_path:
+            row.alert = True
+        row.prop(self, "data_path", icon='ERROR' if not self.data_path else 'FILE_FOLDER')
 
         if self.executable_path or self.default_executable_path:
-            layout.separator()
             box = layout.box()
-            row = box.row()
-            row.label(text="VHACD Settings")
-
-            row = box.row()
-            row.label(text="Parameter Information")
-            row.operator("wm.url_open", text="V-HACD GitHub", icon='URL').url = "https://github.com/kmammou/v-hacd"
-
+            box.label(text="VHACD Settings", icon='SETTINGS')
             for propName in self.vhacd_props_config:
                 row = box.row()
                 row.prop(self, propName)
+                row.operator("wm.url_open", text="", icon='QUESTION').url = f"https://github.com/kmammou/v-hacd#{propName}"
 
     def draw_support_panel(self, layout, context):
         """Draw the support panel"""
