@@ -415,13 +415,13 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         # Open documentation
         layout = self.layout
         row = layout.row(align=True)
-        row.operator("wm.url_open", text="", icon='HELP').url = "hhttps://weisl.github.io/collider_overview/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_overview/"
        
         # Open Preferences
         addon_name = get_addon_name()
-        op = row.operator("simple_camera.open_preferences", text="", icon='PREFERENCES')
+        op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
         op.addon_name = addon_name
-        op.prefs_tabs = 'GENERAL'
+        op.prefs_tabs = 'SETTINGS'
 
         # Open Export Popup
         op = row.operator("wm.call_menu_pie", text="", icon="WINDOW")
@@ -467,7 +467,7 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
         layout = self.layout
         row = layout.row(align=True)
         row.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_overview/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_groups/"
 
     def draw(self, context):
         layout = self.layout
