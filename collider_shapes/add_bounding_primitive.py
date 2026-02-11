@@ -562,12 +562,12 @@ class OBJECT_OT_add_bounding_object():
         return data_name
 
     @staticmethod
-    def unique_name(name, digits=3):
+    def unique_name(name, digits=3, exclude=None):
         """Function to find a unique name using a loop"""
         count = 1
         new_name = create_name_number(name, count, digits)
 
-        while new_name in bpy.data.objects:
+        while new_name in bpy.data.objects and new_name != exclude:
             count += 1
             new_name = create_name_number(name, count, digits)
 
@@ -592,6 +592,13 @@ class OBJECT_OT_add_bounding_object():
 
     @classmethod
     def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
+        prefs = bpy.context.preferences.addons[base_package].preferences
+        new_name = cls.class_collider_name_base(shape_identifier, user_group, basename)
+        return cls.unique_name(new_name, prefs.collision_digits)
+
+    @classmethod
+    def class_collider_name_base(cls, shape_identifier, user_group, basename='Basename'):
+        """Build the collider name base (without the unique numeric suffix)."""
         prefs = bpy.context.preferences.addons[base_package].preferences
         separator = prefs.separator
 
@@ -630,16 +637,13 @@ class OBJECT_OT_add_bounding_object():
             for comp in pre_suffix_components:
                 if comp:
                     name_pre_suffix = name_pre_suffix + separator + comp
-            new_name = name + name_pre_suffix
+            return name + name_pre_suffix
 
         else:  # prefs.naming_position == 'PREFIX'
             for comp in pre_suffix_components:
                 if comp:
                     name_pre_suffix = name_pre_suffix + comp + separator
-            new_name = name_pre_suffix + name
-
-        digits = prefs.collision_digits
-        return cls.unique_name(new_name, digits)
+            return name_pre_suffix + name
 
     def draw_callback_px(self, context):
 
