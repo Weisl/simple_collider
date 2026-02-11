@@ -1,3 +1,5 @@
+import random
+
 import bmesh
 import bpy
 from bpy.types import Operator
@@ -8,13 +10,84 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 tmp_sphere_name = 'sphere_collider'
 
 
-def distance_vec(point1: Vector, point2: Vector):
-    """Calculate distance between two points."""
-    return (point2 - point1).length
+def _sphere_from_one(p):
+    return p.copy(), 0.0
 
 
-def midpoint(p1, p2):
-    return (p1 + p2) * 0.5
+def _sphere_from_two(p1, p2):
+    center = (p1 + p2) / 2
+    radius = (p1 - p2).length / 2
+    return center, radius
+
+
+def _sphere_from_three(p1, p2, p3):
+    a = p2 - p1
+    b = p3 - p1
+    cross = a.cross(b)
+    denom = 2.0 * cross.length_squared
+    if denom < 1e-12:
+        # Degenerate: points are collinear, fall back to the pair with the largest distance
+        d12 = (p1 - p2).length
+        d13 = (p1 - p3).length
+        d23 = (p2 - p3).length
+        if d12 >= d13 and d12 >= d23:
+            return _sphere_from_two(p1, p2)
+        if d13 >= d23:
+            return _sphere_from_two(p1, p3)
+        return _sphere_from_two(p2, p3)
+    t = (b.length_squared * cross.cross(a) + a.length_squared * b.cross(cross)) / denom
+    center = p1 + t
+    radius = t.length
+    return center, radius
+
+
+def _sphere_from_four(p1, p2, p3, p4):
+    a = p2 - p1
+    b = p3 - p1
+    c = p4 - p1
+    denom = 2.0 * a.dot(b.cross(c))
+    if abs(denom) < 1e-12:
+        # Degenerate: points are coplanar, try all triangles and pick the largest sphere
+        candidates = [
+            _sphere_from_three(p1, p2, p3),
+            _sphere_from_three(p1, p2, p4),
+            _sphere_from_three(p1, p3, p4),
+            _sphere_from_three(p2, p3, p4),
+        ]
+        return max(candidates, key=lambda cr: cr[1])
+    t = (c.length_squared * a.cross(b) + b.length_squared * c.cross(a) + a.length_squared * b.cross(c)) / denom
+    center = p1 + t
+    radius = t.length
+    return center, radius
+
+
+def _min_sphere_with_boundary(points, boundary):
+    """Return (center, radius) for the minimum enclosing sphere of points given a fixed boundary set."""
+    if len(boundary) == 4 or len(points) == 0:
+        if len(boundary) == 0:
+            return Vector((0, 0, 0)), 0.0
+        if len(boundary) == 1:
+            return _sphere_from_one(boundary[0])
+        if len(boundary) == 2:
+            return _sphere_from_two(boundary[0], boundary[1])
+        if len(boundary) == 3:
+            return _sphere_from_three(boundary[0], boundary[1], boundary[2])
+        return _sphere_from_four(boundary[0], boundary[1], boundary[2], boundary[3])
+
+    p = points[0]
+    center, radius = _min_sphere_with_boundary(points[1:], boundary)
+    if (p - center).length <= radius + 1e-7:
+        return center, radius
+    return _min_sphere_with_boundary(points[1:], boundary + [p])
+
+
+def welzl(points):
+    """
+    Compute the minimum enclosing sphere using Welzl's algorithm. Shuffles points in place.
+    See https://en.wikipedia.org/wiki/Smallest-circle_problem#Welzl's_algorithm
+    """
+    random.shuffle(points)
+    return _min_sphere_with_boundary(points, [])
 
 
 def create_sphere(pos, diameter, segments):
@@ -58,69 +131,8 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
 
     @staticmethod
     def calculate_bounding_sphere(obj, used_vertices):
-        # Get vertices wit min and may value
-        for i, vertex in enumerate(used_vertices):
-
-            # convert to global space
-            v = obj.matrix_world @ vertex.co
-
-            # ignore 1. point since it's already saved
-            if i == 0:
-                min_x = v
-                max_x = v
-                min_y = v
-                max_y = v
-                min_z = v
-                max_z = v
-
-            # compare points to previous min and max
-            # v.co returns mathutils.Vector
-            else:
-                min_x = v if v.x < min_x.x else min_x
-                max_x = v if v.x > max_x.x else max_x
-                min_y = v if v.y < min_y.y else min_y
-                max_y = v if v.y > max_y.y else max_y
-                min_z = v if v.z < min_z.z else min_z
-                max_z = v if v.z > max_z.z else max_z
-
-        # calculate distances between min and max of every axis
-        dx = distance_vec(min_x, max_x)
-        dy = distance_vec(min_y, max_y)
-        dz = distance_vec(min_z, max_z)
-
-        mid_point = None
-        radius = None
-
-        # Generate sphere for biggest distance
-        if dx >= dy and dx >= dz:
-            mid_point = midpoint(min_x, max_x)
-            radius = dx / 2
-
-        elif dy >= dz:
-            mid_point = midpoint(min_y, max_y)
-            radius = dy / 2
-
-        else:
-            mid_point = midpoint(min_z, max_z)
-            radius = dz / 2
-
-        # second pass
-        for vertex in used_vertices:
-            # convert to global space
-            v = obj.matrix_world @ vertex.co
-
-            # calculate distance to center to find out if the point is in or outside the sphere
-            distance_center_to_v = distance_vec(mid_point, v)
-
-            # point is outside the collision sphere
-            if distance_center_to_v > radius:
-                radius = (radius + distance_center_to_v) / 2
-                old_to_new = distance_center_to_v - radius
-
-                # calculate new_midpoint
-                mid_point = (mid_point * radius + v * old_to_new) / distance_center_to_v
-
-        return mid_point, radius
+        world_points = [obj.matrix_world @ vertex.co for vertex in used_vertices]
+        return welzl(world_points)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
