@@ -4,7 +4,7 @@ from .. import __package__ as base_package
 
 
 class OBJECT_OT_make_rigid_body(bpy.types.Operator):
-    """Tooltip"""
+    """Convert object to be a rigid body"""
     bl_idname = "object.set_rigid_body"
     bl_label = "Set Rigid Body"
     bl_description = 'Convert object to be a rigid body'

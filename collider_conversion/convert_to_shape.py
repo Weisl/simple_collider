@@ -4,7 +4,7 @@ from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 class COLLISION_OT_assign_shape(bpy.types.Operator):
-    """Select/Deselect collision objects"""
+    """Reassign the collider shape type on selected colliders, updating their names to match"""
     bl_idname = "object.assign_collider_shape"
     bl_label = "Assign Collider Shape"
     bl_description = 'Assign shape to a collider'

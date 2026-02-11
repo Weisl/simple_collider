@@ -9,6 +9,7 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     """Adjust Decimation to Target Triangle Count"""
     bl_idname = "object.adjust_decimation"
     bl_label = "Limit Tris Count"
+    bl_description = "Adjust the decimation modifier to reach a target triangle count"
     bl_options = {'REGISTER', 'UNDO'}
 
     target_triangles: IntProperty(
@@ -65,6 +66,7 @@ class COLLISION_OT_MoveOriginToParentOperator(bpy.types.Operator):
     """Apply Parent Transform to Child"""
     bl_idname = "object.origin_to_parent"
     bl_label = "Move Origin to Parent"
+    bl_description = "Move the collider origin to match its parent object's position"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -210,8 +212,10 @@ def fix_inverse_matrix(obj):
 
 
 class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
+    """Fix the parent inverse matrix on selected colliders"""
     bl_idname = "object.fix_parent_inverse_transform"
     bl_label = "Fix Parent Inverse Matrix"
+    bl_description = "Reset the parent inverse matrix and bake the transform into mesh data"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod

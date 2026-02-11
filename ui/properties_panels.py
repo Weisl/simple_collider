@@ -342,7 +342,7 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
 
 
 class PREFERENCES_OT_open_addon(bpy.types.Operator):
-    """Tooltip"""
+    """Open the addon preferences panel"""
     bl_idname = "simple_collider.open_preferences"
     bl_label = "Open Addon preferences"
 
@@ -642,9 +642,10 @@ class COLLISION_MT_pie_menu(Menu, VIEW3D_PT_init):
 
 
 class BUTTON_OT_auto_convex(bpy.types.Operator):
-    """Print object name in Console"""
+    """Create convex hull colliders based on the voxel decomposition target"""
     bl_idname = "button.auto_convex"
     bl_label = "Auto Convex"
+    bl_description = 'Create convex hull colliders based on the voxel decomposition target'
 
     @classmethod
     def poll(cls, context):

@@ -92,16 +92,16 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     default_use_loose_island: bpy.props.BoolProperty(name="Use Loose Islands",
                                                    default=False,
-                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+                                                   description="Set the default for generating separate colliders for each island of geometry in the source object.")
 
     default_join_primitives: bpy.props.BoolProperty(name="Join Primitives",
                                                    default=False,
-                                                   description="Set the default for using the modifier stack or not when creating colliders.")
+                                                   description="Set the default for joining all generated colliders into a single object after creation.")
 
 
     default_keep_original_material: bpy.props.BoolProperty(name="Keep Original Materials",
                                                            default=False,
-                                                           description="Set the default for using the modifier stack or not when creating colliders.")
+                                                           description="Set the default for keeping the source object's materials on the collider instead of assigning a physics material.")
 
     default_keep_original_name: bpy.props.BoolProperty(name="Keep Original Name",
                                                        default=False,
