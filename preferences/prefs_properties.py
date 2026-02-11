@@ -198,6 +198,7 @@ class CollisionAddonPrefsProperties():
         name="Suffix Digits",
         description="Defines the number of digits used for numerating.",
         default=3,
+        min=0,
     )
 
     # Collider Shapes
