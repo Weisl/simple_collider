@@ -150,7 +150,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                                    )
 
     default_capsule_segments: bpy.props.IntProperty(name="Capsule Segments",
-                                                    description="Amount of sphere segments.",
+                                                    description="Amount of capsule segments.",
                                                     default=16,
                                                     )
 
