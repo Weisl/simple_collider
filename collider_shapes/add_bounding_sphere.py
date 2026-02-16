@@ -61,33 +61,57 @@ def _sphere_from_four(p1, p2, p3, p4):
     return center, radius
 
 
-def _min_sphere_with_boundary(points, boundary):
-    """Return (center, radius) for the minimum enclosing sphere of points given a fixed boundary set."""
-    if len(boundary) == 4 or len(points) == 0:
-        if len(boundary) == 0:
-            return Vector((0, 0, 0)), 0.0
-        if len(boundary) == 1:
-            return _sphere_from_one(boundary[0])
-        if len(boundary) == 2:
-            return _sphere_from_two(boundary[0], boundary[1])
-        if len(boundary) == 3:
-            return _sphere_from_three(boundary[0], boundary[1], boundary[2])
-        return _sphere_from_four(boundary[0], boundary[1], boundary[2], boundary[3])
-
-    p = points[0]
-    center, radius = _min_sphere_with_boundary(points[1:], boundary)
-    if (p - center).length <= radius + 1e-7:
-        return center, radius
-    return _min_sphere_with_boundary(points[1:], boundary + [p])
+def _base_sphere(boundary):
+    """Return (center, radius) for a sphere defined by up to 4 boundary points."""
+    n = len(boundary)
+    if n == 0:
+        return Vector((0, 0, 0)), 0.0
+    if n == 1:
+        return _sphere_from_one(boundary[0])
+    if n == 2:
+        return _sphere_from_two(boundary[0], boundary[1])
+    if n == 3:
+        return _sphere_from_three(boundary[0], boundary[1], boundary[2])
+    return _sphere_from_four(boundary[0], boundary[1], boundary[2], boundary[3])
 
 
-def welzl(points):
+def _welzl(points):
     """
     Compute the minimum enclosing sphere using Welzl's algorithm. Shuffles points in place.
+
+    Uses an iterative formulation so that arbitrarily large point sets
+    can be handled without hitting Python's recursion limit.
+
     See https://en.wikipedia.org/wiki/Smallest-circle_problem#Welzl's_algorithm
     """
     random.shuffle(points)
-    return _min_sphere_with_boundary(points, [])
+    n = len(points)
+    stack = []  # (index, boundary) frames awaiting their "is p inside?" check
+    idx = 0
+    bnd = []  # points known to lie on the minimum enclosing sphere (up to 4)
+
+    while True:
+        # --- forward pass: advance to the base case ---
+        if len(bnd) < 4:
+            while idx < n:
+                stack.append((idx, bnd))
+                idx += 1
+
+        # Reached base case — compute sphere from boundary points.
+        center, radius = _base_sphere(bnd)
+
+        # --- backward pass: unwind the stack, checking each point ---
+        while stack:
+            idx, bnd = stack.pop()
+            p = points[idx]
+            if (p - center).length > radius + 1e-7:
+                # p is outside; restart forward pass from idx+1 with p on the boundary.
+                bnd = bnd + [p]
+                idx += 1
+                break
+        else:
+            # Stack fully unwound — sphere encloses all points.
+            return center, radius
 
 
 def create_sphere(pos, diameter, segments):
@@ -132,7 +156,7 @@ class OBJECT_OT_add_bounding_sphere(OBJECT_OT_add_bounding_object, Operator):
     @staticmethod
     def calculate_bounding_sphere(obj, used_vertices):
         world_points = [obj.matrix_world @ vertex.co for vertex in used_vertices]
-        return welzl(world_points)
+        return _welzl(world_points)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

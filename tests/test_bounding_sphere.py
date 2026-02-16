@@ -251,7 +251,31 @@ class TestBoundingSphere(unittest.TestCase):
                        expected_center=(10, -5, 3),
                        expected_radius=math.sqrt(3))
 
-    # -- 8. Icosphere (42 uniformly distributed vertices) --------------------
+    # -- 8. Large point set (exceeds default recursion limit) ----------------
+
+    def test_large_point_set(self):
+        """High-subdivision icosphere with >1000 vertices does not cause
+        RecursionError."""
+        src_radius = 5.0
+        bpy.ops.mesh.primitive_ico_sphere_add(
+            subdivisions=5, radius=src_radius)
+        obj = bpy.context.active_object
+        self._objs.append(obj)
+        self.assertGreater(len(obj.data.vertices), 1000)
+
+        old_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(500)
+        try:
+            center, radius = calculate_bounding_sphere(obj, obj.data.vertices)
+        finally:
+            sys.setrecursionlimit(old_limit)
+
+        pts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
+        _assert_sphere(self, center, radius, pts,
+                       expected_center=(0, 0, 0),
+                       expected_radius=src_radius, places=4)
+
+    # -- 9. Icosphere (42 uniformly distributed vertices) --------------------
 
     def test_icosphere(self):
         """Icosphere (2 subdivisions, radius 5) at the origin."""
