@@ -312,7 +312,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             box.label(text="You can also use a custom build of vhacd compiled for your Linux distribution.")
         
         else:
-            box.label(text="Auto Conevx is currently not supported on MacOS", icon='ERROR')
+            box.label(text="Auto Convex is currently not supported on this platform", icon='ERROR')
 
 
 

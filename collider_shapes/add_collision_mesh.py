@@ -6,7 +6,7 @@ from ..pyshics_materials.material_functions import set_material
 
 
 class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
-    """Create a new bounding box object"""
+    """Create triangle mesh colliders based on the selection"""
     bl_idname = "mesh.add_mesh_collision"
     bl_label = "Add Mesh"
     bl_description = 'Create triangle mesh colliders based on the selection'

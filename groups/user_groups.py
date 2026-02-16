@@ -176,7 +176,7 @@ def set_object_color(obj, color):
 
 
 class COLLISION_OT_assign_user_group(bpy.types.Operator):
-    """Select/Deselect collision objects"""
+    """Assign User Group to selected colliders"""
     bl_idname = "object.assign_user_group"
     bl_label = "Assign User Group"
     bl_description = 'Assign User Group to collider'
