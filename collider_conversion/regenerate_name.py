@@ -60,9 +60,10 @@ class OBJECT_OT_regenerate_name(Operator):
             group_identifier = get_groups_identifier(user_group)
 
             # Find the lowest available name, treating this object's current name as available
-            base = OBJECT_OT_add_bounding_object.class_collider_name_base(shape_identifier, group_identifier,
-                                                                          basename=basename)
-            new_name = OBJECT_OT_add_bounding_object.unique_name(base, prefs.collision_digits, exclude=obj.name)
+            new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier=shape_identifier,
+                                                                         user_group=group_identifier,
+                                                                         basename=basename,
+                                                                         exclude=obj.name)
 
             # skip if the object already has the lowest available name
             if new_name == obj.name:

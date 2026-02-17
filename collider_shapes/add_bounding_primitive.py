@@ -591,10 +591,10 @@ class OBJECT_OT_add_bounding_object():
         cls.bm.append(bm)
 
     @classmethod
-    def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
+    def class_collider_name(cls, shape_identifier, user_group, basename='Basename', exclude=None):
         prefs = bpy.context.preferences.addons[base_package].preferences
         new_name = cls.class_collider_name_base(shape_identifier, user_group, basename)
-        return cls.unique_name(new_name, prefs.collision_digits)
+        return cls.unique_name(new_name, prefs.collision_digits, exclude=exclude)
 
     @classmethod
     def class_collider_name_base(cls, shape_identifier, user_group, basename='Basename'):

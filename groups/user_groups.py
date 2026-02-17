@@ -225,11 +225,14 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
 
             new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier=shape_identifier,
                                                                          user_group=get_groups_identifier(user_group),
-                                                                         basename=basename)
-            data_name = OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+                                                                         basename=basename,
+                                                                         exclude=obj.name)
+
+            if new_name == obj.name:
+                continue
 
             obj.name = new_name
-            obj.data.name = data_name
+            OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
         if count == 0:
             self.report({'WARNING'}, "No collider found to change the user group.")
