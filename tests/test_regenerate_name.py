@@ -105,6 +105,19 @@ class TestRegenerateName(unittest.TestCase):
 
     def setUp(self):
         _remove_test_objects()
+        prefs = bpy.context.preferences.addons[_ADDON_NAME].preferences
+        if prefs.naming_position != 'PREFIX':
+            self.skipTest("test assumes naming_position='PREFIX'")
+        if prefs.separator != '_':
+            self.skipTest("test assumes separator='_'")
+        if prefs.box_shape != 'UBX':
+            self.skipTest("test assumes box_shape='UBX'")
+        if prefs.collision_digits != 3:
+            self.skipTest("test assumes collision_digits=3")
+        if not prefs.collider_groups_enabled:
+            self.skipTest("test assumes collider_groups_enabled=True")
+        if prefs.user_group_01 != '':
+            self.skipTest("test assumes user_group_01=''")
 
     def tearDown(self):
         _remove_test_objects()
