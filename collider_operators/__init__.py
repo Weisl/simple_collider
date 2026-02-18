@@ -11,6 +11,7 @@ classes = (
     visibility_selection_deletion.COLLISION_OT_complex_delete,
     visibility_selection_deletion.COLLISION_OT_simple_complex_select,
     visibility_selection_deletion.COLLISION_OT_simple_complex_delete,
+    visibility_selection_deletion.COLLISION_OT_toggle_group_visibility,
     visibility_selection_deletion.COLLISION_OT_all_select,
     visibility_selection_deletion.COLLISION_OT_all_delete,
     visibility_selection_deletion.COLLISION_OT_non_collider_select,
