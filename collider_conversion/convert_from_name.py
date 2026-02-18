@@ -14,6 +14,7 @@ class OBJECT_OT_convert_from_name(Operator):
     bl_idname = "object.convert_from_name"
     bl_label = "Collider from Naming"
     bl_description = 'Assign collider attributes from the object naming.'
+    bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):

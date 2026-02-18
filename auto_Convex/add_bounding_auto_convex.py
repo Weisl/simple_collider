@@ -15,7 +15,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_label = 'Convex Decomposition'
     bl_description = ('Create multiple convex hull colliders to represent any object using Hierarchical Approximate '
                       'Convex Decomposition')
-    bl_options = {'REGISTER', 'PRESET'}
+    bl_options = {'REGISTER', 'PRESET', 'UNDO'}
 
     @staticmethod
     def overwrite_executable_path(path):

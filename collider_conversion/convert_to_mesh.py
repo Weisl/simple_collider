@@ -14,6 +14,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
     bl_idname = "object.convert_to_mesh"
     bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
+    bl_options = {'REGISTER', 'UNDO'}
 
     mesh_name: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
     keep_original_material: bpy.props.BoolProperty(name="Keep Material", default=False)
