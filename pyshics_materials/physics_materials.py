@@ -105,9 +105,10 @@ class MATERIAL_OT_physics_material_create(bpy.types.Operator):
 
 
 class MATERIAL_OT_set_physics_material(bpy.types.Operator):
-    """Tooltip"""
+    """Assign this Physics Material to selected objects"""
     bl_idname = "material.set_physics_material"
     bl_label = "Set Physics Material"
+    bl_description = "Assign this Physics Material to selected objects"
     bl_options = {'REGISTER', 'UNDO'}
 
     physics_material_name: StringProperty()

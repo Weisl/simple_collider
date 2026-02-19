@@ -150,10 +150,10 @@ def draw_group_properties(context, property, col_01, col_02, mode, user_group=Fa
 
     row = col_02.row(align=True)
 
-    if property.hide:
-        row.prop(property, 'hide', text=str(property.hide_text), icon=str(property.hide_icon))
-    else:
-        row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
+    icon = str(property.hide_icon) if property.hide else str(property.show_icon)
+    text = str(property.hide_text) if property.hide else str(property.show_text)
+    op = row.operator("object.toggle_collider_group_visibility", text=text, icon=icon, depress=property.hide)
+    op.mode = group_identifier
 
     op = row.operator("object.all_select_collisions", icon=str(property.selected_icon),
                       text=str(property.selected_text))
