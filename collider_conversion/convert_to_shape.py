@@ -1,6 +1,7 @@
 import bpy
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..properties.constants import VALID_OBJECT_TYPES
 from ..groups.user_groups import get_groups_identifier
 
 default_group = 'USER_01'
@@ -17,7 +18,7 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         """Ensure at least one valid object is selected."""
-        return any(obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] for obj in context.selected_objects)
+        return any(obj.type in VALID_OBJECT_TYPES for obj in context.selected_objects)
 
     def execute(self, context):
         prefs = context.preferences.addons[base_package].preferences
@@ -29,7 +30,7 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
         count = 0
         for obj in list(context.selected_objects):
 
-            if not obj or obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] or not obj.get('isCollider'):
+            if not obj or obj.type not in VALID_OBJECT_TYPES or not obj.get('isCollider'):
                 continue
 
             # Assign collider shape

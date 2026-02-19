@@ -7,6 +7,7 @@ from bpy.types import Menu
 from bpy_extras.io_utils import ImportHelper
 
 from .. import __package__ as base_package
+from ..properties.constants import VALID_OBJECT_TYPES
 
 
 # needed for adding direct link to settings
@@ -651,7 +652,7 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type in VALID_OBJECT_TYPES:
                 count = count + 1
         return count > 0
 

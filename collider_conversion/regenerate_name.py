@@ -2,6 +2,7 @@ from bpy.types import Operator
 
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..properties.constants import VALID_OBJECT_TYPES
 
 default_shape = 'box_shape'
 default_group = 'USER_01'
@@ -23,7 +24,7 @@ class OBJECT_OT_regenerate_name(Operator):
 
         count = 0
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type in VALID_OBJECT_TYPES:
                 count = count + 1
         return count > 0
 
@@ -37,7 +38,7 @@ class OBJECT_OT_regenerate_name(Operator):
             if obj is None:
                 continue
 
-            if obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type not in VALID_OBJECT_TYPES:
                 continue
 
             if not obj.get('isCollider'):
