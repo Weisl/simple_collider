@@ -6,6 +6,7 @@ from bpy.types import Operator
 
 from .. import __package__ as base_package
 from ..groups.user_groups import get_groups_color, set_object_color
+from ..properties.constants import VALID_OBJECT_TYPES
 
 
 
@@ -20,7 +21,7 @@ class OBJECT_OT_convert_from_name(Operator):
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type in VALID_OBJECT_TYPES:
                 count = count + 1
         return count > 0
 

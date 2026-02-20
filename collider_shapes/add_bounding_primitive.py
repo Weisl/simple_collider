@@ -13,7 +13,7 @@ from .. import __package__ as base_package
 from ..bmesh_operations.mesh_edit import delete_non_selected_verts
 from ..bmesh_operations.mesh_split_by_island import create_objs_from_island
 from ..groups.user_groups import set_object_color, set_default_group_values
-from ..properties.constants import DECIMATE_NAME
+from ..properties.constants import DECIMATE_NAME, VALID_OBJECT_TYPES
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material, set_material
 
@@ -591,10 +591,10 @@ class OBJECT_OT_add_bounding_object():
         cls.bm.append(bm)
 
     @classmethod
-    def class_collider_name(cls, shape_identifier, user_group, basename='Basename'):
+    def class_collider_name(cls, shape_identifier, user_group, basename='Basename', exclude=None):
         prefs = bpy.context.preferences.addons[base_package].preferences
         new_name = cls.class_collider_name_base(shape_identifier, user_group, basename)
-        return cls.unique_name(new_name, prefs.collision_digits)
+        return cls.unique_name(new_name, prefs.collision_digits, exclude=exclude)
 
     @classmethod
     def class_collider_name_base(cls, shape_identifier, user_group, basename='Basename'):
@@ -890,7 +890,7 @@ class OBJECT_OT_add_bounding_object():
 
     def is_valid_object(self, obj):
         """Is the object valid to be used as a base mesh for collider generation"""
-        if obj is None or obj.type not in self.valid_object_types:
+        if obj is None or obj.type not in VALID_OBJECT_TYPES:
             return False
         return True
 
@@ -1105,7 +1105,7 @@ class OBJECT_OT_add_bounding_object():
             if not self.is_valid_object(base_ob):
                 continue
 
-            if base_ob and base_ob.type in self.valid_object_types:
+            if base_ob and base_ob.type in VALID_OBJECT_TYPES:
                 user_collections = base_ob.users_collection
                 if base_ob.type == 'MESH':
                     obj = base_ob.copy() if use_mesh_copy else base_ob
@@ -1358,15 +1358,13 @@ class OBJECT_OT_add_bounding_object():
         self.debug_parenting_off = False
         self.use_custom_rotation = False
 
-        self.valid_object_types = ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']
-
         self.collision_group_idx = 0
 
     @classmethod
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type in VALID_OBJECT_TYPES:
                 count = count + 1
         return count > 0
 
