@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(_PROJECT_ROOT))
 _addon = __import__(_ADDON_NAME)
 _island_mod = _addon.bmesh_operations.mesh_split_by_island
 
-_get_face_islands = _island_mod.get_face_islands
+_get_face_islands = _island_mod._get_face_islands
 
 
 # -- Helpers -----------------------------------------------------------------
@@ -67,7 +67,7 @@ class TestGetFaceIslands(unittest.TestCase):
         """A single triangle produces exactly one island."""
         self.bm = _make_bm_with_islands(1)
 
-        islands = _get_face_islands(self.bm, list(self.bm.faces), [])
+        islands = _get_face_islands(list(self.bm.faces))
 
         self.assertEqual(len(islands), 1)
         self.assertEqual(len(islands[0]['py_faces']), 1)
@@ -79,7 +79,7 @@ class TestGetFaceIslands(unittest.TestCase):
         """Two disconnected triangles produce exactly two islands."""
         self.bm = _make_bm_with_islands(2)
 
-        islands = _get_face_islands(self.bm, list(self.bm.faces), [])
+        islands = _get_face_islands(list(self.bm.faces))
 
         self.assertEqual(len(islands), 2)
         for island in islands:
@@ -100,7 +100,7 @@ class TestGetFaceIslands(unittest.TestCase):
         self.bm.faces.new([v1, v2, v3, v4])
         self.bm.faces.new([v2, v5, v6, v3])
 
-        islands = _get_face_islands(self.bm, list(self.bm.faces), [])
+        islands = _get_face_islands(list(self.bm.faces))
 
         self.assertEqual(len(islands), 1)
         self.assertEqual(len(islands[0]['py_faces']), 2)
@@ -112,7 +112,7 @@ class TestGetFaceIslands(unittest.TestCase):
         n = 10
         self.bm = _make_bm_with_islands(n)
 
-        islands = _get_face_islands(self.bm, list(self.bm.faces), [])
+        islands = _get_face_islands(list(self.bm.faces))
 
         self.assertEqual(len(islands), n)
 
@@ -122,7 +122,7 @@ class TestGetFaceIslands(unittest.TestCase):
         """A 50x50 grid of quads (2500 faces) forms exactly one island."""
         self.bm = _make_connected_grid(50, 50)
 
-        islands = _get_face_islands(self.bm, list(self.bm.faces), [])
+        islands = _get_face_islands(list(self.bm.faces))
 
         self.assertEqual(len(islands), 1)
         self.assertEqual(len(islands[0]['py_faces']), 2500)
@@ -132,7 +132,7 @@ class TestGetFaceIslands(unittest.TestCase):
 
     # Bump when the implementation changes intentionally, so that CI logs can
     # distinguish a deliberate baseline shift from a regression.
-    _PERF_VERSION = 1
+    _PERF_VERSION = 2
 
     def test_performance_large_connected_island(self):
         """Benchmark _get_face_islands() on a 50x50 quad grid (2500 faces).
@@ -154,12 +154,12 @@ class TestGetFaceIslands(unittest.TestCase):
                for _ in range(n_total)]
         try:
             for bm in bms[:_N_WARMUP]:
-                _get_face_islands(bm, list(bm.faces), [])
+                _get_face_islands(list(bm.faces))
             samples = []
             for bm in bms[_N_WARMUP:]:
                 faces = list(bm.faces)
                 t0 = time.perf_counter()
-                _get_face_islands(bm, faces, [])
+                _get_face_islands(faces)
                 t1 = time.perf_counter()
                 samples.append(t1 - t0)
         finally:
@@ -203,12 +203,12 @@ class TestGetFaceIslands(unittest.TestCase):
         bms = [_make_bm_with_islands(_N_ISLANDS) for _ in range(n_total)]
         try:
             for bm in bms[:_N_WARMUP]:
-                _get_face_islands(bm, list(bm.faces), [])
+                _get_face_islands(list(bm.faces))
             samples = []
             for bm in bms[_N_WARMUP:]:
                 faces = list(bm.faces)
                 t0 = time.perf_counter()
-                _get_face_islands(bm, faces, [])
+                _get_face_islands(faces)
                 t1 = time.perf_counter()
                 samples.append(t1 - t0)
         finally:

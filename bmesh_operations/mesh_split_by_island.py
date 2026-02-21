@@ -1,13 +1,12 @@
-import sys
-
 import bmesh
 import bpy
 
 
-# Simple - get all linked faces
-def get_linked_faces(f):
+def _get_linked_faces(f):
     """
-    Recursively retrieve all faces linked to the given face.
+    Iteratively retrieve all faces linked to the given face.
+
+    Sets BMFace.tag = True on every face it visits; f must be untagged on entry.
 
     Parameters:
     f (bmesh.types.BMFace): The starting face from which to find all linked faces.
@@ -15,36 +14,21 @@ def get_linked_faces(f):
     Returns:
     list of bmesh.types.BMFace: A list of all faces linked to the starting face.
     """
-
-    old_limit = sys.getrecursionlimit()
-    sys.setrecursionlimit(10 ** 6)
-    try:
-        return _get_linked_faces(f)
-    finally:
-        sys.setrecursionlimit(old_limit)
-
-
-def _get_linked_faces(f):
-    if f.tag:
-        # If the face is already tagged, return empty list
-        return []
-
-    # Add the face to list that will be returned
-    f_linked = [f]
-    f.tag = True
-
-    # Select edges that link two faces
-    edges = [e for e in f.edges if len(e.link_faces) == 2]
-    for e in edges:
-        # Select all firs-degree linked faces, that are not yet tagged
-        faces = [elem for elem in e.link_faces if not elem.tag]
-
-        # Recursively call this function on all connected faces
-        if not len(faces) == 0:
-            for elem in faces:
-                # Extend the list with second-degree connected faces
-                f_linked.extend(_get_linked_faces(elem))
-
+    # Iterative DFS so that large islands do not hit Python's recursion limit
+    # and avoid the O(N^2) list copying of a recursive extend()-based approach.
+    stack = [f]
+    f_linked = []
+    while stack:
+        f = stack.pop()
+        if f.tag:
+            continue
+        f.tag = True
+        f_linked.append(f)
+        for e in f.edges:
+            if len(e.link_faces) == 2:
+                for nxt in e.link_faces:
+                    if not nxt.tag:
+                        stack.append(nxt)
     return f_linked
 
 
@@ -65,6 +49,7 @@ def construct_python_faces(bmesh_faces):
     # this is more involved, as we have to remap the new index
     # to do this, we reconstruct a new vert list and only append new items to it
     dic = {}
+    vert_index_map = {}  # BMVert -> index in py_verts
     py_verts = []
     py_faces = []
     py_face_mat = []
@@ -74,12 +59,13 @@ def construct_python_faces(bmesh_faces):
         cur_face_indices = []
 
         for v in f.verts:
-            if v.co not in py_verts:
+            if v not in vert_index_map:
                 # this vert is found for the first time, add it
+                vert_index_map[v] = len(py_verts)
                 py_verts.append(v.co)
 
             # add the new index of the current vert to the current face index list
-            cur_face_indices.append(py_verts.index(v.co))
+            cur_face_indices.append(vert_index_map[v])
 
         # face index list construction is complete, add it to the face list
         py_faces.append(cur_face_indices)
@@ -93,34 +79,28 @@ def construct_python_faces(bmesh_faces):
     return dic
 
 
-def get_face_islands(bm, faces, face_islands=[], i=0):
+def _get_face_islands(faces):
     """
-    Retrieve all face islands (groups of connected faces) from the given BMesh.
+    Retrieve all face islands (groups of connected faces) from the given faces.
+
+    Uses _get_linked_faces() to traverse each island. As a side effect,
+    _get_linked_faces() sets BMFace.tag = True on every face it visits, which
+    is how already-processed faces are skipped on subsequent iterations.
 
     Parameters:
-    bm (bmesh.types.BMesh): The BMesh object.
     faces (list of bmesh.types.BMFace): The list of faces to process.
-    face_islands (list, optional): The list to store face islands. Defaults to an empty list.
-    i (int, optional): The current recursion depth. Defaults to 0.
 
     Returns:
     list: A list of dictionaries, each containing the vertices, faces, and face material indices for an island.
     """
 
-    if len(faces) == 0:
-        return face_islands
-    else:
-        bm.faces.ensure_lookup_table()
+    face_islands = []
+    for face in faces:
+        if not face.tag:
+            linked_faces = _get_linked_faces(face)
+            face_islands.append(construct_python_faces(linked_faces))
 
-        linked_faces = get_linked_faces(faces[0])
-        face_islands.append(construct_python_faces(linked_faces))
-
-        remaining_faces = [face for face in faces if face not in linked_faces]
-
-        i = i + 1
-        islands = get_face_islands(bm, remaining_faces, face_islands, i)
-
-        return islands
+    return face_islands
 
 
 def create_objs_from_island(obj, use_world=True):
@@ -142,8 +122,7 @@ def create_objs_from_island(obj, use_world=True):
     bpy.ops.object.mode_set(mode='EDIT')
     bm = bmesh.from_edit_mesh(obj.data)
 
-    face_islands = []
-    face_islands = get_face_islands(bm, bm.faces, face_islands)
+    face_islands = _get_face_islands(bm.faces)
     bm.free()
     # print('Face Islands: ' + str(face_islands))
     objs = []
