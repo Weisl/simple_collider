@@ -105,7 +105,7 @@ def _get_face_islands(faces):
 
 def create_objs_from_island(obj, use_world=True):
     """
-    Create separate objects from face islands of the given object in edit mode.
+    Create separate objects from face islands of the given object.
 
     Parameters:
     obj (bpy.types.Object): The Blender object to process.
@@ -117,10 +117,8 @@ def create_objs_from_island(obj, use_world=True):
 
     wld_mat = obj.matrix_world
 
-    # change mode to editmode
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.mode_set(mode='EDIT')
-    bm = bmesh.from_edit_mesh(obj.data)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
 
     face_islands = _get_face_islands(bm.faces)
     bm.free()

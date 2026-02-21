@@ -1137,7 +1137,8 @@ class OBJECT_OT_add_bounding_object():
                     if self.obj_mode == 'EDIT':
                         tmp_ob = delete_non_selected_verts(tmp_ob)
 
-                    self.apply_all_modifiers(context, tmp_ob)
+                    if self.my_use_modifier_stack:
+                        self.apply_all_modifiers(context, tmp_ob)
                     base = tmp_ob
 
                     self.tmp_meshes.append(tmp_ob)
