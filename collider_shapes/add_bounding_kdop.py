@@ -1,10 +1,77 @@
 import bmesh
 import bpy
 from bpy.types import Operator
+from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
 tmp_name = 'kdop_collider'
+
+def get_18dop_normals():
+    normals = []
+    # Cardinal directions
+    normals.extend([
+        Vector((1, 0, 0)), Vector((-1, 0, 0)),
+        Vector((0, 1, 0)), Vector((0, -1, 0)),
+        Vector((0, 0, 1)), Vector((0, 0, -1)),
+    ])
+    # Edge diagonals
+    normals.extend([
+        Vector((1, 1, 0)).normalized(),
+        Vector((1, -1, 0)).normalized(),
+        Vector((-1, 1, 0)).normalized(),
+        Vector((-1, -1, 0)).normalized(),
+        Vector((1, 0, 1)).normalized(),
+        Vector((1, 0, -1)).normalized(),
+        Vector((-1, 0, 1)).normalized(),
+        Vector((-1, 0, -1)).normalized(),
+        Vector((0, 1, 1)).normalized(),
+        Vector((0, 1, -1)).normalized(),
+        Vector((0, -1, 1)).normalized(),
+        Vector((0, -1, -1)).normalized(),
+    ])
+    return normals
+
+
+def project_verts(verts, normals):
+    planes = []
+    for n in normals:
+        min_proj = max_proj = verts[0].dot(n)
+        min_v = max_v = verts[0]
+        for v in verts:
+            proj = v.dot(n)
+            if proj < min_proj:
+                min_proj = proj
+                min_v = v
+            if proj > max_proj:
+                max_proj = proj
+                max_v = v
+        planes.append((n, min_proj, min_v))
+        planes.append((-n, -max_proj, max_v))
+    return planes
+
+
+def generate_18dop_vertices(planes):
+    vertices = set()
+    for n, d, v in planes:
+        vertices.add(tuple(v))  # Use the extreme vertex itself
+    return [Vector(v) for v in vertices]
+
+
+def generate_18dop(bm):
+    verts = [v.co for v in bm.verts]
+    normals = get_18dop_normals()
+    planes = project_verts(verts, normals)
+    dop_verts = generate_18dop_vertices(planes)
+
+    bm_18dop = bmesh.new()
+    verts_18dop = [bm_18dop.verts.new(v) for v in dop_verts]
+    bm_18dop.verts.ensure_lookup_table()
+    bmesh.ops.convex_hull(bm_18dop, input=verts_18dop)
+
+    return bm_18dop
+
+
 
 
 class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
@@ -111,12 +178,15 @@ class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
                 context='VERTS',
             )
 
-            # TODO: Implement actual k-DOP generation instead of using convex hull as a placeholder
+            # Generate 18-DOP
+            bm_18dop = generate_18dop(bm)
 
-            me = bpy.data.meshes.new("mesh")
-            bm.to_mesh(me)
+            # Create a new mesh
+            me = bpy.data.meshes.new("18DOP")
+            bm_18dop.to_mesh(me)
+            bm_18dop.free()
             bm.free()
-
+            
             new_collider = bpy.data.objects.new('colliders', me)
             context.scene.collection.objects.link(new_collider)
 
