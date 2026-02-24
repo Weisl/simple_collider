@@ -226,12 +226,11 @@ def draw_creation_menu(context, layout, settings=False):
     # layout.separator()
     col = layout.column(align=True)
     row = col.row(align=True)
-    row.operator("mesh.add_bounding_kdop", text='6-DOP (Low Detail)', icon='MESH_ICOSPHERE')
+    row.operator("mesh.add_bounding_kdop", text='10-DOP (Low Detail)', icon='MESH_ICOSPHERE').dop_type = '10'
     row = col.row(align=True)
-    row.operator("mesh.add_bounding_kdop", text='14-DOP (Mid Detail)', icon='MESH_ICOSPHERE')
+    row.operator("mesh.add_bounding_kdop", text='18-DOP (Mid Detail)', icon='MESH_ICOSPHERE').dop_type = '18'
     row = col.row(align=True)
-    row.operator("mesh.add_bounding_kdop", text='26-DOP (High Detail)', icon='MESH_ICOSPHERE')
-
+    row.operator("mesh.add_bounding_kdop", text='26-DOP (High Detail)', icon='MESH_ICOSPHERE').dop_type = '26'  
     row = layout.row(align=True)
     row.label(text='Convert Shape')
 
