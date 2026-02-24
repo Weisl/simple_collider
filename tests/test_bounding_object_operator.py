@@ -235,6 +235,307 @@ class TestApplyModifiersGuard(unittest.TestCase):
         )
 
 
+# -- _PostprocessingFake ------------------------------------------------------
+
+
+class _PostprocessingFake:
+    """Fake operator that drives primitive_postprocessing() in headless tests.
+
+    Methods that would crash in headless mode (no viewport) are no-ops;
+    everything else is the minimal real implementation needed to reach the
+    code paths under test.
+    """
+
+    def __init__(self, tmp_meshes):
+        self.tmp_meshes = tmp_meshes
+        self.displace_modifiers = []
+
+        _group = _types.SimpleNamespace(mode='DEFAULT', color=(1.0, 0.5, 0.0, 1.0))
+        self.collision_groups = [_group]
+        self.collision_group_idx = 0
+        self.current_settings_dic = {'alpha': 0.5, 'displace_offset': 0.0}
+
+        self.prefs = _types.SimpleNamespace(
+            use_col_collection=False,
+            use_parent_to=True,       # True = skip the unparent branch
+            wireframe_mode='NEVER',
+            debug=False,              # False = the hide loop runs (pre-fix)
+            physics_material_name='',
+        )
+
+        self.use_weld_modifier = False
+        self.use_remesh = False
+        self.use_decimation = False
+        self.use_geo_nodes_hull = False
+        self.use_keep_original_materials = True
+        self.keep_original_material = True
+        self.shape = 'box_shape'
+
+    def set_object_collider_group(self, obj):
+        obj['collider_group'] = self.collision_groups[self.collision_group_idx].mode
+
+    def set_viewport_drawing(self, context, bounding_object):
+        # No-op: context.space_data is None in --background mode.
+        pass
+
+    def add_displacement_modifier(self, context, bounding_object):
+        modifier = bounding_object.modifiers.new(name='Collider_displace', type='DISPLACE')
+        modifier.strength = self.current_settings_dic['displace_offset']
+        self.displace_modifiers.append(modifier)
+
+    def set_collections(self, obj, collections):
+        # No-op: skip collection bookkeeping for this test.
+        pass
+
+    def add_to_collections(self, obj, name, **kwargs):
+        # No-op: use_col_collection is False so this is never reached.
+        pass
+
+
+def _make_tri_obj(name):
+    """Create a single-triangle mesh object linked to the default collection."""
+    mesh = bpy.data.meshes.new(name + '_mesh')
+    mesh.from_pydata(
+        [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.5, 1.0, 0.0)],
+        [],
+        [[0, 1, 2]],
+    )
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    return obj
+
+
+# -- primitive_postprocessing: tmp_meshes hide behaviour ---------------------
+
+
+def _find_registered_addon_key():
+    """Return the key under which simple_collider is registered in
+    bpy.context.preferences.addons, or None if it isn't registered.
+
+    In Blender 4.2+ the extension system stores add-ons under the prefix
+    'bl_ext.<repo>.<name>' rather than the bare package name.
+    """
+    for key in bpy.context.preferences.addons.keys():
+        if key == _ADDON_NAME or key.endswith('.' + _ADDON_NAME):
+            return key
+    return None
+
+
+class TestPrimitivePostprocessingDoesNotHideTmpMeshes(unittest.TestCase):
+    """primitive_postprocessing() must not hide tmp_meshes on each call.
+
+    Pre-fix: the method iterates self.tmp_meshes and calls hide_set(True) on
+    every entry, so N calls with N objects = N² hide_set() calls.
+
+    Post-fix: the hide loop is moved to reset_to_initial_state(), so
+    primitive_postprocessing() leaves tmp_meshes untouched.
+
+    This test detects the pre-fix regression by verifying that after a single
+    call to primitive_postprocessing(), no tmp_mesh has been hidden.
+
+    primitive_postprocessing() has a hard-coded lookup into
+    bpy.context.preferences.addons[base_package].  In the test environment the
+    add-on is imported directly (not enabled via the extension system), so
+    _prim_mod.base_package ('simple_collider') may differ from the registered
+    extension key ('bl_ext.user_default.simple_collider').  setUpClass patches
+    the module-level variable for the duration of the test class and restores
+    it in tearDownClass.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        registered_key = _find_registered_addon_key()
+        orig = _prim_mod.base_package
+        if registered_key is not None and registered_key != orig:
+            _prim_mod.base_package = registered_key
+            cls._base_package_patched = orig   # store original to restore
+        else:
+            cls._base_package_patched = None
+        cls._addon_available = (
+            registered_key is not None
+            and hasattr(bpy.context.scene, 'active_physics_material')
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._base_package_patched is not None:
+            _prim_mod.base_package = cls._base_package_patched
+
+    def setUp(self):
+        self.tmp_objs = []
+        self.bounding_obj = None
+
+    def tearDown(self):
+        for obj in list(self.tmp_objs):
+            _remove_obj(obj)
+        self.tmp_objs = []
+        if self.bounding_obj is not None:
+            _remove_obj(self.bounding_obj)
+            self.bounding_obj = None
+
+    def test_does_not_hide_tmp_meshes(self):
+        """Calling primitive_postprocessing() once must not hide any tmp_meshes."""
+        if not self._addon_available:
+            self.skipTest(
+                "simple_collider not registered in bpy.context.preferences.addons; "
+                "run with the add-on installed or enabled"
+            )
+
+        N = 3
+        self.tmp_objs = [_make_tri_obj(f'TmpMesh_{i}') for i in range(N)]
+        self.bounding_obj = _make_tri_obj('BoundingObj')
+
+        for obj in self.tmp_objs:
+            obj.hide_set(False)
+
+        fake = _PostprocessingFake(self.tmp_objs)
+        _OBJECT_OT_add_bounding_object.primitive_postprocessing(
+            fake, bpy.context, self.bounding_obj, []
+        )
+
+        for obj in self.tmp_objs:
+            self.assertFalse(
+                obj.hide_get(),
+                f"{obj.name} was hidden by primitive_postprocessing(); "
+                "hiding should only happen in reset_to_initial_state()"
+            )
+
+
+# -- custom_set_parent: correctness regression guard -------------------------
+
+
+class TestCustomSetParentPreservesTransform(unittest.TestCase):
+    """Regression guard for custom_set_parent().
+
+    The fix replaces bpy.ops.object.parent_set() with a direct Python
+    assignment that preserves the child's world transform.  These tests verify
+    that the direct-assignment approach produces the same observable result as
+    the operator did: parent is assigned and the child's world-space position
+    is unchanged.
+    """
+
+    def setUp(self):
+        self.parent_obj = None
+        self.child_obj = None
+
+    def tearDown(self):
+        if self.child_obj is not None:
+            _remove_obj(self.child_obj)
+            self.child_obj = None
+        if self.parent_obj is not None:
+            _remove_obj(self.parent_obj)
+            self.parent_obj = None
+
+    def test_child_parent_is_set(self):
+        """After custom_set_parent, child.parent must equal parent."""
+        self.parent_obj = _make_tri_obj('Parent')
+        self.child_obj = _make_tri_obj('Child')
+
+        bpy.context.view_layer.objects.active = self.parent_obj
+        self.parent_obj.select_set(True)
+        self.child_obj.select_set(True)
+
+        _OBJECT_OT_add_bounding_object.custom_set_parent(
+            bpy.context, self.parent_obj, self.child_obj
+        )
+
+        self.assertIs(
+            self.child_obj.parent,
+            self.parent_obj,
+            "child.parent was not set to parent after custom_set_parent()"
+        )
+
+    def test_child_world_transform_preserved(self):
+        """The child's world-space location must be unchanged after reparenting."""
+        import mathutils
+
+        self.parent_obj = _make_tri_obj('Parent')
+        self.parent_obj.location = (5.0, 3.0, 1.0)
+        bpy.context.view_layer.update()
+
+        self.child_obj = _make_tri_obj('Child')
+        self.child_obj.location = (2.0, 4.0, 6.0)
+        bpy.context.view_layer.update()
+
+        world_before = self.child_obj.matrix_world.copy()
+
+        bpy.context.view_layer.objects.active = self.parent_obj
+        self.parent_obj.select_set(True)
+        self.child_obj.select_set(True)
+
+        _OBJECT_OT_add_bounding_object.custom_set_parent(
+            bpy.context, self.parent_obj, self.child_obj
+        )
+        bpy.context.view_layer.update()
+
+        world_after = self.child_obj.matrix_world
+
+        for i in range(4):
+            for j in range(4):
+                self.assertAlmostEqual(
+                    world_before[i][j],
+                    world_after[i][j],
+                    places=5,
+                    msg=(
+                        f"matrix_world[{i}][{j}] changed after reparenting: "
+                        f"{world_before[i][j]:.6f} → {world_after[i][j]:.6f}"
+                    ),
+                )
+
+    def test_child_world_position_when_location_set_without_depsgraph_update(self):
+        """World position must be correct when location is set without a prior
+        depsgraph update before custom_set_parent is called.
+
+        Cylinder and sphere colliders set new_collider.location (or
+        basic_sphere.location) to the computed centre immediately after an
+        operation that triggered a depsgraph evaluation (bpy.ops call or
+        objects.link).  The cached matrix_world is therefore stale when
+        custom_set_parent runs, reflecting the pre-location-change position
+        rather than the intended centre.
+
+        Pre-fix: custom_set_parent reads matrix_world, which is stale (cached
+        at origin from the last depsgraph evaluation).  The child is parented
+        to the cached origin position, not the intended location.
+
+        Post-fix: the world matrix is built from child.location/rotation/scale,
+        which are always current, so the correct position is preserved.
+        """
+        from mathutils import Vector
+
+        self.parent_obj = _make_tri_obj('Parent')
+        bpy.context.view_layer.update()
+
+        # Create the child and force a depsgraph update that caches its
+        # matrix_world at the origin — exactly as happens after
+        # bpy.context.collection.objects.link() in create_sphere().
+        self.child_obj = _make_tri_obj('Child')
+        bpy.context.view_layer.update()  # matrix_world cached at (0, 0, 0)
+
+        # Set location to the intended centre WITHOUT another depsgraph update.
+        # This mirrors what create_sphere() and generate_cylinder_object() do:
+        # they set obj.location after the last depsgraph-updating operation.
+        # matrix_world is now stale (still at origin in the cache).
+        intended = Vector((3.0, -5.0, 7.0))
+        self.child_obj.location = intended
+
+        _OBJECT_OT_add_bounding_object.custom_set_parent(
+            bpy.context, self.parent_obj, self.child_obj
+        )
+        bpy.context.view_layer.update()
+
+        pos = self.child_obj.matrix_world.to_translation()
+        for axis, (got, want) in enumerate(zip(pos, intended)):
+            self.assertAlmostEqual(
+                got, want, places=5,
+                msg=(
+                    f"World position axis {axis}: expected {want:.6f}, got {got:.6f}. "
+                    "custom_set_parent captured a stale matrix_world instead of "
+                    "the current child.location."
+                ),
+            )
+
+
 if __name__ == '__main__':
     try:
         idx = sys.argv.index('--')
