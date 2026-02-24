@@ -223,6 +223,15 @@ def draw_creation_menu(context, layout, settings=False):
     row = col.row(align=True)
     draw_auto_convex(row, context)
 
+    # layout.separator()
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.operator("mesh.add_bounding_kdop", text='6-DOP (Low Detail)', icon='MESH_ICOSPHERE')
+    row = col.row(align=True)
+    row.operator("mesh.add_bounding_kdop", text='14-DOP (Mid Detail)', icon='MESH_ICOSPHERE')
+    row = col.row(align=True)
+    row.operator("mesh.add_bounding_kdop", text='26-DOP (High Detail)', icon='MESH_ICOSPHERE')
+
     row = layout.row(align=True)
     row.label(text='Convert Shape')
 
