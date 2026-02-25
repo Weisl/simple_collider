@@ -494,6 +494,7 @@ def load_preset_on_scene_open():
     # Execute the preset using script.execute_preset
     from ..ui.properties_panels import OBJECT_MT_collision_presets
     bpy.ops.script.execute_preset(filepath=preset_file, menu_idname=OBJECT_MT_collision_presets.__name__)
+    bpy.context.scene.simple_collider_selected_preset = preset_file
     print(f"Applied preset: {default_preset}")
 
 

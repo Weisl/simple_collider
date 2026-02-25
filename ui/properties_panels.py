@@ -311,11 +311,18 @@ def draw_naming_presets(self, context):
         self (UILayout): The UI layout.
         context (Context): The current context.
     """
+    prefs = context.preferences.addons[base_package].preferences
     layout = self.layout
     row = layout.row(align=True)
 
     row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
-    row.operator("object.set_default_collision_preset", text="Set as Default")
+
+    if prefs.simple_collider_default_preset == context.scene.simple_collider_selected_preset:
+        row.label(text='',icon='PINNED')
+    else:
+        row.operator("object.set_default_collision_preset", text="", icon='UNPINNED')
+
+        
 
     addon_name = get_addon_name()
 
