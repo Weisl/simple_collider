@@ -25,6 +25,8 @@ class PRESET_OT_load_preset(Operator):
             bpy.ops.script.execute_preset(filepath=self.filepath, menu_idname="OBJECT_MT_collision_presets")
             self.report({'INFO'}, "Updated and loaded preset successfully")
 
+        # Update the selected preset name
+        context.scene.simple_collider_selected_preset = self.filepath
         return {'FINISHED'}
 
 
