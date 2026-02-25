@@ -179,6 +179,11 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         """Draw the naming panel"""
         box = layout.box()
         row = box.row()
+        row.label(text="Naming Presets", icon='PRESET')
+        row = box.row(align=True)
+        row.prop(self, "simple_collider_default_preset", text="Default Preset")
+
+        row = box.row(align=True)
         row.label(text="Default Presets")
         row = box.row(align=True)
         for preset_name in presets.keys():
@@ -467,6 +472,31 @@ classes = (
 )
 
 
+def load_preset_on_scene_open():
+    # Access the add-on preferences
+    addon_prefs = bpy.context.preferences.addons[base_package].preferences
+    default_preset = addon_prefs.simple_collider_default_preset
+
+    if not default_preset:
+        print("No default preset specified.")
+        return
+
+    # Get the presets folder path using the add-on's function
+    from ..presets.preset_operator import simple_collider_presets_folder
+    presets_folder = simple_collider_presets_folder()
+
+    # Construct the preset file path
+    preset_file = os.path.join(presets_folder, default_preset)
+    if not os.path.exists(preset_file):
+        print(f"Preset file not found: {preset_file}")
+        return
+
+    # Execute the preset using script.execute_preset
+    from ..ui.properties_panels import OBJECT_MT_collision_presets
+    bpy.ops.script.execute_preset(filepath=preset_file, menu_idname=OBJECT_MT_collision_presets.__name__)
+    print(f"Applied preset: {default_preset}")
+
+
 @persistent
 def _load_handler(dummy):
     """
@@ -475,6 +505,7 @@ def _load_handler(dummy):
     """
     set_default_active_mat()
     set_default_group_values()
+    load_preset_on_scene_open()
 
 
 def register():
