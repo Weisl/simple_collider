@@ -1,6 +1,7 @@
 import bpy
 
 from .. import __package__ as base_package
+from ..properties.constants import VALID_OBJECT_TYPES
 
 default_groups_enum = [
     ('ALL_COLLIDER', "Colliders", "Show/Hide all objects that are colliders.", '', 1),
@@ -176,7 +177,7 @@ def set_object_color(obj, color):
 
 
 class COLLISION_OT_assign_user_group(bpy.types.Operator):
-    """Select/Deselect collision objects"""
+    """Assign User Group to selected colliders"""
     bl_idname = "object.assign_user_group"
     bl_label = "Assign User Group"
     bl_description = 'Assign User Group to collider'
@@ -198,10 +199,12 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
     def execute(self, context):
         prefs = context.preferences.addons[base_package].preferences
 
+        from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+
         count = 0
         for obj in context.selected_objects.copy():
             # skip if invalid object
-            if obj is None or obj.type not in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META'] or not obj.get('isCollider'):
+            if obj is None or obj.type not in VALID_OBJECT_TYPES or not obj.get('isCollider'):
                 continue
             count += 1
 
@@ -221,15 +224,16 @@ class COLLISION_OT_assign_user_group(bpy.types.Operator):
             shape_identifier = default_shape if obj.get('collider_shape') is None else obj.get('collider_shape')
             user_group = default_group if obj.get('collider_group') is None else obj.get('collider_group')
 
-            from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
-
             new_name = OBJECT_OT_add_bounding_object.class_collider_name(shape_identifier=shape_identifier,
                                                                          user_group=get_groups_identifier(user_group),
-                                                                         basename=basename)
-            data_name = OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
+                                                                         basename=basename,
+                                                                         exclude=obj.name)
+
+            if new_name == obj.name:
+                continue
 
             obj.name = new_name
-            obj.data.name = data_name
+            OBJECT_OT_add_bounding_object.set_data_name(obj, new_name, "_data")
 
         if count == 0:
             self.report({'WARNING'}, "No collider found to change the user group.")

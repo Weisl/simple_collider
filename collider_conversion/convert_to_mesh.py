@@ -3,6 +3,7 @@ from bpy.types import Operator
 
 from .. import __package__ as base_package
 from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..properties.constants import VALID_OBJECT_TYPES
 from ..pyshics_materials.material_functions import assign_physics_material, create_material, remove_materials
 
 default_shape = 'box_shape'
@@ -14,6 +15,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
     bl_idname = "object.convert_to_mesh"
     bl_label = "Collider to Mesh"
     bl_description = 'Convert selected colliders to meshes'
+    bl_options = {'REGISTER', 'UNDO'}
 
     mesh_name: bpy.props.StringProperty(name="Mesh Name", default='Mesh')
     keep_original_material: bpy.props.BoolProperty(name="Keep Material", default=False)
@@ -42,7 +44,7 @@ class OBJECT_OT_convert_to_mesh(Operator):
             return False
 
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type in VALID_OBJECT_TYPES:
                 count = count + 1
         return count > 0
 

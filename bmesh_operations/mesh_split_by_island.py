@@ -16,7 +16,15 @@ def get_linked_faces(f):
     list of bmesh.types.BMFace: A list of all faces linked to the starting face.
     """
 
+    old_limit = sys.getrecursionlimit()
     sys.setrecursionlimit(10 ** 6)
+    try:
+        return _get_linked_faces(f)
+    finally:
+        sys.setrecursionlimit(old_limit)
+
+
+def _get_linked_faces(f):
     if f.tag:
         # If the face is already tagged, return empty list
         return []
@@ -35,7 +43,7 @@ def get_linked_faces(f):
         if not len(faces) == 0:
             for elem in faces:
                 # Extend the list with second-degree connected faces
-                f_linked.extend(get_linked_faces(elem))
+                f_linked.extend(_get_linked_faces(elem))
 
     return f_linked
 

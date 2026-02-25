@@ -2,6 +2,7 @@ import bmesh
 import bpy
 
 from .. import __package__ as base_package
+from ..properties.constants import VALID_OBJECT_TYPES
 
 
 def create_material(name, diffuse, fakeUser=True):
@@ -59,7 +60,7 @@ def set_material(ob, mat):
 
 def remove_materials(obj):
     """Remove all materials from object"""
-    if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+    if obj.type in VALID_OBJECT_TYPES:
         obj.data.materials.clear()
 
 

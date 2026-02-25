@@ -198,6 +198,7 @@ class CollisionAddonPrefsProperties():
         name="Suffix Digits",
         description="Defines the number of digits used for numerating.",
         default=3,
+        min=0,
     )
 
     # Collider Shapes
@@ -379,7 +380,7 @@ class CollisionAddonPrefsProperties():
     # VHACD parameters
 
     # -e
-    vhacd_volumneErrorPercent: bpy.props.FloatProperty(name='Volumne Error Percentage',
+    vhacd_volumneErrorPercent: bpy.props.FloatProperty(name='Volume Error Percentage',
                                                        description=' Volume error allowed as a percentage. Default is 1%. Valid range is 0.001 to 10',
                                                        default=0.01,
                                                        min=0.001,

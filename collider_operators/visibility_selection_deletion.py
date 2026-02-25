@@ -2,6 +2,8 @@ import bpy
 
 from ..groups.user_groups import default_groups_enum
 
+_group_desc = {entry[0]: entry[2] for entry in default_groups_enum}
+
 
 class COLLISION_OT_Selection(bpy.types.Operator):
     """Select collider objects"""
@@ -89,10 +91,43 @@ class COLLISION_OT_simple_complex_select(COLLISION_OT_Selection):
     bl_description = 'Select all objects that are defined as simple and complex colliders'
 
 
+class COLLISION_OT_toggle_group_visibility(bpy.types.Operator):
+    bl_idname = "object.toggle_collider_group_visibility"
+    bl_label = "Toggle Group Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    mode: bpy.props.EnumProperty(items=default_groups_enum, default='ALL_COLLIDER')
+
+    @classmethod
+    def description(cls, context, properties):
+        return _group_desc.get(properties.mode, '')
+
+    def execute(self, context):
+        colSettings = context.scene.simple_collider
+        group_map = {
+            'ALL_COLLIDER': colSettings.visibility_toggle_all,
+            'OBJECTS':      colSettings.visibility_toggle_obj,
+            'USER_01':      colSettings.visibility_toggle_user_group_01,
+            'USER_02':      colSettings.visibility_toggle_user_group_02,
+            'USER_03':      colSettings.visibility_toggle_user_group_03,
+        }
+        prop = group_map.get(self.mode)
+        if prop is not None:
+            prop.hide = not prop.hide
+        return {'FINISHED'}
+
+
 class COLLISION_OT_all_select(COLLISION_OT_Selection):
     bl_idname = "object.all_select_collisions"
-    bl_label = "Select all Colliders"
+    bl_label = "Select All"
     bl_description = 'Select all collider objects: Simple, Complex, Simple and Complex.'
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.mode == 'ALL_COLLIDER':
+            return cls.bl_description
+        desc = _group_desc.get(properties.mode, '')
+        return desc.replace('Show/Hide', 'Select') if desc else cls.bl_description
 
 
 class COLLISION_OT_non_collider_select(COLLISION_OT_Selection):

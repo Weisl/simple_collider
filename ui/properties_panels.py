@@ -7,6 +7,7 @@ from bpy.types import Menu
 from bpy_extras.io_utils import ImportHelper
 
 from .. import __package__ as base_package
+from ..properties.constants import VALID_OBJECT_TYPES
 
 
 # needed for adding direct link to settings
@@ -150,10 +151,10 @@ def draw_group_properties(context, property, col_01, col_02, mode, user_group=Fa
 
     row = col_02.row(align=True)
 
-    if property.hide:
-        row.prop(property, 'hide', text=str(property.hide_text), icon=str(property.hide_icon))
-    else:
-        row.prop(property, 'hide', text=str(property.show_text), icon=str(property.show_icon))
+    icon = str(property.hide_icon) if property.hide else str(property.show_icon)
+    text = str(property.hide_text) if property.hide else str(property.show_text)
+    op = row.operator("object.toggle_collider_group_visibility", text=text, icon=icon, depress=property.hide)
+    op.mode = group_identifier
 
     op = row.operator("object.all_select_collisions", icon=str(property.selected_icon),
                       text=str(property.selected_text))
@@ -342,7 +343,7 @@ class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
 
 
 class PREFERENCES_OT_open_addon(bpy.types.Operator):
-    """Tooltip"""
+    """Open the addon preferences panel"""
     bl_idname = "simple_collider.open_preferences"
     bl_label = "Open Addon preferences"
 
@@ -415,13 +416,13 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         # Open documentation
         layout = self.layout
         row = layout.row(align=True)
-        row.operator("wm.url_open", text="", icon='HELP').url = "hhttps://weisl.github.io/collider_overview/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_overview/"
        
         # Open Preferences
         addon_name = get_addon_name()
-        op = row.operator("simple_camera.open_preferences", text="", icon='PREFERENCES')
+        op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
         op.addon_name = addon_name
-        op.prefs_tabs = 'GENERAL'
+        op.prefs_tabs = 'SETTINGS'
 
         # Open Export Popup
         op = row.operator("wm.call_menu_pie", text="", icon="WINDOW")
@@ -467,7 +468,7 @@ class VIEW3D_PT_collision_visibility_panel(VIEW3D_PT_collision, VIEW3D_PT_init):
         layout = self.layout
         row = layout.row(align=True)
         row.operator('view.collider_view_object', icon='HIDE_OFF', text='Collider Groups')
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_overview/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_groups/"
 
     def draw(self, context):
         layout = self.layout
@@ -642,15 +643,16 @@ class COLLISION_MT_pie_menu(Menu, VIEW3D_PT_init):
 
 
 class BUTTON_OT_auto_convex(bpy.types.Operator):
-    """Print object name in Console"""
+    """Create convex hull colliders based on the voxel decomposition target"""
     bl_idname = "button.auto_convex"
     bl_label = "Auto Convex"
+    bl_description = 'Create convex hull colliders based on the voxel decomposition target'
 
     @classmethod
     def poll(cls, context):
         count = 0
         for obj in context.selected_objects:
-            if obj.type in ['MESH', 'CURVE', 'SURFACE', 'FONT', 'META']:
+            if obj.type in VALID_OBJECT_TYPES:
                 count = count + 1
         return count > 0
 
