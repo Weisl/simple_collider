@@ -1,30 +1,39 @@
 import bpy
 import os
-import platform
-from bpy.app.handlers import persistent
-from pathlib import Path
-from tempfile import gettempdir
 
 from .keymap import keymaps_items_dict
-from .. import __package__ as base_package
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
-from ..groups.user_groups import set_default_group_values
-from ..presets.naming_preset import COLLISION_preset
-from ..presets.preset_operator import SetSimpleColliderPreferencesOperator
-from ..presets.presets_data import presets
-from ..pyshics_materials.material_functions import set_default_active_mat
-from ..ui.properties_panels import OBJECT_MT_collision_presets
-from ..ui.properties_panels import VIEW3D_PT_collision_material_panel
-from ..ui.properties_panels import VIEW3D_PT_collision_panel
-from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
-from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
-from ..ui.properties_panels import label_multiline
-
 from .preferences import update_panel_category, update_keymap
 from .preferences import get_default_executable_path, setDefaultTemp
 from .preferences import collection_colors
+from ..properties.constants import PRESETFOLDER, DEFAULT_PRESET
+from .. import __package__ as base_package
 
-#
+def setdefaultpreset():
+    # Replicate the logic of get_simple_collider_preset_files to get the list of files
+    preset_folder = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", PRESETFOLDER)
+    # Create the folder if it doesn't exist
+    os.makedirs(preset_folder, exist_ok=True)
+    # Check if the user has specified a custom preset folder
+    py_files = [f for f in os.listdir(preset_folder) if f.endswith('.py')]
+    try:
+        return py_files.index(DEFAULT_PRESET)
+    except ValueError:
+        return 0  # Fallback to first item if not found
+
+
+def get_simple_collider_preset_files(self, context):
+    """Get a list of available preset files for simple export."""
+    preset_folder = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets", PRESETFOLDER)
+
+    # Check if the user has specified a custom preset folder
+    prefs = context.preferences.addons[base_package].preferences
+    if prefs.preset_path_override and os.path.isdir(bpy.path.abspath(prefs.preset_path_override)):
+        preset_folder = bpy.path.abspath(prefs.preset_path_override)
+
+    from ..presets.preset_operator import get_py_files
+    return get_py_files(self, context, preset_folder)
+
+
 
 class CollisionAddonPrefsProperties():
 
@@ -169,6 +178,19 @@ class CollisionAddonPrefsProperties():
 
     ###################################################################
     # PRESETS
+
+    simple_collider_default_preset: bpy.props.EnumProperty(
+        name="Simple Default Preset",
+        description="Select a default preset",
+        items=lambda self, context: get_simple_collider_preset_files(self, context),
+        default=setdefaultpreset()
+    )
+
+    preset_path_override: bpy.props.StringProperty(
+        name="Overwrite Preset Folder",
+        description="Override the default Blender preset folder",
+        subtype='DIR_PATH',
+    )
 
     naming_position: bpy.props.EnumProperty(
         name='Collider Naming',

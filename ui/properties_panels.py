@@ -10,6 +10,27 @@ from .. import __package__ as base_package
 from ..properties.constants import VALID_OBJECT_TYPES
 
 
+import bpy
+
+class OBJECT_OT_set_default_collision_preset(bpy.types.Operator):
+    """Set the selected preset as the default"""
+    bl_idname = "object.set_default_collision_preset"
+    bl_label = "Set Default Collision Preset"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        prefs = context.preferences.addons[base_package].preferences
+        selected_preset = context.scene.simple_collider_selected_preset
+        if selected_preset:
+            prefs.simple_collider_default_preset = selected_preset
+            bpy.ops.wm.save_userpref()  # Save the preferences
+            self.report({'INFO'}, f"Default preset set to: {selected_preset}")
+        else:
+            self.report({'WARNING'}, "No preset selected.")
+        return {'FINISHED'}
+
+
+
 # needed for adding direct link to settings
 def get_addon_name():
     """
@@ -77,6 +98,7 @@ def draw_auto_convex(layout, context):
             op = layout.operator("simple_collider.open_preferences", text="Setup V-HACD", icon='ERROR')
             op.addon_name = addon_name
             op.prefs_tabs = 'VHACD'
+
 
 
 def draw_auto_convex_settings(colSettings, layout):
@@ -289,10 +311,18 @@ def draw_naming_presets(self, context):
         self (UILayout): The UI layout.
         context (Context): The current context.
     """
+    prefs = context.preferences.addons[base_package].preferences
     layout = self.layout
     row = layout.row(align=True)
 
     row.menu(OBJECT_MT_collision_presets.__name__, text=OBJECT_MT_collision_presets.bl_label)
+
+    if prefs.simple_collider_default_preset == context.scene.simple_collider_selected_preset:
+        row.label(text='',icon='PINNED')
+    else:
+        row.operator("object.set_default_collision_preset", text="", icon='UNPINNED')
+
+        
 
     addon_name = get_addon_name()
 

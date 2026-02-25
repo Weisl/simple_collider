@@ -9,9 +9,9 @@ from ..presets.presets_data import presets
 
 classes = (
     properties_panels.EXPLORER_OT_open_directory_new,
+    properties_panels.OBJECT_MT_collision_presets,
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.BUTTON_OT_auto_convex,
-    properties_panels.OBJECT_MT_collision_presets,
     properties_panels.VIEW3D_MT_collision_creation,
     properties_panels.VIEW3D_PT_collision_panel,
     properties_panels.VIEW3D_PT_collision_settings_panel,
@@ -20,6 +20,7 @@ classes = (
     properties_panels.OBJECT_MT_adjust_decimation_menu,
     properties_panels.COLLISION_MT_pie_menu,
     popup.VIEW3D_PT_auto_convex_popup,
+    properties_panels.OBJECT_OT_set_default_collision_preset
 )
 
 
@@ -76,6 +77,11 @@ def initialize_presets():
 
 def register():
     from bpy.utils import register_class
+
+    bpy.types.Scene.simple_collider_selected_preset = bpy.props.StringProperty(
+        name="Selected Collider Preset",
+        description="Name of the currently selected collider preset",
+    )
 
     for cls in classes:
         register_class(cls)
