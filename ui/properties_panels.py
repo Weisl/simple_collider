@@ -23,6 +23,7 @@ class OBJECT_OT_set_default_collision_preset(bpy.types.Operator):
         selected_preset = context.scene.simple_collider_selected_preset
         if selected_preset:
             prefs.simple_collider_default_preset = selected_preset
+            bpy.ops.wm.save_userpref()  # Save the preferences
             self.report({'INFO'}, f"Default preset set to: {selected_preset}")
         else:
             self.report({'WARNING'}, "No preset selected.")
