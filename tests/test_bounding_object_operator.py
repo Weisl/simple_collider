@@ -719,6 +719,106 @@ class TestCustomSetParentPreservesTransform(unittest.TestCase):
             )
 
 
+# -- fix_inverse_matrix: batch update support ---------------------------------
+
+_fix_inverse_matrix = _addon.collider_operators.utility_operators.fix_inverse_matrix
+
+
+class TestFixInverseMatrixUpdateDepsgraph(unittest.TestCase):
+    """fix_inverse_matrix() must accept update_depsgraph=False and produce the
+    same mesh and transform result as update_depsgraph=True.
+
+    Pre-fix: the function has no update_depsgraph parameter, so calling it with
+    that keyword raises TypeError.  The confirmation loop in
+    add_bounding_primitive.py called view_layer.update() once per collider (N
+    evaluations), and fix_inverse_matrix() called it again internally (another
+    N), for 2N total — 20,000 evaluations for 10k islands.
+
+    Post-fix: passing update_depsgraph=False skips the internal update, letting
+    the caller do one batch update after processing all N objects.  The mesh and
+    transform must be identical to the per-call-update path.
+    """
+
+    _PREFIX = '__test_fixinv_'
+
+    def setUp(self):
+        self._obj_names = []
+
+    def tearDown(self):
+        for name in self._obj_names:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                data = obj.data
+                bpy.data.objects.remove(obj, do_unlink=True)
+                if isinstance(data, bpy.types.Mesh):
+                    mesh = bpy.data.meshes.get(data.name)
+                    if mesh is not None:
+                        bpy.data.meshes.remove(mesh)
+
+    def _make_parent(self, suffix, location):
+        obj = bpy.data.objects.new(f'{self._PREFIX}parent_{suffix}', None)
+        obj.location = location
+        bpy.context.scene.collection.objects.link(obj)
+        self._obj_names.append(obj.name)
+        return obj
+
+    def _make_child(self, suffix, parent, world_location):
+        mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{suffix}')
+        mesh.from_pydata([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [], [[0, 1, 2]])
+        mesh.update()
+        obj = bpy.data.objects.new(f'{self._PREFIX}child_{suffix}', mesh)
+        obj.location = world_location
+        bpy.context.scene.collection.objects.link(obj)
+        _OBJECT_OT_add_bounding_object.custom_set_parent(bpy.context, parent, obj)
+        bpy.context.view_layer.update()
+        if obj.parent is not parent:
+            self.skipTest(
+                "precondition violated: custom_set_parent() did not set parent; "
+                "TestCustomSetParentPreservesTransform covers that assumption"
+            )
+        self._obj_names.append(obj.name)
+        return obj
+
+    def test_batched_result_matches_individual(self):
+        """Batch mode (update_depsgraph=False + single update) must give the
+        same vertex positions and matrix_world as the per-call update path."""
+        parent = self._make_parent('b', (2.0, 3.0, 1.0))
+        bpy.context.view_layer.update()
+
+        # Individual path: one depsgraph update per call (current/existing behaviour)
+        child_individual = self._make_child('b_ind', parent, (1.0, 2.0, 0.0))
+        _fix_inverse_matrix(child_individual)
+        verts_individual = [v.co.copy() for v in child_individual.data.vertices]
+        mw_individual = child_individual.matrix_world.copy()
+
+        # Batch path: skip per-call update, do one update at the end
+        child_batched = self._make_child('b_bat', parent, (1.0, 2.0, 0.0))
+        _fix_inverse_matrix(child_batched, update_depsgraph=False)
+        bpy.context.view_layer.update()
+        verts_batched = [v.co.copy() for v in child_batched.data.vertices]
+        mw_batched = child_batched.matrix_world.copy()
+
+        for idx, (v_ind, v_bat) in enumerate(zip(verts_individual, verts_batched)):
+            for axis in range(3):
+                self.assertAlmostEqual(
+                    v_ind[axis], v_bat[axis], places=5,
+                    msg=(
+                        f"vertex {idx}[{axis}]: individual={v_ind[axis]:.6f} "
+                        f"vs batched={v_bat[axis]:.6f}"
+                    ),
+                )
+        for row in range(4):
+            for col in range(4):
+                self.assertAlmostEqual(
+                    mw_individual[row][col], mw_batched[row][col], places=5,
+                    msg=(
+                        f"matrix_world[{row}][{col}]: "
+                        f"individual={mw_individual[row][col]:.6f} "
+                        f"vs batched={mw_batched[row][col]:.6f}"
+                    ),
+                )
+
+
 if __name__ == '__main__':
     try:
         idx = sys.argv.index('--')

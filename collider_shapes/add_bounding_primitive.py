@@ -1590,6 +1590,9 @@ class OBJECT_OT_add_bounding_object():
             if len(self.new_colliders_list) == 0:
                 self.report({'WARNING'}, "No Colliders generated")
 
+            # Pass 1: origin recentre, custom rotation, modifier cleanup, display
+            # settings.  No depsgraph update needed between iterations because
+            # each collider is independent of the others.
             for i, obj in enumerate(self.new_colliders_list):
                 if not obj:
                     continue
@@ -1625,16 +1628,23 @@ class OBJECT_OT_add_bounding_object():
                 else:
                     obj.show_wire = False
 
-                if self.prefs.fix_parent_inverse_mtrx:
-                    bpy.context.view_layer.update()
+            # Pass 2: fix parent inverse matrix.  A single depsgraph update
+            # before the loop propagates the location changes from Pass 1 so
+            # that fix_inverse_matrix() reads correct matrix_world values.
+            # Skipping the per-object update inside fix_inverse_matrix() (via
+            # update_depsgraph=False) reduces 2N depsgraph evaluations to 2.
+            if self.prefs.fix_parent_inverse_mtrx:
+                from ..collider_operators.utility_operators import fix_inverse_matrix
+                bpy.context.view_layer.update()
+                for obj in self.new_colliders_list:
+                    if not obj:
+                        continue
                     parent = obj.parent
-
                     if parent:  # only if there is a parent
                         scale_x, scale_y, scale_z = parent.scale
                         if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z,
                                                                                          rel_tol=1e-5):
-                            from ..collider_operators.utility_operators import fix_inverse_matrix
-                            fix_inverse_matrix(obj)
+                            fix_inverse_matrix(obj, update_depsgraph=False)
 
                             obj.location = (0, 0, 0)
                             obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
@@ -1644,6 +1654,7 @@ class OBJECT_OT_add_bounding_object():
                             print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
                             self.report({'WARNING'},
                                         f"Cannot fix inverse matrix. {parent.name} has non-uniform scale.")
+                bpy.context.view_layer.update()
 
             # Delete temporary generated meshes
             if self.prefs.debug == False:
