@@ -481,6 +481,110 @@ class TestUniqueNameDoesNotRestartCounterPerCall(unittest.TestCase):
         )
 
 
+# -- remove_objects: mesh data cleanup ----------------------------------------
+
+
+class TestRemoveObjectsCleansUpMeshData(unittest.TestCase):
+    """remove_objects() must remove associated mesh data blocks alongside objects.
+
+    Pre-fix: bpy.data.objects.remove(ob, do_unlink=True) is called individually
+    for each object, leaving bpy.types.Mesh data blocks orphaned in
+    bpy.data.meshes (users == 0, but still present and discoverable via
+    bpy.data.meshes.get()).
+
+    Post-fix: the method also batch-removes mesh data blocks that are
+    exclusively owned by the removed objects (users == 1), so they are
+    absent from bpy.data.meshes immediately after the call.  Mesh data
+    shared with other objects is left untouched.
+    """
+
+    _PREFIX = '__test_rmobjs_'
+
+    def setUp(self):
+        self._obj_names = []
+        self._mesh_names = []
+
+    def tearDown(self):
+        for name in self._obj_names:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                bpy.data.objects.remove(obj, do_unlink=True)
+        for name in self._mesh_names:
+            mesh = bpy.data.meshes.get(name)
+            if mesh is not None:
+                bpy.data.meshes.remove(mesh)
+
+    def _make_mesh_obj(self, index):
+        mesh = bpy.data.meshes.new(f'{self._PREFIX}{index}')
+        obj = bpy.data.objects.new(f'{self._PREFIX}obj_{index}', mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        self._obj_names.append(obj.name)
+        self._mesh_names.append(mesh.name)
+        return obj
+
+    def test_mesh_data_removed_with_objects(self):
+        """Mesh data blocks exclusively owned by removed objects must be deleted."""
+        N = 5
+        objs = [self._make_mesh_obj(i) for i in range(N)]
+        mesh_names = [obj.data.name for obj in objs]
+
+        _OBJECT_OT_add_bounding_object.remove_objects(objs)
+
+        for name in mesh_names:
+            self.assertIsNone(
+                bpy.data.meshes.get(name),
+                f"Orphaned mesh data block '{name}' was not removed by remove_objects()"
+            )
+
+    def test_shared_mesh_data_not_removed(self):
+        """Mesh data shared by multiple objects must survive remove_objects().
+
+        remove_objects() only removes mesh data with users == 1.  If a mesh
+        is still referenced by a second object, it must remain in
+        bpy.data.meshes after the call.
+        """
+        shared_mesh_name = f'{self._PREFIX}shared'
+        shared_mesh = bpy.data.meshes.new(shared_mesh_name)
+        self._mesh_names.append(shared_mesh_name)
+
+        obj1 = bpy.data.objects.new(f'{self._PREFIX}shared_obj1', shared_mesh)
+        obj2 = bpy.data.objects.new(f'{self._PREFIX}shared_obj2', shared_mesh)
+        bpy.context.scene.collection.objects.link(obj1)
+        bpy.context.scene.collection.objects.link(obj2)
+        self._obj_names.extend([obj1.name, obj2.name])
+
+        # Remove only obj1; shared_mesh still has obj2 as a user.
+        _OBJECT_OT_add_bounding_object.remove_objects([obj1])
+
+        self.assertIsNotNone(
+            bpy.data.meshes.get(shared_mesh_name),
+            f"Shared mesh data block '{shared_mesh_name}' was incorrectly "
+            "removed by remove_objects() despite still being used by another object"
+        )
+
+    def test_handles_stale_object_reference(self):
+        """remove_objects() must not raise on stale StructRNA references.
+
+        When execute() re-runs (e.g. on Use Modifiers toggle), self.tmp_meshes
+        may contain Python references to objects already removed by a previous
+        pass: get_pre_processed_mesh_objs() appends tmp_ob to tmp_meshes then
+        removes it via remove_objects() when use_modifier_stack and
+        my_use_modifier_stack are both enabled.  The next call to
+        remove_objects(self.tmp_meshes) must skip those stale entries
+        silently rather than raising ReferenceError.
+        """
+        obj = self._make_mesh_obj(99)
+        # Remove the underlying Blender object, leaving the Python wrapper stale.
+        bpy.data.objects.remove(obj, do_unlink=True)
+        # remove_objects() must handle the stale reference without raising.
+        try:
+            _OBJECT_OT_add_bounding_object.remove_objects([obj])
+        except ReferenceError:
+            self.fail(
+                "remove_objects() raised ReferenceError on a stale StructRNA reference"
+            )
+
+
 # -- custom_set_parent: correctness regression guard -------------------------
 
 
