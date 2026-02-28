@@ -731,15 +731,18 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def remove_objects(list):
-        """Remove list of objects"""
-        if len(list) > 0:
-            for ob in list:
-                if ob:
-                    objs = bpy.data.objects
-                    try:
-                        objs.remove(ob, do_unlink=True)
-                    except:
-                        pass
+        """Remove list of objects and their exclusively-owned mesh data."""
+        ids = []
+        for ob in list:
+            if ob:
+                try:
+                    if isinstance(ob.data, bpy.types.Mesh) and ob.data.users == 1:
+                        ids.append(ob.data)
+                    ids.append(ob)
+                except ReferenceError:
+                    pass
+        if ids:
+            bpy.data.batch_remove(ids)
 
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precision=0):
@@ -1291,11 +1294,7 @@ class OBJECT_OT_add_bounding_object():
     def cancel_cleanup(self, context, delete_colliders=True):
         if delete_colliders:
             # Remove previously created collisions
-            if self.new_colliders_list:
-                for obj in self.new_colliders_list:
-                    if obj:
-                        objs = bpy.data.objects
-                        objs.remove(obj, do_unlink=True)
+            self.remove_objects(self.new_colliders_list)
 
         # Delete temporary objects
         if self.prefs.debug == False:
