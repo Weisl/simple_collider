@@ -722,6 +722,7 @@ class TestCustomSetParentPreservesTransform(unittest.TestCase):
 # -- fix_inverse_matrix: batch update support ---------------------------------
 
 _fix_inverse_matrix = _addon.collider_operators.utility_operators.fix_inverse_matrix
+_set_origin_to_com = _prim_mod.set_origin_to_center_of_mass
 
 
 class TestFixInverseMatrixUpdateDepsgraph(unittest.TestCase):
@@ -817,6 +818,79 @@ class TestFixInverseMatrixUpdateDepsgraph(unittest.TestCase):
                         f"vs batched={mw_batched[row][col]:.6f}"
                     ),
                 )
+
+
+# -- set_origin_to_center_of_mass: pre-fetched depsgraph ----------------------
+
+
+class TestSetOriginToCoMDepsgraphParam(unittest.TestCase):
+    """set_origin_to_center_of_mass must accept an optional depsgraph argument.
+
+    Pre-fix: the function always calls bpy.context.evaluated_depsgraph_get()
+    internally.  In the confirmation loop each preceding obj.location = com
+    dirtied the depsgraph, causing the next call to force a full scene
+    re-evaluation — O(N) per call × N calls = O(N²) depsgraph work for N
+    colliders.
+
+    Post-fix: an explicit depsgraph parameter can be passed, letting the caller
+    hoist evaluated_depsgraph_get() to a single call before the loop.  The
+    result must be identical to the per-call path.
+    """
+
+    _PREFIX = '__test_com_'
+
+    def setUp(self):
+        self._obj_names = []
+        self._mesh_names = []
+
+    def tearDown(self):
+        for name in self._obj_names:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                bpy.data.objects.remove(obj, do_unlink=True)
+        for name in self._mesh_names:
+            mesh = bpy.data.meshes.get(name)
+            if mesh is not None:
+                bpy.data.meshes.remove(mesh)
+
+    def _make_tri_mesh(self, suffix):
+        mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{suffix}')
+        mesh.from_pydata(
+            [(0.0, 0.0, 0.0), (2.0, 0.0, 0.0), (1.0, 2.0, 0.0)], [], [[0, 1, 2]]
+        )
+        mesh.update()
+        obj = bpy.data.objects.new(f'{self._PREFIX}obj_{suffix}', mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        self._obj_names.append(obj.name)
+        self._mesh_names.append(mesh.name)
+        return obj
+
+    def test_prefetched_depsgraph_matches_result(self):
+        """Pre-fetched depsgraph path must produce identical COM to per-call path."""
+        obj_percall = self._make_tri_mesh('b1')
+        obj_prefetch = self._make_tri_mesh('b2')
+        bpy.context.view_layer.update()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+
+        # Per-call path: function fetches its own depsgraph (current behaviour)
+        _set_origin_to_com(obj_percall)
+
+        # Pre-fetched path: caller supplies the depsgraph (the fix)
+        _set_origin_to_com(obj_prefetch, depsgraph=depsgraph)
+
+        for idx, (v_pc, v_pf) in enumerate(
+            zip(obj_percall.data.vertices, obj_prefetch.data.vertices)
+        ):
+            for axis in range(3):
+                self.assertAlmostEqual(
+                    v_pc.co[axis], v_pf.co[axis], places=5,
+                    msg=f'vertex {idx}[{axis}]: per-call={v_pc.co[axis]:.6f} vs pre-fetched={v_pf.co[axis]:.6f}',
+                )
+        for axis in range(3):
+            self.assertAlmostEqual(
+                obj_percall.location[axis], obj_prefetch.location[axis], places=5,
+                msg=f'location[{axis}]: per-call={obj_percall.location[axis]:.6f} vs pre-fetched={obj_prefetch.location[axis]:.6f}',
+            )
 
 
 if __name__ == '__main__':

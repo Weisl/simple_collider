@@ -27,19 +27,24 @@ def create_name_number(name, nr, digits=3):
     return f"{name}_{nr:0{digits}}"
 
 
-def set_origin_to_center_of_mass(obj):
+def set_origin_to_center_of_mass(obj, depsgraph=None):
     """
     Sets the origin of the given object to its center of mass.
 
     Parameters:
     obj (bpy.types.Object): The object whose origin will be set to the center of mass.
+    depsgraph: Optional pre-evaluated depsgraph.  When processing many objects in a
+        loop, pass a single depsgraph obtained before the loop to avoid O(N²)
+        re-evaluations: each obj.location assignment dirties the depsgraph, and
+        evaluated_depsgraph_get() forces a full re-evaluation on every call.
     """
     if obj.type != 'MESH':
         print(f"Object '{obj.name}' is not a mesh. Cannot calculate center of mass.")
         return
 
     # Ensure the object has up-to-date evaluated data
-    depsgraph = bpy.context.evaluated_depsgraph_get()
+    if depsgraph is None:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
     obj_eval = obj.evaluated_get(depsgraph)
     mesh = obj_eval.data
 
@@ -1593,6 +1598,20 @@ class OBJECT_OT_add_bounding_object():
             # Pass 1: origin recentre, custom rotation, modifier cleanup, display
             # settings.  No depsgraph update needed between iterations because
             # each collider is independent of the others.
+            #
+            # Fetch the evaluated depsgraph once before the loop.
+            # set_origin_to_center_of_mass() calls evaluated_depsgraph_get()
+            # internally; after each obj.location = com the depsgraph is
+            # dirtied, causing the next per-call get to force a full scene
+            # re-evaluation — O(N²) for N colliders.  Passing the same
+            # depsgraph to every call keeps each object's evaluated data
+            # correct (it was unmodified when the depsgraph was fetched) while
+            # eliminating the hidden per-iteration re-evaluation.
+            _depsgraph = (
+                bpy.context.evaluated_depsgraph_get()
+                if self.use_recenter_origin and not self.join_primitives
+                else None
+            )
             for i, obj in enumerate(self.new_colliders_list):
                 if not obj:
                     continue
@@ -1600,7 +1619,7 @@ class OBJECT_OT_add_bounding_object():
                 if not self.join_primitives:
                     if self.use_recenter_origin:
                         # set origin causes issues. Does not work properly
-                        set_origin_to_center_of_mass(obj)
+                        set_origin_to_center_of_mass(obj, _depsgraph)
                         # center = self.calculate_center_of_mass(obj)
                         # if not self.debug_parenting_off:
                         #     self.set_custom_origin_location(obj, center)
