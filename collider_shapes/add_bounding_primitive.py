@@ -562,15 +562,23 @@ class OBJECT_OT_add_bounding_object():
         return data_name
 
     @staticmethod
-    def unique_name(name, digits=3, exclude=None):
-        """Function to find a unique name using a loop"""
-        count = 1
+    def unique_name(name, digits=3, exclude=None, cache=None):
+        """Function to find a unique name using a loop.
+
+        cache, if provided, is a dict mapping base name → last used count.
+        Callers that generate many names with the same base should pass a
+        persistent dict so the search resumes from the last position rather
+        than restarting at 1 every call (which would be O(N²) total lookups).
+        """
+        count = (cache.get(name, 0) if cache is not None else 0) + 1
         new_name = create_name_number(name, count, digits)
 
         while new_name in bpy.data.objects and new_name != exclude:
             count += 1
             new_name = create_name_number(name, count, digits)
 
+        if cache is not None:
+            cache[name] = count
         return new_name
 
     @staticmethod
@@ -600,10 +608,11 @@ class OBJECT_OT_add_bounding_object():
         cls.bm.append(bm)
 
     @classmethod
-    def class_collider_name(cls, shape_identifier, user_group, basename='Basename', exclude=None):
+    def class_collider_name(cls, shape_identifier, user_group, basename='Basename', exclude=None,
+                            cache=None):
         prefs = bpy.context.preferences.addons[base_package].preferences
         new_name = cls.class_collider_name_base(shape_identifier, user_group, basename)
-        return cls.unique_name(new_name, prefs.collision_digits, exclude=exclude)
+        return cls.unique_name(new_name, prefs.collision_digits, exclude=exclude, cache=cache)
 
     @classmethod
     def class_collider_name_base(cls, shape_identifier, user_group, basename='Basename'):
@@ -674,7 +683,8 @@ class OBJECT_OT_add_bounding_object():
     def collider_name(self, basename='Basename'):
         self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx].identifier
-        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
+        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group,
+                                        basename=basename, cache=self._naming_cache)
 
     def get_shape_name(self):
         """ Return Shape String """
@@ -1372,6 +1382,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_custom_rotation = False
 
         self.collision_group_idx = 0
+        self._naming_cache = {}
 
     @classmethod
     def poll(cls, context):
@@ -1911,6 +1922,7 @@ class OBJECT_OT_add_bounding_object():
         self.t0 = time.time()
         # reset naming count:
         self.name_count = 0
+        self._naming_cache = {}
 
         # Bug:
         try:

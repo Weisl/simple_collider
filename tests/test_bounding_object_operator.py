@@ -402,6 +402,85 @@ class TestPrimitivePostprocessingDoesNotHideTmpMeshes(unittest.TestCase):
             )
 
 
+# -- unique_name: O(N²) → O(N) counter-restart regression -------------------
+
+
+class TestUniqueNameDoesNotRestartCounterPerCall(unittest.TestCase):
+    """unique_name() must not restart its search from count=1 on every call.
+
+    Pre-fix: unique_name() resets count=1 at the top of each call, then
+    scans bpy.data.objects forward until a free slot is found.  With N calls
+    for the same base name, where the first K names are already taken, the
+    total number of calls to create_name_number() is
+      (K+1) + (K+2) + … + (K+N) ≈ N·K + N²/2  (O(N²)).
+
+    Post-fix: a per-base-name cache remembers the last used index, so each
+    subsequent call starts from the cached position.  Total calls to
+    create_name_number() drop to O(K + N) where K is the skip over
+    pre-existing names.
+
+    The test patches _prim_mod.create_name_number with a counting wrapper to
+    measure calls directly, avoiding any dependency on wall-clock time.
+    """
+
+    # N pre-existing names in bpy.data.objects; then call unique_name N more times.
+    _N = 30
+
+    def setUp(self):
+        self.existing_objs = []
+        self.base_name = 'UniqueNameTestBase'
+        # Create N mesh objects whose names occupy "UniqueNameTestBase_001"
+        # through "UniqueNameTestBase_0N" so that any fresh unique_name() call
+        # has to skip past them.
+        for i in range(1, self._N + 1):
+            name = f'{self.base_name}_{i:03d}'
+            mesh = bpy.data.meshes.new(name + '_mesh')
+            obj = bpy.data.objects.new(name, mesh)
+            bpy.context.collection.objects.link(obj)
+            self.existing_objs.append(obj)
+
+    def tearDown(self):
+        for obj in list(self.existing_objs):
+            _remove_obj(obj)
+        self.existing_objs = []
+        # Restore the real create_name_number (patched in the test body).
+        if hasattr(self, '_orig_create_name_number'):
+            _prim_mod.create_name_number = self._orig_create_name_number
+
+    def test_call_count_is_linear_not_quadratic(self):
+        """Total create_name_number() calls for N sequential unique_name()
+        calls must be O(N), not O(N²)."""
+        N = self._N
+        call_count = [0]
+        orig = _prim_mod.create_name_number
+        self._orig_create_name_number = orig
+
+        def counting_wrapper(name, nr, digits=3):
+            call_count[0] += 1
+            return orig(name, nr, digits)
+
+        _prim_mod.create_name_number = counting_wrapper
+
+        cache = {}
+        for _ in range(N):
+            _OBJECT_OT_add_bounding_object.unique_name(self.base_name, digits=3, cache=cache)
+
+        _prim_mod.create_name_number = orig
+
+        # O(N²) lower bound for pre-fix: N calls each skipping ≥N existing names
+        # → at least N*(N+1)/2 calls to create_name_number.
+        quadratic_lower_bound = N * (N + 1) // 2  # ~465 for N=30
+
+        self.assertLess(
+            call_count[0],
+            quadratic_lower_bound,
+            f"unique_name() made {call_count[0]} calls to create_name_number() "
+            f"for {N} sequential calls with {N} pre-existing names; "
+            f"expected < {quadratic_lower_bound} (O(N²) lower bound). "
+            "This indicates the counter is being restarted from 1 on each call."
+        )
+
+
 # -- custom_set_parent: correctness regression guard -------------------------
 
 
