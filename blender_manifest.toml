@@ -18,7 +18,7 @@ license = [
     "SPDX:GPL-3.0-or-later",
 ]
 
-platforms = ["windows-x64", "linux-x64"]
+platforms = ["windows-x64", "linux-x64", "macos-arm64"]
 
 copyright = [
     "2023 Matthias Patscheider",
