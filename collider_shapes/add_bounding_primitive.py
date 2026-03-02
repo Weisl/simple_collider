@@ -576,14 +576,23 @@ class OBJECT_OT_add_bounding_object():
     @staticmethod
     def custom_set_parent(context, parent, child):
         """Custom set parent"""
-        for obj in context.selected_objects.copy():
-            obj.select_set(False)
-
-        context.view_layer.objects.active = parent
-        parent.select_set(True)
-        child.select_set(True)
-
-        bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+        # Direct Python assignment avoids bpy.ops.object.parent_set(), which
+        # triggers a full depsgraph evaluation on every call.  With O(N)
+        # islands that compounds to O(N) depsgraph rebuilds each growing more
+        # expensive as more objects accumulate.  The confirmation loop manages
+        # view_layer.update() calls explicitly; this function does not trigger one.
+        #
+        # Build the child's world matrix from loc/rot/sca rather than reading
+        # matrix_world, which is only updated by the depsgraph.  When child.location
+        # is set after the most recent depsgraph evaluation (as generate_cylinder_object
+        # and create_sphere do), matrix_world is stale and would capture the old
+        # cursor/origin position rather than the intended centre.  loc/rot/sca are
+        # always current because they are stored directly on the object, not computed
+        # by the depsgraph.
+        mtx = Matrix.LocRotScale(child.location, child.rotation_euler, child.scale)
+        child.parent = parent
+        child.matrix_parent_inverse = parent.matrix_world.inverted()
+        child.matrix_world = mtx
 
     @classmethod
     def bmesh(cls, bm):
@@ -1086,13 +1095,6 @@ class OBJECT_OT_add_bounding_object():
         else:
             bounding_object.show_wire = False
 
-        if self.prefs.debug == False:
-            for obj in self.tmp_meshes:
-                try:
-                    obj.hide_set(True)
-                except:
-                    pass
-
     def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False,
                                     use_mesh_copy=False, add_to_tmp_meshes=True):
 
@@ -1216,6 +1218,16 @@ class OBJECT_OT_add_bounding_object():
             obj.select_set(True)
         context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode=self.obj_mode)
+
+        # Hide all temp meshes exactly once, here, rather than inside
+        # primitive_postprocessing().  The old placement ran N times with N
+        # objects in self.tmp_meshes → O(N²) hide_set() calls for N islands.
+        if self.prefs.debug == False:
+            for obj in self.tmp_meshes:
+                try:
+                    obj.hide_set(True)
+                except Exception:
+                    pass
 
     def add_displacement_modifier(self, context, bounding_object):
         # add displacement modifier and safe it to manipulate the strength in the modal operator
