@@ -21,6 +21,7 @@ _addon = __import__(_ADDON_NAME)
 _island_mod = _addon.bmesh_operations.mesh_split_by_island
 
 _get_face_islands = _island_mod._get_face_islands
+_construct_python_faces = _island_mod.construct_python_faces
 
 
 # -- Helpers -----------------------------------------------------------------
@@ -229,6 +230,107 @@ class TestGetFaceIslands(unittest.TestCase):
             f'  std dev: {stdev_ms:.3f} ms\n'
             f'  min:     {min_ms:.3f} ms\n'
             f'  max:     {max_ms:.3f} ms'
+        )
+
+
+class TestConstructPythonFacesLifetime(unittest.TestCase):
+    """Vertex coordinates stored by construct_python_faces must be independent
+    copies, not live aliases into BMesh-backed memory.
+
+    create_objs_from_island() calls _get_face_islands() (which calls
+    construct_python_faces()) and then calls bm.free() *before* reading
+    py_verts.  If py_verts holds live BMVert.co references rather than
+    copied values (v.co.copy()), two things go wrong:
+
+    1. Mutating a BMVert after the call immediately corrupts the stored coord.
+    2. After bm.free() the stored pointers are dangling; on Linux/glibc freed
+       pages are quickly zeroed or reused, so vertices collapse to the origin
+       or read as garbage.  On Windows/macOS the allocator leaves pages intact
+       longer, hiding the bug.
+
+    The aliasing test (case 1) is fully deterministic and does not depend on
+    allocator behaviour, so it is the primary regression guard.
+    """
+
+    def test_construct_python_faces_copies_vertex_coords(self):
+        """py_verts must not alias live BMVert.co memory.
+
+        After construct_python_faces() returns, mutating a BMVert coordinate
+        must NOT change the value already stored in py_verts.  If py_verts
+        holds a reference to v.co (not a copy), the mutation would be visible.
+        """
+        bm = bmesh.new()
+        try:
+            v0 = bm.verts.new((1.0, 2.0, 3.0))
+            v1 = bm.verts.new((4.0, 5.0, 6.0))
+            v2 = bm.verts.new((7.0, 8.0, 9.0))
+            bm.faces.new([v0, v1, v2])
+
+            result = _construct_python_faces(list(bm.faces))
+
+            # Overwrite all three BMVert coordinates with a sentinel value.
+            # If py_verts is a list of live references (v.co, not v.co.copy()),
+            # reading them now would return (0.0, 0.0, 0.0) rather than the
+            # original coordinates.
+            v0.co.xyz = (0.0, 0.0, 0.0)
+            v1.co.xyz = (0.0, 0.0, 0.0)
+            v2.co.xyz = (0.0, 0.0, 0.0)
+        finally:
+            bm.free()
+
+        py_verts = result['py_verts']
+        self.assertEqual(len(py_verts), 3)
+
+        expected = {(1.0, 2.0, 3.0), (4.0, 5.0, 6.0), (7.0, 8.0, 9.0)}
+        got = {tuple(v) for v in py_verts}
+        self.assertEqual(
+            got, expected,
+            "py_verts aliased live BMVert.co memory: mutation after "
+            "construct_python_faces() changed the stored coordinates.",
+        )
+
+    def test_get_face_islands_copies_vertex_coords(self):
+        """py_verts from _get_face_islands must not alias live BMVert.co memory.
+
+        Mirrors test_construct_python_faces_copies_vertex_coords but exercises
+        the full _get_face_islands() → construct_python_faces() pipeline with
+        two disconnected islands, matching the create_objs_from_island() flow.
+        """
+        bm = bmesh.new()
+        try:
+            a0 = bm.verts.new((0.0, 0.0, 0.0))
+            a1 = bm.verts.new((1.0, 0.0, 0.0))
+            a2 = bm.verts.new((0.0, 1.0, 0.0))
+            bm.faces.new([a0, a1, a2])
+
+            b0 = bm.verts.new((10.0, 0.0, 0.0))
+            b1 = bm.verts.new((11.0, 0.0, 0.0))
+            b2 = bm.verts.new((10.0, 1.0, 0.0))
+            bm.faces.new([b0, b1, b2])
+
+            islands = _get_face_islands(list(bm.faces))
+
+            # Overwrite all BMVert coords with a sentinel; copies are unaffected.
+            for v in (a0, a1, a2, b0, b1, b2):
+                v.co.xyz = (0.0, 0.0, 0.0)
+        finally:
+            bm.free()
+
+        self.assertEqual(len(islands), 2)
+
+        all_verts = set()
+        for island in islands:
+            for v in island['py_verts']:
+                all_verts.add(tuple(v))
+
+        expected = {
+            (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0),
+            (10.0, 0.0, 0.0), (11.0, 0.0, 0.0), (10.0, 1.0, 0.0),
+        }
+        self.assertEqual(
+            all_verts, expected,
+            "py_verts aliased live BMVert.co memory: mutating verts after "
+            "_get_face_islands() changed the stored island coordinates.",
         )
 
 
