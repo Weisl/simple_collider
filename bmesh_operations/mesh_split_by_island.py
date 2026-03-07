@@ -62,7 +62,7 @@ def construct_python_faces(bmesh_faces):
             if v not in vert_index_map:
                 # this vert is found for the first time, add it
                 vert_index_map[v] = len(py_verts)
-                py_verts.append(v.co)
+                py_verts.append(v.co.copy())
 
             # add the new index of the current vert to the current face index list
             cur_face_indices.append(vert_index_map[v])
