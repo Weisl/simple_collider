@@ -183,7 +183,7 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def fix_inverse_matrix(obj):
+def fix_inverse_matrix(obj, update_depsgraph=True):
     mesh = obj.data
     # Make a copy of the object's original world matrix before we reset any of its transform matrices
     ob_matrix_orig = obj.matrix_world.copy()
@@ -205,8 +205,8 @@ def fix_inverse_matrix(obj):
     # Tag the object and its data for update
     obj.update_tag()
     mesh.update()
-    # Force dependency graph update
-    bpy.context.view_layer.update()
+    if update_depsgraph:
+        bpy.context.view_layer.update()
 
     return
 
