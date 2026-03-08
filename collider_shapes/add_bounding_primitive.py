@@ -27,19 +27,24 @@ def create_name_number(name, nr, digits=3):
     return f"{name}_{nr:0{digits}}"
 
 
-def set_origin_to_center_of_mass(obj):
+def set_origin_to_center_of_mass(obj, depsgraph=None):
     """
     Sets the origin of the given object to its center of mass.
 
     Parameters:
     obj (bpy.types.Object): The object whose origin will be set to the center of mass.
+    depsgraph: Optional pre-evaluated depsgraph.  When processing many objects in a
+        loop, pass a single depsgraph obtained before the loop to avoid O(N²)
+        re-evaluations: each obj.location assignment dirties the depsgraph, and
+        evaluated_depsgraph_get() forces a full re-evaluation on every call.
     """
     if obj.type != 'MESH':
         print(f"Object '{obj.name}' is not a mesh. Cannot calculate center of mass.")
         return
 
     # Ensure the object has up-to-date evaluated data
-    depsgraph = bpy.context.evaluated_depsgraph_get()
+    if depsgraph is None:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
     obj_eval = obj.evaluated_get(depsgraph)
     mesh = obj_eval.data
 
@@ -562,28 +567,45 @@ class OBJECT_OT_add_bounding_object():
         return data_name
 
     @staticmethod
-    def unique_name(name, digits=3, exclude=None):
-        """Function to find a unique name using a loop"""
-        count = 1
+    def unique_name(name, digits=3, exclude=None, cache=None):
+        """Function to find a unique name using a loop.
+
+        cache, if provided, is a dict mapping base name → last used count.
+        Callers that generate many names with the same base should pass a
+        persistent dict so the search resumes from the last position rather
+        than restarting at 1 every call (which would be O(N²) total lookups).
+        """
+        count = (cache.get(name, 0) if cache is not None else 0) + 1
         new_name = create_name_number(name, count, digits)
 
         while new_name in bpy.data.objects and new_name != exclude:
             count += 1
             new_name = create_name_number(name, count, digits)
 
+        if cache is not None:
+            cache[name] = count
         return new_name
 
     @staticmethod
     def custom_set_parent(context, parent, child):
         """Custom set parent"""
-        for obj in context.selected_objects.copy():
-            obj.select_set(False)
-
-        context.view_layer.objects.active = parent
-        parent.select_set(True)
-        child.select_set(True)
-
-        bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+        # Direct Python assignment avoids bpy.ops.object.parent_set(), which
+        # triggers a full depsgraph evaluation on every call.  With O(N)
+        # islands that compounds to O(N) depsgraph rebuilds each growing more
+        # expensive as more objects accumulate.  The confirmation loop manages
+        # view_layer.update() calls explicitly; this function does not trigger one.
+        #
+        # Build the child's world matrix from loc/rot/sca rather than reading
+        # matrix_world, which is only updated by the depsgraph.  When child.location
+        # is set after the most recent depsgraph evaluation (as generate_cylinder_object
+        # and create_sphere do), matrix_world is stale and would capture the old
+        # cursor/origin position rather than the intended centre.  loc/rot/sca are
+        # always current because they are stored directly on the object, not computed
+        # by the depsgraph.
+        mtx = Matrix.LocRotScale(child.location, child.rotation_euler, child.scale)
+        child.parent = parent
+        child.matrix_parent_inverse = parent.matrix_world.inverted()
+        child.matrix_world = mtx
 
     @classmethod
     def bmesh(cls, bm):
@@ -591,10 +613,11 @@ class OBJECT_OT_add_bounding_object():
         cls.bm.append(bm)
 
     @classmethod
-    def class_collider_name(cls, shape_identifier, user_group, basename='Basename', exclude=None):
+    def class_collider_name(cls, shape_identifier, user_group, basename='Basename', exclude=None,
+                            cache=None):
         prefs = bpy.context.preferences.addons[base_package].preferences
         new_name = cls.class_collider_name_base(shape_identifier, user_group, basename)
-        return cls.unique_name(new_name, prefs.collision_digits, exclude=exclude)
+        return cls.unique_name(new_name, prefs.collision_digits, exclude=exclude, cache=cache)
 
     @classmethod
     def class_collider_name_base(cls, shape_identifier, user_group, basename='Basename'):
@@ -665,7 +688,8 @@ class OBJECT_OT_add_bounding_object():
     def collider_name(self, basename='Basename'):
         self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx].identifier
-        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group, basename=basename)
+        return self.class_collider_name(shape_identifier=self.shape, user_group=user_group,
+                                        basename=basename, cache=self._naming_cache)
 
     def get_shape_name(self):
         """ Return Shape String """
@@ -712,15 +736,18 @@ class OBJECT_OT_add_bounding_object():
 
     @staticmethod
     def remove_objects(list):
-        """Remove list of objects"""
-        if len(list) > 0:
-            for ob in list:
-                if ob:
-                    objs = bpy.data.objects
-                    try:
-                        objs.remove(ob, do_unlink=True)
-                    except:
-                        pass
+        """Remove list of objects and their exclusively-owned mesh data."""
+        ids = []
+        for ob in list:
+            if ob:
+                try:
+                    if isinstance(ob.data, bpy.types.Mesh) and ob.data.users == 1:
+                        ids.append(ob.data)
+                    ids.append(ob)
+                except ReferenceError:
+                    pass
+        if ids:
+            bpy.data.batch_remove(ids)
 
     @staticmethod
     def get_delta_value(delta, event, sensibility=0.05, tweak_amount=10, round_precision=0):
@@ -1086,13 +1113,6 @@ class OBJECT_OT_add_bounding_object():
         else:
             bounding_object.show_wire = False
 
-        if self.prefs.debug == False:
-            for obj in self.tmp_meshes:
-                try:
-                    obj.hide_set(True)
-                except:
-                    pass
-
     def get_pre_processed_mesh_objs(self, context, default_world_spc=True, use_local=False, local_world_spc=False,
                                     use_mesh_copy=False, add_to_tmp_meshes=True):
 
@@ -1137,7 +1157,8 @@ class OBJECT_OT_add_bounding_object():
                     if self.obj_mode == 'EDIT':
                         tmp_ob = delete_non_selected_verts(tmp_ob)
 
-                    self.apply_all_modifiers(context, tmp_ob)
+                    if self.my_use_modifier_stack:
+                        self.apply_all_modifiers(context, tmp_ob)
                     base = tmp_ob
 
                     self.tmp_meshes.append(tmp_ob)
@@ -1216,6 +1237,16 @@ class OBJECT_OT_add_bounding_object():
         context.view_layer.objects.active = self.active_obj
         bpy.ops.object.mode_set(mode=self.obj_mode)
 
+        # Hide all temp meshes exactly once, here, rather than inside
+        # primitive_postprocessing().  The old placement ran N times with N
+        # objects in self.tmp_meshes → O(N²) hide_set() calls for N islands.
+        if self.prefs.debug == False:
+            for obj in self.tmp_meshes:
+                try:
+                    obj.hide_set(True)
+                except Exception:
+                    pass
+
     def add_displacement_modifier(self, context, bounding_object):
         # add displacement modifier and safe it to manipulate the strength in the modal operator
         modifier = bounding_object.modifiers.new(name="Collider_displace", type='DISPLACE')
@@ -1268,11 +1299,7 @@ class OBJECT_OT_add_bounding_object():
     def cancel_cleanup(self, context, delete_colliders=True):
         if delete_colliders:
             # Remove previously created collisions
-            if self.new_colliders_list:
-                for obj in self.new_colliders_list:
-                    if obj:
-                        objs = bpy.data.objects
-                        objs.remove(obj, do_unlink=True)
+            self.remove_objects(self.new_colliders_list)
 
         # Delete temporary objects
         if self.prefs.debug == False:
@@ -1359,6 +1386,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_custom_rotation = False
 
         self.collision_group_idx = 0
+        self._naming_cache = {}
 
     @classmethod
     def poll(cls, context):
@@ -1567,6 +1595,23 @@ class OBJECT_OT_add_bounding_object():
             if len(self.new_colliders_list) == 0:
                 self.report({'WARNING'}, "No Colliders generated")
 
+            # Pass 1: origin recentre, custom rotation, modifier cleanup, display
+            # settings.  No depsgraph update needed between iterations because
+            # each collider is independent of the others.
+            #
+            # Fetch the evaluated depsgraph once before the loop.
+            # set_origin_to_center_of_mass() calls evaluated_depsgraph_get()
+            # internally; after each obj.location = com the depsgraph is
+            # dirtied, causing the next per-call get to force a full scene
+            # re-evaluation — O(N²) for N colliders.  Passing the same
+            # depsgraph to every call keeps each object's evaluated data
+            # correct (it was unmodified when the depsgraph was fetched) while
+            # eliminating the hidden per-iteration re-evaluation.
+            _depsgraph = (
+                bpy.context.evaluated_depsgraph_get()
+                if self.use_recenter_origin and not self.join_primitives
+                else None
+            )
             for i, obj in enumerate(self.new_colliders_list):
                 if not obj:
                     continue
@@ -1574,7 +1619,7 @@ class OBJECT_OT_add_bounding_object():
                 if not self.join_primitives:
                     if self.use_recenter_origin:
                         # set origin causes issues. Does not work properly
-                        set_origin_to_center_of_mass(obj)
+                        set_origin_to_center_of_mass(obj, _depsgraph)
                         # center = self.calculate_center_of_mass(obj)
                         # if not self.debug_parenting_off:
                         #     self.set_custom_origin_location(obj, center)
@@ -1602,16 +1647,23 @@ class OBJECT_OT_add_bounding_object():
                 else:
                     obj.show_wire = False
 
-                if self.prefs.fix_parent_inverse_mtrx:
-                    bpy.context.view_layer.update()
+            # Pass 2: fix parent inverse matrix.  A single depsgraph update
+            # before the loop propagates the location changes from Pass 1 so
+            # that fix_inverse_matrix() reads correct matrix_world values.
+            # Skipping the per-object update inside fix_inverse_matrix() (via
+            # update_depsgraph=False) reduces 2N depsgraph evaluations to 2.
+            if self.prefs.fix_parent_inverse_mtrx:
+                from ..collider_operators.utility_operators import fix_inverse_matrix
+                bpy.context.view_layer.update()
+                for obj in self.new_colliders_list:
+                    if not obj:
+                        continue
                     parent = obj.parent
-
                     if parent:  # only if there is a parent
                         scale_x, scale_y, scale_z = parent.scale
                         if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z,
                                                                                          rel_tol=1e-5):
-                            from ..collider_operators.utility_operators import fix_inverse_matrix
-                            fix_inverse_matrix(obj)
+                            fix_inverse_matrix(obj, update_depsgraph=False)
 
                             obj.location = (0, 0, 0)
                             obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
@@ -1621,6 +1673,7 @@ class OBJECT_OT_add_bounding_object():
                             print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
                             self.report({'WARNING'},
                                         f"Cannot fix inverse matrix. {parent.name} has non-uniform scale.")
+                bpy.context.view_layer.update()
 
             # Delete temporary generated meshes
             if self.prefs.debug == False:
@@ -1898,6 +1951,7 @@ class OBJECT_OT_add_bounding_object():
         self.t0 = time.time()
         # reset naming count:
         self.name_count = 0
+        self._naming_cache = {}
 
         # Bug:
         try:
