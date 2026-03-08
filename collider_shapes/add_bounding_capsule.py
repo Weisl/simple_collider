@@ -100,7 +100,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         objs = self.get_pre_processed_mesh_objs(context)
 
         for base_ob, obj in objs:
-            # Initialize a dictionary to store data for the bounding cylinder
+            # Initialize a dictionary to store data for the bounding capsule
             bounding_capsule_data = {}
 
             used_vertices = self.get_used_vertices(base_ob, obj)
@@ -145,9 +145,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 else:
                     center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
-                depth = abs(max(height) - min(height))
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqr_radius)
+                t_arr = np.asarray(height)
+                d_perp = np.linalg.norm(np.asarray(coordinates) - nsphere.center, axis=1)
+                slacks = np.sqrt(np.maximum(0.0, radius ** 2 - d_perp ** 2))
+                depth = max(0.0, float(np.max(t_arr - slacks)) - float(np.min(t_arr + slacks)))
 
                 bounding_capsule_data['parent'] = base_ob
                 bounding_capsule_data['radius'] = radius
@@ -180,10 +183,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         coordinates.append([v.x, v.y])
                         height.append(v.z)
 
-                depth = abs(max(height) - min(height))
-
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqr_radius)
+                t_arr = np.asarray(height)
+                d_perp = np.linalg.norm(np.asarray(coordinates) - nsphere.center, axis=1)
+                slacks = np.sqrt(np.maximum(0.0, radius ** 2 - d_perp ** 2))
+                depth = max(0.0, float(np.max(t_arr - slacks)) - float(np.min(t_arr + slacks)))
 
                 bounding_capsule_data['parent'] = self.active_obj
                 bounding_capsule_data['radius'] = radius
