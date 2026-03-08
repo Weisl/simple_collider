@@ -8,14 +8,13 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 tmp_name = 'kdop_collider'
 
 def get_10dop_normals():
+    # 5 slab directions = 10 half-space planes
     return [
-        Vector((1, 0, 0)), Vector((-1, 0, 0)),
-        Vector((0, 1, 0)), Vector((0, -1, 0)),
-        Vector((0, 0, 1)), Vector((0, 0, -1)),
-        Vector((1, 1, 0)).normalized(),
-        Vector((1, -1, 0)).normalized(),
-        Vector((0, 1, 1)).normalized(),
-        Vector((0, 1, -1)).normalized(),
+        Vector((1, 0, 0)),  Vector((-1, 0, 0)),
+        Vector((0, 1, 0)),  Vector((0, -1, 0)),
+        Vector((0, 0, 1)),  Vector((0, 0, -1)),
+        Vector((1, 1, 0)).normalized(),  Vector((-1, -1, 0)).normalized(),  # was missing
+        Vector((0, 1, 1)).normalized(),  Vector((0, -1, -1)).normalized(),  # was missing
     ]
 
 def get_18dop_normals():
@@ -55,34 +54,38 @@ def get_26dop_normals():
     ])
     return normals
 
-def generate_kdop(bm, normals):
-    verts = [v.co for v in bm.verts]
-    planes = []
-    for n in normals:
-        min_proj = max_proj = verts[0].dot(n)
-        min_v = max_v = verts[0]
-        for v in verts:
-            proj = v.dot(n)
-            if proj < min_proj:
-                min_proj = proj
-                min_v = v
-            if proj > max_proj:
-                max_proj = proj
-                max_v = v
-        planes.append((n, min_proj, min_v))
-        planes.append((-n, -max_proj, max_v))
+def generate_kdop(bm_input, normals):
+    """Generate k-DOP by intersecting half-spaces via plane clipping."""
+    verts = [v.co.copy() for v in bm_input.verts]
+    if not verts:
+        return bmesh.new()
 
-    # Collect extreme vertices
-    dop_verts = list(set(tuple(v) for _, _, v in planes))
-    dop_verts = [Vector(v) for v in dop_verts]
+    # Each normal n defines a half-space: n·x <= d_max
+    planes = [(n, max(v.dot(n) for v in verts)) for n in normals]
 
-    # Create the convex hull of extreme vertices
-    bm_kdop = bmesh.new()
-    verts_kdop = [bm_kdop.verts.new(v) for v in dop_verts]
-    bm_kdop.verts.ensure_lookup_table()
-    bmesh.ops.convex_hull(bm_kdop, input=verts_kdop)
+    # Seed geometry: a cube large enough to contain the final k-DOP
+    max_extent = max(abs(c) for v in verts for c in v)
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=(max_extent + 1.0) * 6)
 
-    return bm_kdop
+    for n, d in planes:
+        # Geometry refs must be refreshed each iteration — stale refs cause silent failures
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        bmesh.ops.bisect_plane(
+            bm,
+            geom=geom,
+            dist=1e-5,
+            plane_co=n * d,
+            plane_no=n,
+            clear_outer=True,
+            clear_inner=False,
+        )
+        # Fill the open loop left by this cut BEFORE the next bisect runs.
+        # Without this, subsequent cuts operate on a mesh with holes and
+        # progressively destroy it until nothing remains.
+        bmesh.ops.holes_fill(bm, edges=bm.edges, sides=0)
+
+    return bm
 
 class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
     """Create K-Discrete Oriented Polytope (k-DOP) colliders based on the selection"""
@@ -189,9 +192,6 @@ class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
             bm = bmesh.new()
             for v in verts_loc:
                 bm.verts.new(v)  # add a new vert
-
-            ch = bmesh.ops.convex_hull(bm, input=bm.verts)
-            bmesh.ops.delete(bm, geom=ch["geom_unused"], context='VERTS')
 
             # Select normals based on desired k-DOP type
             if self.dop_type == '10':
