@@ -1,9 +1,13 @@
 import bpy
 from bpy.types import Operator
 
-from ..properties.constants import VALID_OBJECT_TYPES
+from .. import __package__ as base_package
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..groups.user_groups import get_groups_identifier
 
 SUPPORTED_SHAPES = {'box_shape', 'sphere_shape'}
+DEFAULT_SHAPE = 'box_shape'
+DEFAULT_GROUP = 'USER_01'
 
 EMPTY_DISPLAY_TYPE = {
     'box_shape': 'CUBE',
@@ -82,11 +86,27 @@ class OBJECT_OT_convert_to_empty(Operator):
             # Copy collider custom properties so game-engine exporters can still read them
             empty['isCollider'] = True
             empty['collider_shape'] = shape
-            if obj.get('collider_group') is not None:
-                empty['collider_group'] = obj['collider_group']
+            collider_group = obj.get('collider_group', DEFAULT_GROUP)
+            empty['collider_group'] = collider_group
 
-            # Remove the original mesh collider
+            # Remove the original mesh collider before renaming to free the original name
             bpy.data.objects.remove(obj, do_unlink=True)
+
+            # Regenerate the name using the addon's naming convention (prefix/suffix from preferences)
+            prefs = context.preferences.addons[base_package].preferences
+            if prefs.replace_name:
+                basename = prefs.obj_basename
+            elif parent:
+                basename = parent.name
+            else:
+                basename = name
+
+            new_name = OBJECT_OT_add_bounding_object.class_collider_name(
+                shape_identifier=shape,
+                user_group=get_groups_identifier(collider_group),
+                basename=basename,
+            )
+            empty.name = new_name
 
             converted += 1
 
