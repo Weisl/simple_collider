@@ -685,11 +685,12 @@ class OBJECT_OT_add_bounding_object():
         face_label = str(sum(self.face_counts))
         blf.draw(font_id, face_label)
 
-    def collider_name(self, basename='Basename'):
+    def collider_name(self, basename='Basename', exclude=None):
         self.basename = basename
         user_group = self.collision_groups[self.collision_group_idx].identifier
         return self.class_collider_name(shape_identifier=self.shape, user_group=user_group,
-                                        basename=basename, cache=self._naming_cache)
+                                        basename=basename, exclude=exclude,
+                                        cache=self._naming_cache)
 
     def get_shape_name(self):
         """ Return Shape String """
@@ -1224,8 +1225,11 @@ class OBJECT_OT_add_bounding_object():
         self.set_data_name(new_collider, new_name, self.data_suffix)
 
     def update_names(self):
+        self._naming_cache = {}
         for obj in self.new_colliders_list:
-            new_name = self.collider_name(basename=self.basename)
+            new_name = self.collider_name(basename=self.basename, exclude=obj.name)
+            if new_name == obj.name:
+                continue
             obj.name = new_name
             self.set_data_name(obj, new_name, self.data_suffix)
 
@@ -1811,11 +1815,11 @@ class OBJECT_OT_add_bounding_object():
         elif event.type == 'T' and event.value == 'RELEASE' and self.collider_groups_enabled:
             # toggle through display modes
             self.collision_group_idx = (self.collision_group_idx + 1) % len(self.collision_groups)
+            col = self.collision_groups[self.collision_group_idx].color
             for obj in self.new_colliders_list:
-                col = self.collision_groups[self.collision_group_idx].color
                 set_object_color(obj, (col[0], col[1], col[2], self.current_settings_dic['alpha']))
                 self.set_object_collider_group(obj)
-                self.update_names()
+            self.update_names()
 
         elif event.type == 'MOUSEMOVE':
             # calculate mouse movement and offset camera
