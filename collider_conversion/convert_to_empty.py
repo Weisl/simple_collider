@@ -16,9 +16,10 @@ EMPTY_DISPLAY_TYPE = {
 
 
 class OBJECT_OT_convert_to_empty(Operator):
+
     """Convert selected box and sphere colliders to empties whose scale encodes the collision shape dimensions"""
     bl_idname = "object.convert_to_empty"
-    bl_label = "Collider to Empty"
+    bl_label = "Mesh Collider -> Empty"
     bl_description = 'Convert selected box/sphere colliders to empties (scale = half-extents). Compatible with Godot and GTA modding tools.'
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -29,7 +30,10 @@ class OBJECT_OT_convert_to_empty(Operator):
         for obj in context.selected_objects:
             if obj.get('isCollider') and obj.get('collider_shape') in SUPPORTED_SHAPES:
                 return True
-        return False
+        for obj in context.selected_objects:
+            if obj.type in VALID_OBJECT_TYPES:
+                count = count + 1
+        return count > 0
 
     def execute(self, context):
         converted = 0
@@ -37,6 +41,10 @@ class OBJECT_OT_convert_to_empty(Operator):
 
         for obj in list(context.selected_objects):
             if not obj.get('isCollider'):
+                skipped += 1
+                continue
+
+            if not obj.type == 'MESH':
                 skipped += 1
                 continue
 
