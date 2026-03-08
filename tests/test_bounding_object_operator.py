@@ -481,6 +481,54 @@ class TestUniqueNameDoesNotRestartCounterPerCall(unittest.TestCase):
         )
 
 
+# -- unique_name: cache robustness across a sparse name gap -------------------
+
+
+class TestUniqueNameCacheHandlesGaps(unittest.TestCase):
+    """unique_name() with a cache must not return a duplicate when a
+    pre-existing name falls exactly on the slot the cache predicts next.
+
+    Scenario: _001–_003 and _007 already exist.  Generating 4 new names must
+    yield _004, _005, _006, _008 — skipping the occupied _007 even though the
+    cache would otherwise predict it as the next free slot.
+    """
+
+    def test_no_duplicates_across_gap(self):
+        """4 sequential unique_name() calls must skip _007 (already occupied)
+        and return _004, _005, _006, _008 in that order."""
+        base = 'UniqueNameGapTestBase'
+        pre_existing_names = [
+            f'{base}_001', f'{base}_002', f'{base}_003', f'{base}_007',
+        ]
+        expected = [
+            f'{base}_004', f'{base}_005', f'{base}_006', f'{base}_008',
+        ]
+        created = []
+        try:
+            for name in pre_existing_names:
+                mesh = bpy.data.meshes.new(name + '_mesh')
+                obj = bpy.data.objects.new(name, mesh)
+                bpy.context.collection.objects.link(obj)
+                created.append(obj)
+
+            cache = {}
+            generated = []
+            for _ in range(4):
+                name = _OBJECT_OT_add_bounding_object.unique_name(base, digits=3, cache=cache)
+                # Register each generated name immediately so subsequent calls
+                # see it as taken, matching real operator usage.
+                mesh = bpy.data.meshes.new(name + '_mesh')
+                obj = bpy.data.objects.new(name, mesh)
+                bpy.context.collection.objects.link(obj)
+                created.append(obj)
+                generated.append(name)
+        finally:
+            for obj in created:
+                _remove_obj(obj)
+
+        self.assertEqual(generated, expected)
+
+
 # -- remove_objects: mesh data cleanup ----------------------------------------
 
 
