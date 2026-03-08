@@ -15,49 +15,73 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     target_triangles: IntProperty(
         name="Target Triangles",
         description="Target number of triangles",
-        default=256,
+        default=800,
         min=1
+    )
+
+    iterations: IntProperty(
+        name="Iterations",
+        description="Number of binary search steps. More iterations = closer approximation but slower. Each extra step halves the remaining error",
+        default=8,
+        min=1,
+        max=16,
     )
 
     def execute(self, context):
         for obj in context.selected_objects:
-            if obj.type == 'MESH':
-                # Add a decimate modifier
-                if obj.modifiers.get(DECIMATE_NAME):
-                    decimate = obj.modifiers.get(DECIMATE_NAME)
+            if obj.type != 'MESH':
+                continue
+
+            if obj.modifiers.get(DECIMATE_NAME):
+                decimate = obj.modifiers.get(DECIMATE_NAME)
+            else:
+                decimate = obj.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
+            decimate.decimate_type = 'COLLAPSE'
+
+            def get_tri_count(ratio):
+                decimate.ratio = ratio
+                depsgraph = context.evaluated_depsgraph_get()
+                obj_eval = obj.evaluated_get(depsgraph)
+                mesh = obj_eval.to_mesh()
+                count = sum(len(p.vertices) - 2 for p in mesh.polygons)
+                obj_eval.to_mesh_clear()
+                return count
+
+            # If original mesh is already within budget, no decimation needed
+            original_count = get_tri_count(1.0)
+            if original_count <= self.target_triangles:
+                decimate.ratio = 1.0
+                continue
+
+            # Check if even maximum decimation can reach the target
+            if get_tri_count(0.001) > self.target_triangles:
+                self.report({'WARNING'}, f"{obj.name}: cannot reach {self.target_triangles} tris even at maximum decimation")
+                decimate.ratio = 1.0
+                continue
+
+            # Linear estimate: COLLAPSE decimation reduces tris roughly proportional to ratio.
+            estimated_ratio = self.target_triangles / original_count
+            actual_count = get_tri_count(estimated_ratio)
+
+            # Narrow binary search correction around the estimate.
+            # The search range is a small band rather than the full 0–1 space,
+            # so self.iterations steps give much finer precision than before.
+            if actual_count <= self.target_triangles:
+                lo, hi = estimated_ratio, 1.0
+                best_ratio = estimated_ratio
+            else:
+                lo, hi = 0.001, estimated_ratio
+                best_ratio = 0.001
+
+            for _ in range(self.iterations):
+                mid = (lo + hi) * 0.5
+                if get_tri_count(mid) <= self.target_triangles:
+                    best_ratio = mid
+                    lo = mid
                 else:
-                    decimate = obj.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
-                decimate.decimate_type = 'COLLAPSE'
+                    hi = mid
 
-                # Start with a ratio that is likely too high
-                ratio = 1.0
-
-                # Loop to adjust the ratio
-                while ratio > 0.001:
-                    decimate.ratio = ratio
-
-                    # Use the dependency graph to get the evaluated mesh
-                    depsgraph = context.evaluated_depsgraph_get()
-                    obj_eval = obj.evaluated_get(depsgraph)
-                    mesh_from_eval = obj_eval.to_mesh()
-
-                    # Calculate the current number of triangles
-                    current_triangles = sum(len(poly.vertices) - 2 for poly in mesh_from_eval.polygons)
-                    print(f"Current triangles: {current_triangles}, Ratio: {ratio}")
-
-                    # Free the evaluated mesh to prevent memory leaks
-                    obj_eval.to_mesh_clear()
-
-                    # Check if the current triangle count is below the target
-                    if current_triangles < self.target_triangles:
-                        print("Target triangle count achieved.")
-                        break
-
-                    # If not, halve the ratio
-                    ratio /= 2
-
-                if current_triangles >= self.target_triangles:
-                    print("Could not reduce triangles below target with ratio > 0.01.")
+            decimate.ratio = best_ratio
 
         return {'FINISHED'}
 
