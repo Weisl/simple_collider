@@ -52,13 +52,14 @@ class OBJECT_OT_convert_to_mesh(Operator):
         colSettings = context.scene.simple_collider
         count = 0
 
+        naming_cache = {}
         for obj in bpy.context.selected_objects.copy():
             if obj.get('isCollider'):
                 count += 1
                 # Rest object properties to regular mesh
                 obj['isCollider'] = False
                 obj.color = (1, 1, 1, 1)
-                obj.name = OBJECT_OT_add_bounding_object.unique_name(self.mesh_name)
+                obj.name = OBJECT_OT_add_bounding_object.unique_name(self.mesh_name, cache=naming_cache)
                 obj.display_type = 'TEXTURED'
 
                 if self.keep_original_material == False:

@@ -481,6 +481,54 @@ class TestUniqueNameDoesNotRestartCounterPerCall(unittest.TestCase):
         )
 
 
+# -- unique_name: cache robustness across a sparse name gap -------------------
+
+
+class TestUniqueNameCacheHandlesGaps(unittest.TestCase):
+    """unique_name() with a cache must not return a duplicate when a
+    pre-existing name falls exactly on the slot the cache predicts next.
+
+    Scenario: _001–_003 and _007 already exist.  Generating 4 new names must
+    yield _004, _005, _006, _008 — skipping the occupied _007 even though the
+    cache would otherwise predict it as the next free slot.
+    """
+
+    def test_no_duplicates_across_gap(self):
+        """4 sequential unique_name() calls must skip _007 (already occupied)
+        and return _004, _005, _006, _008 in that order."""
+        base = 'UniqueNameGapTestBase'
+        pre_existing_names = [
+            f'{base}_001', f'{base}_002', f'{base}_003', f'{base}_007',
+        ]
+        expected = [
+            f'{base}_004', f'{base}_005', f'{base}_006', f'{base}_008',
+        ]
+        created = []
+        try:
+            for name in pre_existing_names:
+                mesh = bpy.data.meshes.new(name + '_mesh')
+                obj = bpy.data.objects.new(name, mesh)
+                bpy.context.collection.objects.link(obj)
+                created.append(obj)
+
+            cache = {}
+            generated = []
+            for _ in range(4):
+                name = _OBJECT_OT_add_bounding_object.unique_name(base, digits=3, cache=cache)
+                # Register each generated name immediately so subsequent calls
+                # see it as taken, matching real operator usage.
+                mesh = bpy.data.meshes.new(name + '_mesh')
+                obj = bpy.data.objects.new(name, mesh)
+                bpy.context.collection.objects.link(obj)
+                created.append(obj)
+                generated.append(name)
+        finally:
+            for obj in created:
+                _remove_obj(obj)
+
+        self.assertEqual(generated, expected)
+
+
 # -- remove_objects: mesh data cleanup ----------------------------------------
 
 
@@ -891,6 +939,199 @@ class TestSetOriginToCoMDepsgraphParam(unittest.TestCase):
                 obj_percall.location[axis], obj_prefetch.location[axis], places=5,
                 msg=f'location[{axis}]: per-call={obj_percall.location[axis]:.6f} vs pre-fetched={obj_prefetch.location[axis]:.6f}',
             )
+
+
+# -- T-key group toggle: update_names() naming correctness -------------------
+
+
+class TestGroupToggleNamingCorrectness(unittest.TestCase):
+    """Tests for naming correctness in the T-key collider group toggle handler.
+
+    Covers two bugs fixed together:
+
+    Bug 1 — same-formula suffix bump: update_names() did not exclude each
+    object's current name from the uniqueness search.  When two groups share
+    the same naming formula, unique_name() saw 'collider_001' as taken and
+    returned 'collider_002', bumping all suffixes on every toggle even though
+    the names were already correct.  Same class of bug fixed for Assign User
+    Group and Assign Shape in PR 597 (b2892f1).
+
+    Bug 2 — stale naming cache on group round-trip: _naming_cache was not
+    reset when the group changed, so toggling A → B → A restarted numbering
+    from the cache value left by the B pass rather than from 001.
+
+    update_names() is driven directly rather than through modal() because
+    modal() requires a viewport context (context.space_data) unavailable in
+    headless Blender.  Requires the add-on to be registered.
+    """
+
+    _N = 5
+    _PREFIX = '__test_gtog_'
+
+    @classmethod
+    def setUpClass(cls):
+        registered_key = _find_registered_addon_key()
+        orig = _prim_mod.base_package
+        if registered_key is not None and registered_key != orig:
+            _prim_mod.base_package = registered_key
+            cls._base_package_patched = orig
+        else:
+            cls._base_package_patched = None
+        cls._addon_available = (
+            registered_key is not None
+            and hasattr(bpy.context.scene, 'active_physics_material')
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._base_package_patched is not None:
+            _prim_mod.base_package = cls._base_package_patched
+
+    def setUp(self):
+        self._objs = []
+        for i in range(self._N):
+            mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{i}')
+            mesh.from_pydata(
+                [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [], [[0, 1, 2]]
+            )
+            mesh.update()
+            obj = bpy.data.objects.new(f'{self._PREFIX}obj_{i}', mesh)
+            bpy.context.collection.objects.link(obj)
+            self._objs.append(obj)
+
+    def tearDown(self):
+        for obj in list(self._objs):
+            _remove_obj(obj)
+        self._objs = []
+
+    def _make_fake(self, basename):
+        """Build a minimal stand-in for OBJECT_OT_add_bounding_object with
+        enough attributes to drive update_names()."""
+        if not self._addon_available:
+            return None
+        colSettings = bpy.context.scene.simple_collider
+        group = colSettings.visibility_toggle_user_group_01
+        fake = _types.SimpleNamespace(
+            new_colliders_list=list(self._objs),
+            collision_groups=[group],
+            collision_group_idx=0,
+            shape='box_shape',
+            basename=basename,
+            data_suffix='_data',
+            _naming_cache={},
+        )
+        # update_names() calls self.collider_name() and self.set_data_name();
+        # bind both onto the fake so the unbound class methods can find them.
+        def _collider_name(basename=None, exclude=None):
+            if basename is None:
+                basename = fake.basename
+            user_group = fake.collision_groups[fake.collision_group_idx].identifier
+            return _OBJECT_OT_add_bounding_object.class_collider_name(
+                fake.shape, user_group, basename=basename, exclude=exclude,
+                cache=fake._naming_cache
+            )
+        fake.collider_name = _collider_name
+        fake.set_data_name = _OBJECT_OT_add_bounding_object.set_data_name
+        return fake
+
+    def test_single_call_with_fresh_cache_produces_sequential_suffixes(self):
+        """Regression guard: one update_names() call with a fresh _naming_cache
+        produces sequential suffixes 1 through N.
+
+        Passes before and after the fix.  Verifies the baseline behavior of
+        update_names() itself — that starting from an empty cache assigns each
+        object the lowest available numeric slot in order.
+        """
+        if not self._addon_available:
+            self.skipTest("simple_collider not registered")
+        fake = self._make_fake(self._PREFIX + 'base')
+        _OBJECT_OT_add_bounding_object.update_names(fake)
+
+        suffixes = sorted(
+            int(obj.name.rsplit('_', 1)[-1])
+            for obj in fake.new_colliders_list
+            if obj.name.rsplit('_', 1)[-1].isdigit()
+        )
+        self.assertEqual(suffixes, [1, 2, 3, 4, 5],
+                         "Expected sequential suffixes 1–5; a stale or shared cache would shift the sequence upward")
+
+    def test_repeated_toggle_to_same_formula_preserves_names(self):
+        """update_names() must not increment suffixes when the target name
+        already equals the object's current name.
+
+        If two groups share the same naming formula (e.g. both have an empty
+        identifier, or both use the same custom identifier), toggling A → B
+        should leave names unchanged.  Without excluding the current name from
+        the uniqueness check, unique_name() sees 'collider_001' as taken and
+        returns 'collider_002', bumping every object one slot higher on each
+        toggle even though the names are already correct.
+
+        This is the same class of bug fixed for Assign User Group and Assign
+        Shape in PR 597 (b2892f1).
+        """
+        if not self._addon_available:
+            self.skipTest("simple_collider not registered")
+        fake = self._make_fake(self._PREFIX + 'base')
+
+        # First call: establish the correct names (001..00N).
+        fake._naming_cache = {}
+        _OBJECT_OT_add_bounding_object.update_names(fake)
+        names_after_first = [obj.name for obj in fake.new_colliders_list]
+
+        # Second call with fresh cache: simulates toggling to a group whose
+        # naming formula produces the same base name (e.g. same identifier).
+        # Names must be unchanged — each object already carries the lowest
+        # available slot when its own current name is treated as available.
+        fake._naming_cache = {}
+        _OBJECT_OT_add_bounding_object.update_names(fake)
+        names_after_second = [obj.name for obj in fake.new_colliders_list]
+
+        self.assertEqual(
+            names_after_second, names_after_first,
+            f"update_names() changed names on a same-formula toggle:\n"
+            f"  before: {names_after_first}\n"
+            f"  after:  {names_after_second}\n"
+            "Each object already held the lowest available slot; "
+            "unique_name() must exclude the current name from its search."
+        )
+
+    def test_repeated_call_preserves_names(self):
+        """update_names() must restart numbering from 001 on each call without
+        the caller clearing _naming_cache first.
+
+        Simulates a group round-trip (A → B → A): after the first call assigns
+        names _001.._N, a second call without an explicit cache clear must
+        leave those names unchanged.  Without an internal cache reset,
+        update_names() resumes from the count left by the previous pass and
+        renames every object to _N+1.._2N even though the correct names are
+        already assigned.
+
+        Fails before the fix (which moves _naming_cache = {} to the start of
+        update_names()); passes after.
+        """
+        if not self._addon_available:
+            self.skipTest("simple_collider not registered")
+        fake = self._make_fake(self._PREFIX + 'base_repeat')
+
+        # First call: establish the correct names (001..N).
+        fake._naming_cache = {}
+        _OBJECT_OT_add_bounding_object.update_names(fake)
+        names_after_first = [obj.name for obj in fake.new_colliders_list]
+
+        # Second call without clearing the cache: simulates the stale state
+        # the T-key handler left before the fix.  Names must be unchanged.
+        _OBJECT_OT_add_bounding_object.update_names(fake)
+        names_after_second = [obj.name for obj in fake.new_colliders_list]
+
+        self.assertEqual(
+            names_after_second, names_after_first,
+            f"update_names() bumped names on a second call without a manual "
+            f"cache clear:\n"
+            f"  before: {names_after_first}\n"
+            f"  after:  {names_after_second}\n"
+            "update_names() must clear _naming_cache at entry so each call "
+            "restarts numbering from 001."
+        )
 
 
 if __name__ == '__main__':
