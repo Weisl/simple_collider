@@ -20,8 +20,7 @@ classes = (
     visibility_settings.VIEW3D_OT_material_view,
     utility_operators.COLLISION_OT_adjust_decimation,
     utility_operators.COLLISION_OT_MoveOriginToParentOperator,
-    utility_operators.COLLISION_OT_ReplaceWithCleanMesh,
-    utility_operators.COLLISION_OT_FixColliderTransform,
+utility_operators.COLLISION_OT_FixColliderTransform,
 )
 
 
