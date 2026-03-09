@@ -285,6 +285,8 @@ def draw_creation_menu(context, layout, settings=False):
     row.operator('object.convert_to_collider', icon='PHYSICS')
     row = col.row(align=True)
     row.operator('object.convert_to_mesh', icon='WINDOW')
+    row = col.row(align=True)
+    row.operator('object.convert_to_empty', icon='EMPTY_AXIS')
 
     row = layout.row(align=True)
     row.operator('object.convert_from_name', icon='NONE')
