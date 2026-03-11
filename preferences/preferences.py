@@ -71,18 +71,17 @@ def get_default_executable_path():
 
     vhacd_app_folder = "v-hacd_app"
 
-    if platform.system() not in ['Windows', 'Linux']:
-        return ''
-
-    OS_folder = ''
-    app_name = ''
-
     if platform.system() == 'Windows':
         OS_folder = 'Win'
         app_name = 'vhacd_4_1_win_amd64.exe'
     elif platform.system() == 'Linux':
         OS_folder = 'Linux'
         app_name = 'vhacd_4_1_linux_amd64'
+    elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
+        OS_folder = 'Mac'
+        app_name = 'vhacd_4_1_macos_arm64'
+    else:
+        return ''
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
@@ -316,6 +315,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             box.label(text="Supported (Linux Mint/Ubuntu).")
             box.label(text="You can also use a custom build of vhacd compiled for your Linux distribution.")
         
+        elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
+            box.label(text="Supported (macOS ARM64)")
+
         else:
             box.label(text="Auto Convex is currently not supported on this platform", icon='ERROR')
 

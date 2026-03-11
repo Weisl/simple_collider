@@ -74,12 +74,13 @@ def draw_auto_convex(layout, context):
 
     # row.label(text='Auto Convex')
 
-    if platform.system() not in ['Windows', 'Linux']:
+    if not (platform.system() in ['Windows', 'Linux']
+            or (platform.system() == 'Darwin' and platform.machine() == 'arm64')):
         op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
 
-        text = "Auto convex is only supported for Windows and Linux at this moment."
+        text = "Auto convex is only supported for Windows, Linux, and macOS ARM64 at this moment."
         label_multiline(
             context=context,
             text=text,
