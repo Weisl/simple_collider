@@ -6,7 +6,7 @@ from bpy.types import Operator
 from mathutils import Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
-from .utilities import get_sca_matrix, get_rot_matrix, get_loc_matrix
+from .utilities import get_sca_matrix
 from ..bmesh_operations.capsule_generation import create_capsule_data, mesh_data_to_bmesh
 from ..bmesh_operations.cylinder_generation import welzl
 
@@ -100,7 +100,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         objs = self.get_pre_processed_mesh_objs(context)
 
         for base_ob, obj in objs:
-            # Initialize a dictionary to store data for the bounding cylinder
+            # Initialize a dictionary to store data for the bounding capsule
             bounding_capsule_data = {}
 
             used_vertices = self.get_used_vertices(base_ob, obj)
@@ -110,7 +110,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
 
             # Decompose the object's world matrix into location, rotation, and scale components
             matrix_WS = obj.matrix_world
-            loc, rot, sca = matrix_WS.decompose()
+            _, _, sca = matrix_WS.decompose()
 
             creation_mode = self.creation_mode[self.creation_mode_idx] if self.obj_mode == 'OBJECT' else \
                 self.creation_mode_edit[self.creation_mode_idx]
@@ -128,8 +128,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                     if self.my_space == 'LOCAL':
                         v = vertex.co @ get_sca_matrix(sca)
                     else:
-                        # Scale has to be applied before location
-                        v = vertex.co @ get_sca_matrix(sca) @ get_loc_matrix(loc) @ get_rot_matrix(rot)
+                        v = Vector(matrix_WS @ vertex.co)
 
                     if self.cylinder_axis == 'X':
                         coordinates.append([v.y, v.z])
@@ -146,9 +145,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                 else:
                     center = sum((Vector(b) for b in bounding_box), Vector()) / 8.0
 
-                depth = abs(max(height) - min(height))
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqr_radius)
+                t_arr = np.asarray(height)
+                d_perp = np.linalg.norm(np.asarray(coordinates) - nsphere.center, axis=1)
+                slacks = np.sqrt(np.maximum(0.0, radius ** 2 - d_perp ** 2))
+                depth = max(0.0, float(np.max(t_arr - slacks)) - float(np.min(t_arr + slacks)))
 
                 bounding_capsule_data['parent'] = base_ob
                 bounding_capsule_data['radius'] = radius
@@ -181,10 +183,12 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
                         coordinates.append([v.x, v.y])
                         height.append(v.z)
 
-                depth = abs(max(height) - min(height))
-
                 nsphere = welzl(np.array(coordinates))
                 radius = np.sqrt(nsphere.sqr_radius)
+                t_arr = np.asarray(height)
+                d_perp = np.linalg.norm(np.asarray(coordinates) - nsphere.center, axis=1)
+                slacks = np.sqrt(np.maximum(0.0, radius ** 2 - d_perp ** 2))
+                depth = max(0.0, float(np.max(t_arr - slacks)) - float(np.min(t_arr + slacks)))
 
                 bounding_capsule_data['parent'] = self.active_obj
                 bounding_capsule_data['radius'] = radius
@@ -228,10 +232,11 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
             new_collider = bpy.data.objects.new(mesh_data.name, mesh_data)
 
             new_collider.location = center
-            rotation_euler = parent.rotation_euler
 
-            if rotation_euler:
-                new_collider.rotation_euler = rotation_euler
+            if self.my_space == 'LOCAL':
+                rotation_euler = parent.rotation_euler
+                if rotation_euler:
+                    new_collider.rotation_euler = rotation_euler
 
             if self.cylinder_axis == 'X':
                 new_collider.rotation_euler.rotate_axis("Y", radians(90))

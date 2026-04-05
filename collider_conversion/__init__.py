@@ -1,5 +1,6 @@
 from . import convert_from_name
 from . import convert_to_collider
+from . import convert_to_empty
 from . import convert_to_mesh
 from . import regenerate_name
 from . import convert_to_shape
@@ -7,6 +8,7 @@ from . import convert_to_shape
 classes = (
     convert_to_collider.OBJECT_OT_convert_to_collider,
     convert_to_mesh.OBJECT_OT_convert_to_mesh,
+    convert_to_empty.OBJECT_OT_convert_to_empty,
     convert_from_name.OBJECT_OT_convert_from_name,
     convert_to_shape.COLLISION_OT_assign_shape,
     regenerate_name.OBJECT_OT_regenerate_name,

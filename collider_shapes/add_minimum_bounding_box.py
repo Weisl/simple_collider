@@ -4,7 +4,7 @@ import bmesh
 import bpy
 import numpy as np
 from bpy.types import Operator
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 
@@ -95,19 +95,27 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         bb_center = (bb_max + bb_min) / 2
         rotation_matrix = Matrix(bb_basis_mat).to_4x4()
 
-        mesh_matrix = Matrix.Translation(bb_center.dot(bb_basis)) @ rotation_matrix @ Matrix(
-            np.identity(3) * bb_dim / 2).to_4x4()
+        # Build an axis-aligned mesh (scale only, no rotation baked in).
+        # The rotation is stored on the object so it is visible and editable
+        # as a normal object rotation, and the mesh stays clean in local space.
+        scale_matrix = Matrix(np.identity(3) * bb_dim / 2).to_4x4()
 
         bb_mesh = bpy.data.meshes.new(obj.name + "_minimum_bounding_box")
         bb_mesh.from_pydata(vertices=list(cls.gen_cube_verts()), edges=[], faces=CUBE_FACE_INDICES)
         bb_mesh.validate()
-        bb_mesh.transform(mesh_matrix)
+        bb_mesh.transform(scale_matrix)
         bb_mesh.update()
 
         bb_obj = bpy.data.objects.new(bb_mesh.name, bb_mesh)
-        bb_obj.matrix_world = obj.matrix_world
 
-        return bb_obj, rotation_matrix
+        # Place the object at the bbox world-space centre with the correct
+        # rotation.  obj.location is used instead of obj.matrix_world to avoid
+        # reading a potentially stale depsgraph value; after apply_transform the
+        # object matrix is a pure translation so location == world origin.
+        bb_obj.location = obj.location + Vector(bb_center.dot(bb_basis))
+        bb_obj.rotation_euler = rotation_matrix.to_euler()
+
+        return bb_obj, None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -231,7 +239,8 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             # save collision objects to delete when canceling the operation
             self.new_colliders_list.append(new_collider)
-            self.col_rotation_matrix_list.append(rotation_matrix)
+            if rotation_matrix is not None:
+                self.col_rotation_matrix_list.append(rotation_matrix)
 
             collections = parent.users_collection
             self.primitive_postprocessing(context, new_collider, collections)

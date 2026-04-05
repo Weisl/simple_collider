@@ -246,6 +246,14 @@ def draw_creation_menu(context, layout, settings=False):
     row = col.row(align=True)
     draw_auto_convex(row, context)
 
+    # layout.separator()
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.operator("mesh.add_bounding_kdop", text='10-DOP (Low Detail)', icon='MESH_ICOSPHERE').dop_type = '10'
+    row = col.row(align=True)
+    row.operator("mesh.add_bounding_kdop", text='18-DOP (Mid Detail)', icon='MESH_ICOSPHERE').dop_type = '18'
+    row = col.row(align=True)
+    row.operator("mesh.add_bounding_kdop", text='26-DOP (High Detail)', icon='MESH_ICOSPHERE').dop_type = '26'  
     row = layout.row(align=True)
     row.label(text='Convert Shape')
 
@@ -278,6 +286,8 @@ def draw_creation_menu(context, layout, settings=False):
     row.operator('object.convert_to_collider', icon='PHYSICS')
     row = col.row(align=True)
     row.operator('object.convert_to_mesh', icon='WINDOW')
+    row = col.row(align=True)
+    row.operator('object.convert_to_empty', icon='EMPTY_AXIS')
 
     row = layout.row(align=True)
     row.operator('object.convert_from_name', icon='NONE')

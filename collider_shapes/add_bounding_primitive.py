@@ -1667,11 +1667,12 @@ class OBJECT_OT_add_bounding_object():
                         scale_x, scale_y, scale_z = parent.scale
                         if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z,
                                                                                          rel_tol=1e-5):
-                            fix_inverse_matrix(obj, update_depsgraph=False)
+                            if not self.use_custom_rotation:
+                                fix_inverse_matrix(obj, update_depsgraph=False)
 
-                            obj.location = (0, 0, 0)
-                            obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
-                            obj.scale = (1, 1, 1)
+                                obj.location = (0, 0, 0)
+                                obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
+                                obj.scale = (1, 1, 1)
 
                         else:
                             print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
