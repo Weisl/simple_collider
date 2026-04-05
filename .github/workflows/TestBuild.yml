@@ -1,0 +1,32 @@
+name: Test Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ github.event.repository.name }}
+
+      - name: Set short SHA
+        id: vars
+        run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Zip Repository (excludes hidden dirs, venv, tests)
+        run: |
+          zip -r simple_renaming_${{ steps.vars.outputs.short_sha }}.zip \
+            ${{ github.event.repository.name }} \
+            -x "${{ github.event.repository.name }}/.git*" \
+            -x "${{ github.event.repository.name }}/.*/*" \
+            -x "${{ github.event.repository.name }}/tests/*" \
+            -x "${{ github.event.repository.name }}/venv/*"
+
+      - name: Upload zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple_renaming_${{ steps.vars.outputs.short_sha }}
+          path: simple_renaming_${{ steps.vars.outputs.short_sha }}.zip
+          retention-days: 7
