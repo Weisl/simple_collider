@@ -14,7 +14,7 @@ jobs:
       - name: Read version from blender_manifest.toml
         id: version
         run: |
-          VERSION=$(sed -n 's/version = "\([^"]*\)"/\1/p' ${{ github.event.repository.name }}/blender_manifest.toml)
+          VERSION=$(python3 -c "import tomllib; f=open('${{ github.event.repository.name }}/blender_manifest.toml','rb'); print(tomllib.load(f)['version'])")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set short SHA
