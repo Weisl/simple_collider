@@ -1,6 +1,17 @@
+import bpy
+from bpy.app.handlers import persistent
+from bpy.props import (
+    BoolProperty,
+    EnumProperty,
+    StringProperty,
+    IntProperty,
+    IntVectorProperty,
+)
 from . import utility_operators
 from . import visibility_selection_deletion
 from . import visibility_settings
+from .version_check import start_version_check
+
 
 classes = (
     visibility_selection_deletion.COLLISION_OT_Selection,
@@ -29,6 +40,8 @@ def register():
     from bpy.utils import register_class
     for cls in classes:
         register_class(cls)
+        
+    start_version_check()
 
 
 def unregister():

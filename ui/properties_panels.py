@@ -475,6 +475,12 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         layout = self.layout
         scene = context.scene
 
+        from ..collider_operators.version_check import update_available, latest_version_str
+
+        if update_available:
+            row = layout.row(align=True)
+            row.label(text=f"Update available: v{latest_version_str}", icon='WARNING_LARGE')
+
         draw_naming_presets(self, context)
 
         # Create Collider
