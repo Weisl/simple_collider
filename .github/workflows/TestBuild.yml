@@ -23,7 +23,7 @@ jobs:
 
       - name: Zip Repository (excludes hidden dirs, venv, tests)
         run: |
-          zip -r simple_renaming_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}.zip \
+          zip -r simple_collider_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}.zip \
             ${{ github.event.repository.name }} \
             -x "${{ github.event.repository.name }}/.git*" \
             -x "${{ github.event.repository.name }}/.*/*" \
@@ -33,6 +33,6 @@ jobs:
       - name: Upload zip as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: simple_renaming_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}
-          path: simple_renaming_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}.zip
+          name: simple_collider_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}
+          path: simple_collider_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}.zip
           retention-days: 7
