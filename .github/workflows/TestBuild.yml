@@ -14,7 +14,7 @@ jobs:
       - name: Read version from blender_manifest.toml
         id: version
         run: |
-          VERSION=$(grep -Po 'version = "\K[^"]+' ${{ github.event.repository.name }}/blender_manifest.toml)
+          VERSION=$(sed -n 's/version = "\([^"]*\)"/\1/p' ${{ github.event.repository.name }}/blender_manifest.toml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Set short SHA
