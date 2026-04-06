@@ -523,6 +523,18 @@ def register():
     bpy.app.handlers.load_post.append(_load_handler)
 
 
+
+    # Defer setup until context is fully initialized (scene and operators are available)
+    def _deferred_setup():
+        set_default_active_mat()
+        set_default_group_values()
+        load_preset_on_scene_open()
+        return None  # returning None unregisters the timer
+
+    bpy.app.timers.register(_deferred_setup, first_interval=0)
+
+
+
 def unregister():
     from bpy.utils import unregister_class
     from ..ui.properties_panels import collider_presets_folder

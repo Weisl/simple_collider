@@ -348,7 +348,7 @@ def draw_naming_presets(self, context):
 
 # OPERATORS 
 
-class EXPLORER_OT_open_directory_new(bpy.types.Operator, ImportHelper):
+class COLLSION_OT_open_directory_new(bpy.types.Operator, ImportHelper):
     """Open render output directory in Explorer"""
     bl_idname = "explorer.open_in_explorer"
     bl_label = "Open Folder"
