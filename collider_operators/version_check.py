@@ -20,7 +20,7 @@ def _fetch():
     try:
         req = urllib.request.Request(
             _RELEASES_URL,
-            headers={"User-Agent": "simple-renaming-addon"},
+            headers={"User-Agent": "simple-collider-addon"},
         )
         with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
@@ -50,10 +50,10 @@ def _fetch():
             update_available = True
             latest_version_str = tag.lstrip("v")
         else:
-            print(f"[RENAMING] Addon is up to date (v{current_str})")
+            print(f"[Simple Collider] Addon is up to date (v{current_str})")
 
     except Exception as exc:
-        print(f"[RENAMING] version check failed: {exc}")
+        print(f"[Simple Collider] version check failed: {exc}")
 
 
 def start_version_check():

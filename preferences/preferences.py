@@ -523,9 +523,10 @@ def register():
     bpy.app.handlers.load_post.append(_load_handler)
 
 
-
     # Defer setup until context is fully initialized (scene and operators are available)
     def _deferred_setup():
+        if not bpy.context or not bpy.context.scene:
+            return 0.1  # scene not ready yet, retry after 100ms
         set_default_active_mat()
         set_default_group_values()
         load_preset_on_scene_open()
