@@ -1,0 +1,41 @@
+name: Test Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ github.event.repository.name }}
+
+      - name: Read version from blender_manifest.toml
+        id: version
+        run: |
+          VERSION=$(python3 -c "import tomllib; f=open('${{ github.event.repository.name }}/blender_manifest.toml','rb'); print(tomllib.load(f)['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set short SHA
+        id: vars
+        run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Prepare add-on folder
+        run: |
+          mkdir -p staging/simple_collider
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.*' \
+            --exclude='tests' \
+            --exclude='venv' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            ${{ github.event.repository.name }}/ staging/simple_collider/
+
+      - name: Upload zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple_collider_${{ steps.version.outputs.version }}_${{ steps.vars.outputs.short_sha }}
+          path: staging/
+          retention-days: 7
