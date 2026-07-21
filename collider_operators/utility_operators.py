@@ -235,6 +235,55 @@ def fix_inverse_matrix(obj, update_depsgraph=True):
     return
 
 
+class COLLISION_OT_ReloadAddon(bpy.types.Operator):
+    """Reload all Simple Collider scripts"""
+    bl_idname = "collision.reload_addon"
+    bl_label = "Reload Addon"
+    bl_description = "Reload all Simple Collider scripts"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        import importlib
+        import sys
+
+        root_pkg = __package__.rsplit(".", 1)[0]
+
+        mod_names = sorted(
+            [name for name in sys.modules
+             if name == root_pkg or name.startswith(root_pkg + ".")],
+            key=lambda n: (-n.count("."), n),
+        )
+
+        def _do_reload():
+            root_mod = sys.modules.get(root_pkg)
+            if root_mod and hasattr(root_mod, "unregister"):
+                try:
+                    root_mod.unregister()
+                except Exception as exc:
+                    print(f"[Simple Collider] unregister error: {exc}")
+
+            for name in mod_names:
+                mod = sys.modules.get(name)
+                if mod is not None:
+                    try:
+                        importlib.reload(mod)
+                    except Exception as exc:
+                        print(f"[Simple Collider] reload error for '{name}': {exc}")
+
+            root_mod = sys.modules.get(root_pkg)
+            if root_mod and hasattr(root_mod, "register"):
+                try:
+                    root_mod.register()
+                except Exception as exc:
+                    print(f"[Simple Collider] register error: {exc}")
+
+            print(f"[Simple Collider] Reloaded {len(mod_names)} modules from '{root_pkg}'")
+
+        bpy.app.timers.register(_do_reload, first_interval=0.0)
+        self.report({'INFO'}, f"Queued reload of {len(mod_names)} modules…")
+        return {'FINISHED'}
+
+
 class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
     """Fix the parent inverse matrix on selected colliders"""
     bl_idname = "object.fix_parent_inverse_transform"

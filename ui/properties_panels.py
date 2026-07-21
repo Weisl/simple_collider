@@ -469,6 +469,10 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         op = row.operator("wm.call_menu_pie", text="", icon="WINDOW")
         op.name = "COLLISION_MT_pie_menu"
 
+        # Reload Addon (only shown with Developer Extras enabled)
+        if context.preferences.view.show_developer_ui:
+            row.operator("collision.reload_addon", text="", icon='FILE_REFRESH')
+
 
 
     def draw(self, context):
