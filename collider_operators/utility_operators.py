@@ -262,13 +262,23 @@ class COLLISION_OT_ReloadAddon(bpy.types.Operator):
                 except Exception as exc:
                     print(f"[Simple Collider] unregister error: {exc}")
 
-            for name in mod_names:
-                mod = sys.modules.get(name)
-                if mod is not None:
-                    try:
-                        importlib.reload(mod)
-                    except Exception as exc:
-                        print(f"[Simple Collider] reload error for '{name}': {exc}")
+            # mod_names is only an approximate dependency order (deepest
+            # modules first, alphabetical among ties). Modules that import
+            # symbols from a sibling module which happens to sort later
+            # (e.g. preferences.py doing `from .prefs_properties import X`,
+            # where "preferences" < "prefs_properties" alphabetically) would
+            # rebind to that sibling's pre-reload state. A second full pass
+            # re-executes every module again, by which point every sibling
+            # has already been refreshed at least once, so stale bindings
+            # from pass 1 get corrected.
+            for _pass in range(2):
+                for name in mod_names:
+                    mod = sys.modules.get(name)
+                    if mod is not None:
+                        try:
+                            importlib.reload(mod)
+                        except Exception as exc:
+                            print(f"[Simple Collider] reload error for '{name}': {exc}")
 
             root_mod = sys.modules.get(root_pkg)
             if root_mod and hasattr(root_mod, "register"):

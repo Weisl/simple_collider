@@ -378,7 +378,7 @@ class CollisionAddonPrefsProperties():
 
     modal_font_size: bpy.props.IntProperty(name='Font Size',
                                            description="Changes the font size in the 3D viewport when calling the modal collider_shapes to create different collision shapes",
-                                           default=56)
+                                           default=36)
 
     ###################################################################
     # VHACD

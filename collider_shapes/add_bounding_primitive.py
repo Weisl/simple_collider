@@ -118,7 +118,13 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
     color_error = self.prefs.modal_color_error
 
     # padding bottom
-    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
+    # system.ui_scale reflects the OS/monitor-driven DPI scale (e.g. ~2.5 on a
+    # 4K/5K display); view.ui_scale is the user's manual "Resolution Scale"
+    # preference on top of that. Blender's native UI is scaled by both, so
+    # the overlay needs both too or it stays a fixed pixel size on HiDPI
+    # screens while the rest of the UI scales up (issue #623).
+    font_size = int(self.prefs.modal_font_size * context.preferences.system.ui_scale
+                    * context.preferences.view.ui_scale / 3.6)
 
     # padding_bottom = self.prefs.padding_bottom
     padding_bottom = 0
@@ -358,7 +364,8 @@ def draw_viewport_overlay(self, context):
 
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
-    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.system.ui_scale
+                    * context.preferences.view.ui_scale / 3.6)
     vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
@@ -672,7 +679,8 @@ class OBJECT_OT_add_bounding_object():
 
         font_id = 0  # XXX, need to find out how best to get this.
         font_color = [0.5, 0.5, 0.5, 0.5]
-        font_size = 20
+        ui_scale = context.preferences.system.ui_scale * context.preferences.view.ui_scale
+        font_size = int(20 * ui_scale)
 
         if bpy.app.version < (4, 00):
             # legacy support
@@ -681,7 +689,7 @@ class OBJECT_OT_add_bounding_object():
             blf.size(font_id, font_size)
 
         blf.color(font_id, font_color[0], font_color[1], font_color[2], font_color[3])
-        blf.position(font_id, 100, 100, 0)
+        blf.position(font_id, 100 * ui_scale, 100 * ui_scale, 0)
         face_label = str(sum(self.face_counts))
         blf.draw(font_id, face_label)
 
