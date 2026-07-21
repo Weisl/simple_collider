@@ -118,6 +118,9 @@ def create_sphere(pos, diameter, segments):
     """Create a UV sphere at the given position with the specified diameter and segments."""
     global tmp_sphere_name
 
+    # v_segments below 2 crashes Blender's create_uvsphere with a divide by zero.
+    segments = max(2, segments)
+
     # Create an empty mesh and the object.
     mesh = bpy.data.meshes.new(tmp_sphere_name)
     basic_sphere = bpy.data.objects.new(tmp_sphere_name, mesh)

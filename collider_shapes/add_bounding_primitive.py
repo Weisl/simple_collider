@@ -1933,6 +1933,7 @@ class OBJECT_OT_add_bounding_object():
 
                 # check if value changed to avoid regenerating collisions for the same value
                 if segments != int(round(self.current_settings_dic['sphere_segments'])):
+                    segments = 2 if segments < 2 else segments
                     self.current_settings_dic['sphere_segments'] = segments
                     self.execute(context)
 
