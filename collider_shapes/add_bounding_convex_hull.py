@@ -21,8 +21,7 @@ class OBJECT_OT_add_convex_hull(OBJECT_OT_add_bounding_object, Operator):
         self.use_recenter_origin = True
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)

@@ -80,8 +80,7 @@ class OBJECT_OT_add_bounding_cylinder(OBJECT_OT_add_bounding_object, Operator):
 
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)

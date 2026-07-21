@@ -59,7 +59,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
 
     def invoke(self, context, event):
-        super().invoke(context, event)
+        status = super().invoke(context, event)
+        if status != {'RUNNING_MODAL'}:
+            return status
 
         self.use_creation_mode = True
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']

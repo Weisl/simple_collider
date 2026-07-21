@@ -111,8 +111,7 @@ class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
         self.initial_shape = 'convex_shape'
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)

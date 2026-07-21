@@ -22,8 +22,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.initial_shape = "mesh_shape"
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,

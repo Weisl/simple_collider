@@ -49,8 +49,7 @@ class OBJECT_OT_add_bounding_capsule(OBJECT_OT_add_bounding_object, Operator):
         self.capsule_segments_active = capsule_segments_active
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)

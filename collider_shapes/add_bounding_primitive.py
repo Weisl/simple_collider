@@ -1556,7 +1556,19 @@ class OBJECT_OT_add_bounding_object():
         # stored for decimate display
         self.mouse_path = []
 
-        self.execute(context)
+        try:
+            self.execute(context)
+        except Exception as ex:
+            # If the initial generation fails, the draw handler and modal
+            # handler added above would otherwise outlive this operator
+            # instance. The viewport overlay callback keeps a reference to
+            # `self`, so once Blender frees this operator's RNA struct the
+            # next redraw raises a ReferenceError from draw_viewport_overlay.
+            self.cancel_cleanup(context)
+            self.report({'ERROR'}, f"Failed to generate collider: {ex}")
+            return {'CANCELLED'}
+
+        return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         colSettings = context.scene.simple_collider
