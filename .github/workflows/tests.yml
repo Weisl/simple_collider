@@ -32,6 +32,7 @@ jobs:
       - name: Download Blender ${{ matrix.blender-version }}
         if: steps.cache-blender.outputs.cache-hit != 'true'
         run: |
+          mkdir -p blender-download
           pip install blender-downloader
           blender-downloader ${{ matrix.blender-version }} --extract --quiet --output-directory blender-download
 
