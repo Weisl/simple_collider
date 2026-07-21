@@ -71,18 +71,17 @@ def get_default_executable_path():
 
     vhacd_app_folder = "v-hacd_app"
 
-    if platform.system() not in ['Windows', 'Linux']:
-        return ''
-
-    OS_folder = ''
-    app_name = ''
-
     if platform.system() == 'Windows':
         OS_folder = 'Win'
         app_name = 'vhacd_4_1_win_amd64.exe'
     elif platform.system() == 'Linux':
         OS_folder = 'Linux'
         app_name = 'vhacd_4_1_linux_amd64'
+    elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
+        OS_folder = 'Mac'
+        app_name = 'vhacd_4_1_macos_arm64'
+    else:
+        return ''
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
@@ -316,6 +315,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             box.label(text="Supported (Linux Mint/Ubuntu).")
             box.label(text="You can also use a custom build of vhacd compiled for your Linux distribution.")
         
+        elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
+            box.label(text="Supported (macOS ARM64)")
+
         else:
             box.label(text="Auto Convex is currently not supported on this platform", icon='ERROR')
 
@@ -519,6 +521,19 @@ def register():
 
     # Append the load handler to be executed after loading a Blender file
     bpy.app.handlers.load_post.append(_load_handler)
+
+
+    # Defer setup until context is fully initialized (scene and operators are available)
+    def _deferred_setup():
+        if not bpy.context or not bpy.context.scene:
+            return 0.1  # scene not ready yet, retry after 100ms
+        set_default_active_mat()
+        set_default_group_values()
+        load_preset_on_scene_open()
+        return None  # returning None unregisters the timer
+
+    bpy.app.timers.register(_deferred_setup, first_interval=0)
+
 
 
 def unregister():

@@ -146,6 +146,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
 
     default_sphere_segments: bpy.props.IntProperty(name="Sphere Segments",
                                                    description="Amount of sphere segments.",
+                                                   min=2,
                                                    default=16,
                                                    )
 

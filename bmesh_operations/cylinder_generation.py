@@ -80,7 +80,7 @@ class GaertnerBoundary:
         """
         self.projector = ProjectorStack([])
         self.centers, self.square_radii = np.array([]), np.array([])
-        self.empty_center = np.array([np.NaN for _ in pts[0]])
+        self.empty_center = np.array([np.nan for _ in pts[0]])
 
 
 def push_if_stable(bound, pt):
@@ -314,7 +314,7 @@ def find_max_excess(nsphere, pts, k1):
     Returns:
         tuple: The maximum error and index of the point with maximum error.
     """
-    err_max, k_max = -np.Inf, k1 - 1
+    err_max, k_max = -np.inf, k1 - 1
     for (k, pt) in enumerate(pts[k_max:]):
         err = sqr_dist(pt, nsphere.center) - nsphere.sqr_radius
         if err > err_max:
