@@ -4,6 +4,7 @@ from . import add_bounding_convex_hull
 from . import add_bounding_cylinder
 from . import add_bounding_primitive
 from . import add_bounding_sphere
+from . import add_bounding_voxel
 from . import add_collision_mesh
 from . import add_collision_remesh
 from . import add_minimum_bounding_box
@@ -17,6 +18,7 @@ classes = (
     add_bounding_sphere.OBJECT_OT_add_bounding_sphere,
     add_bounding_capsule.OBJECT_OT_add_bounding_capsule,
     add_bounding_convex_hull.OBJECT_OT_add_convex_hull,
+    add_bounding_voxel.OBJECT_OT_add_bounding_voxel,
     add_collision_mesh.OBJECT_OT_add_mesh_collision,
     add_collision_remesh.OBJECT_OT_add_remesh_collision
 )

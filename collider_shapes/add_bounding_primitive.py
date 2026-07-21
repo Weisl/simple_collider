@@ -102,13 +102,13 @@ def geometry_node_group_empty_new():
 
 def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default',
                     key='',
-                    highlight=False):
+                    highlight=False, padding_bottom=0):
     """Draw label in the 3D Viewport"""
 
     # get colors from preferences
     col_default = self.prefs.modal_color_default
     color_title = self.prefs.modal_color_title
-    color_ignore_input = [0.5, 0.5, 0.5, 0.5]
+    color_ignore_input = [0.604, 0.616, 0.651, 0.7]  # brand "text_muted" token
 
     # operator colors
     color_enum = self.prefs.modal_color_enum
@@ -116,8 +116,8 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
     color_bool = self.prefs.modal_color_bool
     color_highlight = self.prefs.modal_color_highlight
     color_error = self.prefs.modal_color_error
+    color_navigation = self.prefs.modal_color_navigation
 
-    # padding bottom
     # system.ui_scale reflects the OS/monitor-driven DPI scale (e.g. ~2.5 on a
     # 4K/5K display); view.ui_scale is the user's manual "Resolution Scale"
     # preference on top of that. Blender's native UI is scaled by both, so
@@ -125,9 +125,6 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
     # screens while the rest of the UI scales up (issue #623).
     font_size = int(self.prefs.modal_font_size * context.preferences.system.ui_scale
                     * context.preferences.view.ui_scale / 3.6)
-
-    # padding_bottom = self.prefs.padding_bottom
-    padding_bottom = 0
 
     if bpy.app.version < (4, 00):
         # legacy support
@@ -137,7 +134,7 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 
     color_map = {
         'error': color_error,
-        'key_title': color_highlight if self.ignore_input or self.navigation else color_title,
+        'key_title': color_title,
         'disabled': color_ignore_input,
         'title': color_title,
         'default': col_default,
@@ -146,28 +143,46 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
         'modal': color_modal
     }
 
-    blf.color(font_id, *color_map.get(type, col_default))
+    # navigating the viewport or holding ALT to ignore input takes over every row
+    # (except the title, which stays the constant branded header) in its own
+    # color, distinct from both the normal per-row colors and the drag highlight.
+    # A setting currently being dragged takes over its own line in the highlight
+    # color, not just its value, so it's obvious at a glance which one is live.
+    ignoring_input = self.ignore_input or self.navigation
+    if ignoring_input and type != 'title':
+        label_color = color_navigation
+    elif highlight:
+        label_color = color_highlight
+    else:
+        label_color = color_map.get(type, col_default)
+
+    blf.color(font_id, *label_color)
     blf.position(font_id, left_margin, padding_bottom + (i * vertical_px_offset), 0)
     blf.draw(font_id, label)
 
     if key:
-        blf.color(font_id,
-                  *color_ignore_input if self.ignore_input or self.navigation else color_map.get(type, col_default))
+        # key hints are a secondary cue, not a second label - dim them so the
+        # label color still reads as the primary signal
+        key_color = list(label_color)
+        key_color[3] *= 0.5
+        blf.color(font_id, *key_color)
         blf.position(font_id, left_margin + 220 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, key)
 
     if value:
-        if self.ignore_input or self.navigation:
-            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
-                      color_ignore_input[3])
+        if ignoring_input:
+            color = color_navigation
         elif highlight:
-            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+            color = color_highlight
+        elif type == 'bool':
+            # let True/False read as on/off at a glance, not just as text
+            color = col_default if value == 'True' else color_ignore_input
         elif type == 'disabled':
-            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
-                      color_ignore_input[3])
+            color = color_ignore_input
         else:  # type == 'default':
-            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+            color = col_default
 
+        blf.color(font_id, color[0], color[1], color[2], color[3])
         blf.position(font_id, left_margin + 290 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, value)
 
@@ -235,6 +250,10 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': type, 'highlight': False}
         items.append(item)
 
+    # settings above persist between operator calls; settings below reset every run -
+    # this row count marks where the HUD divider between the two groups goes
+    persistent_row_count = len(items)
+
     if self.use_modifier_stack:
         label = "Use Modifiers "
         value = str(self.my_use_modifier_stack)
@@ -261,6 +280,12 @@ def draw_viewport_overlay(self, context):
         else:
             type = 'disabled'
         item = {'label': label, 'value': value, 'key': '(N)', 'type': type, 'highlight': False}
+        items.append(item)
+
+    if self.use_diagonal_fill:
+        label = "Diagonal Fill"
+        value = str(self.diagonal_fill)
+        item = {'label': label, 'value': value, 'key': '(F)', 'type': 'bool', 'highlight': False}
         items.append(item)
 
     items.append({'label': "Toggle X Ray", 'value': str(self.x_ray), 'key': '(C)', 'type': 'bool', 'highlight': False})
@@ -328,7 +353,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_remesh:
         label = "Voxel Size"
-        value = str(self.current_settings_dic['voxel_size_multiplier'])
+        value = '{initial_value:.3f}'.format(initial_value=self.current_settings_dic['voxel_size_multiplier'])
         key = '(R)'
         type = 'modal'
         highlight = self.remesh_active
@@ -340,6 +365,7 @@ def draw_viewport_overlay(self, context):
     type = 'title'
     item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': False}
     items.append(item)
+    title_row = len(items)
 
     if self.valid_input_selection:
         if self.navigation:
@@ -369,10 +395,14 @@ def draw_viewport_overlay(self, context):
     vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
 
+    # breathing room above the title and below the bottom-most row, instead of
+    # the text sitting flush against the backdrop edges
+    row_padding = font_size * 0.5
+
     # backdrop box
     box_left = bpy.context.area.width / 2 - 240 / 20 * font_size
     box_right = bpy.context.area.width / 2 + 260 / 20 * font_size
-    box_top = font_size * len(items) * 1.75
+    box_top = font_size * len(items) * 1.75 + row_padding * 2
     box_bottom = 10
 
     prefs = self.prefs
@@ -381,10 +411,37 @@ def draw_viewport_overlay(self, context):
     if prefs.use_modal_box:
         draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, color)
 
+        # brand card treatment: a neutral hairline frame with a colored top edge,
+        # matching the store page's .grid-card--top / .section--hairline convention.
+        # Opaque colors (no alpha blending) so the lines read the same regardless
+        # of what's behind them in the viewport, instead of the previous low-alpha
+        # overlay looking faint or uneven over a busy scene.
+        frame_color = (0.204, 0.212, 0.243, 1.0)  # brand "border" token
+        accent_color = (0.133, 0.773, 0.369, 1.0)  # brand accent
+        frame_px = 1
+        accent_px = 3
+        draw_2d_backdrop(self, context, box_left, box_right, box_top, box_top - accent_px, accent_color)
+        draw_2d_backdrop(self, context, box_left, box_right, box_bottom + frame_px, box_bottom, frame_color)
+        draw_2d_backdrop(self, context, box_left, box_left + frame_px, box_top - accent_px, box_bottom, frame_color)
+        draw_2d_backdrop(self, context, box_right - frame_px, box_right, box_top - accent_px, box_bottom, frame_color)
+
+        # divider rules, full width like the brand's section hairlines: split the
+        # header from the settings, and the settings that persist between operator
+        # calls from the ones that reset every run.
+        def draw_rule(row):
+            y = row_padding + (row + 0.5) * vertical_px_offset
+            draw_2d_backdrop(self, context, box_left, box_right, y + frame_px / 2, y - frame_px / 2, frame_color)
+
+        if title_row > 1:
+            draw_rule(title_row - 1)
+        if 0 < persistent_row_count < title_row - 1:
+            draw_rule(persistent_row_count)
+
     for i, item in enumerate(items):
         draw_modal_item(self, context, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'],
                         value=item['value'],
-                        key=item['key'], type=item['type'], highlight=item['highlight'])
+                        key=item['key'], type=item['type'], highlight=item['highlight'],
+                        padding_bottom=row_padding)
 
 
 def draw_2d_backdrop(self, context, left, right, top, bottom, color):
@@ -710,6 +767,8 @@ class OBJECT_OT_add_bounding_object():
             return 'CAPSULE'
         elif self.shape == 'convex_shape':
             return 'CONVEX'
+        elif self.shape == 'voxel_shape':
+            return 'VOXEL'
         else:  # identifier == 'mesh_shape':
             return 'MESH'
 
@@ -724,6 +783,8 @@ class OBJECT_OT_add_bounding_object():
             return prefs.capsule_shape
         elif identifier == 'convex_shape':
             return prefs.convex_shape
+        elif identifier == 'voxel_shape':
+            return prefs.voxel_shape
         else:  # identifier == 'mesh_shape':
             return prefs.mesh_shape
 
@@ -956,7 +1017,9 @@ class OBJECT_OT_add_bounding_object():
         col = cls.create_collection(collection_name)
         if hide:
             col.hide_viewport = True
-            col.hide_render = True
+            prefs = bpy.context.preferences.addons[base_package].preferences
+            if prefs.hide_render_on_creation:
+                col.hide_render = True
         try:
             col.objects.link(obj)
         except RuntimeError as err:
@@ -1384,6 +1447,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_remesh = False
         self.use_height_multiplier = False
         self.use_width_multiplier = False
+        self.use_diagonal_fill = False
 
         self.remesh_data = []
 
@@ -1452,7 +1516,7 @@ class OBJECT_OT_add_bounding_object():
 
         self.collider_shapes_idx = 3
         self.collider_shapes = ['box_shape', 'sphere_shape', 'capsule_shape', 'convex_shape',
-                                'mesh_shape']
+                                'mesh_shape', 'voxel_shape']
 
         # General init settings
         self.new_colliders_list = []
@@ -1661,7 +1725,8 @@ class OBJECT_OT_add_bounding_object():
 
                 # set the display settings for the collider objects
                 obj.display_type = colSettings.display_type
-                obj.hide_render = True
+                if self.prefs.hide_render_on_creation:
+                    obj.hide_render = True
 
                 if self.prefs.my_hide:
                     obj.hide_viewport = self.prefs.my_hide

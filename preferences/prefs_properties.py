@@ -234,6 +234,8 @@ class CollisionAddonPrefsProperties():
                                            description='Naming used to define convex colliders')
     mesh_shape: bpy.props.StringProperty(name="Mesh Collider", default="",
                                          description='Naming used to define triangle mesh colliders')
+    voxel_shape: bpy.props.StringProperty(name="Voxel Collider", default="UVX",
+                                          description='Naming used to define voxel grid colliders')
 
     # Rigid Body
     rigid_body_naming_position: bpy.props.EnumProperty(
@@ -312,19 +314,19 @@ class CollisionAddonPrefsProperties():
     # The object color for the bounding object
     user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
                                                        description="Object color and alpha for User Collider Group 01",
-                                                       default=(0.36, 0.5, 1), min=0.0, max=1.0,
+                                                       default=(0.2384, 0.8632, 0.4125), min=0.0, max=1.0,
                                                        subtype='COLOR', size=3)
 
     # The object color for the bounding object
     user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
                                                        description="Object color and alpha for User Collider Group 02",
-                                                       default=(0.5, 1, 0.36), min=0.0, max=1.0, subtype='COLOR',
+                                                       default=(0.9823, 0.7454, 0.063), min=0.0, max=1.0, subtype='COLOR',
                                                        size=3)
 
     # The object color for the bounding object
     user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
                                                        description="Object color and alpha for User Collider Group 03.",
-                                                       default=(1, 0.36, 0.36), min=0.0, max=1.0, subtype='COLOR',
+                                                       default=(0.9823, 0.491, 0.1746), min=0.0, max=1.0, subtype='COLOR',
                                                        size=3)
 
     # The object color for the bounding object
@@ -337,43 +339,48 @@ class CollisionAddonPrefsProperties():
 
     modal_box_color: bpy.props.FloatVectorProperty(name="Backdrop Color",
                                                    description="Object color and alpha for User Collider Group 03.",
-                                                   default=(0.2, 0.2, 0.2, 0.5), min=0.0, max=1.0, subtype='COLOR',
+                                                   default=(0.141, 0.149, 0.176, 0.85), min=0.0, max=1.0, subtype='COLOR',
                                                    size=4)
 
     # Modal Fonts
     modal_color_default: bpy.props.FloatVectorProperty(name="Default",
                                                        description="Font color in the 3D viewport for settings that are reset every time the collision operator is called",
-                                                       default=(1.0, 1.0, 1.0, 1), min=0.0, max=1.0,
+                                                       default=(0.910, 0.914, 0.933, 1.0), min=0.0, max=1.0,
                                                        subtype='COLOR', size=4)
 
     modal_color_title: bpy.props.FloatVectorProperty(name="Title",
                                                      description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                     default=(1.0, 1.0, 0.5, 1), min=0.0, max=1.0,
+                                                     default=(0.133, 0.773, 0.369, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
 
     modal_color_highlight: bpy.props.FloatVectorProperty(name="Active Highlight",
                                                          description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                         default=(0.0, 1.0, 1.0, 1.0), min=0.0, max=1.0,
+                                                         default=(0.133, 0.773, 0.369, 1.0), min=0.0, max=1.0,
                                                          subtype='COLOR', size=4)
 
     modal_color_error: bpy.props.FloatVectorProperty(name="Invalid Input",
                                                      description="Font color in the 3D viewport the title when an error occurs",
-                                                     default=(1.0, 0.0, 0.0, 1.0), min=0.0, max=1.0,
+                                                     default=(0.937, 0.267, 0.267, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
+
+    modal_color_navigation: bpy.props.FloatVectorProperty(name="Ignore Input / Navigation",
+                                                          description="Font color in the 3D viewport for the whole line while input is being ignored (ALT) or while navigating the viewport",
+                                                          default=(0.961, 0.620, 0.043, 1.0), min=0.0, max=1.0,
+                                                          subtype='COLOR', size=4)
 
     modal_color_modal: bpy.props.FloatVectorProperty(name="Modal",
                                                      description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                     default=(1.0, 1.0, 0.5, 1.0), min=0.0, max=1.0,
+                                                     default=(0.910, 0.914, 0.933, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
 
     modal_color_bool: bpy.props.FloatVectorProperty(name="Bool",
                                                     description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(1.0, 1.0, 0.75, 1.0), min=0.0, max=1.0,
+                                                    default=(0.910, 0.914, 0.933, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_color_enum: bpy.props.FloatVectorProperty(name="Enum",
                                                     description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(0.36, 0.75, 0.92, 1.0), min=0.0, max=1.0,
+                                                    default=(0.843, 0.851, 0.878, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size',
@@ -451,6 +458,12 @@ class CollisionAddonPrefsProperties():
                                     description="Hide collider after creation.",
                                     default=False)
 
+    hide_render_on_creation: bpy.props.BoolProperty(name="Hide From Render",
+                                                    description="Hide newly created colliders from rendering. "
+                                                                "Disable to keep colliders render-visible, e.g. for "
+                                                                "export pipelines that rely on the render flag",
+                                                    default=True)
+
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Debug mode only used for debuging during development",
@@ -474,6 +487,7 @@ class CollisionAddonPrefsProperties():
         "capsule_shape",
         "convex_shape",
         "mesh_shape",
+        "voxel_shape",
     ]
 
     props_parent = [
@@ -533,6 +547,7 @@ class CollisionAddonPrefsProperties():
         "modal_color_bool",
         "modal_color_default",
         "modal_color_enum",
+        "modal_color_navigation",
     ]
 
     vhacd_props_config = [
@@ -546,4 +561,5 @@ class CollisionAddonPrefsProperties():
     display_config = [
         "my_hide",
         "wireframe_mode",
+        "hide_render_on_creation",
     ]
