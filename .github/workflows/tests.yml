@@ -1,0 +1,50 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        blender-version: ["4.2", "4.3", "4.4", "4.5", "5.0", "5.1"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ github.event.repository.name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Cache Blender ${{ matrix.blender-version }}
+        id: cache-blender
+        uses: actions/cache@v4
+        with:
+          path: blender-download
+          key: blender-${{ matrix.blender-version }}-linux-x64
+
+      - name: Download Blender ${{ matrix.blender-version }}
+        if: steps.cache-blender.outputs.cache-hit != 'true'
+        run: |
+          pip install blender-downloader
+          blender-downloader ${{ matrix.blender-version }} --extract --quiet --output-directory blender-download
+
+      - name: Locate Blender executable
+        id: blender
+        run: |
+          EXE=$(find blender-download -type f -name blender | head -n 1)
+          if [ -z "$EXE" ]; then
+            echo "Could not find a Blender executable under blender-download/" >&2
+            exit 1
+          fi
+          chmod +x "$EXE"
+          echo "executable=$EXE" >> "$GITHUB_OUTPUT"
+
+      - name: Run test suite
+        run: python3 ${{ github.event.repository.name }}/tests/run_tests.py --blender "${{ steps.blender.outputs.executable }}"

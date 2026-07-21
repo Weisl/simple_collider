@@ -24,3 +24,18 @@ to understand what you need.
 Pull requests are also very welcome. Feel free to contact me before working on your changes and making a pull request.
 Let's see if the proposed changes fit the overall design and purpose of this addon. I will be strict in keeping a
 consistent user experience and vision for this addon.
+
+## Development & Testing
+
+`tests/` contains `unittest`-based integration tests that run inside headless Blender against real `bpy`/`bmesh`
+objects and operators. Run the whole suite with one command:
+
+```
+python tests/run_tests.py --blender /path/to/blender
+```
+
+(`--blender` defaults to `blender` on `PATH`.) Each test file can still be run individually, as documented in its own
+docstring, e.g. `blender --background --python tests/test_bounding_sphere.py`.
+
+CI (`.github/workflows/tests.yml`) runs this same suite on every push/PR across a matrix of Blender 4.2, 4.3, 4.4,
+4.5, 5.0 and 5.1 to catch version-specific API breakage.
