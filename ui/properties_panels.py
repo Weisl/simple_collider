@@ -240,6 +240,8 @@ def draw_creation_menu(context, layout, settings=False):
     row = col.row(align=True)
     row.operator("mesh.add_remesh_collision", icon='MOD_REMESH')
     row = col.row(align=True)
+    row.operator("mesh.add_bounding_voxel", icon='MESH_GRID')
+    row = col.row(align=True)
     row.operator("mesh.add_minimum_bounding_box", icon='MESH_CUBE')
 
     # layout.separator()
@@ -264,6 +266,7 @@ def draw_creation_menu(context, layout, settings=False):
               {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
               {'identifier': 'capsule_shape', 'text': '', 'icon': 'MESH_CAPSULE'},
               {'identifier': 'convex_shape', 'text': '', 'icon': 'MESH_ICOSPHERE'},
+              {'identifier': 'voxel_shape', 'text': '', 'icon': 'MESH_GRID'},
               {'identifier': 'mesh_shape', 'text': '', 'icon': 'MESH_MONKEY'},
               ]
 
