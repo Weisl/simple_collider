@@ -17,8 +17,8 @@ class COLLISION_OT_assign_shape(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        """Ensure at least one valid object is selected."""
-        return any(obj.type in VALID_OBJECT_TYPES for obj in context.selected_objects)
+        """Ensure at least one selected object is a collider."""
+        return any(obj.type in VALID_OBJECT_TYPES and obj.get('isCollider') for obj in context.selected_objects)
 
     def execute(self, context):
         prefs = context.preferences.addons[base_package].preferences
