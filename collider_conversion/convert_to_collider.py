@@ -77,7 +77,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
             if self.prefs.debug == False:
                 self.remove_objects(self.base_objs)
-                self.remove_empty_collection('base_obj')
+                self.remove_empty_collection(context, 'base_obj')
 
         status = super().modal(context, event)
         if status == {'FINISHED'}:
@@ -102,7 +102,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # user collections of the objs
         user_collections = []
         # tmp collection for base objs
-        base_collections = [self.create_collection('base_obj')]
+        base_collections = [self.create_collection(context, 'base_obj')]
         self.base_objs = []
 
         # get list of objects to be converted

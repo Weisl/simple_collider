@@ -136,7 +136,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     def export_mesh_for_vhacd(self, context, parent, mesh, data_path):
         """Export the mesh to OBJ format for V-HACD processing."""
         joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
-        bpy.context.scene.collection.objects.link(joined_obj)
+        context.scene.collection.objects.link(joined_obj)
 
         filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
         obj_filename = os.path.join(data_path, f'{filename}.obj')
