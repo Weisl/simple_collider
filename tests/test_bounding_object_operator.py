@@ -6,6 +6,7 @@ Run with headless Blender::
 
     blender --background --python tests/test_loose_island_modifier_handling.py
 """
+import math
 import os
 import sys
 import types as _types
@@ -868,9 +869,9 @@ class TestFixInverseMatrixUpdateDepsgraph(unittest.TestCase):
                 )
 
 
-# -- fix_parent_inverse_transform: non-uniform-scale skip ---------------------
+# -- fix_parent_inverse_transform: shear-aware skip ---------------------------
 
-_parent_has_uniform_scale = _addon.collider_operators.utility_operators.parent_has_uniform_scale
+_fix_inverse_matrix_is_safe = _addon.collider_operators.utility_operators.fix_inverse_matrix_is_safe
 _COLLISION_OT_FixColliderTransform = _addon.collider_operators.utility_operators.COLLISION_OT_FixColliderTransform
 
 
@@ -883,18 +884,23 @@ def _select_only(*objs):
     bpy.context.view_layer.objects.active = objs[0]
 
 
-class TestFixColliderTransformSkipsNonUniformParent(unittest.TestCase):
-    """object.fix_parent_inverse_transform must skip (and warn about) any
-    collider whose parent has non-uniform scale, leaving its parent-inverse
-    matrix and mesh untouched, while still fixing siblings parented to
-    uniformly-scaled objects.
+class TestFixColliderTransformSkipsShearedTransforms(unittest.TestCase):
+    """object.fix_parent_inverse_transform must skip (and warn about) colliders
+    whose parent-relative transform contains shear that Blender's loc/rot/scale
+    decomposition can't represent, and fix everything else.
 
-    This is the documented, intentional fallback for #558: the operator
-    cannot produce a correct result on unevenly-scaled parents, so it must
-    skip those objects rather than silently corrupting their transform.
+    obj.matrix_world already equals parent.matrix_world @ matrix_parent_inverse
+    @ matrix_basis, so the parent's *current* world matrix always cancels out
+    of fix_inverse_matrix()'s math. What determines safety is whether
+    matrix_parent_inverse -- frozen at whatever moment it was last set -- itself
+    contains shear. A parent.scale check (the earlier approach) gets this wrong
+    in both directions: it needlessly skips safe cases where the parent was
+    scaled non-uniformly well after parenting, and it silently waves through
+    unsafe cases where the parent was non-uniform+rotated at parenting time and
+    later reset to a uniform scale. These tests cover both failure modes.
     """
 
-    _PREFIX = '__test_fixskip_'
+    _PREFIX = '__test_fixshear_'
 
     @classmethod
     def setUpClass(cls):
@@ -918,61 +924,140 @@ class TestFixColliderTransformSkipsNonUniformParent(unittest.TestCase):
                     if mesh is not None:
                         bpy.data.meshes.remove(mesh)
 
-    def _make_parent(self, suffix, scale):
+    def _make_parent(self, suffix, location=(0.0, 0.0, 0.0), scale=(1.0, 1.0, 1.0), rotation=(0.0, 0.0, 0.0)):
         obj = bpy.data.objects.new(f'{self._PREFIX}parent_{suffix}', None)
+        obj.location = location
         obj.scale = scale
+        obj.rotation_euler = rotation
         bpy.context.scene.collection.objects.link(obj)
         self._obj_names.append(obj.name)
         return obj
 
-    def _make_child(self, suffix, parent):
+    def _make_child(self, suffix, parent, location=(0.3, 0.4, 0.2), rotation=(0.0, 0.0, 0.0)):
+        """Create a mesh child and parent it now, freezing matrix_parent_inverse
+        against the parent's *current* matrix_world (mirrors what a real
+        parenting operation does)."""
         mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{suffix}')
-        mesh.from_pydata([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [], [[0, 1, 2]])
+        mesh.from_pydata(
+            [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
+             (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
+            [], [(0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)],
+        )
         mesh.update()
         obj = bpy.data.objects.new(f'{self._PREFIX}child_{suffix}', mesh)
-        obj.location = (1.0, 2.0, 0.0)
+        obj.location = location
+        obj.rotation_euler = rotation
         bpy.context.scene.collection.objects.link(obj)
-        _OBJECT_OT_add_bounding_object.custom_set_parent(bpy.context, parent, obj)
         bpy.context.view_layer.update()
-        if obj.parent is not parent:
-            self.skipTest(
-                "precondition violated: custom_set_parent() did not set parent; "
-                "TestCustomSetParentPreservesTransform covers that assumption"
-            )
+        obj.parent = parent
+        obj.matrix_parent_inverse = parent.matrix_world.inverted()
+        bpy.context.view_layer.update()
         self._obj_names.append(obj.name)
         return obj
 
-    def test_non_uniform_parent_is_skipped_uniform_parent_is_fixed(self):
-        uniform_parent = self._make_parent('uniform', (2.0, 2.0, 2.0))
-        skewed_parent = self._make_parent('skewed', (1.0, 2.0, 3.0))
-        bpy.context.view_layer.update()
+    @staticmethod
+    def _world_verts(obj):
+        return [obj.matrix_world @ v.co for v in obj.data.vertices]
 
-        fixed_child = self._make_child('fixed', uniform_parent)
-        skipped_child = self._make_child('skipped', skewed_parent)
+    def test_direct_non_uniform_scale_no_rotation_is_fixed(self):
+        """Non-uniform scale alone, with no rotation anywhere in the chain,
+        never produces shear -- must be fixed, not skipped."""
+        parent = self._make_parent('direct_nonuniform', scale=(1.0, 2.0, 3.0))
+        child = self._make_child('direct_nonuniform', parent)
+        self.assertTrue(_fix_inverse_matrix_is_safe(child))
 
-        mpi_before = skipped_child.matrix_parent_inverse.copy()
-        verts_before = [v.co.copy() for v in skipped_child.data.vertices]
+        before = self._world_verts(child)
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+        after = self._world_verts(child)
 
-        _select_only(fixed_child, skipped_child)
+        self.assertTrue(child.matrix_parent_inverse.is_identity)
+        for v_before, v_after in zip(before, after):
+            self.assertAlmostEqual((v_before - v_after).length, 0.0, places=4)
+
+    def test_direct_non_uniform_scale_with_rotation_is_skipped(self):
+        """Non-uniform scale combined with rotation produces real shear that
+        Blender's decomposition cannot represent -- must be skipped untouched."""
+        parent = self._make_parent(
+            'direct_nonuniform_rot', scale=(1.0, 2.0, 3.0),
+            rotation=(math.radians(20), math.radians(10), 0.0),
+        )
+        child = self._make_child('direct_nonuniform_rot', parent, rotation=(0.0, 0.0, math.radians(25)))
+        self.assertFalse(_fix_inverse_matrix_is_safe(child))
+
+        mpi_before = child.matrix_parent_inverse.copy()
+        verts_before = [v.co.copy() for v in child.data.vertices]
+
+        _select_only(child)
         bpy.ops.object.fix_parent_inverse_transform()
 
-        # Fixed child: parent-inverse cleared, transform baked into the mesh.
-        self.assertTrue(fixed_child.matrix_parent_inverse.is_identity)
-
-        # Skipped child: left completely untouched.
-        self.assertEqual(skipped_child.matrix_parent_inverse, mpi_before)
-        for v_before, v_after in zip(verts_before, skipped_child.data.vertices):
+        self.assertEqual(child.matrix_parent_inverse, mpi_before)
+        for v_before, v_after in zip(verts_before, child.data.vertices):
             for axis in range(3):
-                self.assertAlmostEqual(
-                    v_before[axis], v_after.co[axis], places=6,
-                    msg="skipped_child mesh must not be touched when parent scale is non-uniform",
-                )
+                self.assertAlmostEqual(v_before[axis], v_after.co[axis], places=6)
 
-    def test_parent_has_uniform_scale_helper(self):
-        uniform = self._make_parent('helper_uniform', (1.5, 1.5, 1.5))
-        skewed = self._make_parent('helper_skewed', (1.0, 1.0, 1.001))
-        self.assertTrue(_parent_has_uniform_scale(uniform))
-        self.assertFalse(_parent_has_uniform_scale(skewed))
+    def test_parent_scaled_non_uniform_after_parenting_is_still_safe(self):
+        """Regression: a parent.scale-only check would skip this (parent reads
+        non-uniform right now), but it's actually safe -- matrix_parent_inverse
+        was frozen while the parent was still uniform, and the parent's
+        *current* scale cancels out of fix_inverse_matrix()'s math regardless
+        of what it is."""
+        parent = self._make_parent('mutated_after', scale=(1.0, 1.0, 1.0))
+        child = self._make_child('mutated_after', parent)
+
+        # Mutate the parent non-uniformly + add rotation AFTER matrix_parent_inverse froze.
+        parent.scale = (2.0, 0.5, 1.0)
+        parent.rotation_euler = (0.0, 0.4, 0.0)
+        bpy.context.view_layer.update()
+
+        self.assertTrue(
+            _fix_inverse_matrix_is_safe(child),
+            "matrix_parent_inverse was frozen while the parent was still uniform; "
+            "the parent's current (mutated) scale must not block the fix",
+        )
+
+        before = self._world_verts(child)
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+        after = self._world_verts(child)
+
+        self.assertTrue(child.matrix_parent_inverse.is_identity)
+        for v_before, v_after in zip(before, after):
+            self.assertAlmostEqual((v_before - v_after).length, 0.0, places=4)
+
+    def test_parent_reset_to_uniform_after_shear_was_frozen_is_still_skipped(self):
+        """Regression: a parent.scale-only check would wave this through (the
+        parent reads uniform right now), but matrix_parent_inverse froze real
+        shear back when the parent was non-uniform+rotated -- fixing it would
+        corrupt the mesh. This is the dangerous false-negative a scale-only
+        check misses silently."""
+        parent = self._make_parent(
+            'shear_then_reset', scale=(1.0, 3.0, 0.4),
+            rotation=(math.radians(25), math.radians(15), 0.0),
+        )
+        child = self._make_child('shear_then_reset', parent, rotation=(0.0, 0.0, math.radians(20)))
+
+        # Reset the parent back to a uniform scale. matrix_parent_inverse keeps
+        # the shear from when it was frozen.
+        parent.scale = (2.0, 2.0, 2.0)
+        bpy.context.view_layer.update()
+
+        self.assertFalse(
+            _fix_inverse_matrix_is_safe(child),
+            "parent.scale reads uniform now, but matrix_parent_inverse still "
+            "carries shear frozen from when the parent was non-uniform+rotated",
+        )
+
+        mpi_before = child.matrix_parent_inverse.copy()
+        verts_before = [v.co.copy() for v in child.data.vertices]
+
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+
+        self.assertEqual(child.matrix_parent_inverse, mpi_before)
+        for v_before, v_after in zip(verts_before, child.data.vertices):
+            for axis in range(3):
+                self.assertAlmostEqual(v_before[axis], v_after.co[axis], places=6)
 
 
 # -- set_origin_to_center_of_mass: pre-fetched depsgraph ----------------------

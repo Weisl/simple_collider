@@ -2,7 +2,6 @@ import blf
 import bmesh
 import bpy
 import gpu
-import math
 import mathutils
 import numpy
 import time
@@ -1885,28 +1884,31 @@ class OBJECT_OT_add_bounding_object():
             # Skipping the per-object update inside fix_inverse_matrix() (via
             # update_depsgraph=False) reduces 2N depsgraph evaluations to 2.
             if self.prefs.fix_parent_inverse_mtrx:
-                from ..collider_operators.utility_operators import fix_inverse_matrix
+                from ..collider_operators.utility_operators import fix_inverse_matrix, fix_inverse_matrix_is_safe
                 bpy.context.view_layer.update()
+                skipped_names = []
                 for obj in self.new_colliders_list:
-                    if not obj:
+                    if not obj or not obj.parent:
                         continue
-                    parent = obj.parent
-                    if parent:  # only if there is a parent
-                        scale_x, scale_y, scale_z = parent.scale
-                        if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z,
-                                                                                         rel_tol=1e-5):
-                            if not self.use_custom_rotation:
-                                fix_inverse_matrix(obj, update_depsgraph=False)
+                    if self.use_custom_rotation:
+                        continue
+                    if not fix_inverse_matrix_is_safe(obj):
+                        print(f"Skipping {obj.name}: parent-relative transform contains shear that "
+                              f"can't be baked without distorting the mesh.")
+                        skipped_names.append(obj.name)
+                        continue
+                    fix_inverse_matrix(obj, update_depsgraph=False)
 
-                                obj.location = (0, 0, 0)
-                                obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
-                                obj.scale = (1, 1, 1)
-
-                        else:
-                            print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
-                            self.report({'WARNING'},
-                                        f"Cannot fix inverse matrix. {parent.name} has non-uniform scale.")
+                    obj.location = (0, 0, 0)
+                    obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
+                    obj.scale = (1, 1, 1)
                 bpy.context.view_layer.update()
+                if skipped_names:
+                    self.report(
+                        {'WARNING'},
+                        f"Skipped {len(skipped_names)} collider(s) whose parent-relative transform "
+                        f"contains shear and can't be reset safely: {', '.join(skipped_names)}.",
+                    )
 
             # Delete temporary generated meshes
             if self.prefs.debug == False:

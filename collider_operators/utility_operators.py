@@ -1,6 +1,6 @@
 import bpy
-import math
 from bpy.props import IntProperty
+from mathutils import Matrix
 
 from ..properties.constants import DECIMATE_NAME
 
@@ -209,9 +209,36 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
         return {'FINISHED'}
 
 
-def parent_has_uniform_scale(parent, rel_tol=1e-5):
-    scale_x, scale_y, scale_z = parent.scale
-    return math.isclose(scale_x, scale_y, rel_tol=rel_tol) and math.isclose(scale_y, scale_z, rel_tol=rel_tol)
+def fix_inverse_matrix_is_safe(obj, tol=1e-4):
+    """Whether fix_inverse_matrix() can bake obj's parent-relative transform
+    without losing information.
+
+    obj.matrix_world already equals parent.matrix_world @ matrix_parent_inverse
+    @ matrix_basis, so the parent's *current* world matrix always cancels out
+    algebraically when fix_inverse_matrix() computes
+    parent.matrix_world.inverted() @ obj.matrix_world -- the parent's live scale
+    is not actually what determines safety. What matters is whether that
+    composite matrix (effectively matrix_parent_inverse @ matrix_basis, frozen
+    from whenever the parent relationship was last set) contains shear: a
+    non-uniform scale combined with a rotation, anywhere in the ancestor chain,
+    at the moment matrix_parent_inverse was captured. Blender's loc/rot/scale
+    decomposition cannot represent shear, so this is verified directly with a
+    decompose-and-reconstruct round trip rather than inspecting parent.scale.
+    """
+    parent = obj.parent
+    if parent is None:
+        return True
+    composite = parent.matrix_world.inverted() @ obj.matrix_world
+    loc, rot, scale = composite.decompose()
+    reconstructed = Matrix.LocRotScale(loc, rot, scale)
+
+    composite_3x3 = composite.to_3x3()
+    reconstructed_3x3 = reconstructed.to_3x3()
+    magnitude = max(abs(composite_3x3[r][c]) for r in range(3) for c in range(3))
+    if magnitude < 1e-8:
+        return True
+    max_diff = max(abs(reconstructed_3x3[r][c] - composite_3x3[r][c]) for r in range(3) for c in range(3))
+    return (max_diff / magnitude) <= tol
 
 
 def fix_inverse_matrix(obj, update_depsgraph=True):
@@ -314,24 +341,23 @@ class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
 
     def execute(self, context):
         fixed_count = 0
-        skipped_parents = []
+        skipped_names = []
         for obj in context.selected_objects:
             if obj.type != 'MESH' or not obj.parent:
                 continue
-            parent = obj.parent
-            if parent_has_uniform_scale(parent):
+            if fix_inverse_matrix_is_safe(obj):
                 fix_inverse_matrix(obj)
                 fixed_count += 1
             else:
-                print(f"Skipping {obj.name}: parent '{parent.name}' has non-uniform scale {tuple(parent.scale)}.")
-                if parent.name not in skipped_parents:
-                    skipped_parents.append(parent.name)
+                print(f"Skipping {obj.name}: parent-relative transform contains shear that "
+                      f"can't be baked without distorting the mesh.")
+                skipped_names.append(obj.name)
 
-        if skipped_parents:
+        if skipped_names:
             self.report(
                 {'WARNING'},
-                f"Fixed {fixed_count} collider(s). Skipped object(s) parented to non-uniformly "
-                f"scaled {'objects' if len(skipped_parents) > 1 else 'object'}: {', '.join(skipped_parents)}.",
+                f"Fixed {fixed_count} collider(s). Skipped {len(skipped_names)} whose parent-relative "
+                f"transform contains shear and can't be reset safely: {', '.join(skipped_names)}.",
             )
         else:
             self.report({'INFO'}, f"Fixed parent inverse matrix for {fixed_count} collider(s).")
