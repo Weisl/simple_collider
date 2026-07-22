@@ -156,7 +156,7 @@ class _OperatorSpy:
     def is_valid_object(self, obj):
         return True
 
-    def add_to_collections(self, obj, collection_name, hide=False, color='NONE'):
+    def add_to_collections(self, context, obj, collection_name, hide=False, color='NONE'):
         # Return a namespace so that `col.color_tag = ...` succeeds without
         # creating real Blender collections that require separate teardown.
         return _types.SimpleNamespace(color_tag=color)
@@ -287,7 +287,7 @@ class _PostprocessingFake:
         # No-op: skip collection bookkeeping for this test.
         pass
 
-    def add_to_collections(self, obj, name, **kwargs):
+    def add_to_collections(self, context, obj, name, **kwargs):
         # No-op: use_col_collection is False so this is never reached.
         pass
 
@@ -1131,6 +1131,166 @@ class TestGroupToggleNamingCorrectness(unittest.TestCase):
             f"  after:  {names_after_second}\n"
             "update_names() must clear _naming_cache at entry so each call "
             "restarts numbering from 001."
+        )
+
+
+class TestCreateCollectionUsesContextScene(unittest.TestCase):
+    """Regression test for #552: create_collection must link into
+    context.scene, not the global bpy.context.scene (which falls back to
+    bpy.data.scenes[0] in headless/background mode).
+    """
+
+    def setUp(self):
+        self.other_scene = bpy.data.scenes.new('SC_TestOtherScene')
+        self.created = None
+
+    def tearDown(self):
+        if self.created is not None:
+            for scene in bpy.data.scenes:
+                if scene.collection.children.get(self.created.name) is self.created:
+                    scene.collection.children.unlink(self.created)
+            bpy.data.collections.remove(self.created)
+        bpy.data.scenes.remove(self.other_scene)
+
+    def test_links_under_context_scene_not_bpy_context_scene(self):
+        name = 'SC_TestColliders'
+        context_stub = _types.SimpleNamespace(scene=self.other_scene)
+
+        self.created = _OBJECT_OT_add_bounding_object.create_collection(context_stub, name)
+
+        self.assertIs(
+            self.other_scene.collection.children.get(name), self.created,
+            "collection was not linked under the scene passed via context"
+        )
+        self.assertIsNot(
+            bpy.context.scene.collection.children.get(name), self.created,
+            "collection was linked under bpy.context.scene instead of the scene from context"
+        )
+
+
+class TestLocalChildCollectionIgnoresLinked(unittest.TestCase):
+    """Regression test for #552: linked (library) collections must be
+    ignored when looking up an existing collider collection among a
+    parent collection's direct children.
+    """
+
+    def test_skips_linked_prefers_local(self):
+        linked = _types.SimpleNamespace(name='Colliders', library=object())
+        local = _types.SimpleNamespace(name='Colliders', library=None)
+        parent = _types.SimpleNamespace(children=[linked, local])
+        result = _prim_mod._local_child_collection(parent, 'Colliders')
+        self.assertIs(result, local)
+
+    def test_returns_none_when_only_linked_exists(self):
+        linked = _types.SimpleNamespace(name='Colliders', library=object())
+        parent = _types.SimpleNamespace(children=[linked])
+        result = _prim_mod._local_child_collection(parent, 'Colliders')
+        self.assertIsNone(result)
+
+
+class TestCreateCollectionIsScopedPerScene(unittest.TestCase):
+    """Regression test for #552 follow-up: different scenes must get their
+    own collider collection rather than sharing a single collection linked
+    into multiple scenes (which would bleed one scene's colliders into
+    another via the outliner).
+    """
+
+    def setUp(self):
+        self.scene_a = bpy.data.scenes.new('SC_TestSceneA')
+        self.scene_b = bpy.data.scenes.new('SC_TestSceneB')
+        self.created = []
+
+    def tearDown(self):
+        for collection in self.created:
+            for scene in (self.scene_a, self.scene_b):
+                if any(child is collection for child in scene.collection.children):
+                    scene.collection.children.unlink(collection)
+            if collection.name in bpy.data.collections:
+                bpy.data.collections.remove(collection)
+        bpy.data.scenes.remove(self.scene_a)
+        bpy.data.scenes.remove(self.scene_b)
+
+    def test_each_scene_gets_its_own_collection(self):
+        name = 'SC_TestPerSceneColliders'
+        ctx_a = _types.SimpleNamespace(scene=self.scene_a)
+        ctx_b = _types.SimpleNamespace(scene=self.scene_b)
+
+        col_a = _OBJECT_OT_add_bounding_object.create_collection(ctx_a, name)
+        col_b = _OBJECT_OT_add_bounding_object.create_collection(ctx_b, name)
+        self.created.extend([col_a, col_b])
+
+        self.assertIsNot(
+            col_a, col_b,
+            "both scenes were given the same collection object instead of separate ones"
+        )
+        self.assertFalse(
+            any(child is col_b for child in self.scene_a.collection.children),
+            "scene B's collider collection leaked into scene A"
+        )
+        self.assertFalse(
+            any(child is col_a for child in self.scene_b.collection.children),
+            "scene A's collider collection leaked into scene B"
+        )
+
+        # A second call for the same scene must reuse the same collection,
+        # not create a third one.
+        col_a_again = _OBJECT_OT_add_bounding_object.create_collection(ctx_a, name)
+        self.assertIs(col_a_again, col_a)
+
+
+class TestCreateCollectionReusesAutoSuffixedName(unittest.TestCase):
+    """Regression test: when a local collection with the base name already
+    exists elsewhere in the file (e.g. another scene's own collider
+    collection - local collection names are unique file-wide, not per
+    scene), a new collection gets this addon's own "_NN" disambiguation
+    suffix on creation (e.g. "Colliders_01") rather than Blender's default
+    ".001" style. Later calls in the same scene must recognize and reuse
+    that suffixed collection instead of creating a new one every time -
+    otherwise a single collider-generation run produces one throwaway
+    collection per object instead of one shared collection for the scene.
+    """
+
+    def setUp(self):
+        self.other_scene = bpy.data.scenes.new('SC_TestSuffixScene')
+        # Occupy the base name elsewhere in the file so a same-named
+        # collection created afterward is forced to get a "_NN" suffix.
+        self.name_holder = bpy.data.collections.new('SC_TestSuffixColliders')
+        self.created = []
+
+    def tearDown(self):
+        for collection in self.created:
+            if any(child is collection for child in self.other_scene.collection.children):
+                self.other_scene.collection.children.unlink(collection)
+            if collection.name in bpy.data.collections:
+                bpy.data.collections.remove(collection)
+        if self.name_holder.name in bpy.data.collections:
+            bpy.data.collections.remove(self.name_holder)
+        bpy.data.scenes.remove(self.other_scene)
+
+    def test_repeated_calls_reuse_the_suffixed_collection(self):
+        name = 'SC_TestSuffixColliders'
+        context_stub = _types.SimpleNamespace(scene=self.other_scene)
+
+        col1 = _OBJECT_OT_add_bounding_object.create_collection(context_stub, name)
+        self.created.append(col1)
+        self.assertEqual(
+            col1.name, name + '_01',
+            "expected the addon's own '_01' disambiguation suffix, not Blender's default '.001'"
+        )
+
+        for _ in range(5):
+            col_n = _OBJECT_OT_add_bounding_object.create_collection(context_stub, name)
+            self.assertIs(
+                col_n, col1,
+                "repeated create_collection() calls created a new collection instead of "
+                "reusing the auto-suffixed one"
+            )
+
+        same_name_children = [c for c in self.other_scene.collection.children if c.name.startswith(name)]
+        self.assertEqual(
+            len(same_name_children), 1,
+            f"expected exactly one collider collection in the scene, found: "
+            f"{[c.name for c in same_name_children]}"
         )
 
 

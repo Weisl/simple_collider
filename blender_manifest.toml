@@ -33,4 +33,7 @@ paths_exclude_pattern = [
     "__pycache__/",
     "/.git/",
     "/*.zip",
+    "/tests/",
+    "/venv/",
+    "/.github/",
 ]

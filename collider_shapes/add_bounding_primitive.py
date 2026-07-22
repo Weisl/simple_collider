@@ -27,6 +27,64 @@ def create_name_number(name, nr, digits=3):
     return f"{name}_{nr:0{digits}}"
 
 
+def matches_local_collider_collection(collection, base_name):
+    """True if `collection` is a local collection matching `base_name`,
+    either exactly or via this addon's own "_NN" disambiguation suffix
+    (e.g. "Colliders_01").
+
+    A local collection named `base_name` may already exist elsewhere in
+    the file - e.g. another scene's own collider collection - since local
+    collection names are unique file-wide, not per scene. A same-named new
+    collection then gets our own "_NN" suffix on creation (see
+    _next_available_local_name), so later lookups must recognize that
+    suffixed form as ours too, or they'd fail to find it and create yet
+    another new collection on every call.
+    """
+    if collection.library is not None:
+        return False
+    if collection.name == base_name:
+        return True
+    suffix_prefix = base_name + '_'
+    return collection.name.startswith(suffix_prefix) and collection.name[len(suffix_prefix):].isdigit()
+
+
+def _next_available_local_name(base_name):
+    """Return `base_name`, or `base_name` with our own "_NN" suffix
+    (01, 02, ...) if a local collection already owns `base_name`.
+
+    Local collection names are unique file-wide, so a second scene's own
+    collider collection needs a distinct name. Blender's own auto-rename
+    would use ".001"; this addon uses "_NN" instead, matched by
+    matches_local_collider_collection(). Only local names are checked -
+    a same-named library-linked collection does not force a rename, since
+    it is never treated as ours (see matches_local_collider_collection).
+    """
+    local_names = {c.name for c in bpy.data.collections if c.library is None}
+    if base_name not in local_names:
+        return base_name
+    i = 1
+    while create_name_number(base_name, i, digits=2) in local_names:
+        i += 1
+    return create_name_number(base_name, i, digits=2)
+
+
+def _local_child_collection(parent_collection, name):
+    """Return the local (non-library-linked) direct child of
+    `parent_collection` matching `name` (exactly or via our "_NN"
+    suffix), or None.
+
+    Matching only among direct children - rather than a global
+    `bpy.data.collections` lookup - keeps collider collections scoped to
+    the scene they belong to: each scene gets its own collection, so
+    colliders from one scene are never bled into another via a shared
+    collection.
+    """
+    for child in parent_collection.children:
+        if matches_local_collider_collection(child, name):
+            return child
+    return None
+
+
 def set_origin_to_center_of_mass(obj, depsgraph=None):
     """
     Sets the origin of the given object to its center of mass.
@@ -992,29 +1050,23 @@ class OBJECT_OT_add_bounding_object():
         return True
 
     @staticmethod
-    def create_collection(collection_name):
-        """Create a collection if it doesn't exist and link it to the current scene if not already linked."""
-        import bpy
-
-        # Create the collection if it doesn't exist
-        if collection_name not in bpy.data.collections:
-            collection = bpy.data.collections.new(collection_name)
-        else:
-            collection = bpy.data.collections[collection_name]
-
-        # Get the current scene
-        current_scene = bpy.context.scene
-
-        # Link to current scene if not already linked
-        if collection.name not in current_scene.collection.children:
-            current_scene.collection.children.link(collection)
+    def create_collection(context, collection_name):
+        """Find or create a collider collection as a direct, local child of
+        context.scene's root collection. Each scene keeps its own
+        collection - never one shared/reused across scenes - and
+        library-linked collections are ignored."""
+        root = context.scene.collection
+        collection = _local_child_collection(root, collection_name)
+        if collection is None:
+            collection = bpy.data.collections.new(_next_available_local_name(collection_name))
+            root.children.link(collection)
 
         return collection
 
     # Collections
     @classmethod
-    def add_to_collections(cls, obj, collection_name, hide=False, color='NONE'):
-        col = cls.create_collection(collection_name)
+    def add_to_collections(cls, context, obj, collection_name, hide=False, color='NONE'):
+        col = cls.create_collection(context, collection_name)
         if hide:
             col.hide_viewport = True
             prefs = bpy.context.preferences.addons[base_package].preferences
@@ -1029,11 +1081,10 @@ class OBJECT_OT_add_bounding_object():
         return col
 
     @staticmethod
-    def remove_empty_collection(collection_name):
-        if collection_name in bpy.data.collections:
-            collection = bpy.data.collections[collection_name]
-            if len(collection.objects) == 0:
-                bpy.data.collections.remove(collection)
+    def remove_empty_collection(context, collection_name):
+        collection = _local_child_collection(context.scene.collection, collection_name)
+        if collection is not None and len(collection.objects) == 0:
+            bpy.data.collections.remove(collection)
 
     @staticmethod
     def set_collections(obj, collections):
@@ -1123,7 +1174,7 @@ class OBJECT_OT_add_bounding_object():
         deg = context.evaluated_depsgraph_get()
         me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
-        col = self.add_to_collections(new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
+        col = self.add_to_collections(context, new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
 
         self.restore_obj_mod_from_dic(mods)
 
@@ -1143,7 +1194,7 @@ class OBJECT_OT_add_bounding_object():
 
         if self.prefs.use_col_collection:
             collection_name = self.prefs.col_collection_name
-            self.add_to_collections(bounding_object, collection_name, color=self.prefs.col_collection_color)
+            self.add_to_collections(context, bounding_object, collection_name, color=self.prefs.col_collection_color)
 
         if self.use_remesh:
             self.add_remesh_modifier(context, bounding_object)
@@ -1223,7 +1274,7 @@ class OBJECT_OT_add_bounding_object():
 
                     tmp_ob = obj.copy()
                     tmp_ob.data = obj.data.copy()
-                    col = self.add_to_collections(tmp_ob, 'tmp_mesh', hide=False,
+                    col = self.add_to_collections(context, tmp_ob, 'tmp_mesh', hide=False,
                                                   color=self.prefs.col_tmp_collection_color)
 
                     if self.obj_mode == 'EDIT':
@@ -1241,7 +1292,7 @@ class OBJECT_OT_add_bounding_object():
                         split_objs = create_objs_from_island(base, use_world=default_world_spc)
 
                     for split in split_objs:
-                        col = self.add_to_collections(split, 'tmp_mesh', hide=False,
+                        col = self.add_to_collections(context, split, 'tmp_mesh', hide=False,
                                                       color=self.prefs.col_tmp_collection_color)
                         col.color_tag = self.prefs.col_tmp_collection_color
 
@@ -1379,7 +1430,7 @@ class OBJECT_OT_add_bounding_object():
         # Delete temporary objects
         if self.prefs.debug == False:
             self.remove_objects(self.tmp_meshes)
-            self.remove_empty_collection('tmp_mesh')
+            self.remove_empty_collection(context, 'tmp_mesh')
 
         self.reset_display(context)
 
@@ -1416,7 +1467,7 @@ class OBJECT_OT_add_bounding_object():
         root_collection = context.scene.collection
         debug_obj = bpy.data.objects.new('temp_debug_objects', me)
         # root_collection.objects.link(debug_obj)
-        self.add_to_collections(debug_obj, 'Debug')
+        self.add_to_collections(context, debug_obj, 'Debug')
 
         return debug_obj
 
@@ -1768,7 +1819,7 @@ class OBJECT_OT_add_bounding_object():
             # Delete temporary generated meshes
             if self.prefs.debug == False:
                 self.remove_objects(self.tmp_meshes)
-                self.remove_empty_collection('tmp_mesh')
+                self.remove_empty_collection(context, 'tmp_mesh')
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -2059,7 +2110,7 @@ class OBJECT_OT_add_bounding_object():
         self.remove_objects(self.tmp_meshes)
 
         self.remove_objects(self.new_colliders_list)
-        self.remove_empty_collection('tmp_mesh')
+        self.remove_empty_collection(context, 'tmp_mesh')
         self.new_colliders_list = []
         self.original_obj_data = []
         self.tmp_meshes = []
