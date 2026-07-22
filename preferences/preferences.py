@@ -64,6 +64,23 @@ def update_panel_category(self, context):
     return
 
 
+def update_group_colors(self, context):
+    """Refresh the cached N-panel group swatches so color preference edits
+    show immediately instead of only after a file reload.
+
+    ColliderGroup.color (drawn in the N-panel) is a stored copy of the
+    preference color, not a live read of it - it's only refreshed as a side
+    effect of set_default_group_values(), which otherwise only runs on addon
+    register and file load. Re-running it here on every preference edit keeps
+    the cached copy in sync, and tagging redraws makes the change visible
+    right away rather than on the next incidental repaint.
+    """
+    set_default_group_values()
+    for window in context.window_manager.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
+
+
 def get_default_executable_path():
     """Set the default executable path for the vhacd executable to the addon folder. """
     path = Path(str(__file__))

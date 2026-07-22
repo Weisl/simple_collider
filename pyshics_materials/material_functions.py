@@ -80,10 +80,10 @@ def create_default_material():
         if default_mat_name and default_mat_name in bpy.data.materials:
             default_material = bpy.data.materials[default_mat_name]
         else:
-            default_material = create_material(default_mat_name, (0.2384, 0.8632, 0.4125, 0.5))
+            default_material = create_material(default_mat_name, (0.7490, 1.0, 0.7765, 0.25))
     else:
         default_mat_name = 'COL_DEFAULT'
-        default_material = create_material(default_mat_name, (0.2384, 0.8632, 0.4125, 0.5))
+        default_material = create_material(default_mat_name, (0.7490, 1.0, 0.7765, 0.25))
 
     return default_material
 

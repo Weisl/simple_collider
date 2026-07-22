@@ -2,7 +2,7 @@ import bpy
 import os
 
 from .keymap import keymaps_items_dict
-from .preferences import update_panel_category, update_keymap
+from .preferences import update_panel_category, update_keymap, update_group_colors
 from .preferences import get_default_executable_path, setDefaultTemp
 from .preferences import collection_colors
 from ..properties.constants import PRESETFOLDER, DEFAULT_PRESET
@@ -314,25 +314,25 @@ class CollisionAddonPrefsProperties():
     # The object color for the bounding object
     user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
                                                        description="Object color and alpha for User Collider Group 01",
-                                                       default=(0.2384, 0.8632, 0.4125), min=0.0, max=1.0,
-                                                       subtype='COLOR', size=3)
+                                                       default=(0.4235, 0.8902, 0.4745), min=0.0, max=1.0,
+                                                       subtype='COLOR', size=3, update=update_group_colors)
 
     # The object color for the bounding object
     user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
                                                        description="Object color and alpha for User Collider Group 02",
-                                                       default=(0.9823, 0.7454, 0.063), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=3)
+                                                       default=(0.4745, 0.4235, 0.8902), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3, update=update_group_colors)
 
     # The object color for the bounding object
     user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
                                                        description="Object color and alpha for User Collider Group 03.",
-                                                       default=(0.9823, 0.491, 0.1746), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=3)
+                                                       default=(0.8902, 0.4745, 0.4235), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3, update=update_group_colors)
 
     # The object color for the bounding object
     user_groups_alpha: bpy.props.FloatProperty(name="Alpha",
                                                description="Object alpha for User Collider Groups.",
-                                               default=0.5, min=0.0, max=1.0)
+                                               default=0.5, min=0.0, max=1.0, update=update_group_colors)
 
     # Modal Box
     use_modal_box: bpy.props.BoolProperty(name="Use Backdrop", default=True)
@@ -365,7 +365,7 @@ class CollisionAddonPrefsProperties():
 
     modal_color_navigation: bpy.props.FloatVectorProperty(name="Ignore Input / Navigation",
                                                           description="Font color in the 3D viewport for the whole line while input is being ignored (ALT) or while navigating the viewport",
-                                                          default=(0.961, 0.620, 0.043, 1.0), min=0.0, max=1.0,
+                                                          default=(0.604, 0.616, 0.651, 0.7), min=0.0, max=1.0,
                                                           subtype='COLOR', size=4)
 
     modal_color_modal: bpy.props.FloatVectorProperty(name="Modal",

@@ -48,11 +48,21 @@ def _clamped_voxel_size(bbox_min, bbox_max, voxel_size, padding):
     return max(voxel_size, min_voxel_size)
 
 
-def _grid_dims(bbox_min, bbox_max, voxel_size, padding):
+def _grid_dims_and_origin(bbox_min, bbox_max, voxel_size, padding):
+    """Grid cell counts per axis, and the world position of cell (0, 0, 0).
+
+    Rounds each axis to the *nearest* whole number of cells rather than
+    always up, then centers that core region on the mesh's bbox. Any leftover
+    slack (or shortfall) from the rounding is split evenly between the two
+    sides -- so the grid hugs the source surface as closely as possible
+    instead of always growing outward to guarantee full containment.
+    """
     size = bbox_max - bbox_min
-    core_cells = np.maximum(np.ceil(size / voxel_size).astype(int), 1)
+    core_cells = np.maximum(np.round(size / voxel_size).astype(int), 1)
     dims = np.minimum(core_cells + 2 * padding, MAX_GRID_AXIS_CELLS)
-    return tuple(int(d) for d in dims)
+    slack = core_cells * voxel_size - size
+    origin = bbox_min - padding * voxel_size - slack / 2
+    return tuple(int(d) for d in dims), origin
 
 
 def _mark_triangle(occupancy, origin, voxel_size, threshold, v0, v1, v2, max_depth=6):
@@ -66,6 +76,13 @@ def _mark_triangle(occupancy, origin, voxel_size, threshold, v0, v1, v2, max_dep
     """
     dims = np.array(occupancy.shape)
     inv = 1.0 / voxel_size
+    eps = voxel_size * 1e-4
+
+    # Used only to resolve the "flat on a grid line" case below -- computed
+    # once from the whole (undivided) triangle since every recursive piece
+    # stays coplanar with it.
+    normal = np.cross(v1 - v0, v2 - v0)
+
     stack = [(v0, v1, v2, 0)]
 
     while stack:
@@ -83,16 +100,36 @@ def _mark_triangle(occupancy, origin, voxel_size, threshold, v0, v1, v2, max_dep
             stack.append((ab, bc, ca, depth + 1))
             continue
 
-        # A small epsilon pad before flooring keeps geometry that sits exactly
-        # on a cell boundary (e.g. an axis-aligned source face landing on a
-        # grid line) from being floored to only the cell on one side of it --
-        # without it, symmetric shapes come out lopsided (some faces get an
-        # extra phantom layer, others don't), which then confuses ramp
-        # classification. Marking both neighbouring cells is harmless here,
-        # just conservative.
-        eps = voxel_size * 1e-4
-        i0 = np.clip(np.floor((tri_min - origin - eps) * inv).astype(int), 0, dims - 1)
-        i1 = np.clip(np.floor((tri_max - origin + eps) * inv).astype(int), 0, dims - 1)
+        rel_min = (tri_min - origin) * inv
+        rel_max = (tri_max - origin) * inv
+        # "Belongs to the cell above" and "belongs to the cell below" readings
+        # of the piece's span. These agree for any ordinary span; they can
+        # only disagree (lo > hi) when the piece is flat exactly on a grid
+        # line along that axis -- which is guaranteed at the mesh's own
+        # bounding-box extremes, since the grid origin is defined from
+        # bbox_min in exact voxel-size steps. Marking both cells there is
+        # what pushes the whole collider outward by up to one voxel around
+        # every flat, grid-aligned face (e.g. any box-like source mesh).
+        lo = np.floor(rel_min + eps).astype(int)
+        hi = np.ceil(rel_max - eps).astype(int) - 1
+
+        flat = lo > hi
+        if flat.any():
+            # The face normal says which side the solid is actually on, so
+            # collapse to that single, correct cell instead of both.
+            for axis in np.nonzero(flat)[0]:
+                n = normal[axis]
+                if n > 1e-12:
+                    lo[axis] = hi[axis]
+                elif n < -1e-12:
+                    hi[axis] = lo[axis]
+                else:
+                    # Orientation inconclusive for this axis (e.g. a sliver
+                    # piece) -- fall back to the old, always-safe span.
+                    lo[axis], hi[axis] = hi[axis], lo[axis]
+
+        i0 = np.clip(lo, 0, dims - 1)
+        i1 = np.clip(hi, 0, dims - 1)
         occupancy[i0[0]:i1[0] + 1, i0[1]:i1[1] + 1, i0[2]:i1[2] + 1] = True
 
 
@@ -317,8 +354,7 @@ def build_voxel_bmesh(mesh, voxel_size, diagonal_fill=False, padding=2):
     bbox_max = verts_local.max(axis=0)
 
     voxel_size = _clamped_voxel_size(bbox_min, bbox_max, voxel_size, padding)
-    dims = _grid_dims(bbox_min, bbox_max, voxel_size, padding)
-    origin = bbox_min - padding * voxel_size
+    dims, origin = _grid_dims_and_origin(bbox_min, bbox_max, voxel_size, padding)
 
     surface = _voxelize_surface(verts_local, tris, origin, voxel_size, dims)
     filled = ~_flood_fill_outside(surface)
