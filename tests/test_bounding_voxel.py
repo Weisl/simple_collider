@@ -93,6 +93,22 @@ class TestVoxelGeneration(unittest.TestCase):
         self.assertEqual(len(bm.faces), 6)
         self.assertEqual(_holes(bm), [])
 
+    def test_cube_cubic_hugs_true_bbox_when_voxel_size_divides_evenly(self):
+        """Regression for #577: an evenly-dividing voxel size used to always
+        inflate the collider outward by one full voxel on every side, because
+        the mesh's own bbox faces sit exactly on a grid line. The result
+        should instead match the source cube's bbox exactly."""
+        size = 2.0
+        mesh = self._cube_mesh(size=size)
+        bm = build_voxel_bmesh(mesh, voxel_size=0.5, diagonal_fill=False)
+        self.addCleanup(bm.free)
+        coords = [v.co for v in bm.verts]
+        bbox_min = [min(c[axis] for c in coords) for axis in range(3)]
+        bbox_max = [max(c[axis] for c in coords) for axis in range(3)]
+        for axis in range(3):
+            self.assertAlmostEqual(bbox_min[axis], -size / 2, places=5)
+            self.assertAlmostEqual(bbox_max[axis], size / 2, places=5)
+
     def test_sphere_cubic_is_watertight(self):
         mesh = self._sphere_mesh()
         bm = build_voxel_bmesh(mesh, voxel_size=0.15, diagonal_fill=False)

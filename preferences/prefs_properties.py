@@ -44,6 +44,7 @@ class CollisionAddonPrefsProperties():
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
                ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),
+               ('VALIDATION', "Validation", "Settings for the collider validation checks."),
                ('SUPPORT', "Support", "Get support and help with the addon and help improve it"),
                ),
         default='SETTINGS',
@@ -464,6 +465,59 @@ class CollisionAddonPrefsProperties():
                                                                 "export pipelines that rely on the render flag",
                                                     default=True)
 
+    ###################################################################
+    # VALIDATION
+
+    validate_check_missing_collider: bpy.props.BoolProperty(name="Missing Collider",
+                                                             description="Flag render meshes that have no collider assigned",
+                                                             default=True)
+
+    validate_check_triangle_count: bpy.props.BoolProperty(name="Triangle Count",
+                                                           description="Flag colliders whose triangle count exceeds the limit below",
+                                                           default=True)
+
+    validate_check_min_dimension: bpy.props.BoolProperty(name="Collider Too Small",
+                                                         description="Flag colliders whose bounding box is smaller than the minimum dimension below",
+                                                         default=True)
+
+    validate_check_bbox_mismatch: bpy.props.BoolProperty(name="Bounding Box Mismatch",
+                                                          description="Flag colliders whose bounding box differs too much from their render mesh",
+                                                          default=True)
+
+    validate_check_naming: bpy.props.BoolProperty(name="Naming Convention",
+                                                  description="Flag colliders whose name doesn't match the configured naming convention",
+                                                  default=True)
+
+    validate_check_non_manifold: bpy.props.BoolProperty(name="Non-Manifold Geometry",
+                                                         description="Flag colliders with non-manifold (not watertight) edges",
+                                                         default=True)
+
+    validate_check_physics_material: bpy.props.BoolProperty(name="Missing Physics Material",
+                                                             description="Flag colliders with no physics material assigned",
+                                                             default=True)
+
+    validate_check_parent_hierarchy: bpy.props.BoolProperty(name="Parent Hierarchy",
+                                                             description="Flag colliders that aren't parented to a render mesh",
+                                                             default=True)
+
+    validation_max_triangle_count: bpy.props.IntProperty(name="Max Triangle Count",
+                                                         description="Maximum number of triangles allowed on a collider before it is flagged",
+                                                         default=255,
+                                                         min=1)
+
+    validation_min_dimension: bpy.props.FloatProperty(name="Min Dimension",
+                                                      description="Minimum bounding box dimension a collider can have before it is flagged as too small",
+                                                      default=0.01,
+                                                      min=0.0,
+                                                      subtype='DISTANCE')
+
+    validation_bbox_tolerance: bpy.props.FloatProperty(name="Bounding Box Tolerance",
+                                                       description="Allowed relative difference between a collider's bounding box and its render mesh's bounding box, as a fraction of the render mesh's bounding box diagonal",
+                                                       default=0.1,
+                                                       min=0.0,
+                                                       max=1.0,
+                                                       subtype='FACTOR')
+
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
                                   description="Debug mode only used for debuging during development",
@@ -562,4 +616,21 @@ class CollisionAddonPrefsProperties():
         "my_hide",
         "wireframe_mode",
         "hide_render_on_creation",
+    ]
+
+    props_validation_checks = [
+        "validate_check_missing_collider",
+        "validate_check_triangle_count",
+        "validate_check_min_dimension",
+        "validate_check_bbox_mismatch",
+        "validate_check_naming",
+        "validate_check_non_manifold",
+        "validate_check_physics_material",
+        "validate_check_parent_hierarchy",
+    ]
+
+    props_validation_thresholds = [
+        "validation_max_triangle_count",
+        "validation_min_dimension",
+        "validation_bbox_tolerance",
     ]

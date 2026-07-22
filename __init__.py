@@ -13,6 +13,7 @@ if "bpy" in locals():
     importlib.reload(rigid_body)
     importlib.reload(presets)
     importlib.reload(preferences)
+    importlib.reload(validation)
 
 
 else:
@@ -27,6 +28,7 @@ else:
     from . import rigid_body
     from . import presets
     from . import preferences
+    from . import validation
 
 def register():
     # call the register function of the submodules.
@@ -44,8 +46,14 @@ def register():
     groups.register()
     properties.register()
 
+    # depends on collider_shapes, pyshics_materials and preferences being
+    # registered already (naming/material checks read from them)
+    validation.register()
+
 
 def unregister():
+    validation.unregister()
+
     properties.unregister()
     groups.unregister()
     # call unregister function of the submodules.

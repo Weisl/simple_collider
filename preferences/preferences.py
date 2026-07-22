@@ -383,6 +383,22 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 row.prop(self, propName)
                 row.operator("wm.url_open", text="", icon='QUESTION').url = f"https://github.com/kmammou/v-hacd#{propName}"
 
+    def draw_validation_panel(self, layout):
+        """Draw the validation panel"""
+        box = layout.box()
+        row = box.row()
+        row.label(text='Checks')
+        for propName in self.props_validation_checks:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        row = box.row()
+        row.label(text='Thresholds')
+        for propName in self.props_validation_thresholds:
+            row = box.row()
+            row.prop(self, propName)
+
     def draw_support_panel(self, layout, context):
         """Draw the support panel"""
         box = layout.box()
@@ -482,6 +498,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
 
         elif self.prefs_tabs == 'UI':
             self.draw_ui_panel(layout)
+
+        elif self.prefs_tabs == 'VALIDATION':
+            self.draw_validation_panel(layout)
 
         elif self.prefs_tabs == 'SUPPORT':
             self.draw_support_panel(layout, context)

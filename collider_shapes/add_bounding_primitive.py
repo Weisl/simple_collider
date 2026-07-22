@@ -16,6 +16,12 @@ from ..properties.constants import DECIMATE_NAME, VALID_OBJECT_TYPES
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material, set_material
 
+# How long the viewport-navigation HUD dimming stays on after the view was
+# last seen changing (see draw_viewport_overlay). Short enough to feel
+# responsive once navigation actually stops, long enough to bridge the gap
+# between individual redraw callbacks.
+NAVIGATION_HOLD_SECONDS = 0.2
+
 
 def alignObjects(new, old):
     """Align two objects"""
@@ -110,11 +116,14 @@ def set_origin_to_center_of_mass(obj, depsgraph=None):
         print(f"Object '{obj.name}' has no vertices. Cannot calculate center of mass.")
         return
     
-    # Use numpy for faster vertex operations
-    import numpy as np
-    verts_local = np.array([v.co for v in mesh.vertices])
-    verts_world = verts_local @ obj.matrix_world
-    com = np.mean(verts_world, axis=0)
+    # Use numpy for faster vertex operations. obj.matrix_world is a 4x4
+    # mathutils.Matrix; numpy's `@` can't multiply it directly against an
+    # (N, 3) array (shape mismatch), so the rotation/scale submatrix and
+    # translation are applied explicitly instead.
+    verts_local = numpy.array([v.co for v in mesh.vertices])
+    mat_world = numpy.array(obj.matrix_world)
+    verts_world = verts_local @ mat_world[:3, :3].T + mat_world[:3, 3]
+    com = numpy.mean(verts_world, axis=0)
 
     # Calculate the offset
     offset = obj.matrix_world.inverted() @ mathutils.Vector(com)
@@ -246,6 +255,25 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
     items = []
+
+    # Detecting "is the user currently navigating" from event types seen in
+    # modal() doesn't work reliably: an MMB orbit drag hands its MOUSEMOVE
+    # events - and usually even the terminating release - to Blender's own
+    # view3d.rotate modal operator before they ever reach this operator's
+    # modal(), so nothing observed there can tell whether a drag is still
+    # in progress. This draw callback runs on every actual repaint though,
+    # and Blender keeps repainting continuously for as long as the view is
+    # visibly changing - so comparing the region's view matrix frame to
+    # frame is a direct, reliable "is navigation actually happening" signal
+    # instead of an event-based guess.
+    region_3d = getattr(context.space_data, 'region_3d', None)
+    if region_3d is not None:
+        view_snapshot = (region_3d.view_matrix.copy(), region_3d.view_distance)
+        if self.navigation_view_snapshot is not None and view_snapshot != self.navigation_view_snapshot:
+            self.navigation_hold_until = time.time() + NAVIGATION_HOLD_SECONDS
+            self.arm_navigation_timer()
+        self.navigation_view_snapshot = view_snapshot
+    self.navigation = time.time() < self.navigation_hold_until
 
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
     if self.use_space:
@@ -848,6 +876,43 @@ class OBJECT_OT_add_bounding_object():
         bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
         bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
         pass
+
+    def arm_navigation_timer(self):
+        """Make sure poke_navigation_redraw() is scheduled. Only one timer
+        is ever in flight - it re-arms itself via its own return value for
+        as long as navigation_hold_until keeps getting pushed out, so this
+        just needs to kick it off once."""
+        if not self.navigation_timer_scheduled:
+            self.navigation_timer_scheduled = True
+            bpy.app.timers.register(self.poke_navigation_redraw, first_interval=NAVIGATION_HOLD_SECONDS)
+
+    def poke_navigation_redraw(self):
+        """bpy.app.timers callback: force a repaint once the navigation hold
+        window elapses, even if no further event ever reaches modal() or
+        draw_viewport_overlay() to notice on its own (e.g. the user stops
+        touching mouse/keyboard right after navigating, and Blender doesn't
+        repaint an idle viewport by itself).
+
+        This deliberately does NOT set self.navigation directly - it only
+        prompts a fresh repaint, and draw_viewport_overlay() re-derives the
+        real answer from the live view_matrix each time it draws. That
+        means this can never falsely clear the dimming while navigation is
+        still genuinely in progress: if the view is still changing, Blender
+        is already generating real repaints on its own, each of which
+        pushes the hold window out again before this timer's turn comes.
+        Re-arms itself via its return value, so only one timer is ever in
+        flight.
+        """
+        try:
+            remaining = self.navigation_hold_until - time.time()
+            if remaining > 0:
+                return remaining
+            self.navigation_timer_scheduled = False
+            self.navigation_area.tag_redraw()
+        except ReferenceError:
+            # operator has already finished/cancelled and its RNA was freed
+            pass
+        return None
 
     def set_collisions_wire_preview(self, mode):
         """Show wireframe for colliders"""
@@ -1628,6 +1693,12 @@ class OBJECT_OT_add_bounding_object():
         self.height_active = height_active
         self.width_active = width_active
 
+        # A keypress alone doesn't make Blender repaint the viewport (only
+        # mouse motion over the region does), so the new highlight color set
+        # above wouldn't show up until the next MOUSEMOVE. Force a repaint
+        # now so activating a parameter highlights it immediately.
+        self.force_redraw()
+
     def invoke(self, context, event):
         colSettings = context.scene.simple_collider
 
@@ -1649,6 +1720,10 @@ class OBJECT_OT_add_bounding_object():
 
         # INITIAL STATE
         self.navigation = False
+        self.navigation_hold_until = 0.0  # grace window keeping navigation coloring on after the view last changed
+        self.navigation_timer_scheduled = False
+        self.navigation_area = context.area
+        self.navigation_view_snapshot = None  # (view_matrix, view_distance) as of the last draw call
         self.selected_objects = context.selected_objects.copy()
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
@@ -1787,8 +1862,6 @@ class OBJECT_OT_add_bounding_object():
     def modal(self, context, event):
         colSettings = context.scene.simple_collider
 
-        self.navigation = False
-
         # Ignore if Alt is pressed
         if event.alt:
             self.ignore_input = True
@@ -1796,19 +1869,14 @@ class OBJECT_OT_add_bounding_object():
             return {'RUNNING_MODAL'}
 
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
-            # allow navigation
-            self.navigation = True
-
-            self.opacity_active = False
-            self.displace_active = False
-            self.decimate_active = False
-            self.cylinder_segments_active = False
-            self.remesh_active = False
-            self.height_active = False
-            self.width_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
-
+            # Whether the view is actually navigating is now detected in
+            # draw_viewport_overlay() by watching the region's view_matrix
+            # (see there for why: this handler doesn't reliably see events
+            # for the duration of an MMB orbit drag at all, since Blender's
+            # own view3d.rotate modal operator consumes them). This branch
+            # only needs to cancel any in-progress parameter drag so
+            # navigating doesn't fight with an active (S)/(D)/(A)/etc. edit.
+            self.set_modal_state()
             return {'PASS_THROUGH'}
 
         # User Input

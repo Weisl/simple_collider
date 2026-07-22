@@ -51,14 +51,17 @@ def _clamped_voxel_size(bbox_min, bbox_max, voxel_size, padding):
 def _grid_dims_and_origin(bbox_min, bbox_max, voxel_size, padding):
     """Grid cell counts per axis, and the world position of cell (0, 0, 0).
 
-    Rounds each axis to the *nearest* whole number of cells rather than
-    always up, then centers that core region on the mesh's bbox. Any leftover
-    slack (or shortfall) from the rounding is split evenly between the two
-    sides -- so the grid hugs the source surface as closely as possible
-    instead of always growing outward to guarantee full containment.
+    `voxel_size` rarely divides the bbox evenly, so a whole number of cells
+    always has to round up to at least `ceil(size / voxel_size)` -- that part
+    can't shrink, or the surface marking below would need more cells than the
+    grid has room for. What we *can* control is where that unavoidable slack
+    goes: centering the core region on the bbox (instead of anchoring it flush
+    with bbox_min the way a naive grid would) splits it evenly between both
+    sides, so the collider hugs the source surface on both sides equally
+    instead of sitting flush on one side and bulging outward on the other.
     """
     size = bbox_max - bbox_min
-    core_cells = np.maximum(np.round(size / voxel_size).astype(int), 1)
+    core_cells = np.maximum(np.ceil(size / voxel_size).astype(int), 1)
     dims = np.minimum(core_cells + 2 * padding, MAX_GRID_AXIS_CELLS)
     slack = core_cells * voxel_size - size
     origin = bbox_min - padding * voxel_size - slack / 2
@@ -105,11 +108,11 @@ def _mark_triangle(occupancy, origin, voxel_size, threshold, v0, v1, v2, max_dep
         # "Belongs to the cell above" and "belongs to the cell below" readings
         # of the piece's span. These agree for any ordinary span; they can
         # only disagree (lo > hi) when the piece is flat exactly on a grid
-        # line along that axis -- which is guaranteed at the mesh's own
-        # bounding-box extremes, since the grid origin is defined from
-        # bbox_min in exact voxel-size steps. Marking both cells there is
-        # what pushes the whole collider outward by up to one voxel around
-        # every flat, grid-aligned face (e.g. any box-like source mesh).
+        # line along that axis -- notably whenever voxel_size divides the
+        # mesh's own bbox evenly, since the grid is then aligned so bbox_min
+        # and bbox_max land exactly on grid lines. Marking both cells there is
+        # what used to push the whole collider outward by up to one voxel
+        # around every flat, grid-aligned face (e.g. any box-like source mesh).
         lo = np.floor(rel_min + eps).astype(int)
         hi = np.ceil(rel_max - eps).astype(int) - 1
 

@@ -310,6 +310,11 @@ def draw_creation_menu(context, layout, settings=False):
     row.label(text='Operators')
     box = layout.box()
     box.menu("OBJECT_MT_adjust_decimation_menu", text="Cleanup Collider", icon='COLLAPSEMENU')
+    if settings:
+        # Only in the N-panel: this menu is also embedded (via
+        # VIEW3D_MT_collision_creation) in the pie menu, which should stay
+        # focused on creation/cleanup and not grow a diagnostics entry.
+        box.operator("collision.validate_colliders", icon='CHECKMARK')
 
     row = layout.row(align=True)
     row.label(text='Display as')
