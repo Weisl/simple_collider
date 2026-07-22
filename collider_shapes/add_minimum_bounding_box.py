@@ -60,6 +60,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         bm = bmesh.new()
         dg = bpy.context.evaluated_depsgraph_get()
         bm.from_object(obj, dg)
+        OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, dg)
 
         chull_out = bmesh.ops.convex_hull(bm, input=bm.verts, use_existing_faces=False)
         chull_geom = chull_out["geom"]

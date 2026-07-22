@@ -1,5 +1,5 @@
 import bpy
-import math # for isclose
+import math
 from bpy.props import IntProperty
 
 from ..properties.constants import DECIMATE_NAME
@@ -209,6 +209,11 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def parent_has_uniform_scale(parent, rel_tol=1e-5):
+    scale_x, scale_y, scale_z = parent.scale
+    return math.isclose(scale_x, scale_y, rel_tol=rel_tol) and math.isclose(scale_y, scale_z, rel_tol=rel_tol)
+
+
 def fix_inverse_matrix(obj, update_depsgraph=True):
     mesh = obj.data
     # Make a copy of the object's original world matrix before we reset any of its transform matrices
@@ -308,21 +313,26 @@ class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
         return context.selected_objects is not None
 
     def execute(self, context):
-        selected_objects = context.selected_objects
-        for obj in selected_objects:
+        fixed_count = 0
+        skipped_parents = []
+        for obj in context.selected_objects:
             if obj.type != 'MESH' or not obj.parent:
                 continue
             parent = obj.parent
-            if parent:  # only if there is a parent
-                scale_x, scale_y, scale_z = parent.scale
-                if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z, rel_tol=1e-5):
-                    from ..collider_operators.utility_operators import fix_inverse_matrix
-                    fix_inverse_matrix(obj)
-                    # Force update
+            if parent_has_uniform_scale(parent):
+                fix_inverse_matrix(obj)
+                fixed_count += 1
+            else:
+                print(f"Skipping {obj.name}: parent '{parent.name}' has non-uniform scale {tuple(parent.scale)}.")
+                if parent.name not in skipped_parents:
+                    skipped_parents.append(parent.name)
 
-                else:
-                    print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
-                    self.report({'WARNING'}, f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
-
-        self.report({'INFO'}, "Fixed collider transform for selected objects")
+        if skipped_parents:
+            self.report(
+                {'WARNING'},
+                f"Fixed {fixed_count} collider(s). Skipped object(s) parented to non-uniformly "
+                f"scaled {'objects' if len(skipped_parents) > 1 else 'object'}: {', '.join(skipped_parents)}.",
+            )
+        else:
+            self.report({'INFO'}, f"Fixed parent inverse matrix for {fixed_count} collider(s).")
         return {'FINISHED'}
