@@ -28,6 +28,9 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     )
 
     def execute(self, context):
+        # Cache depsgraph once for all objects to avoid O(N^2) re-evaluations
+        depsgraph = context.evaluated_depsgraph_get()
+        
         for obj in context.selected_objects:
             if obj.type != 'MESH':
                 continue
@@ -40,7 +43,6 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
 
             def get_tri_count(ratio):
                 decimate.ratio = ratio
-                depsgraph = context.evaluated_depsgraph_get()
                 obj_eval = obj.evaluated_get(depsgraph)
                 mesh = obj_eval.to_mesh()
                 count = sum(len(p.vertices) - 2 for p in mesh.polygons)
