@@ -48,30 +48,27 @@ def set_origin_to_center_of_mass(obj, depsgraph=None):
     obj_eval = obj.evaluated_get(depsgraph)
     mesh = obj_eval.data
 
-    # Calculate center of mass
-    com = mathutils.Vector((0.0, 0.0, 0.0))
-    total_mass = 0.0
-
-    for vertex in mesh.vertices:
-        com += obj.matrix_world @ vertex.co  # Convert local coordinates to world
-        total_mass += 1
-
-    if total_mass > 0:
-        com /= total_mass  # Average position of all vertices
-    else:
+    # Calculate center of mass using numpy for better performance
+    if len(mesh.vertices) == 0:
         print(f"Object '{obj.name}' has no vertices. Cannot calculate center of mass.")
         return
+    
+    # Use numpy for faster vertex operations
+    import numpy as np
+    verts_local = np.array([v.co for v in mesh.vertices])
+    verts_world = verts_local @ obj.matrix_world
+    com = np.mean(verts_world, axis=0)
 
     # Calculate the offset
-    offset = obj.matrix_world.inverted() @ com
+    offset = obj.matrix_world.inverted() @ mathutils.Vector(com)
 
-    # Apply the offset to the object's data
-    for vertex in obj.data.vertices:
-        vertex.co -= offset
+    # Apply the offset to the object's data in a batch
+    # Only update mesh once at the end
+    for i, vertex in enumerate(obj.data.vertices):
+        vertex.co = mathutils.Vector(verts_local[i]) - offset
 
     # Move the object's origin to the center of mass
-    obj.location = com
-
+    obj.location = mathutils.Vector(com)
 
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')

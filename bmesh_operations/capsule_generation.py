@@ -24,17 +24,21 @@ def calculate_capsule_dimensions(vertices, alignment_axis='Z'):
     if not vertices:
         raise ValueError("The vertices list is empty.")
 
+    # Convert to numpy array for vectorized operations (much faster than Python loops)
+    verts = np.array(vertices)
+    
     # Determine alignment axis
     axis_map = {'X': 0, 'Y': 1, 'Z': 2}
     align_idx = axis_map[alignment_axis.upper()]
     perp_axes = [(align_idx + 1) % 3, (align_idx + 2) % 3]  # Perpendicular axes
 
     # Calculate the radius as the maximum distance from the center axis in perpendicular directions
-    radius = max((v[perp_axes[0]]**2 + v[perp_axes[1]]**2)**0.5 for v in vertices)
+    # Using numpy for vectorized operations (much faster than Python loops)
+    radius = float(np.max(np.sqrt(verts[:, perp_axes[0]]**2 + verts[:, perp_axes[1]]**2)))
 
     # Calculate the height as the difference in the aligned axis plus 2 * radius
-    min_axis = min(v[align_idx] for v in vertices)
-    max_axis = max(v[align_idx] for v in vertices)
+    min_axis = float(np.min(verts[:, align_idx]))
+    max_axis = float(np.max(verts[:, align_idx]))
     height = max_axis - min_axis + 2 * radius  # Extend height to include hemispheres
 
     return radius, height
