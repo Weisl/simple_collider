@@ -27,16 +27,12 @@ class OBJECT_OT_convert_to_empty(Operator):
 
     @classmethod
     def poll(cls, context):
-        count = 0
         if context.mode != 'OBJECT':
             return False
         for obj in context.selected_objects:
             if obj.get('isCollider') and obj.get('collider_shape') in SUPPORTED_SHAPES:
                 return True
-        for obj in context.selected_objects:
-            if obj.type == 'MESH':
-                count = count + 1
-        return count > 0
+        return False
 
     def execute(self, context):
         t0 = time.time()

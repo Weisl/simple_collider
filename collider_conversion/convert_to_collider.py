@@ -23,7 +23,18 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
     @classmethod
     def poll(cls, context):
         # Convert is only supported in object mode
-        return False if context.mode != 'OBJECT' else super().poll(context)
+        if context.mode != 'OBJECT':
+            return False
+        
+        # Check if there's at least one valid object that is not already a collider
+        for obj in context.selected_objects:
+            if obj.type in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+                # If the object is not a collider, it's viable for conversion
+                if not obj.get('isCollider'):
+                    return super().poll(context)
+        
+        # All selected valid objects are already colliders
+        return False
 
     def cancel_cleanup(self, context, **kwargs):
         print('base_objs = ' + str(self.base_objs))
