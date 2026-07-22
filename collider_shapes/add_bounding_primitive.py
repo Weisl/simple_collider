@@ -1144,10 +1144,37 @@ class OBJECT_OT_add_bounding_object():
     # Modifiers
     @staticmethod
     def apply_all_modifiers(context, obj):
-        """apply all modifiers to an object"""
+        """Replace obj's mesh data with the fully evaluated result of its
+        modifier stack - including any unrealized instances a modifier like
+        Geometry Nodes "Instance on Points" produces without a "Realize
+        Instances" node - then clear the modifiers.
+
+        bpy.ops.object.modifier_apply() applied per-modifier fails outright
+        ("Evaluated geometry from modifier does not contain a mesh") once a
+        modifier's output is instances-only, since Blender's built-in Apply
+        can't bake unrealized instances into real geometry. Evaluating via
+        the depsgraph and merging instances manually (merge_object_instances)
+        sidesteps that limitation.
+        """
         context.view_layer.objects.active = obj
-        for mod in obj.modifiers:
-            bpy.ops.object.modifier_apply(modifier=mod.name)
+        if not obj.modifiers:
+            return
+
+        depsgraph = context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph), depsgraph=depsgraph)
+
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, depsgraph)
+        bm.to_mesh(me)
+        bm.free()
+
+        old_data = obj.data
+        obj.data = me
+        obj.modifiers.clear()
+
+        if old_data.users == 0:
+            bpy.data.meshes.remove(old_data)
 
     @staticmethod
     def remove_all_modifiers(context, obj):
@@ -1485,6 +1512,19 @@ class OBJECT_OT_add_bounding_object():
             self.remove_empty_collection(context, 'tmp_mesh')
 
         self.reset_display(context)
+
+        # execute() normally restores the starting selection/active object/mode
+        # via reset_to_initial_state() at its own end. If generation is
+        # cancelled or raises before that point is reached, none of that ever
+        # runs, so the user can be left stranded in Object Mode after starting
+        # in Edit Mode. Restore it explicitly here as a guarantee.
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in self.selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = self.active_obj
+        if context.object and context.object.mode != self.obj_mode:
+            bpy.ops.object.mode_set(mode=self.obj_mode)
 
         try:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
