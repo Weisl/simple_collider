@@ -5,10 +5,10 @@ from .add_bounding_primitive import OBJECT_OT_add_bounding_object
 from ..bmesh_operations.voxel_generation import build_voxel_bmesh, mesh_max_dimension
 
 
-class OBJECT_OT_add_bounding_voxel(OBJECT_OT_add_bounding_object, Operator):
+class OBJECT_OT_add_bounding_simplified_mesh(OBJECT_OT_add_bounding_object, Operator):
     """Create a watertight low-poly collider based on a 3D voxel grid"""
-    bl_idname = "mesh.add_bounding_voxel"
-    bl_label = "Add Voxel"
+    bl_idname = "mesh.add_bounding_simplified_mesh"
+    bl_label = "Add Simplified Mesh"
     bl_description = 'Create a simplified watertight collider based on a 3D voxel grid'
 
     def __init__(self, *args, **kwargs):

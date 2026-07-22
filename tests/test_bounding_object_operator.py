@@ -868,6 +868,113 @@ class TestFixInverseMatrixUpdateDepsgraph(unittest.TestCase):
                 )
 
 
+# -- fix_parent_inverse_transform: non-uniform-scale skip ---------------------
+
+_parent_has_uniform_scale = _addon.collider_operators.utility_operators.parent_has_uniform_scale
+_COLLISION_OT_FixColliderTransform = _addon.collider_operators.utility_operators.COLLISION_OT_FixColliderTransform
+
+
+def _select_only(*objs):
+    """Deselect everything, then select and activate the given objects."""
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    for o in objs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]
+
+
+class TestFixColliderTransformSkipsNonUniformParent(unittest.TestCase):
+    """object.fix_parent_inverse_transform must skip (and warn about) any
+    collider whose parent has non-uniform scale, leaving its parent-inverse
+    matrix and mesh untouched, while still fixing siblings parented to
+    uniformly-scaled objects.
+
+    This is the documented, intentional fallback for #558: the operator
+    cannot produce a correct result on unevenly-scaled parents, so it must
+    skip those objects rather than silently corrupting their transform.
+    """
+
+    _PREFIX = '__test_fixskip_'
+
+    @classmethod
+    def setUpClass(cls):
+        bpy.utils.register_class(_COLLISION_OT_FixColliderTransform)
+
+    @classmethod
+    def tearDownClass(cls):
+        bpy.utils.unregister_class(_COLLISION_OT_FixColliderTransform)
+
+    def setUp(self):
+        self._obj_names = []
+
+    def tearDown(self):
+        for name in self._obj_names:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                data = obj.data
+                bpy.data.objects.remove(obj, do_unlink=True)
+                if isinstance(data, bpy.types.Mesh):
+                    mesh = bpy.data.meshes.get(data.name)
+                    if mesh is not None:
+                        bpy.data.meshes.remove(mesh)
+
+    def _make_parent(self, suffix, scale):
+        obj = bpy.data.objects.new(f'{self._PREFIX}parent_{suffix}', None)
+        obj.scale = scale
+        bpy.context.scene.collection.objects.link(obj)
+        self._obj_names.append(obj.name)
+        return obj
+
+    def _make_child(self, suffix, parent):
+        mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{suffix}')
+        mesh.from_pydata([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)], [], [[0, 1, 2]])
+        mesh.update()
+        obj = bpy.data.objects.new(f'{self._PREFIX}child_{suffix}', mesh)
+        obj.location = (1.0, 2.0, 0.0)
+        bpy.context.scene.collection.objects.link(obj)
+        _OBJECT_OT_add_bounding_object.custom_set_parent(bpy.context, parent, obj)
+        bpy.context.view_layer.update()
+        if obj.parent is not parent:
+            self.skipTest(
+                "precondition violated: custom_set_parent() did not set parent; "
+                "TestCustomSetParentPreservesTransform covers that assumption"
+            )
+        self._obj_names.append(obj.name)
+        return obj
+
+    def test_non_uniform_parent_is_skipped_uniform_parent_is_fixed(self):
+        uniform_parent = self._make_parent('uniform', (2.0, 2.0, 2.0))
+        skewed_parent = self._make_parent('skewed', (1.0, 2.0, 3.0))
+        bpy.context.view_layer.update()
+
+        fixed_child = self._make_child('fixed', uniform_parent)
+        skipped_child = self._make_child('skipped', skewed_parent)
+
+        mpi_before = skipped_child.matrix_parent_inverse.copy()
+        verts_before = [v.co.copy() for v in skipped_child.data.vertices]
+
+        _select_only(fixed_child, skipped_child)
+        bpy.ops.object.fix_parent_inverse_transform()
+
+        # Fixed child: parent-inverse cleared, transform baked into the mesh.
+        self.assertTrue(fixed_child.matrix_parent_inverse.is_identity)
+
+        # Skipped child: left completely untouched.
+        self.assertEqual(skipped_child.matrix_parent_inverse, mpi_before)
+        for v_before, v_after in zip(verts_before, skipped_child.data.vertices):
+            for axis in range(3):
+                self.assertAlmostEqual(
+                    v_before[axis], v_after.co[axis], places=6,
+                    msg="skipped_child mesh must not be touched when parent scale is non-uniform",
+                )
+
+    def test_parent_has_uniform_scale_helper(self):
+        uniform = self._make_parent('helper_uniform', (1.5, 1.5, 1.5))
+        skewed = self._make_parent('helper_skewed', (1.0, 1.0, 1.001))
+        self.assertTrue(_parent_has_uniform_scale(uniform))
+        self.assertFalse(_parent_has_uniform_scale(skewed))
+
+
 # -- set_origin_to_center_of_mass: pre-fetched depsgraph ----------------------
 
 
