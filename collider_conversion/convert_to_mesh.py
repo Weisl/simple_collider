@@ -39,14 +39,13 @@ class OBJECT_OT_convert_to_mesh(Operator):
 
     @classmethod
     def poll(cls, context):
-        count = 0
         if context.mode != 'OBJECT':
             return False
 
         for obj in context.selected_objects:
-            if obj.type in VALID_OBJECT_TYPES:
-                count = count + 1
-        return count > 0
+            if obj.type in VALID_OBJECT_TYPES and obj.get('isCollider'):
+                return True
+        return False
 
     def execute(self, context):
         colSettings = context.scene.simple_collider
