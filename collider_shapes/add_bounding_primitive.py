@@ -128,10 +128,13 @@ def set_origin_to_center_of_mass(obj, depsgraph=None):
     # Calculate the offset
     offset = obj.matrix_world.inverted() @ mathutils.Vector(com)
 
-    # Apply the offset to the object's data in a batch
-    # Only update mesh once at the end
-    for i, vertex in enumerate(obj.data.vertices):
-        vertex.co = mathutils.Vector(verts_local[i]) - offset
+    # Apply the offset to the object's own (base) mesh vertices. Note:
+    # `verts_local`/`mesh` above are the evaluated (post-modifier) mesh, used
+    # only to compute the center of mass - modifiers such as the convex hull
+    # / decimate modifiers used by Auto Convex can change the vertex count,
+    # so its vertices no longer line up 1:1 with obj.data.vertices here.
+    for vertex in obj.data.vertices:
+        vertex.co = vertex.co - offset
 
     # Move the object's origin to the center of mass
     obj.location = mathutils.Vector(com)

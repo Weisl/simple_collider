@@ -101,6 +101,42 @@ def draw_auto_convex(layout, context):
             op.prefs_tabs = 'VHACD'
 
 
+def draw_auto_convex_coacd(layout, context):
+    """
+    Draw the Auto Convex (BETA) (CoACD) options in the layout based on the current platform and preferences.
+
+    Args:
+        layout (Layout): The layout to draw the options on.
+        context (Context): The current context.
+    """
+
+    prefs = context.preferences.addons[base_package].preferences
+    addon_name = get_addon_name()
+
+    if not (platform.system() in ['Windows', 'Linux']
+            or (platform.system() == 'Darwin' and platform.machine() == 'arm64')):
+        op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
+        op.addon_name = addon_name
+        op.prefs_tabs = 'VHACD'
+
+        text = "Auto Convex (BETA) is only supported for Windows, Linux, and macOS ARM64 at this moment."
+        label_multiline(
+            context=context,
+            text=text,
+            parent=layout
+        )
+    else:
+        if prefs.coacd_executable_path or prefs.coacd_default_executable_path:
+
+            layout.operator("button.auto_convex_coacd", text="Auto Convex (BETA)", icon='WINDOW')
+            op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
+            op.addon_name = addon_name
+            op.prefs_tabs = 'VHACD'
+        else:
+            op = layout.operator("simple_collider.open_preferences", text="Setup CoACD", icon='ERROR')
+            op.addon_name = addon_name
+            op.prefs_tabs = 'VHACD'
+
 
 def draw_auto_convex_settings(colSettings, layout):
     """
@@ -118,6 +154,25 @@ def draw_auto_convex_settings(colSettings, layout):
     row.prop(colSettings, 'maxHullVertCount')
     row = col.row(align=True)
     row.prop(colSettings, 'voxelResolution')
+
+
+def draw_auto_convex_coacd_settings(colSettings, layout):
+    """
+    Draw the settings for Auto Convex (BETA) (CoACD) in the layout.
+
+    Args:
+        colSettings (UILayout): The column layout to draw the settings on.
+        layout (Layout): The parent layout.
+    """
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.prop(colSettings, 'coacd_threshold')
+    row.prop(colSettings, 'coacd_maxConvexHulls')
+    row = col.row(align=True)
+    row.prop(colSettings, 'coacd_decimate')
+    sub_row = row.row(align=True)
+    sub_row.enabled = colSettings.coacd_decimate
+    sub_row.prop(colSettings, 'coacd_maxHullVertCount')
 
 
 def label_multiline(context, text, parent):
@@ -247,6 +302,9 @@ def draw_creation_menu(context, layout, settings=False):
     # layout.separator()
     row = col.row(align=True)
     draw_auto_convex(row, context)
+
+    row = col.row(align=True)
+    draw_auto_convex_coacd(row, context)
 
     # layout.separator()
     col = layout.column(align=True)
@@ -717,6 +775,25 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex")
+        return {'FINISHED'}
+
+
+class BUTTON_OT_auto_convex_coacd(bpy.types.Operator):
+    """Create convex hull colliders using CoACD (BETA)"""
+    bl_idname = "button.auto_convex_coacd"
+    bl_label = "Auto Convex (BETA)"
+    bl_description = 'Create convex hull colliders using CoACD, the successor to V-HACD (BETA)'
+
+    @classmethod
+    def poll(cls, context):
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type in VALID_OBJECT_TYPES:
+                count = count + 1
+        return count > 0
+
+    def execute(self, context):
+        bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex_coacd")
         return {'FINISHED'}
 
 

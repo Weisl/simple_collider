@@ -54,6 +54,38 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
                                              default=False,
                                              description='Whether or not to shrinkwrap output to source mesh')
 
+    # -t
+    coacd_threshold: bpy.props.FloatProperty(name='Threshold',
+                                             description='Concavity threshold for terminating the decomposition. '
+                                                         'Lower values give finer-grained results with more convex '
+                                                         'hulls, higher values give coarser results with fewer hulls',
+                                             default=0.05,
+                                             min=0.01,
+                                             max=1.0,
+                                             soft_min=0.01,
+                                             soft_max=0.5)
+
+    # -c
+    coacd_maxConvexHulls: bpy.props.IntProperty(name='Max Hulls',
+                                                description='Maximum number of output convex hulls. -1 for no limit '
+                                                            '(only takes effect if merge is enabled)',
+                                                default=-1,
+                                                min=-1,
+                                                soft_min=1,
+                                                soft_max=64)
+
+    # -d / -dt
+    coacd_decimate: bpy.props.BoolProperty(name='Limit Hull Vertices',
+                                           description='Enable a maximum vertex count constraint per convex hull',
+                                           default=False)
+
+    coacd_maxHullVertCount: bpy.props.IntProperty(name='Vert per Piece',
+                                                  description='Maximum number of vertices in each output convex hull',
+                                                  default=256,
+                                                  min=4,
+                                                  soft_max=256,
+                                                  max=4096)
+
     # Display setting of the bounding object in the viewport
     toggle_wireframe: bpy.props.BoolProperty(name="Toggle Wireframe",
                                              description="Toggle wireframe display for collider objects",

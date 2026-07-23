@@ -4,6 +4,7 @@ import os
 from .keymap import keymaps_items_dict
 from .preferences import update_panel_category, update_keymap, update_group_colors
 from .preferences import get_default_executable_path, setDefaultTemp
+from .preferences import get_default_coacd_executable_path
 from .preferences import collection_colors
 from ..properties.constants import PRESETFOLDER, DEFAULT_PRESET
 from .. import __package__ as base_package
@@ -43,7 +44,7 @@ class CollisionAddonPrefsProperties():
                ('NAMING', "Presets", "Presets settings: Create, change and modify presets"),
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
-               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),
+               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation (V-HACD and CoACD)."),
                ('VALIDATION', "Validation", "Settings for the collider validation checks."),
                ('SUPPORT', "Support", "Get support and help with the addon and help improve it"),
                ),
@@ -445,6 +446,79 @@ class CollisionAddonPrefsProperties():
                                                     default=False,
                                                     description="If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default")
 
+    ###################################################################
+    # COACD (Auto Convex BETA)
+
+    coacd_default_executable_path: bpy.props.StringProperty(name='Default CoACD Build',
+                                                             description='Path to the CoACD executable distributed with this addon. (read-only)',
+                                                             default=get_default_coacd_executable_path(),
+                                                             subtype='FILE_PATH',
+                                                             )
+
+    coacd_executable_path: bpy.props.StringProperty(name='Custom CoACD Build',
+                                                     description='Specify a path to another CoACD executable if you want to use a custom build',
+                                                     default='',
+                                                     subtype='FILE_PATH'
+                                                     )
+
+    # CoACD parameters
+
+    # -pm
+    coacd_preprocessMode: bpy.props.EnumProperty(name='Preprocess Mode',
+                                                 description='Manifold preprocessing mode',
+                                                 items=(('auto', 'Auto',
+                                                         'Automatically check the input mesh manifoldness and only preprocess if needed'),
+                                                        ('on', 'On',
+                                                         'Force turn on the manifold pre-processing'),
+                                                        ('off', 'Off',
+                                                         'Force turn off the manifold pre-processing. The input mesh must be 2-manifold solid')),
+                                                 default='auto')
+
+    # -pr
+    coacd_prepResolution: bpy.props.IntProperty(name='Preprocess Resolution',
+                                                description='Resolution used for the manifold preprocessing step (20~100)',
+                                                default=50,
+                                                min=20,
+                                                max=100)
+
+    # -mi
+    coacd_mctsIterations: bpy.props.IntProperty(name='MCTS Iterations',
+                                                description='Number of search iterations in the Monte Carlo Tree Search (60~2000)',
+                                                default=150,
+                                                min=60,
+                                                max=2000)
+
+    # -md
+    coacd_mctsDepth: bpy.props.IntProperty(name='MCTS Max Depth',
+                                           description='Maximum search depth in the Monte Carlo Tree Search (2~7)',
+                                           default=3,
+                                           min=2,
+                                           max=7)
+
+    # -mn
+    coacd_mctsNodes: bpy.props.IntProperty(name='MCTS Max Nodes',
+                                           description='Maximum number of child nodes in the Monte Carlo Tree Search (10~40)',
+                                           default=20,
+                                           min=10,
+                                           max=40)
+
+    # -r
+    coacd_resolution: bpy.props.IntProperty(name='Hausdorff Sampling Resolution',
+                                            description='Sampling resolution used for the Hausdorff distance calculation (1000~10000)',
+                                            default=2000,
+                                            min=1000,
+                                            max=10000)
+
+    # -nm
+    coacd_noMerge: bpy.props.BoolProperty(name='Disable Merge',
+                                          description='Disable the merge postprocessing step. Merging is recommended in most cases as it reduces the number of convex hulls',
+                                          default=False)
+
+    # --pca
+    coacd_pca: bpy.props.BoolProperty(name='PCA Preprocessing',
+                                      description='Enable PCA (Principal Component Analysis) pre-processing, which can improve results for elongated shapes',
+                                      default=False)
+
     wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
                                            items=(('OFF', "Off",
                                                    "Colliders show no wireframes"),
@@ -610,6 +684,17 @@ class CollisionAddonPrefsProperties():
         "vhacd_maxRecursionDepth",
         "vhacd_fillMode",
         "vhacd_optimalSplitPlane",
+    ]
+
+    coacd_props_config = [
+        "coacd_preprocessMode",
+        "coacd_prepResolution",
+        "coacd_mctsIterations",
+        "coacd_mctsDepth",
+        "coacd_mctsNodes",
+        "coacd_resolution",
+        "coacd_noMerge",
+        "coacd_pca",
     ]
 
     display_config = [

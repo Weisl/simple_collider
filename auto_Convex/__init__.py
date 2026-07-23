@@ -1,7 +1,9 @@
 from . import add_bounding_auto_convex
+from . import add_bounding_auto_convex_coacd
 
 classes = (
     add_bounding_auto_convex.VHACD_OT_convex_decomposition,
+    add_bounding_auto_convex_coacd.COACD_OT_convex_decomposition,
 )
 
 
