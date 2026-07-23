@@ -60,6 +60,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
 
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack

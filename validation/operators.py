@@ -33,21 +33,66 @@ class COLLISION_UL_validation_results(bpy.types.UIList):
     issues() appends every issue for one object before moving to the next).
     Each row has a dedicated arrow button to select/frame the object (see
     COLLISION_OT_select_validation_object); the message itself is a plain,
-    non-interactive label."""
+    non-interactive label. Supports filtering by severity and by a free-text
+    search across the object name/message (see filter_items/draw_filter),
+    important on scenes with many colliders where the flat report otherwise
+    gets overwhelming."""
+
+    show_errors: bpy.props.BoolProperty(name="Errors", default=True, description="Show error-level issues")
+    show_warnings: bpy.props.BoolProperty(name="Warnings", default=True, description="Show warning-level issues")
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         results = data.simple_collider_validation_results
-        is_group_start = index == 0 or results[index - 1].object_name != item.object_name
+        # Grouping must walk back to the previous *visible* item, not just
+        # index - 1: when filtering hides some rows, the item right before
+        # this one in the raw collection may belong to the same object but
+        # not be shown, which would otherwise wrongly suppress this row's
+        # header (see filter_items, which caches the same flags used here).
+        visible_flags = getattr(self, '_visible_flags', None)
+        is_group_start = True
+        if visible_flags is not None:
+            for i in range(index - 1, -1, -1):
+                if visible_flags[i]:
+                    is_group_start = results[i].object_name != item.object_name
+                    break
+        elif index > 0:
+            is_group_start = results[index - 1].object_name != item.object_name
 
         col = layout.column(align=True)
         if is_group_start:
             col.label(text=item.object_name, icon=_object_icon(item.object_name))
 
         row = col.row(align=True)
+        row.alert = item.severity == 'ERROR'
         select_op = row.operator('collision.select_validation_object', text='', icon='FORWARD')
         select_op.object_name = item.object_name
         severity_icon = 'ERROR' if item.severity == 'ERROR' else 'INFO'
         row.label(text=item.message, icon=severity_icon)
+
+    def filter_items(self, context, data, propname):
+        results = getattr(data, propname)
+        flt_flags = [self.bitflag_filter_item] * len(results)
+
+        filter_text = self.filter_name.lower()
+        for idx, item in enumerate(results):
+            if item.severity == 'ERROR' and not self.show_errors:
+                flt_flags[idx] = 0
+            elif item.severity == 'WARNING' and not self.show_warnings:
+                flt_flags[idx] = 0
+            elif filter_text and filter_text not in item.object_name.lower() and filter_text not in item.message.lower():
+                flt_flags[idx] = 0
+
+        # Cached for draw_item's grouping logic above - filter_items always
+        # runs before draw_item within the same template_list draw call.
+        self._visible_flags = flt_flags
+        return flt_flags, []
+
+    def draw_filter(self, context, layout):
+        row = layout.row(align=True)
+        row.prop(self, 'filter_name', text='', icon='VIEWZOOM')
+        row = layout.row(align=True)
+        row.prop(self, 'show_errors', toggle=True, icon='ERROR')
+        row.prop(self, 'show_warnings', toggle=True, icon='INFO')
 
 
 def _frame_selected(context):
@@ -125,9 +170,9 @@ class COLLISION_OT_copy_validation_report(bpy.types.Operator):
 
 
 class COLLISION_OT_validate_colliders(bpy.types.Operator):
-    """Check colliders in the scene for common problems"""
+    """Check colliders in the scene for common problems (BETA)"""
     bl_idname = "collision.validate_colliders"
-    bl_label = "Validate Colliders"
+    bl_label = "Validate Colliders (BETA)"
     bl_options = {'REGISTER'}
 
     scope: bpy.props.EnumProperty(

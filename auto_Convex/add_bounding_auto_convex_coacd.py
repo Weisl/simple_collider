@@ -60,6 +60,10 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
 
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
@@ -174,8 +178,10 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             f'-r {prefs.coacd_resolution}'
         )
 
-        if col_settings.coacd_decimate:
-            cmd_line += f' -d -dt {col_settings.coacd_maxHullVertCount}'
+        # -d/-dt is intentionally never combined with manifold preprocessing here: the CoACD 1.0.11
+        # CLI silently produces an empty output when both are active on the same pass (preprocess
+        # collapses to 0 points). Hull vertex limiting is instead applied afterwards, per-hull, via
+        # decimate_convex_hulls(), where -pm off is safe because each hull is already convex/manifold.
         if prefs.coacd_noMerge:
             cmd_line += ' -nm'
         if prefs.coacd_pca:
@@ -187,7 +193,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         coacd_process = subprocess.Popen(cmd_line, bufsize=-1, close_fds=True, shell=True, cwd=data_path)
         coacd_process.wait()
 
-        if not os.path.isfile(output_filename):
+        if not os.path.isfile(output_filename) or os.path.getsize(output_filename) == 0:
             return None
 
         return output_filename
@@ -203,6 +209,60 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             ob.select_set(False)
 
         return imported
+
+    def decimate_convex_hulls(self, context, coacd_exe, hull_objects, data_path):
+        """Limit the vertex count of each convex hull individually.
+
+        CoACD's own -d/-dt decimation is run here as a second, per-hull pass instead of
+        alongside the main decomposition: feeding it a fresh manifold single-hull mesh with
+        preprocessing forced off avoids the empty-output bug above, and (unlike feeding it the
+        combined multi-hull file) doesn't crash the CLI.
+        """
+        col_settings = context.scene.simple_collider
+        result = []
+
+        for i, hull_obj in enumerate(hull_objects):
+            for ob in context.selected_objects:
+                ob.select_set(False)
+            hull_obj.select_set(True)
+            context.view_layer.objects.active = hull_obj
+
+            basename = ''.join(c for c in hull_obj.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
+            hull_filename = os.path.join(data_path, f'{basename}_hull_{i}.obj')
+            decimated_filename = os.path.join(data_path, f'{basename}_hull_{i}_dec.obj')
+            remesh_filename = os.path.join(data_path, f'{basename}_hull_{i}_dec_remesh.obj')
+
+            bpy.ops.wm.obj_export(filepath=hull_filename, check_existing=False, export_selected_objects=True,
+                                  export_materials=False, export_uv=False, export_normals=False,
+                                  forward_axis='Y', up_axis='Z')
+
+            cmd_line = (
+                f'"{coacd_exe}" -i "{hull_filename}" -o "{decimated_filename}" -ro "{remesh_filename}" '
+                f'-t {col_settings.coacd_threshold} -c -1 -pm off '
+                f'-d -dt {col_settings.coacd_maxHullVertCount}'
+            )
+            coacd_process = subprocess.Popen(cmd_line, bufsize=-1, close_fds=True, shell=True, cwd=data_path)
+            coacd_process.wait()
+
+            hull_obj.select_set(False)
+
+            if os.path.isfile(decimated_filename) and os.path.getsize(decimated_filename) > 0:
+                bpy.data.objects.remove(hull_obj)
+                bpy.ops.wm.obj_import(filepath=decimated_filename, forward_axis='Y', up_axis='Z')
+                new_hulls = context.selected_objects[:]
+                for ob in new_hulls:
+                    ob.select_set(False)
+                result.extend(new_hulls)
+            else:
+                self.report({'WARNING'}, f'CoACD hull decimation failed for {hull_obj.name}, keeping original hull')
+                result.append(hull_obj)
+
+            if not self.prefs.debug:
+                for f in (hull_filename, decimated_filename, remesh_filename):
+                    if os.path.isfile(f):
+                        os.remove(f)
+
+        return result
 
     def postprocess_colliders(self, context, convex_decomposition_data):
         """Postprocess the imported colliders: naming, parenting, and final setup."""
@@ -257,6 +317,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 continue
 
             imported = self.import_decomposed_meshes(output_obj)
+
+            if context.scene.simple_collider.coacd_decimate:
+                imported = self.decimate_convex_hulls(context, coacd_exe, imported, data_path)
 
             convex_collisions_data = {'colliders': imported, 'parent': parent, 'mtx_world': parent.matrix_world.copy()}
             convex_decomposition_data.append(convex_collisions_data)

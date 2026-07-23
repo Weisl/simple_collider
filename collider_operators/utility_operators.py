@@ -5,6 +5,85 @@ from mathutils import Matrix
 from ..properties.constants import DECIMATE_NAME
 
 
+def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None):
+    """Adjust obj's Decimate modifier ratio so the evaluated triangle count is
+    at or below target_triangles.
+
+    Returns True if the target was reached, False if it isn't reachable even
+    at maximum decimation (in which case the ratio is left at 1.0).
+    """
+    if obj.type != 'MESH':
+        return True
+
+    if depsgraph is None:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    if obj.modifiers.get(DECIMATE_NAME):
+        decimate = obj.modifiers.get(DECIMATE_NAME)
+    else:
+        decimate = obj.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
+    decimate.decimate_type = 'COLLAPSE'
+
+    def get_tri_count(ratio):
+        decimate.ratio = ratio
+        obj_eval = obj.evaluated_get(depsgraph)
+        mesh = obj_eval.to_mesh()
+        count = sum(len(p.vertices) - 2 for p in mesh.polygons)
+        obj_eval.to_mesh_clear()
+        return count
+
+    # If original mesh is already within budget, no decimation needed
+    original_count = get_tri_count(1.0)
+    if original_count <= target_triangles:
+        decimate.ratio = 1.0
+        return True
+
+    # Check if even maximum decimation can reach the target
+    if get_tri_count(0.001) > target_triangles:
+        decimate.ratio = 1.0
+        return False
+
+    # Linear estimate: COLLAPSE decimation reduces tris roughly proportional to ratio.
+    estimated_ratio = target_triangles / original_count
+    actual_count = get_tri_count(estimated_ratio)
+
+    # Narrow binary search correction around the estimate.
+    # The search range is a small band rather than the full 0–1 space,
+    # so `iterations` steps give much finer precision than searching 0-1 directly.
+    if actual_count <= target_triangles:
+        lo, hi = estimated_ratio, 1.0
+        best_ratio = estimated_ratio
+    else:
+        lo, hi = 0.001, estimated_ratio
+        best_ratio = 0.001
+
+    for _ in range(iterations):
+        mid = (lo + hi) * 0.5
+        if get_tri_count(mid) <= target_triangles:
+            best_ratio = mid
+            lo = mid
+        else:
+            hi = mid
+
+    decimate.ratio = best_ratio
+    return True
+
+
+def move_origin_to_parent(obj):
+    """Move obj's origin to match its parent's, baking the offset into the
+    mesh data so the object's world-space appearance is unchanged."""
+    if obj.type != 'MESH' or obj.parent is None:
+        return
+
+    parent = obj.parent
+    parent_world = parent.matrix_world.copy()
+    child_world = obj.matrix_world.copy()
+    offset = child_world.inverted() @ parent_world
+    obj.data.transform(offset.inverted())
+    obj.data.update()
+    obj.matrix_world = parent_world
+
+
 class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     """Adjust Decimation to Target Triangle Count"""
     bl_idname = "object.adjust_decimation"
@@ -30,60 +109,18 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     def execute(self, context):
         # Cache depsgraph once for all objects to avoid O(N^2) re-evaluations
         depsgraph = context.evaluated_depsgraph_get()
-        
+
+        unreachable = []
         for obj in context.selected_objects:
             if obj.type != 'MESH':
                 continue
+            if not set_triangle_count_limit(obj, self.target_triangles, self.iterations, depsgraph):
+                unreachable.append(obj.name)
 
-            if obj.modifiers.get(DECIMATE_NAME):
-                decimate = obj.modifiers.get(DECIMATE_NAME)
-            else:
-                decimate = obj.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
-            decimate.decimate_type = 'COLLAPSE'
-
-            def get_tri_count(ratio):
-                decimate.ratio = ratio
-                obj_eval = obj.evaluated_get(depsgraph)
-                mesh = obj_eval.to_mesh()
-                count = sum(len(p.vertices) - 2 for p in mesh.polygons)
-                obj_eval.to_mesh_clear()
-                return count
-
-            # If original mesh is already within budget, no decimation needed
-            original_count = get_tri_count(1.0)
-            if original_count <= self.target_triangles:
-                decimate.ratio = 1.0
-                continue
-
-            # Check if even maximum decimation can reach the target
-            if get_tri_count(0.001) > self.target_triangles:
-                self.report({'WARNING'}, f"{obj.name}: cannot reach {self.target_triangles} tris even at maximum decimation")
-                decimate.ratio = 1.0
-                continue
-
-            # Linear estimate: COLLAPSE decimation reduces tris roughly proportional to ratio.
-            estimated_ratio = self.target_triangles / original_count
-            actual_count = get_tri_count(estimated_ratio)
-
-            # Narrow binary search correction around the estimate.
-            # The search range is a small band rather than the full 0–1 space,
-            # so self.iterations steps give much finer precision than before.
-            if actual_count <= self.target_triangles:
-                lo, hi = estimated_ratio, 1.0
-                best_ratio = estimated_ratio
-            else:
-                lo, hi = 0.001, estimated_ratio
-                best_ratio = 0.001
-
-            for _ in range(self.iterations):
-                mid = (lo + hi) * 0.5
-                if get_tri_count(mid) <= self.target_triangles:
-                    best_ratio = mid
-                    lo = mid
-                else:
-                    hi = mid
-
-            decimate.ratio = best_ratio
+        if unreachable:
+            self.report({'WARNING'},
+                        f"Cannot reach {self.target_triangles} tris even at maximum decimation: "
+                        f"{', '.join(unreachable)}")
 
         return {'FINISHED'}
 
@@ -100,18 +137,8 @@ class COLLISION_OT_MoveOriginToParentOperator(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
-        selected_objects = context.selected_objects
-        for obj in selected_objects:
-            if obj.type != 'MESH' or obj.parent is None:
-                continue
-
-            parent = obj.parent
-            parent_world = parent.matrix_world.copy()
-            child_world = obj.matrix_world.copy()
-            offset = child_world.inverted() @ parent_world
-            obj.data.transform(offset.inverted())
-            obj.data.update()
-            obj.matrix_world = parent_world
+        for obj in context.selected_objects:
+            move_origin_to_parent(obj)
 
         self.report({'INFO'}, "Origin moved to parent for selected objects")
         return {'FINISHED'}

@@ -96,15 +96,24 @@ def check_min_dimension(collider_obj, min_dimension):
     )
 
 
-def check_bbox_mismatch(collider_obj, render_obj, tolerance, depsgraph):
-    """Flag a collider whose world-space bounding box deviates from its render
-    mesh parent's by more than `tolerance` times the render mesh's bbox diagonal."""
-    collider_aabb = _world_aabb(collider_obj, depsgraph)
+def check_bbox_mismatch(render_obj, collider_objs, tolerance, depsgraph):
+    """Flag a render mesh whose colliders, taken together, don't cover its
+    world-space bounding box: the *combined* (union) bbox of every collider
+    in `collider_objs` is compared against the render mesh's own bbox.
+    Several colliders commonly combine to represent one render mesh's shape
+    (e.g. a torso box plus limb capsules) - comparing each one individually
+    against the full mesh would flag nearly every compound setup as a
+    "mismatch" even when it's correct, so they're considered as a whole."""
     render_aabb = _world_aabb(render_obj, depsgraph)
-    if collider_aabb is None or render_aabb is None:
+    if render_aabb is None:
         return None
 
-    c_min, c_max = collider_aabb
+    collider_aabbs = [aabb for c in collider_objs if (aabb := _world_aabb(c, depsgraph)) is not None]
+    if not collider_aabbs:
+        return None
+
+    c_min = np.min([aabb[0] for aabb in collider_aabbs], axis=0)
+    c_max = np.max([aabb[1] for aabb in collider_aabbs], axis=0)
     r_min, r_max = render_aabb
     render_diag = float(np.linalg.norm(r_max - r_min))
     if render_diag == 0:
@@ -115,9 +124,24 @@ def check_bbox_mismatch(collider_obj, render_obj, tolerance, depsgraph):
         return None
     return ValidationIssue(
         check_id='bbox_mismatch',
-        object_name=collider_obj.name,
+        object_name=render_obj.name,
         severity='WARNING',
-        message=f"bounding box differs from its render mesh '{render_obj.name}' by {delta:.4f}",
+        message=f"combined collider bounding box differs from this mesh's by {delta:.4f}",
+    )
+
+
+def check_too_many_colliders(render_obj, max_colliders):
+    """Flag a render mesh with more collider children than `max_colliders` -
+    a large number of collider shapes on one object can hurt physics
+    performance and often signals the setup could be simplified or merged."""
+    collider_count = sum(1 for child in render_obj.children if child.get('isCollider'))
+    if collider_count <= max_colliders:
+        return None
+    return ValidationIssue(
+        check_id='too_many_colliders',
+        object_name=render_obj.name,
+        severity='WARNING',
+        message=f"{collider_count} collider shapes assigned (limit {max_colliders})",
     )
 
 
@@ -526,10 +550,23 @@ def collect_validation_issues(objects, prefs, depsgraph):
         is_collider = bool(obj.get('isCollider'))
 
         if not is_collider:
-            if obj.type == 'MESH' and prefs.validate_check_missing_collider:
-                issue = check_missing_collider(obj, prefs.use_parent_to)
-                if issue:
-                    issues.append(issue)
+            if obj.type == 'MESH':
+                if prefs.validate_check_missing_collider:
+                    issue = check_missing_collider(obj, prefs.use_parent_to)
+                    if issue:
+                        issues.append(issue)
+
+                colliders = [c for c in obj.children if c.get('isCollider')]
+                if colliders:
+                    if prefs.validate_check_bbox_mismatch:
+                        issue = check_bbox_mismatch(obj, colliders, prefs.validation_bbox_tolerance, depsgraph)
+                        if issue:
+                            issues.append(issue)
+
+                    if prefs.validate_check_too_many_colliders:
+                        issue = check_too_many_colliders(obj, prefs.validation_max_collider_count)
+                        if issue:
+                            issues.append(issue)
             continue
 
         if obj.type == 'MESH':
@@ -540,11 +577,6 @@ def collect_validation_issues(objects, prefs, depsgraph):
 
             if prefs.validate_check_min_dimension:
                 issue = check_min_dimension(obj, prefs.validation_min_dimension)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_bbox_mismatch and obj.parent is not None:
-                issue = check_bbox_mismatch(obj, obj.parent, prefs.validation_bbox_tolerance, depsgraph)
                 if issue:
                     issues.append(issue)
 

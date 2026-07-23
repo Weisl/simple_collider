@@ -64,6 +64,20 @@ class CollisionAddonPrefsProperties():
                                           description="Fix the parent inverse matrix of the collider if the collider is parented to another object. This will ensure that the collider is correctly positioned relative to its parent.",
                                           default=True)
 
+    # Auto-apply Collider Cleanup operations right after collider creation
+    auto_apply_tris_limit: bpy.props.BoolProperty(name="Auto Apply Tris Count",
+                                                   description="Automatically limit newly created colliders to the target triangle count below",
+                                                   default=False)
+
+    auto_apply_max_triangle_count: bpy.props.IntProperty(name="Target Triangles",
+                                                          description="Target triangle count used when auto-applying the triangle count limit",
+                                                          default=800,
+                                                          min=1)
+
+    auto_apply_origin_to_parent: bpy.props.BoolProperty(name="Auto Apply Origin to Parent",
+                                                         description="Automatically move newly created colliders' origin to match their parent's, for engines that require matching origins",
+                                                         default=False)
+
     # GENERAL
     # Parent to base
     use_parent_to: bpy.props.BoolProperty(name="Parent Colliders to Base Objects",
@@ -555,8 +569,14 @@ class CollisionAddonPrefsProperties():
                                                          default=True)
 
     validate_check_bbox_mismatch: bpy.props.BoolProperty(name="Bounding Box Mismatch",
-                                                          description="Flag colliders whose bounding box differs too much from their render mesh",
+                                                          description="Flag a render mesh whose colliders, combined, don't cover its bounding box. "
+                                                                      "Colliders are considered together, not individually, since several often "
+                                                                      "combine to represent one mesh (e.g. a torso box plus limb capsules)",
                                                           default=True)
+
+    validate_check_too_many_colliders: bpy.props.BoolProperty(name="Too Many Colliders",
+                                                               description="Flag a render mesh with more collider shapes assigned than the limit below",
+                                                               default=True)
 
     validate_check_naming: bpy.props.BoolProperty(name="Naming Convention",
                                                   description="Flag colliders whose name doesn't match the configured naming convention",
@@ -615,11 +635,16 @@ class CollisionAddonPrefsProperties():
                                                       subtype='DISTANCE')
 
     validation_bbox_tolerance: bpy.props.FloatProperty(name="Bounding Box Tolerance",
-                                                       description="Allowed relative difference between a collider's bounding box and its render mesh's bounding box, as a fraction of the render mesh's bounding box diagonal",
-                                                       default=0.1,
+                                                       description="Allowed relative difference between a render mesh's colliders (combined) and its own bounding box, as a fraction of the render mesh's bounding box diagonal",
+                                                       default=0.25,
                                                        min=0.0,
                                                        max=1.0,
                                                        subtype='FACTOR')
+
+    validation_max_collider_count: bpy.props.IntProperty(name="Max Collider Count",
+                                                         description="Maximum number of collider shapes a single render mesh can have before it is flagged",
+                                                         default=8,
+                                                         min=1)
 
     validation_shape_tolerance: bpy.props.FloatProperty(name="Shape Tolerance",
                                                         description="Allowed relative volume difference for the convex/box shape checks and the "
@@ -757,6 +782,7 @@ class CollisionAddonPrefsProperties():
         "validate_check_triangle_count",
         "validate_check_min_dimension",
         "validate_check_bbox_mismatch",
+        "validate_check_too_many_colliders",
         "validate_check_naming",
         "validate_check_non_manifold",
         "validate_check_flipped_normals",
@@ -772,6 +798,7 @@ class CollisionAddonPrefsProperties():
         "validation_max_triangle_count",
         "validation_min_dimension",
         "validation_bbox_tolerance",
+        "validation_max_collider_count",
         "validation_shape_tolerance",
         "validation_sphere_tolerance",
     ]

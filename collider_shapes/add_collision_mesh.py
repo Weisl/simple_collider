@@ -31,6 +31,10 @@ class OBJECT_OT_add_mesh_collision(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
         scene = context.scene
 
         # change bounding object settings

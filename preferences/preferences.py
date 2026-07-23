@@ -455,6 +455,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
     def draw_validation_panel(self, layout):
         """Draw the validation panel"""
         box = layout.box()
+        box.label(text="Collider validation is in BETA - checks, defaults and behavior may still change.",
+                  icon='INFO')
+
+        box = layout.box()
         row = box.row()
         row.label(text='Checks')
         for propName in self.props_validation_checks:

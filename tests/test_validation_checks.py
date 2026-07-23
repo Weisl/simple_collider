@@ -62,6 +62,21 @@ def _make_cube_object(name, half_extent=1.0, face_count=6, matrix_world=None):
     return obj
 
 
+def _make_box_object(name, half_extents, matrix_world=None):
+    """A closed box with independent half-extents per axis, for building
+    colliders that only cover part of a render mesh along one axis (e.g. a
+    "left half" / "right half" pair) while matching it fully on the others."""
+    hx, hy, hz = half_extents
+    verts = [
+        (-hx, -hy, -hz), (-hx, -hy, hz), (-hx, hy, -hz), (-hx, hy, hz),
+        (hx, -hy, -hz), (hx, -hy, hz), (hx, hy, -hz), (hx, hy, hz),
+    ]
+    obj = _make_mesh_object(name, verts, _CUBE_FACES)
+    if matrix_world is not None:
+        obj.matrix_world = matrix_world
+    return obj
+
+
 def _make_tetrahedron_object(name, matrix_world=None):
     """Regular tetrahedron inscribed in a cube of half-extent 1 (verts at
     alternating cube corners) - a simple closed, convex, manifold shape
@@ -185,7 +200,7 @@ class TestGeometryChecks(unittest.TestCase):
     def test_bbox_mismatch_pass_when_aligned(self):
         render_obj = _make_cube_object(_TEST_PREFIX + 'render', half_extent=1.0)
         collider_obj = _make_cube_object(_TEST_PREFIX + 'collider', half_extent=1.0)
-        issue = _checks.check_bbox_mismatch(collider_obj, render_obj, tolerance=0.1, depsgraph=_depsgraph())
+        issue = _checks.check_bbox_mismatch(render_obj, [collider_obj], tolerance=0.1, depsgraph=_depsgraph())
         self.assertIsNone(issue)
 
     def test_bbox_mismatch_flagged_when_offset(self):
@@ -194,9 +209,49 @@ class TestGeometryChecks(unittest.TestCase):
             _TEST_PREFIX + 'collider', half_extent=1.0,
             matrix_world=Matrix.Translation((1.0, 0.0, 0.0)),
         )
-        issue = _checks.check_bbox_mismatch(collider_obj, render_obj, tolerance=0.1, depsgraph=_depsgraph())
+        issue = _checks.check_bbox_mismatch(render_obj, [collider_obj], tolerance=0.1, depsgraph=_depsgraph())
         self.assertIsNotNone(issue)
         self.assertEqual(issue.check_id, 'bbox_mismatch')
+        self.assertEqual(issue.object_name, render_obj.name)
+
+    def test_bbox_mismatch_pass_with_multiple_partial_colliders(self):
+        """Two colliders that individually only cover half the render mesh
+        along one axis, but whose combined (union) bbox matches it fully -
+        must NOT be flagged, since colliders are considered together."""
+        render_obj = _make_cube_object(_TEST_PREFIX + 'render', half_extent=2.0)  # extent -2..2 all axes
+        left = _make_box_object(_TEST_PREFIX + 'left', half_extents=(1.0, 2.0, 2.0),
+                                matrix_world=Matrix.Translation((-1.0, 0.0, 0.0)))  # covers x in [-2, 0]
+        right = _make_box_object(_TEST_PREFIX + 'right', half_extents=(1.0, 2.0, 2.0),
+                                 matrix_world=Matrix.Translation((1.0, 0.0, 0.0)))  # covers x in [0, 2]
+        issue = _checks.check_bbox_mismatch(render_obj, [left, right], tolerance=0.1, depsgraph=_depsgraph())
+        self.assertIsNone(issue)
+
+    def test_bbox_mismatch_flagged_when_combined_still_off(self):
+        render_obj = _make_cube_object(_TEST_PREFIX + 'render', half_extent=2.0)
+        small = _make_cube_object(_TEST_PREFIX + 'small', half_extent=0.5)
+        issue = _checks.check_bbox_mismatch(render_obj, [small], tolerance=0.1, depsgraph=_depsgraph())
+        self.assertIsNotNone(issue)
+
+    # -- check_too_many_colliders ---------------------------------------------
+
+    def test_too_many_colliders_pass(self):
+        render_obj = _make_cube_object(_TEST_PREFIX + 'render')
+        for i in range(3):
+            collider = _make_cube_object(_TEST_PREFIX + f'collider_{i}')
+            collider['isCollider'] = True
+            collider.parent = render_obj
+        issue = _checks.check_too_many_colliders(render_obj, max_colliders=8)
+        self.assertIsNone(issue)
+
+    def test_too_many_colliders_flagged(self):
+        render_obj = _make_cube_object(_TEST_PREFIX + 'render')
+        for i in range(5):
+            collider = _make_cube_object(_TEST_PREFIX + f'collider_{i}')
+            collider['isCollider'] = True
+            collider.parent = render_obj
+        issue = _checks.check_too_many_colliders(render_obj, max_colliders=3)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'too_many_colliders')
 
     # -- check_flipped_normals ---------------------------------------------
 

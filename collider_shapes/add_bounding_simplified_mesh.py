@@ -41,7 +41,6 @@ class OBJECT_OT_add_bounding_simplified_mesh(OBJECT_OT_add_bounding_object, Oper
         self.remesh_active = remesh_active
 
     def modal(self, context, event):
-        prev_voxel_mult = self.current_settings_dic.get('voxel_size_multiplier')
         status = super().modal(context, event)
         if status == {'FINISHED'}:
             return {'FINISHED'}
@@ -49,6 +48,12 @@ class OBJECT_OT_add_bounding_simplified_mesh(OBJECT_OT_add_bounding_object, Oper
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled.
+            # apply_numeric_value() already calls self.execute() itself for
+            # the voxel-size field, so no extra handling is needed here.
+            return status
 
         if event.type == 'R' and event.value == 'RELEASE':
             self.set_modal_state(remesh_active=not self.remesh_active)
@@ -61,11 +66,15 @@ class OBJECT_OT_add_bounding_simplified_mesh(OBJECT_OT_add_bounding_object, Oper
             self.my_use_modifier_stack = not self.my_use_modifier_stack
             self.execute(context)
 
-        elif event.type == 'MOUSEMOVE' and self.remesh_active:
-            if self.current_settings_dic['voxel_size_multiplier'] != prev_voxel_mult:
-                self.execute(context)
-
         return {'RUNNING_MODAL'}
+
+    def apply_remesh_value(self, context):
+        """The voxel grid here is rebuilt from scratch via execute() (not a
+        cheap Blender-modifier property set like the base class's Remesh
+        path), so this is the slow step the base class's remesh debounce
+        (arm_remesh_timer/MODIFIER_DEBOUNCE_SECONDS) exists to avoid running
+        on every MOUSEMOVE delta while dragging voxel size (#641)."""
+        self.execute(context)
 
     def execute(self, context):
         # CLEANUP and INIT

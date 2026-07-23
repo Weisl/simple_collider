@@ -22,6 +22,14 @@ from ..pyshics_materials.material_functions import assign_physics_material, crea
 # between individual redraw callbacks.
 NAVIGATION_HOLD_SECONDS = 0.2
 
+# How long a heavy modifier re-evaluation (decimate ratio / remesh voxel
+# size) waits for the dragged value to stop changing before it actually
+# runs. Without this, every MOUSEMOVE delta while dragging kicks off a new
+# evaluation; for slow operations (e.g. voxel remesh on a dense mesh) each
+# evaluation starts before the previous one finishes and the viewport falls
+# behind the input, stuttering/freezing (#641).
+MODIFIER_DEBOUNCE_SECONDS = 0.15
+
 
 def alignObjects(new, old):
     """Align two objects"""
@@ -381,54 +389,52 @@ def draw_viewport_overlay(self, context):
 
     if self.shading_modes[self.shading_idx] == 'OBJECT':
         label = "Opacity"
-        value = self.current_settings_dic['alpha']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.opacity_active, self.current_settings_dic['alpha'])
         item = {'label': label, 'value': value, 'key': '(A)', 'type': 'modal', 'highlight': self.opacity_active}
         items.append(item)
 
     label = "Shrink/Inflate"
-    value = self.current_settings_dic['displace_offset']
-    value = '{initial_value:.3f}'.format(initial_value=value)
+    value = self.format_modal_value(self.displace_active, self.current_settings_dic['displace_offset'])
     item = {'label': label, 'value': value, 'key': '(S)', 'type': 'modal', 'highlight': self.displace_active}
     items.append(item)
 
     if self.use_sphere_segments:
         label = "Sphere Segments "
-        value = str(self.current_settings_dic['sphere_segments'])
+        value = self.format_modal_value(self.sphere_segments_active, self.current_settings_dic['sphere_segments'],
+                                        is_int=True)
         item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal', 'highlight': self.sphere_segments_active}
         items.append(item)
 
     if self.use_capsule_segments:
         label = "Capsule Segments "
-        value = str(self.current_settings_dic['capsule_segments'])
+        value = self.format_modal_value(self.capsule_segments_active, self.current_settings_dic['capsule_segments'],
+                                        is_int=True)
         item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal',
                 'highlight': self.capsule_segments_active}
         items.append(item)
 
     if self.use_decimation:
         label = "Decimate Ratio"
-        value = self.current_settings_dic['decimate']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.decimate_active, self.current_settings_dic['decimate'])
         item = {'label': label, 'value': value, 'key': '(D)', 'type': 'modal', 'highlight': self.decimate_active}
         items.append(item)
 
     if self.use_height_multiplier:
         label = "Height Multiplier"
-        value = self.current_settings_dic['height_mult']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.height_active, self.current_settings_dic['height_mult'])
         item = {'label': label, 'value': value, 'key': '(H)', 'type': 'modal', 'highlight': self.height_active}
         items.append(item)
 
     if self.use_width_multiplier:
         label = "Width Multiplier"
-        value = self.current_settings_dic['width_mult']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.width_active, self.current_settings_dic['width_mult'])
         item = {'label': label, 'value': value, 'key': '(W)', 'type': 'modal', 'highlight': self.width_active}
         items.append(item)
 
     if self.use_cylinder_segments:
         label = "Segments"
-        value = str(self.current_settings_dic['cylinder_segments'])
+        value = self.format_modal_value(self.cylinder_segments_active, self.current_settings_dic['cylinder_segments'],
+                                        is_int=True)
         key = '(E)'
         type = 'modal'
         highlight = self.cylinder_segments_active
@@ -438,7 +444,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_remesh:
         label = "Voxel Size"
-        value = '{initial_value:.3f}'.format(initial_value=self.current_settings_dic['voxel_size_multiplier'])
+        value = self.format_modal_value(self.remesh_active, self.current_settings_dic['voxel_size_multiplier'])
         key = '(R)'
         type = 'modal'
         highlight = self.remesh_active
@@ -462,6 +468,13 @@ def draw_viewport_overlay(self, context):
 
         elif self.ignore_input:
             label = 'IGNORE INPUT (ALT)'
+            type = 'key_title'
+            highlight = True
+            item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': highlight}
+            items.append(item)
+
+        elif self.numeric_input_active:
+            label = 'TYPE VALUE - ENTER TO CONFIRM, ESC TO CANCEL'
             type = 'key_title'
             highlight = True
             item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': highlight}
@@ -916,6 +929,81 @@ class OBJECT_OT_add_bounding_object():
             # operator has already finished/cancelled and its RNA was freed
             pass
         return None
+
+    def arm_decimate_timer(self):
+        """Make sure apply_decimate_value() runs once dragging pauses.
+        Mirrors arm_navigation_timer(): only one timer is ever in flight -
+        it re-arms itself for as long as decimate_debounce_until keeps
+        getting pushed out by further MOUSEMOVE deltas, so this just needs
+        to kick it off once."""
+        if not self.decimate_timer_scheduled:
+            self.decimate_timer_scheduled = True
+            bpy.app.timers.register(self.poke_decimate_timer, first_interval=MODIFIER_DEBOUNCE_SECONDS)
+
+    def poke_decimate_timer(self):
+        """bpy.app.timers callback: apply the dragged decimate ratio once
+        the debounce window elapses without a further MOUSEMOVE delta
+        pushing it out again. Re-arms itself via its return value."""
+        try:
+            remaining = self.decimate_debounce_until - time.time()
+            if remaining > 0:
+                return remaining
+            self.decimate_timer_scheduled = False
+            self.apply_decimate_value(bpy.context)
+        except ReferenceError:
+            # operator has already finished/cancelled and its RNA was freed
+            pass
+        return None
+
+    def apply_decimate_value(self, context):
+        """Re-evaluate the Decimate modifiers at the currently dragged
+        ratio. Forces a depsgraph evaluation per collider (via
+        mod.face_count), so callers debounce this rather than calling it on
+        every MOUSEMOVE delta."""
+        dec_amount = self.current_settings_dic['decimate']
+        # I had to iterate over all object because it crashed when just iterating over the modifiers.
+        self.face_counts = []
+        for obj in self.new_colliders_list:
+            for mod in obj.modifiers:
+                if mod in self.decimate_modifiers:
+                    mod.ratio = dec_amount
+                    self.face_counts.append(mod.face_count)
+
+        self.report({'INFO'}, "Total collider face count:" + str(sum(self.face_counts)))
+        self.draw_callback_px(context)
+
+    def arm_remesh_timer(self):
+        """Make sure apply_remesh_value() runs once dragging pauses. Same
+        debounce pattern as arm_decimate_timer() / arm_navigation_timer()."""
+        if not self.remesh_timer_scheduled:
+            self.remesh_timer_scheduled = True
+            bpy.app.timers.register(self.poke_remesh_timer, first_interval=MODIFIER_DEBOUNCE_SECONDS)
+
+    def poke_remesh_timer(self):
+        """bpy.app.timers callback: apply the dragged voxel size once the
+        debounce window elapses without a further MOUSEMOVE delta pushing
+        it out again. Re-arms itself via its return value."""
+        try:
+            remaining = self.remesh_debounce_until - time.time()
+            if remaining > 0:
+                return remaining
+            self.remesh_timer_scheduled = False
+            self.apply_remesh_value(bpy.context)
+        except ReferenceError:
+            # operator has already finished/cancelled and its RNA was freed
+            pass
+        return None
+
+    def apply_remesh_value(self, context):
+        """Re-evaluate the remesh result at the currently dragged voxel
+        size multiplier. Base implementation just nudges the Remesh
+        modifier's voxel_size (cheap - Blender's depsgraph re-evaluates it
+        lazily on the next redraw). OBJECT_OT_add_bounding_simplified_mesh
+        overrides this to rebuild its voxel grid via execute() instead,
+        which is the actually slow path callers need debounced."""
+        multiplier = self.current_settings_dic['voxel_size_multiplier']
+        for mod, max_dim in self.remesh_data:
+            mod.voxel_size = multiplier * max_dim
 
     def set_collisions_wire_preview(self, mode):
         """Show wireframe for colliders"""
@@ -1682,9 +1770,219 @@ class OBJECT_OT_add_bounding_object():
                 count = count + 1
         return count > 0
 
+    # Order in which get_active_numeric_field() checks the *_active flags.
+    # At most one is ever True at a time - see set_modal_state().
+    _NUMERIC_FIELDS = (
+        'displace_active', 'decimate_active', 'opacity_active',
+        'cylinder_segments_active', 'sphere_segments_active', 'capsule_segments_active',
+        'height_active', 'width_active', 'remesh_active',
+    )
+
+    def get_active_numeric_field(self):
+        """Name of the *_active flag currently active for mouse-drag, if
+        any - the field direct numeric text entry (issue #640) would apply
+        to if the user started typing right now."""
+        for name in self._NUMERIC_FIELDS:
+            if getattr(self, name):
+                return name
+        return None
+
+    @staticmethod
+    def _numeric_char_for_event(event):
+        """Character a key event contributes to numeric text entry
+        ('0'-'9', '.', '-'), or '' if it isn't one. Prefers event.ascii,
+        which already accounts for keyboard layout/shift state; falls back
+        to the physical key for the numpad, where ascii isn't reliably
+        populated the same way across platforms."""
+        if event.ascii and event.ascii in '0123456789.-':
+            return event.ascii
+        return {
+            'NUMPAD_0': '0', 'NUMPAD_1': '1', 'NUMPAD_2': '2', 'NUMPAD_3': '3', 'NUMPAD_4': '4',
+            'NUMPAD_5': '5', 'NUMPAD_6': '6', 'NUMPAD_7': '7', 'NUMPAD_8': '8', 'NUMPAD_9': '9',
+            'NUMPAD_PERIOD': '.', 'NUMPAD_MINUS': '-',
+        }.get(event.type, '')
+
+    def start_numeric_input(self, field, first_char):
+        """Begin direct numeric text entry for `field` (issue #640), seeded
+        with the character that triggered it."""
+        self.numeric_input_active = True
+        self.numeric_input_field = field
+        self.numeric_input_str = first_char
+        self.force_redraw()
+
+    def handle_numeric_input(self, context, event):
+        """Handle a key event while direct numeric text entry (started by
+        start_numeric_input) is in progress. Takes over the keys that
+        normally finish/cancel the operator (RET/NUMPAD_ENTER, ESC) so they
+        confirm/cancel the typed number instead, and swallows every other
+        event - including MOUSEMOVE and subclasses' own hotkeys - so
+        nothing else can interfere with the value being typed."""
+        if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+            # a hard cancel of the whole operator still works while typing
+            self.cancel_numeric_input(event)
+            self.cancel_cleanup(context)
+            return {'CANCELLED'}
+
+        if event.value != 'PRESS':
+            return {'RUNNING_MODAL'}
+
+        if event.type in {'RET', 'NUMPAD_ENTER'}:
+            self.confirm_numeric_input(context, event)
+        elif event.type == 'ESC':
+            self.cancel_numeric_input(event)
+        elif event.type == 'BACK_SPACE':
+            if self.numeric_input_str:
+                self.numeric_input_str = self.numeric_input_str[:-1]
+                self.force_redraw()
+            else:
+                self.cancel_numeric_input(event)
+        else:
+            char = self._numeric_char_for_event(event)
+            if char == '-':
+                # toggle sign, matching Blender's own numeric input, rather
+                # than only accepting '-' as the very first character typed
+                if self.numeric_input_str.startswith('-'):
+                    self.numeric_input_str = self.numeric_input_str[1:]
+                else:
+                    self.numeric_input_str = '-' + self.numeric_input_str
+                self.force_redraw()
+            elif char == '.' and '.' not in self.numeric_input_str:
+                self.numeric_input_str += '.'
+                self.force_redraw()
+            elif char.isdigit():
+                self.numeric_input_str += char
+                self.force_redraw()
+
+        return {'RUNNING_MODAL'}
+
+    def confirm_numeric_input(self, context, event):
+        """Apply the typed buffer to the field entry was started for, then
+        hand control back to mouse-drag for that same field."""
+        field = self.numeric_input_field
+        text = self.numeric_input_str
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
+
+        try:
+            value = float(text)
+        except ValueError:
+            value = None
+
+        if value is not None:
+            self.apply_numeric_value(context, field, value)
+        elif text:
+            self.report({'WARNING'}, f"Ignored invalid numeric input: '{text}'")
+
+        # avoid a mouse-drag jump on the next MOUSEMOVE: re-baseline against
+        # wherever the mouse is now, exactly like the LEFT_ALT-release and
+        # LEFT_SHIFT/LEFT_CTRL handlers below already do.
+        self.ref_settings_dic = self.current_settings_dic.copy()
+        self.mouse_initial_x = event.mouse_x
+        self.mouse_position = [event.mouse_x, event.mouse_y]
+        self.force_redraw()
+
+    def cancel_numeric_input(self, event):
+        """Abort in-progress typing without applying it, handing control
+        back to mouse-drag for the field entry was started for."""
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
+
+        self.ref_settings_dic = self.current_settings_dic.copy()
+        self.mouse_initial_x = event.mouse_x
+        self.mouse_position = [event.mouse_x, event.mouse_y]
+        self.force_redraw()
+
+    def apply_numeric_value(self, context, field, value):
+        """Apply a typed numeric value (see confirm_numeric_input) to
+        `field`, mirroring the equivalent MOUSEMOVE drag handling below."""
+        if field == 'displace_active':
+            strength = value
+            for mod in self.displace_modifiers:
+                mod.strength = strength
+                mod.show_on_cage = True
+                mod.show_in_editmode = True
+            self.current_settings_dic['displace_offset'] = strength
+
+        elif field == 'decimate_active':
+            dec_amount = numpy.clip(value, 0.01, 1.0)
+            if self.current_settings_dic['decimate'] != dec_amount:
+                self.current_settings_dic['decimate'] = dec_amount
+                # A one-shot typed confirm can afford the same immediate
+                # evaluation a continuous drag can't (see apply_decimate_value).
+                self.apply_decimate_value(context)
+
+        elif field == 'opacity_active':
+            if self.shading_modes[self.shading_idx] == 'OBJECT':
+                color_alpha = numpy.clip(value, 0.0, 1.0)
+                for obj in self.new_colliders_list:
+                    obj.color[3] = color_alpha
+                self.prefs.user_groups_alpha = color_alpha
+                self.current_settings_dic['alpha'] = color_alpha
+
+        elif field == 'cylinder_segments_active':
+            segment_count = max(3, int(round(value)))
+            if segment_count != int(round(self.current_settings_dic['cylinder_segments'])):
+                self.current_settings_dic['cylinder_segments'] = segment_count
+                self.execute(context)
+
+        elif field == 'height_active':
+            height_mult = numpy.clip(value, 0, 10.0)
+            if self.current_settings_dic['height_mult'] != height_mult:
+                self.current_settings_dic['height_mult'] = height_mult
+                self.execute(context)
+
+        elif field == 'width_active':
+            width_mult = numpy.clip(value, 0, 10.0)
+            if self.current_settings_dic['width_mult'] != width_mult:
+                self.current_settings_dic['width_mult'] = width_mult
+                self.execute(context)
+
+        elif field == 'sphere_segments_active':
+            segments = max(2, int(round(value)))
+            if segments != int(round(self.current_settings_dic['sphere_segments'])):
+                self.current_settings_dic['sphere_segments'] = segments
+                self.execute(context)
+
+        elif field == 'capsule_segments_active':
+            segments = max(2, int(round(value)))
+            if segments != int(round(self.current_settings_dic['capsule_segments'])):
+                self.current_settings_dic['capsule_segments'] = segments
+                self.execute(context)
+
+        elif field == 'remesh_active':
+            # Full re-execute (rather than mirroring the MOUSEMOVE handler's
+            # direct mod.voxel_size tweak) since some shapes (e.g. Simplified
+            # Mesh) rebuild the collider mesh manually from the multiplier
+            # instead of adjusting a live Remesh modifier. A one-shot typed
+            # confirm can afford the heavier call that a continuous drag
+            # cannot.
+            multiplier = numpy.clip(value, 0.001, 1.0)
+            if self.current_settings_dic['voxel_size_multiplier'] != multiplier:
+                self.current_settings_dic['voxel_size_multiplier'] = multiplier
+                self.execute(context)
+
+    def format_modal_value(self, active, value, is_int=False):
+        """Format a modal-adjustable value for the HUD: the live typed
+        buffer while direct numeric entry (issue #640) is in progress for
+        this field, otherwise the regular mouse-drag formatted value."""
+        if active and self.numeric_input_active:
+            return self.numeric_input_str + '_'
+        if is_int:
+            return str(value)
+        return '{value:.3f}'.format(value=value)
+
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
                         remesh_active=False, height_active=False, width_active=False):
+
+        # Switching (or clearing) which field is active drops any in-progress
+        # typed entry (issue #640) - its buffer was never applied to
+        # current_settings_dic, so there is nothing to preserve.
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
 
         self.cylinder_segments_active = cylinder_segments_active
         self.displace_active = displace_active
@@ -1730,7 +2028,6 @@ class OBJECT_OT_add_bounding_object():
         self.selected_objects = context.selected_objects.copy()
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
-        self.prev_decimate_time = time.time()
         self.data_suffix = "_data"
         self.valid_input_selection = True
 
@@ -1768,6 +2065,10 @@ class OBJECT_OT_add_bounding_object():
         self.remesh_active = False
         self.remesh_modifiers = []
         self.remesh_data = []
+        # Debounce state for the voxel-size re-evaluation while dragging,
+        # see arm_remesh_timer().
+        self.remesh_debounce_until = 0.0
+        self.remesh_timer_scheduled = False
 
         self.height_active = False
         self.width_active = False
@@ -1779,6 +2080,10 @@ class OBJECT_OT_add_bounding_object():
         # Decimate
         self.decimate_active = False
         self.decimate_modifiers = []
+        # Debounce state for the decimate-ratio re-evaluation while
+        # dragging, see arm_decimate_timer().
+        self.decimate_debounce_until = 0.0
+        self.decimate_timer_scheduled = False
 
         # Opacity
         self.opacity_active = False
@@ -1789,6 +2094,14 @@ class OBJECT_OT_add_bounding_object():
         self.cylinder_segments_active = False
         self.sphere_segments_active = False
         self.capsule_segments_active = False
+
+        # Direct numeric text entry (issue #640): once a field above is made
+        # active via its hotkey, typing a digit/./- switches it from
+        # mouse-drag to typed entry. See get_active_numeric_field(),
+        # start_numeric_input() and handle_numeric_input().
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
 
         # Display settings
         self.color_type = context.space_data.shading.color_type
@@ -1882,6 +2195,25 @@ class OBJECT_OT_add_bounding_object():
             self.set_modal_state()
             return {'PASS_THROUGH'}
 
+        # Direct numeric text entry (issue #640): once a field is active for
+        # mouse-drag (S/D/A/E/H/W/R below), typing a digit/./- switches it to
+        # typed entry instead. Handled ahead of the generic RET/ESC/
+        # BACK_SPACE bindings below so those keys edit the typed number
+        # while entry is in progress, rather than finishing/cancelling the
+        # whole operator - and ahead of subclasses' own hotkeys (each
+        # subclass's modal() calls super().modal() first and must bail out
+        # via self.numeric_input_active before running its own key checks).
+        if self.numeric_input_active:
+            return self.handle_numeric_input(context, event)
+
+        if event.value == 'PRESS':
+            active_numeric_field = self.get_active_numeric_field()
+            if active_numeric_field:
+                char = self._numeric_char_for_event(event)
+                if char:
+                    self.start_numeric_input(active_numeric_field, char)
+                    return {'RUNNING_MODAL'}
+
         # User Input
         # aboard operator
         if event.type in {'RIGHTMOUSE', 'ESC'}:
@@ -1890,6 +2222,18 @@ class OBJECT_OT_add_bounding_object():
 
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
+            # Flush any debounced decimate/remesh re-evaluation immediately
+            # rather than leaving it to the background timer: the timer
+            # would still fire a little later, but the accepted result
+            # should reflect the last dragged value right away, not after a
+            # brief visible lag.
+            if self.decimate_timer_scheduled:
+                self.decimate_timer_scheduled = False
+                self.apply_decimate_value(context)
+            if self.remesh_timer_scheduled:
+                self.remesh_timer_scheduled = False
+                self.apply_remesh_value(context)
+
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
@@ -1980,6 +2324,34 @@ class OBJECT_OT_add_bounding_object():
                         f"Skipped {len(skipped_names)} collider(s) whose parent-relative transform "
                         f"contains shear and can't be reset safely: {', '.join(skipped_names)}.",
                     )
+
+            # Pass 3: optional auto-apply Collider Cleanup operations, each
+            # opt-in via its own preference (both default off). Runs after the
+            # parent-inverse fix so it sees the final, cleaned-up transforms.
+            if self.prefs.auto_apply_origin_to_parent or self.prefs.auto_apply_tris_limit:
+                from ..collider_operators.utility_operators import move_origin_to_parent, set_triangle_count_limit
+
+                if self.prefs.auto_apply_origin_to_parent:
+                    for obj in self.new_colliders_list:
+                        if obj:
+                            move_origin_to_parent(obj)
+                    bpy.context.view_layer.update()
+
+                if self.prefs.auto_apply_tris_limit:
+                    _tris_depsgraph = bpy.context.evaluated_depsgraph_get()
+                    unreachable_names = []
+                    for obj in self.new_colliders_list:
+                        if not obj:
+                            continue
+                        if not set_triangle_count_limit(obj, self.prefs.auto_apply_max_triangle_count,
+                                                         depsgraph=_tris_depsgraph):
+                            unreachable_names.append(obj.name)
+                    if unreachable_names:
+                        self.report(
+                            {'WARNING'},
+                            f"Auto tris-limit: cannot reach {self.prefs.auto_apply_max_triangle_count} tris "
+                            f"even at maximum decimation for: {', '.join(unreachable_names)}.",
+                        )
 
             # Delete temporary generated meshes
             if self.prefs.debug == False:
@@ -2151,29 +2523,11 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.current_settings_dic['decimate'] != dec_amount:
                     self.current_settings_dic['decimate'] = dec_amount
-                    # I had to iterate over all object because it crashed when just iterating over the modifiers.
-
-                    self.face_counts = []
-
-                    for obj in self.new_colliders_list:
-
-                        for mod in obj.modifiers:
-                            if mod in self.decimate_modifiers:
-                                mod.ratio = dec_amount
-                                face_count = mod.face_count
-                                self.face_counts.append(face_count)
-
-                                ## More accurate but less efficient face calculation
-                                # bmesh for getting triangle data
-                                # bm=bmesh.new()
-                                # depsgraph = bpy.context.evaluated_depsgraph_get()
-                                # bm.from_object(obj, depsgraph)
-                                # face_count = len(bm.faces)
-                                # self.polycount.append(str(face_count))
-                                # bm.free()
-
-                    self.report({'INFO'}, "Total collider face count:" + str(sum(self.face_counts)))
-                    self.draw_callback_px(context)
+                    # Debounce the actual re-evaluation (see apply_decimate_value):
+                    # it forces a depsgraph update per collider, which is too slow
+                    # to run on every intermediate mouse-move delta.
+                    self.decimate_debounce_until = time.time() + MODIFIER_DEBOUNCE_SECONDS
+                    self.arm_decimate_timer()
 
             if self.remesh_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
@@ -2182,9 +2536,12 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.current_settings_dic['voxel_size_multiplier'] != multiplier:
                     self.current_settings_dic['voxel_size_multiplier'] = multiplier
-
-                    for mod, max_dim in self.remesh_data:
-                        mod.voxel_size = multiplier * max_dim
+                    # Debounce the actual re-evaluation (see apply_remesh_value):
+                    # for subclasses that rebuild the mesh from scratch (voxel
+                    # grid), re-running on every delta falls behind the input
+                    # and the viewport stutters/freezes (#641).
+                    self.remesh_debounce_until = time.time() + MODIFIER_DEBOUNCE_SECONDS
+                    self.arm_remesh_timer()
 
             if self.opacity_active and self.shading_modes[self.shading_idx] == 'OBJECT':
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
