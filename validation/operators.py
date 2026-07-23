@@ -4,17 +4,50 @@ from .. import __package__ as base_package
 from .checks import collect_validation_issues
 
 
+_SHAPE_ICON = {
+    'box_shape': 'MESH_CUBE',
+    'sphere_shape': 'MESH_UVSPHERE',
+    'capsule_shape': 'MESH_CAPSULE',
+    'convex_shape': 'MESH_ICOSPHERE',
+    'mesh_shape': 'MESH_MONKEY',
+    'voxel_shape': 'MESH_GRID',
+}
+
+
+def _object_icon(object_name):
+    """Icon representing the object's collider shape, or a generic object
+    icon for a render mesh (e.g. the object named by a missing_collider
+    issue, which isn't itself a collider)."""
+    obj = bpy.data.objects.get(object_name)
+    if obj is not None:
+        icon = _SHAPE_ICON.get(obj.get('collider_shape'))
+        if icon:
+            return icon
+    return 'OBJECT_DATA'
+
+
 class COLLISION_UL_validation_results(bpy.types.UIList):
-    """List of collider validation issues. Each row is itself a button so
-    clicking it selects/frames the offending object (see
-    COLLISION_OT_select_validation_object)."""
+    """List of collider validation issues, grouped by the object they concern
+    (a bold header naming the object precedes its issues, since the flat
+    results collection is already grouped in that order - collect_validation_
+    issues() appends every issue for one object before moving to the next).
+    Each row has a dedicated arrow button to select/frame the object (see
+    COLLISION_OT_select_validation_object); the message itself is a plain,
+    non-interactive label."""
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        row = layout.row(align=True)
-        row_icon = 'ERROR' if item.severity == 'ERROR' else 'INFO'
-        op = row.operator('collision.select_validation_object', text=item.message,
-                          icon=row_icon, emboss=False)
-        op.object_name = item.object_name
+        results = data.simple_collider_validation_results
+        is_group_start = index == 0 or results[index - 1].object_name != item.object_name
+
+        col = layout.column(align=True)
+        if is_group_start:
+            col.label(text=item.object_name, icon=_object_icon(item.object_name))
+
+        row = col.row(align=True)
+        select_op = row.operator('collision.select_validation_object', text='', icon='FORWARD')
+        select_op.object_name = item.object_name
+        severity_icon = 'ERROR' if item.severity == 'ERROR' else 'INFO'
+        row.label(text=item.message, icon=severity_icon)
 
 
 def _frame_selected(context):
@@ -71,10 +104,20 @@ class COLLISION_OT_copy_validation_report(bpy.types.Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        lines = [f"[{item.severity}] {item.message}" for item in wm.simple_collider_validation_results]
-        if not lines:
+        results = wm.simple_collider_validation_results
+        if not results:
             self.report({'INFO'}, "No validation issues to copy")
             return {'CANCELLED'}
+
+        lines = []
+        current_object = None
+        for item in results:
+            if item.object_name != current_object:
+                if current_object is not None:
+                    lines.append('')
+                lines.append(item.object_name)
+                current_object = item.object_name
+            lines.append(f"  [{item.severity}] {item.message}")
 
         wm.clipboard = '\n'.join(lines)
         self.report({'INFO'}, "Validation report copied to clipboard")

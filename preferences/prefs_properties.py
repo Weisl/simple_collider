@@ -574,6 +574,35 @@ class CollisionAddonPrefsProperties():
                                                              description="Flag colliders that aren't parented to a render mesh",
                                                              default=True)
 
+    validate_check_flipped_normals: bpy.props.BoolProperty(name="Flipped Normals",
+                                                            description="Flag colliders whose face winding is inverted (inside-out mesh)",
+                                                            default=True)
+
+    validate_check_convex_shape_mismatch: bpy.props.BoolProperty(name="Convex Shape Mismatch",
+                                                                  description="Flag colliders marked as convex whose geometry is not actually convex. "
+                                                                              "Heuristic (volume-based) - off by default since complex meshes can "
+                                                                              "produce false positives",
+                                                                  default=False)
+
+    validate_check_box_shape_mismatch: bpy.props.BoolProperty(name="Box Shape Mismatch",
+                                                               description="Flag colliders marked as a box whose geometry is not actually box-shaped. "
+                                                                           "Heuristic (volume-based) - off by default since complex meshes can "
+                                                                           "produce false positives",
+                                                               default=False)
+
+    validate_check_mesh_could_use_primitive: bpy.props.BoolProperty(name="Mesh Could Use a Primitive",
+                                                                     description="Flag mesh colliders whose geometry is already convex or box-shaped, "
+                                                                                 "suggesting a simpler primitive collider. Heuristic (volume-based) - "
+                                                                                 "off by default since complex meshes can produce false positives",
+                                                                     default=False)
+
+    validate_check_collision_shape_mismatch: bpy.props.BoolProperty(name="Collision Shape Mismatch",
+                                                                     description="Flag colliders whose assigned shape (box/sphere/convex hull) doesn't "
+                                                                                 "suit the shape of their render mesh, e.g. a box collider on a ball-like "
+                                                                                 "mesh. Heuristic (volume-based) - off by default since complex meshes "
+                                                                                 "can produce false positives",
+                                                                     default=False)
+
     validation_max_triangle_count: bpy.props.IntProperty(name="Max Triangle Count",
                                                          description="Maximum number of triangles allowed on a collider before it is flagged",
                                                          default=255,
@@ -591,6 +620,26 @@ class CollisionAddonPrefsProperties():
                                                        min=0.0,
                                                        max=1.0,
                                                        subtype='FACTOR')
+
+    validation_shape_tolerance: bpy.props.FloatProperty(name="Shape Tolerance",
+                                                        description="Allowed relative volume difference for the convex/box shape checks and the "
+                                                                    "mesh-could-use-a-primitive suggestion, as a fraction of the larger volume being compared",
+                                                        default=0.02,
+                                                        min=0.0,
+                                                        max=1.0,
+                                                        subtype='FACTOR')
+
+    validation_sphere_tolerance: bpy.props.FloatProperty(name="Sphere Fit Tolerance",
+                                                        description="Allowed relative volume difference between a render mesh and its exact minimum "
+                                                                    "enclosing sphere, used only by the collision-shape-mismatch check's sphere test. "
+                                                                    "Kept separate from, and looser than, Shape Tolerance because a low-poly but "
+                                                                    "intentionally round mesh sits measurably under its ideal enclosing sphere's "
+                                                                    "volume from facet flattening alone, unlike the exact hull/OBB volume "
+                                                                    "comparisons the other checks use",
+                                                        default=0.05,
+                                                        min=0.0,
+                                                        max=1.0,
+                                                        subtype='FACTOR')
 
     # DEBUG
     debug: bpy.props.BoolProperty(name="Debug Mode",
@@ -710,12 +759,19 @@ class CollisionAddonPrefsProperties():
         "validate_check_bbox_mismatch",
         "validate_check_naming",
         "validate_check_non_manifold",
+        "validate_check_flipped_normals",
         "validate_check_physics_material",
         "validate_check_parent_hierarchy",
+        "validate_check_convex_shape_mismatch",
+        "validate_check_box_shape_mismatch",
+        "validate_check_mesh_could_use_primitive",
+        "validate_check_collision_shape_mismatch",
     ]
 
     props_validation_thresholds = [
         "validation_max_triangle_count",
         "validation_min_dimension",
         "validation_bbox_tolerance",
+        "validation_shape_tolerance",
+        "validation_sphere_tolerance",
     ]

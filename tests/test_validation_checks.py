@@ -8,6 +8,7 @@ import os
 import sys
 import unittest
 
+import bmesh
 import bpy
 from mathutils import Matrix
 
@@ -61,6 +62,44 @@ def _make_cube_object(name, half_extent=1.0, face_count=6, matrix_world=None):
     return obj
 
 
+def _make_tetrahedron_object(name, matrix_world=None):
+    """Regular tetrahedron inscribed in a cube of half-extent 1 (verts at
+    alternating cube corners) - a simple closed, convex, manifold shape
+    whose minimum bounding box is far larger than its own volume, useful for
+    testing the 'is this actually box-shaped' heuristic."""
+    verts = [(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)]
+    faces = [(0, 1, 2), (0, 3, 1), (0, 2, 3), (1, 3, 2)]
+    obj = _make_mesh_object(name, verts, faces)
+    if matrix_world is not None:
+        obj.matrix_world = matrix_world
+    return obj
+
+
+def _make_dented_cube_object(name):
+    """A cube with a pyramidal dent pressed into the +Z face - closed,
+    manifold, and clearly non-convex (its convex hull reconstructs the flat
+    top that the dent removes material from)."""
+    h = 1.0
+    verts = [
+        (-h, -h, -h), (-h, -h, h), (-h, h, -h), (-h, h, h),
+        (h, -h, -h), (h, -h, h), (h, h, -h), (h, h, h),
+        (0.0, 0.0, 0.5),  # pulled-in center of the +Z face
+    ]
+    faces = [
+        (0, 1, 3, 2),  # -X
+        (4, 6, 7, 5),  # +X
+        (0, 4, 5, 1),  # -Y
+        (2, 3, 7, 6),  # +Y
+        (0, 2, 6, 4),  # -Z
+        # +Z face (1, 5, 7, 3) replaced by a fan around the dented center (8)
+        (1, 5, 8),
+        (5, 7, 8),
+        (7, 3, 8),
+        (3, 1, 8),
+    ]
+    return _make_mesh_object(name, verts, faces)
+
+
 def _remove_test_objects():
     for obj in list(bpy.data.objects):
         if obj.name.startswith(_TEST_PREFIX):
@@ -78,6 +117,25 @@ def _remove_test_materials():
 
 def _depsgraph():
     return bpy.context.evaluated_depsgraph_get()
+
+
+def _make_uv_sphere_render(name, radius=1.0):
+    """A well-tessellated UV sphere, tagged with the test prefix so it's
+    caught by _remove_test_objects(). Used as a convincing "actually looks
+    round" render mesh for check_collision_shape_mismatch."""
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=radius, segments=32, ring_count=16)
+    obj = bpy.context.active_object
+    obj.name = name
+    return obj
+
+
+def _make_cylinder_render(name, radius=1.0, depth=2.0):
+    """A well-tessellated cylinder - convex, but neither box- nor
+    sphere-shaped, so it should classify as generic 'convex'."""
+    bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, vertices=32)
+    obj = bpy.context.active_object
+    obj.name = name
+    return obj
 
 
 # -- Geometry-only checks (no preferences involved) ---------------------------
@@ -139,6 +197,217 @@ class TestGeometryChecks(unittest.TestCase):
         issue = _checks.check_bbox_mismatch(collider_obj, render_obj, tolerance=0.1, depsgraph=_depsgraph())
         self.assertIsNotNone(issue)
         self.assertEqual(issue.check_id, 'bbox_mismatch')
+
+    # -- check_flipped_normals ---------------------------------------------
+
+    def test_flipped_normals_pass(self):
+        bpy.ops.mesh.primitive_cube_add(size=2)
+        obj = bpy.context.active_object
+        obj.name = _TEST_PREFIX + 'cube'
+        issue = _checks.check_flipped_normals(obj, depsgraph=_depsgraph())
+        self.assertIsNone(issue)
+
+    def test_flipped_normals_flagged(self):
+        bpy.ops.mesh.primitive_cube_add(size=2)
+        obj = bpy.context.active_object
+        obj.name = _TEST_PREFIX + 'cube'
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.reverse_faces(bm, faces=bm.faces)
+        bm.to_mesh(obj.data)
+        bm.free()
+        obj.data.update()
+        issue = _checks.check_flipped_normals(obj, depsgraph=_depsgraph())
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'flipped_normals')
+
+    def test_flipped_normals_skipped_when_non_manifold(self):
+        obj = _make_cube_object(_TEST_PREFIX + 'cube', face_count=5)
+        issue = _checks.check_flipped_normals(obj, depsgraph=_depsgraph())
+        self.assertIsNone(issue)
+
+    # -- check_convexity_mismatch -------------------------------------------
+
+    def test_convexity_mismatch_pass_for_convex_mesh(self):
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'convex_shape'
+        issue = _checks.check_convexity_mismatch(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNone(issue)
+
+    def test_convexity_mismatch_flagged_for_non_convex_mesh(self):
+        obj = _make_dented_cube_object(_TEST_PREFIX + 'dented_cube')
+        obj['collider_shape'] = 'convex_shape'
+        issue = _checks.check_convexity_mismatch(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'convex_shape_mismatch')
+
+    def test_convexity_mismatch_skipped_when_not_marked_convex(self):
+        obj = _make_dented_cube_object(_TEST_PREFIX + 'dented_cube')
+        obj['collider_shape'] = 'mesh_shape'
+        issue = _checks.check_convexity_mismatch(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNone(issue)
+
+    # -- check_box_mismatch --------------------------------------------------
+
+    def test_box_mismatch_pass_for_box_mesh(self):
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'box_shape'
+        issue = _checks.check_box_mismatch(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNone(issue)
+
+    def test_box_mismatch_flagged_for_non_box_mesh(self):
+        obj = _make_tetrahedron_object(_TEST_PREFIX + 'tetra')
+        obj['collider_shape'] = 'box_shape'
+        issue = _checks.check_box_mismatch(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'box_shape_mismatch')
+
+    def test_box_mismatch_skipped_when_not_marked_box(self):
+        obj = _make_tetrahedron_object(_TEST_PREFIX + 'tetra')
+        obj['collider_shape'] = 'convex_shape'
+        issue = _checks.check_box_mismatch(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNone(issue)
+
+    # -- check_mesh_could_use_primitive --------------------------------------
+
+    def test_mesh_could_use_primitive_flagged_for_box(self):
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'mesh_shape'
+        issue = _checks.check_mesh_could_use_primitive(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'mesh_could_use_primitive')
+        self.assertIn('box', issue.message)
+
+    def test_mesh_could_use_primitive_flagged_for_convex_non_box(self):
+        obj = _make_tetrahedron_object(_TEST_PREFIX + 'tetra')
+        obj['collider_shape'] = 'mesh_shape'
+        issue = _checks.check_mesh_could_use_primitive(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNotNone(issue)
+        self.assertIn('convex hull', issue.message)
+
+    def test_mesh_could_use_primitive_pass_for_non_convex_mesh(self):
+        obj = _make_dented_cube_object(_TEST_PREFIX + 'dented_cube')
+        obj['collider_shape'] = 'mesh_shape'
+        issue = _checks.check_mesh_could_use_primitive(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNone(issue)
+
+    def test_mesh_could_use_primitive_skipped_when_not_mesh_shape(self):
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'box_shape'
+        issue = _checks.check_mesh_could_use_primitive(obj, depsgraph=_depsgraph(), tolerance=0.02)
+        self.assertIsNone(issue)
+
+    # -- check_collision_shape_mismatch --------------------------------------
+
+    def _mismatch(self, collider):
+        return _checks.check_collision_shape_mismatch(
+            collider, depsgraph=_depsgraph(), shape_tolerance=0.02, sphere_tolerance=0.05,
+        )
+
+    def test_collision_shape_mismatch_flagged_box_on_sphere_render(self):
+        render_obj = _make_uv_sphere_render(_TEST_PREFIX + 'sphere_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'box_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'collision_shape_mismatch')
+        self.assertIn('box', issue.message)
+        self.assertIn('sphere', issue.message)
+
+    def test_collision_shape_mismatch_flagged_sphere_on_box_render(self):
+        render_obj = _make_cube_object(_TEST_PREFIX + 'box_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'sphere_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNotNone(issue)
+
+    def test_collision_shape_mismatch_pass_matching_sphere(self):
+        render_obj = _make_uv_sphere_render(_TEST_PREFIX + 'sphere_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'sphere_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_pass_matching_box(self):
+        render_obj = _make_cube_object(_TEST_PREFIX + 'box_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'box_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_pass_convex_on_cylinder_render(self):
+        render_obj = _make_cylinder_render(_TEST_PREFIX + 'cylinder_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'convex_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_flagged_box_on_cylinder_render(self):
+        render_obj = _make_cylinder_render(_TEST_PREFIX + 'cylinder_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'box_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNotNone(issue)
+
+    def test_collision_shape_mismatch_pass_convex_never_flagged(self):
+        for render_maker, render_name in (
+            (_make_cube_object, _TEST_PREFIX + 'box_render'),
+            (_make_uv_sphere_render, _TEST_PREFIX + 'sphere_render'),
+        ):
+            render_obj = render_maker(render_name)
+            collider = _make_cube_object(_TEST_PREFIX + 'collider_' + render_name)
+            collider.parent = render_obj
+            collider['collider_shape'] = 'convex_shape'
+            issue = self._mismatch(collider)
+            self.assertIsNone(issue)
+            _remove_test_objects()
+
+    def test_collision_shape_mismatch_pass_capsule_always_none(self):
+        render_obj = _make_uv_sphere_render(_TEST_PREFIX + 'sphere_render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = render_obj
+        collider['collider_shape'] = 'capsule_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_pass_mesh_and_voxel_shape_skipped(self):
+        render_obj = _make_uv_sphere_render(_TEST_PREFIX + 'sphere_render')
+        for shape in ('mesh_shape', 'voxel_shape'):
+            collider = _make_cube_object(_TEST_PREFIX + 'collider_' + shape)
+            collider.parent = render_obj
+            collider['collider_shape'] = shape
+            issue = self._mismatch(collider)
+            self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_pass_no_verdict_on_concave_render(self):
+        render_obj = _make_dented_cube_object(_TEST_PREFIX + 'dented_render')
+        for shape in ('box_shape', 'sphere_shape'):
+            collider = _make_cube_object(_TEST_PREFIX + 'collider_' + shape)
+            collider.parent = render_obj
+            collider['collider_shape'] = shape
+            issue = self._mismatch(collider)
+            self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_pass_no_parent(self):
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider['collider_shape'] = 'box_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNone(issue)
+
+    def test_collision_shape_mismatch_pass_parent_is_collider(self):
+        other_collider = _make_cube_object(_TEST_PREFIX + 'other_collider')
+        other_collider['isCollider'] = True
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider.parent = other_collider
+        collider['collider_shape'] = 'box_shape'
+        issue = self._mismatch(collider)
+        self.assertIsNone(issue)
 
 
 # -- check_physics_material: needs Material.isPhysicsMaterial registered -----
