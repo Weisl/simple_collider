@@ -1,5 +1,21 @@
 # Simple Collider
 
+Simple Collider is a Blender addon for creating physics colliders for games and real-time applications.
+
+## Features
+
+* Collider shapes: Box, Sphere, Cylinder, Capsule, Convex Hull, K-DOP (10/18/26), Minimum/Aligned Bounding Box,
+  Re-meshed (voxel remesh), and full-detail Mesh.
+* Auto Convex decomposition using V-HACD, plus an alternative CoACD backend (BETA).
+* Validation Checks (BETA): scan the scene or selection for missing colliders, non-manifold geometry, flipped
+  normals, oversized triangle counts, mismatched bounding boxes, naming/parenting conventions, missing physics
+  materials, and more - configurable per-check in preferences.
+* Collider Groups for organizing and toggling visibility of related colliders.
+* Physics Materials for tagging materials used by colliders.
+* Shape conversion, renaming, and rigid body setup utilities.
+
+See [CHANGELOG.md](CHANGELOG.md) for what's new in each release.
+
 ## Stores
 
 Support me by purchasing the addon from following stores:

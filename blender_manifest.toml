@@ -25,7 +25,7 @@ copyright = [
 ]
 
 [permissions]
-files = "Write/Read .py preset files from/to disk, copying the Auto Convex executable to execute to avoid the need of manual installation and export/import OBJ files from/to disk for the auto convex generation"
+files = "Write/Read .py preset files from/to disk, copying the Auto Convex executables (V-HACD and CoACD) to execute to avoid the need of manual installation and export/import OBJ files from/to disk for the auto convex generation"
 
 
 [build]
