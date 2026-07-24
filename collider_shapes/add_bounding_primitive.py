@@ -1281,6 +1281,20 @@ class OBJECT_OT_add_bounding_object():
         if collection is not None and len(collection.objects) == 0:
             bpy.data.collections.remove(collection)
 
+    def _clear_modifier_bake_cache(self):
+        """Free the mesh datablocks cached by convert_to_mesh() /
+        apply_all_modifiers() (see self._modifier_bake_cache). They're kept
+        alive only by this dict - never linked to any object - so they must
+        be removed explicitly on confirm/cancel or they'd leak as orphan
+        mesh data."""
+        cache = getattr(self, '_modifier_bake_cache', None)
+        if not cache:
+            return
+        meshes = [me for me in cache.values() if me and me.name in bpy.data.meshes]
+        if meshes:
+            bpy.data.batch_remove(meshes)
+        self._modifier_bake_cache = {}
+
     @staticmethod
     def set_collections(obj, collections):
         """link an object to a collection"""
@@ -1297,8 +1311,7 @@ class OBJECT_OT_add_bounding_object():
                 col.objects.unlink(obj)
 
     # Modifiers
-    @staticmethod
-    def apply_all_modifiers(context, obj):
+    def apply_all_modifiers(self, context, obj, cache_key=None):
         """Replace obj's mesh data with the fully evaluated result of its
         modifier stack - including any unrealized instances a modifier like
         Geometry Nodes "Instance on Points" produces without a "Realize
@@ -1310,9 +1323,23 @@ class OBJECT_OT_add_bounding_object():
         can't bake unrealized instances into real geometry. Evaluating via
         the depsgraph and merging instances manually (merge_object_instances)
         sidesteps that limitation.
+
+        `cache_key`, if given, reuses/populates self._modifier_bake_cache so
+        repeated calls for the same source object (e.g. once per MOUSEMOVE
+        delta while dragging) don't each pay for a fresh depsgraph
+        evaluation - see convert_to_mesh() for why that matters (#631).
         """
         context.view_layer.objects.active = obj
         if not obj.modifiers:
+            return
+
+        cached_mesh = self._modifier_bake_cache.get(cache_key) if cache_key else None
+        if cached_mesh is not None and cached_mesh.name in bpy.data.meshes:
+            old_data = obj.data
+            obj.data = cached_mesh.copy()
+            obj.modifiers.clear()
+            if old_data.users == 0:
+                bpy.data.meshes.remove(old_data)
             return
 
         depsgraph = context.evaluated_depsgraph_get()
@@ -1320,7 +1347,7 @@ class OBJECT_OT_add_bounding_object():
 
         bm = bmesh.new()
         bm.from_mesh(me)
-        OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, depsgraph)
+        self.merge_object_instances(bm, obj, depsgraph)
         bm.to_mesh(me)
         bm.free()
 
@@ -1330,6 +1357,9 @@ class OBJECT_OT_add_bounding_object():
 
         if old_data.users == 0:
             bpy.data.meshes.remove(old_data)
+
+        if cache_key:
+            self._modifier_bake_cache[cache_key] = me.copy()
 
     @staticmethod
     def remove_all_modifiers(context, obj):
@@ -1387,30 +1417,43 @@ class OBJECT_OT_add_bounding_object():
             modifier.show_in_editmode = mod_entry["show_in_editmode"]
 
     def convert_to_mesh(self, context, object, use_modifiers=False):
-        mods = self.store_obj_mod_in_dic(object)
+        # Baking (evaluated_depsgraph_get + new_from_object) is only needed
+        # for use_modifiers=True - the base object's modifier stack doesn't
+        # change between drag deltas, so reuse the last bake instead of
+        # re-evaluating the whole scene's depsgraph on every MOUSEMOVE (#631).
+        cache_key = (object, use_modifiers) if use_modifiers else None
+        cached_mesh = self._modifier_bake_cache.get(cache_key) if cache_key else None
 
-        for mod in object.modifiers:
-            mod.show_viewport = use_modifiers
-            mod.show_in_editmode = use_modifiers
-
-        if use_modifiers:
-            deg = context.evaluated_depsgraph_get()
-            me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
-            
-            bm = bmesh.new()
-            bm.from_mesh(me)
-            self.merge_object_instances(bm, object, deg)
-            bm.to_mesh(me)
-            bm.free()
+        if cached_mesh is not None and cached_mesh.name in bpy.data.meshes:
+            me = cached_mesh.copy()
         else:
-            # Create mesh from base data without applying modifiers
-            me = object.data.copy()
-            me.update()
+            mods = self.store_obj_mod_in_dic(object)
+
+            for mod in object.modifiers:
+                mod.show_viewport = use_modifiers
+                mod.show_in_editmode = use_modifiers
+
+            if use_modifiers:
+                deg = context.evaluated_depsgraph_get()
+                me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
+
+                bm = bmesh.new()
+                bm.from_mesh(me)
+                self.merge_object_instances(bm, object, deg)
+                bm.to_mesh(me)
+                bm.free()
+            else:
+                # Create mesh from base data without applying modifiers
+                me = object.data.copy()
+                me.update()
+
+            self.restore_obj_mod_from_dic(mods)
+
+            if cache_key:
+                self._modifier_bake_cache[cache_key] = me.copy()
 
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
         col = self.add_to_collections(context, new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
-
-        self.restore_obj_mod_from_dic(mods)
 
         new_obj.matrix_world = object.matrix_world
         context.view_layer.objects.active = new_obj
@@ -1515,7 +1558,7 @@ class OBJECT_OT_add_bounding_object():
                         tmp_ob = delete_non_selected_verts(tmp_ob)
 
                     if self.my_use_modifier_stack:
-                        self.apply_all_modifiers(context, tmp_ob)
+                        self.apply_all_modifiers(context, tmp_ob, cache_key=(base_ob, True))
                     base = tmp_ob
 
                     self.tmp_meshes.append(tmp_ob)
@@ -1663,6 +1706,7 @@ class OBJECT_OT_add_bounding_object():
         # Delete temporary objects
         self.remove_objects(self.tmp_meshes)
         self.remove_empty_collection(context, 'tmp_mesh')
+        self._clear_modifier_bake_cache()
 
         self.reset_display(context)
 
@@ -1743,6 +1787,18 @@ class OBJECT_OT_add_bounding_object():
 
         self.collision_group_idx = 0
         self._naming_cache = {}
+
+        # Modifier-stack bake results (convert_to_mesh / apply_all_modifiers),
+        # keyed by (base_ob, use_modifiers). Baking involves an
+        # evaluated_depsgraph_get() + new_from_object(), which in scenes with
+        # many other objects/modifiers costs tens to hundreds of ms - and
+        # execute() (hence this bake) reruns on every MOUSEMOVE delta while
+        # dragging the collider's own parameters, even though the base
+        # object's own modifier stack doesn't change during that drag. Caching
+        # the baked mesh here turns that into a one-time cost per base object
+        # for the operator's lifetime (#631). Cleared in
+        # _clear_modifier_bake_cache() on confirm/cancel.
+        self._modifier_bake_cache = {}
 
     @classmethod
     def poll(cls, context):
@@ -2338,6 +2394,7 @@ class OBJECT_OT_add_bounding_object():
             # Delete temporary generated meshes
             self.remove_objects(self.tmp_meshes)
             self.remove_empty_collection(context, 'tmp_mesh')
+            self._clear_modifier_bake_cache()
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
