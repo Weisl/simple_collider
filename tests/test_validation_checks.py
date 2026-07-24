@@ -7,6 +7,7 @@ Run with headless Blender::
 import os
 import sys
 import unittest
+from types import SimpleNamespace
 
 import bmesh
 import bpy
@@ -122,6 +123,48 @@ def _remove_test_objects():
             bpy.data.objects.remove(obj)
             if isinstance(data, bpy.types.Mesh):
                 bpy.data.meshes.remove(data)
+            elif isinstance(data, bpy.types.Curve):
+                bpy.data.curves.remove(data)
+
+
+def _make_fake_prefs(**overrides):
+    """A minimal stand-in for CollisionAddonPrefs covering every attribute
+    collect_validation_issues()/check_naming_convention() read, without
+    needing the real preferences class registered on bpy.context. Every
+    validate_check_* toggle defaults to False so a test only has to turn on
+    the one(s) it actually exercises."""
+    defaults = dict(
+        use_parent_to=True,
+        validate_check_missing_collider=False,
+        validate_check_bbox_mismatch=False,
+        validate_check_too_many_colliders=False,
+        validate_check_triangle_count=False,
+        validate_check_min_dimension=False,
+        validate_check_non_manifold=False,
+        validate_check_flipped_normals=False,
+        validate_check_convex_shape_mismatch=False,
+        validate_check_box_shape_mismatch=False,
+        validate_check_mesh_could_use_primitive=False,
+        validate_check_collision_shape_mismatch=False,
+        validate_check_physics_material=False,
+        validate_check_naming=False,
+        validate_check_parent_hierarchy=False,
+        validation_bbox_tolerance=0.1,
+        validation_max_collider_count=8,
+        validation_max_triangle_count=100000,
+        validation_min_dimension=0.0,
+        validation_shape_tolerance=0.02,
+        validation_sphere_tolerance=0.05,
+        separator='_',
+        box_shape='UBX',
+        sphere_shape='USP',
+        capsule_shape='UCP',
+        convex_shape='UCX',
+        mesh_shape='',
+        voxel_shape='UVX',
+    )
+    defaults.update(overrides)
+    return SimpleNamespace(**defaults)
 
 
 def _remove_test_materials():
@@ -620,6 +663,196 @@ class TestPrefsDependentChecks(unittest.TestCase):
         collider = _add_collider(_TEST_PREFIX + 'UBX_Thing_001')
         issue = _checks.check_parent_hierarchy(collider, use_parent_to=False)
         self.assertIsNone(issue)
+
+    def test_parent_hierarchy_flagged_invalid_parent_type(self):
+        # An EMPTY isn't in VALID_OBJECT_TYPES ({'MESH','CURVE','SURFACE',
+        # 'FONT','META'}), so parenting a collider to one should be flagged
+        # even though it's neither "no parent" nor "parent is a collider".
+        empty_parent = bpy.data.objects.new(_TEST_PREFIX + 'empty_parent', None)
+        bpy.context.collection.objects.link(empty_parent)
+        collider = _add_collider(_TEST_PREFIX + 'UBX_Thing_001', parent=empty_parent)
+        issue = _checks.check_parent_hierarchy(collider, use_parent_to=True)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'parent_hierarchy')
+
+
+# -- check_naming_convention: user-controlled regex safety -------------------
+
+class TestNamingConventionRegexSafety(unittest.TestCase):
+    """check_naming_convention builds a regex out of free-text, user-editable
+    preference strings (separator, box_shape, etc. - preferences/
+    prefs_properties.py has no character restriction on them). Before checks.
+    py escaped them with re.escape(), a separator/shape string containing a
+    regex metacharacter either silently weakened the match (e.g. '.' acting
+    as "any character") or raised re.error - uncaught anywhere up the call
+    chain, which would crash the whole "Validate Colliders" popup."""
+
+    def tearDown(self):
+        _remove_test_objects()
+
+    def test_metacharacter_separator_matches_literally_and_does_not_raise(self):
+        prefs = SimpleNamespace(separator='.', box_shape='UBX')
+        collider = _make_cube_object(_TEST_PREFIX + 'Thing.UBX')
+        collider['collider_shape'] = 'box_shape'
+        issue = _checks.check_naming_convention(collider, prefs)
+        self.assertIsNone(issue)
+
+    def test_metacharacter_separator_is_not_treated_as_wildcard(self):
+        # If '.' were left as a live regex wildcard instead of a literal
+        # character, 'X' here would wrongly satisfy "any character" and this
+        # would incorrectly pass. It must be flagged.
+        prefs = SimpleNamespace(separator='.', box_shape='UBX')
+        collider = _make_cube_object(_TEST_PREFIX + 'ThingXUBXY')
+        collider['collider_shape'] = 'box_shape'
+        issue = _checks.check_naming_convention(collider, prefs)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'naming')
+
+    def test_unbalanced_bracket_in_shape_string_does_not_raise(self):
+        # 'UB[X' is invalid regex syntax (unterminated character set) if used
+        # unescaped - re.compile would raise re.error here before the fix.
+        prefs = SimpleNamespace(separator='_', box_shape='UB[X')
+        collider = _make_cube_object(_TEST_PREFIX + 'Thing_UB[X_001')
+        collider['collider_shape'] = 'box_shape'
+        issue = _checks.check_naming_convention(collider, prefs)
+        self.assertIsNone(issue)
+
+
+# -- collect_validation_issues: the top-level aggregator ---------------------
+
+class TestCollectValidationIssues(unittest.TestCase):
+    """collect_validation_issues() is invoked directly by
+    COLLISION_OT_validate_colliders and is responsible for (a) gating each
+    check on its prefs.validate_check_* toggle, (b) routing collider vs.
+    non-collider / MESH vs. non-MESH objects to the right checks, and (c)
+    isolating a failure on one object so it doesn't hide every other
+    object's results. None of that was previously covered - only the
+    individual check_* functions were tested in isolation."""
+
+    def tearDown(self):
+        _remove_test_objects()
+
+    def test_disabled_checks_produce_no_issues(self):
+        prefs = _make_fake_prefs()  # every validate_check_* off
+        render_obj = _make_cube_object(_TEST_PREFIX + 'render')
+        collider = _make_cube_object(_TEST_PREFIX + 'collider')
+        collider['isCollider'] = True
+        collider.parent = render_obj
+        issues = _checks.collect_validation_issues([render_obj, collider], prefs, _depsgraph())
+        self.assertEqual(issues, [])
+
+    def test_only_the_enabled_check_dispatches(self):
+        prefs = _make_fake_prefs(validate_check_missing_collider=True)
+        render_obj = _make_cube_object(_TEST_PREFIX + 'render')  # no collider children
+        issues = _checks.collect_validation_issues([render_obj], prefs, _depsgraph())
+        self.assertEqual([i.check_id for i in issues], ['missing_collider'])
+
+    def test_non_mesh_render_parent_is_scanned(self):
+        """Regression test: collect_validation_issues() used to gate
+        missing_collider/bbox_mismatch/too_many_colliders on
+        obj.type == 'MESH', silently skipping CURVE/SURFACE/FONT/META render
+        objects even though VALID_OBJECT_TYPES (used elsewhere in the same
+        module, e.g. check_parent_hierarchy) treats them as valid render
+        meshes."""
+        prefs = _make_fake_prefs(validate_check_missing_collider=True)
+        bpy.ops.curve.primitive_bezier_curve_add()
+        curve_obj = bpy.context.active_object
+        curve_obj.name = _TEST_PREFIX + 'curve_render'
+        self.assertEqual(curve_obj.type, 'CURVE')
+        issues = _checks.collect_validation_issues([curve_obj], prefs, _depsgraph())
+        self.assertEqual([i.check_id for i in issues], ['missing_collider'])
+
+    def test_isCollider_non_mesh_object_gets_naming_and_parent_checks(self):
+        # check_naming_convention/check_parent_hierarchy aren't gated on
+        # obj.type == 'MESH' - an EMPTY tagged isCollider must still be
+        # scanned by both.
+        prefs = _make_fake_prefs(validate_check_naming=True, validate_check_parent_hierarchy=True)
+        empty = bpy.data.objects.new(_TEST_PREFIX + 'WrongName', None)
+        bpy.context.collection.objects.link(empty)
+        empty['isCollider'] = True
+        empty['collider_shape'] = 'box_shape'
+        issues = _checks.collect_validation_issues([empty], prefs, _depsgraph())
+        self.assertEqual(sorted(i.check_id for i in issues), ['naming', 'parent_hierarchy'])
+
+    def test_one_bad_object_does_not_abort_the_whole_scan(self):
+        prefs = _make_fake_prefs(validate_check_physics_material=True)
+        good = _make_cube_object(_TEST_PREFIX + 'good')
+        good['isCollider'] = True
+        bad = _make_cube_object(_TEST_PREFIX + 'bad')
+        bad['isCollider'] = True
+
+        original = _checks.check_physics_material
+
+        def _boom(obj):
+            if obj is bad:
+                raise RuntimeError('boom')
+            return original(obj)
+
+        _checks.check_physics_material = _boom
+        try:
+            issues = _checks.collect_validation_issues([good, bad], prefs, _depsgraph())
+        finally:
+            _checks.check_physics_material = original
+
+        by_object = {issue.object_name: issue for issue in issues}
+        self.assertEqual(by_object[good.name].check_id, 'physics_material')
+        self.assertEqual(by_object[bad.name].check_id, 'internal_error')
+        self.assertEqual(by_object[bad.name].severity, 'ERROR')
+
+    def test_progress_callback_invoked_once_per_object(self):
+        prefs = _make_fake_prefs()
+        objs = [_make_cube_object(_TEST_PREFIX + f'o{i}') for i in range(3)]
+        calls = []
+        _checks.collect_validation_issues(
+            objs, prefs, _depsgraph(),
+            progress_callback=lambda done, total: calls.append((done, total)),
+        )
+        self.assertEqual(calls, [(1, 3), (2, 3), (3, 3)])
+
+
+# -- Evaluated (post-modifier) vs. local mesh usage --------------------------
+
+class TestEvaluatedMeshUsage(unittest.TestCase):
+    """check_triangle_count/check_non_manifold/check_flipped_normals read
+    the evaluated (post-modifier) mesh via depsgraph; check_min_dimension
+    intentionally reads the local, pre-modifier mesh instead (see its
+    docstring). Neither path had modifier-stack coverage before."""
+
+    def tearDown(self):
+        _remove_test_objects()
+
+    def _evaluated_depsgraph(self):
+        bpy.context.view_layer.update()
+        return bpy.context.evaluated_depsgraph_get()
+
+    def test_triangle_count_reflects_mirror_modifier(self):
+        # A closed cube alone is 12 tris; Mirror doubles it to 24 in the
+        # evaluated mesh without changing the 8-vert/12-tri base mesh.
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj.modifiers.new(name='Mirror', type='MIRROR')
+        depsgraph = self._evaluated_depsgraph()
+        issue = _checks.check_triangle_count(obj, max_triangles=12, depsgraph=depsgraph)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'triangle_count')
+
+    def test_non_manifold_reflects_modifier_result(self):
+        # A 5-face open cube is non-manifold on its own; Solidify seals the
+        # open rim into a closed shell purely via the modifier stack.
+        obj = _make_cube_object(_TEST_PREFIX + 'cube', face_count=5)
+        obj.modifiers.new(name='Solidify', type='SOLIDIFY')
+        depsgraph = self._evaluated_depsgraph()
+        issue = _checks.check_non_manifold(obj, depsgraph=depsgraph)
+        self.assertIsNone(issue)
+
+    def test_min_dimension_ignores_modifier_result(self):
+        # Local extent is 0.8 (below the 1.0 threshold); Mirror roughly
+        # doubles the evaluated extent, but must NOT change this check's
+        # verdict since it intentionally reads the local mesh.
+        obj = _make_cube_object(_TEST_PREFIX + 'cube', half_extent=0.4)
+        obj.modifiers.new(name='Mirror', type='MIRROR')
+        issue = _checks.check_min_dimension(obj, min_dimension=1.0)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'min_dimension')
 
 
 if __name__ == '__main__':

@@ -12,6 +12,17 @@ classes = (
 )
 
 
+def _clear_results_on_load(dummy=None):
+    """Results live on WindowManager, which isn't saved with the .blend file
+    and isn't cleared automatically on load - without this, switching files
+    leaves a stale report from the previous file on screen until the user
+    manually re-runs Validate Colliders."""
+    wm = bpy.context.window_manager
+    if wm is not None:
+        wm.simple_collider_validation_results.clear()
+        wm.simple_collider_validation_index = 0
+
+
 def register():
     from bpy.utils import register_class
 
@@ -22,9 +33,13 @@ def register():
     wm.simple_collider_validation_results = bpy.props.CollectionProperty(type=properties.ValidationIssueItem)
     wm.simple_collider_validation_index = bpy.props.IntProperty()
 
+    bpy.app.handlers.load_post.append(_clear_results_on_load)
+
 
 def unregister():
     from bpy.utils import unregister_class
+
+    bpy.app.handlers.load_post.remove(_clear_results_on_load)
 
     wm = bpy.types.WindowManager
     del wm.simple_collider_validation_index

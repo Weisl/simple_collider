@@ -84,7 +84,14 @@ def check_triangle_count(collider_obj, max_triangles, depsgraph):
 
 
 def check_min_dimension(collider_obj, min_dimension):
-    """Flag a collider whose local-space bounding box is smaller than expected."""
+    """Flag a collider whose local-space bounding box is smaller than expected.
+
+    Unlike check_triangle_count/check_non_manifold/check_flipped_normals, this
+    intentionally reads collider_obj.data directly rather than the evaluated
+    (post-modifier) mesh: min-dimension is meant to catch a collider whose
+    *authored* geometry is degenerate, which a Mirror/Array/Solidify modifier
+    could otherwise mask (e.g. a zero-thickness plane that only becomes solid
+    after a Solidify modifier is applied at export/bake time)."""
     size = mesh_max_dimension(collider_obj.data)
     if size >= min_dimension:
         return None
@@ -159,8 +166,8 @@ def check_naming_convention(collider_obj, prefs):
         # there is no naming convention to enforce.
         return None
 
-    separator = prefs.separator
-    pattern = re.compile(fr'(^|{separator}){shape_str}({separator}|$)', re.IGNORECASE)
+    separator = re.escape(prefs.separator)
+    pattern = re.compile(fr'(^|{separator}){re.escape(shape_str)}({separator}|$)', re.IGNORECASE)
     if pattern.search(collider_obj.name):
         return None
     return ValidationIssue(
@@ -542,89 +549,118 @@ def check_parent_hierarchy(collider_obj, use_parent_to):
     return None
 
 
-def collect_validation_issues(objects, prefs, depsgraph):
-    """Run every enabled check over `objects` and return the list of issues found."""
+def collect_validation_issues(objects, prefs, depsgraph, progress_callback=None):
+    """Run every enabled check over `objects` and return the list of issues found.
+
+    A check raising on one object (e.g. malformed custom properties, an
+    unexpected mesh state) is reported as its own issue rather than aborting
+    the whole scan, so one bad object can't hide results for everything else.
+    `progress_callback`, if given, is called with (done_count, total_count)
+    after each object is processed - used by the operator to drive a
+    wm.progress_begin/update/end bar on large scenes.
+    """
     issues = []
+    objects = list(objects)
 
-    for obj in objects:
-        is_collider = bool(obj.get('isCollider'))
+    for index, obj in enumerate(objects):
+        try:
+            issues.extend(_collect_object_issues(obj, prefs, depsgraph))
+        except Exception as exc:
+            issues.append(ValidationIssue(
+                check_id='internal_error',
+                object_name=obj.name,
+                severity='ERROR',
+                message=f"validation check failed on this object: {exc}",
+            ))
+        finally:
+            if progress_callback is not None:
+                progress_callback(index + 1, len(objects))
 
-        if not is_collider:
-            if obj.type == 'MESH':
-                if prefs.validate_check_missing_collider:
-                    issue = check_missing_collider(obj, prefs.use_parent_to)
+    return issues
+
+
+def _collect_object_issues(obj, prefs, depsgraph):
+    """Run every enabled check against a single object. Split out of
+    collect_validation_issues() so a raise here is caught per-object."""
+    issues = []
+    is_collider = bool(obj.get('isCollider'))
+
+    if not is_collider:
+        if obj.type in VALID_OBJECT_TYPES:
+            if prefs.validate_check_missing_collider:
+                issue = check_missing_collider(obj, prefs.use_parent_to)
+                if issue:
+                    issues.append(issue)
+
+            colliders = [c for c in obj.children if c.get('isCollider')]
+            if colliders:
+                if prefs.validate_check_bbox_mismatch:
+                    issue = check_bbox_mismatch(obj, colliders, prefs.validation_bbox_tolerance, depsgraph)
                     if issue:
                         issues.append(issue)
 
-                colliders = [c for c in obj.children if c.get('isCollider')]
-                if colliders:
-                    if prefs.validate_check_bbox_mismatch:
-                        issue = check_bbox_mismatch(obj, colliders, prefs.validation_bbox_tolerance, depsgraph)
-                        if issue:
-                            issues.append(issue)
+                if prefs.validate_check_too_many_colliders:
+                    issue = check_too_many_colliders(obj, prefs.validation_max_collider_count)
+                    if issue:
+                        issues.append(issue)
+        return issues
 
-                    if prefs.validate_check_too_many_colliders:
-                        issue = check_too_many_colliders(obj, prefs.validation_max_collider_count)
-                        if issue:
-                            issues.append(issue)
-            continue
-
-        if obj.type == 'MESH':
-            if prefs.validate_check_triangle_count:
-                issue = check_triangle_count(obj, prefs.validation_max_triangle_count, depsgraph)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_min_dimension:
-                issue = check_min_dimension(obj, prefs.validation_min_dimension)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_non_manifold:
-                issue = check_non_manifold(obj, depsgraph)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_flipped_normals:
-                issue = check_flipped_normals(obj, depsgraph)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_convex_shape_mismatch:
-                issue = check_convexity_mismatch(obj, depsgraph, prefs.validation_shape_tolerance)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_box_shape_mismatch:
-                issue = check_box_mismatch(obj, depsgraph, prefs.validation_shape_tolerance)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_mesh_could_use_primitive:
-                issue = check_mesh_could_use_primitive(obj, depsgraph, prefs.validation_shape_tolerance)
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_collision_shape_mismatch:
-                issue = check_collision_shape_mismatch(
-                    obj, depsgraph, prefs.validation_shape_tolerance, prefs.validation_sphere_tolerance,
-                )
-                if issue:
-                    issues.append(issue)
-
-            if prefs.validate_check_physics_material:
-                issue = check_physics_material(obj)
-                if issue:
-                    issues.append(issue)
-
-        if prefs.validate_check_naming:
-            issue = check_naming_convention(obj, prefs)
+    if obj.type == 'MESH':
+        if prefs.validate_check_triangle_count:
+            issue = check_triangle_count(obj, prefs.validation_max_triangle_count, depsgraph)
             if issue:
                 issues.append(issue)
 
-        if prefs.validate_check_parent_hierarchy:
-            issue = check_parent_hierarchy(obj, prefs.use_parent_to)
+        if prefs.validate_check_min_dimension:
+            issue = check_min_dimension(obj, prefs.validation_min_dimension)
             if issue:
                 issues.append(issue)
+
+        if prefs.validate_check_non_manifold:
+            issue = check_non_manifold(obj, depsgraph)
+            if issue:
+                issues.append(issue)
+
+        if prefs.validate_check_flipped_normals:
+            issue = check_flipped_normals(obj, depsgraph)
+            if issue:
+                issues.append(issue)
+
+        if prefs.validate_check_convex_shape_mismatch:
+            issue = check_convexity_mismatch(obj, depsgraph, prefs.validation_shape_tolerance)
+            if issue:
+                issues.append(issue)
+
+        if prefs.validate_check_box_shape_mismatch:
+            issue = check_box_mismatch(obj, depsgraph, prefs.validation_shape_tolerance)
+            if issue:
+                issues.append(issue)
+
+        if prefs.validate_check_mesh_could_use_primitive:
+            issue = check_mesh_could_use_primitive(obj, depsgraph, prefs.validation_shape_tolerance)
+            if issue:
+                issues.append(issue)
+
+        if prefs.validate_check_collision_shape_mismatch:
+            issue = check_collision_shape_mismatch(
+                obj, depsgraph, prefs.validation_shape_tolerance, prefs.validation_sphere_tolerance,
+            )
+            if issue:
+                issues.append(issue)
+
+        if prefs.validate_check_physics_material:
+            issue = check_physics_material(obj)
+            if issue:
+                issues.append(issue)
+
+    if prefs.validate_check_naming:
+        issue = check_naming_convention(obj, prefs)
+        if issue:
+            issues.append(issue)
+
+    if prefs.validate_check_parent_hierarchy:
+        issue = check_parent_hierarchy(obj, prefs.use_parent_to)
+        if issue:
+            issues.append(issue)
 
     return issues

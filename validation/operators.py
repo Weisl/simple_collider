@@ -193,9 +193,17 @@ class COLLISION_OT_validate_colliders(bpy.types.Operator):
     def _rescan(self, context):
         prefs = context.preferences.addons[base_package].preferences
         depsgraph = context.evaluated_depsgraph_get()
-        issues = collect_validation_issues(self._objects(context), prefs, depsgraph)
-
         wm = context.window_manager
+
+        wm.progress_begin(0, 1)
+        try:
+            issues = collect_validation_issues(
+                self._objects(context), prefs, depsgraph,
+                progress_callback=lambda done, total: wm.progress_update(done / total if total else 1),
+            )
+        finally:
+            wm.progress_end()
+
         results = wm.simple_collider_validation_results
         results.clear()
         for issue in issues:
