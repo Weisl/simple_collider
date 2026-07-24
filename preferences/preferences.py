@@ -219,9 +219,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             row = box.row()
             row.prop(self, propName)
 
-        row = layout.row()
-        row.prop(self, 'debug')
-
     def draw_naming_panel(self, layout):
         """Draw the naming panel"""
         box = layout.box()

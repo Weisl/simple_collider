@@ -86,9 +86,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
-            if self.prefs.debug == False:
-                self.remove_objects(self.base_objs)
-                self.remove_empty_collection(context, 'base_obj')
+            self.remove_objects(self.base_objs)
+            self.remove_empty_collection(context, 'base_obj')
 
         status = super().modal(context, event)
         if status == {'FINISHED'}:

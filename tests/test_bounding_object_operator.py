@@ -260,7 +260,6 @@ class _PostprocessingFake:
             use_col_collection=False,
             use_parent_to=True,       # True = skip the unparent branch
             wireframe_mode='NEVER',
-            debug=False,              # False = the hide loop runs (pre-fix)
             physics_material_name='',
         )
 

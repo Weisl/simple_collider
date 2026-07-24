@@ -1600,12 +1600,11 @@ class OBJECT_OT_add_bounding_object():
         # Hide all temp meshes exactly once, here, rather than inside
         # primitive_postprocessing().  The old placement ran N times with N
         # objects in self.tmp_meshes → O(N²) hide_set() calls for N islands.
-        if self.prefs.debug == False:
-            for obj in self.tmp_meshes:
-                try:
-                    obj.hide_set(True)
-                except Exception:
-                    pass
+        for obj in self.tmp_meshes:
+            try:
+                obj.hide_set(True)
+            except Exception:
+                pass
 
     def add_displacement_modifier(self, context, bounding_object):
         # add displacement modifier and safe it to manipulate the strength in the modal operator
@@ -1662,9 +1661,8 @@ class OBJECT_OT_add_bounding_object():
             self.remove_objects(self.new_colliders_list)
 
         # Delete temporary objects
-        if self.prefs.debug == False:
-            self.remove_objects(self.tmp_meshes)
-            self.remove_empty_collection(context, 'tmp_mesh')
+        self.remove_objects(self.tmp_meshes)
+        self.remove_empty_collection(context, 'tmp_mesh')
 
         self.reset_display(context)
 
@@ -1701,22 +1699,6 @@ class OBJECT_OT_add_bounding_object():
         new_collider = self.new_colliders_list[0]
         self.new_colliders_list = [new_collider]
         return new_collider
-
-    def create_debug_object_from_verts(self, context, verts):
-        bm = bmesh.new()
-        for v in verts:
-            bm.verts.new(v)  # add a new vert  
-
-        me = bpy.data.meshes.new("mesh")
-        bm.to_mesh(me)
-        bm.free()
-
-        root_collection = context.scene.collection
-        debug_obj = bpy.data.objects.new('temp_debug_objects', me)
-        # root_collection.objects.link(debug_obj)
-        self.add_to_collections(context, debug_obj, 'Debug')
-
-        return debug_obj
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -2354,9 +2336,8 @@ class OBJECT_OT_add_bounding_object():
                         )
 
             # Delete temporary generated meshes
-            if self.prefs.debug == False:
-                self.remove_objects(self.tmp_meshes)
-                self.remove_empty_collection(context, 'tmp_mesh')
+            self.remove_objects(self.tmp_meshes)
+            self.remove_empty_collection(context, 'tmp_mesh')
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')

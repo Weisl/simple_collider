@@ -153,11 +153,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                               export_materials=False, export_uv=False, export_normals=False,
                               forward_axis='Y', up_axis='Z')
 
-        if self.prefs.debug:
-            joined_obj.color = (1.0, 0.1, 0.1, 1.0)
-            joined_obj.select_set(False)
-        else:
-            bpy.data.objects.remove(joined_obj)
+        bpy.data.objects.remove(joined_obj)
 
         return obj_filename
 
@@ -257,10 +253,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 self.report({'WARNING'}, f'CoACD hull decimation failed for {hull_obj.name}, keeping original hull')
                 result.append(hull_obj)
 
-            if not self.prefs.debug:
-                for f in (hull_filename, decimated_filename, remesh_filename):
-                    if os.path.isfile(f):
-                        os.remove(f)
+            for f in (hull_filename, decimated_filename, remesh_filename):
+                if os.path.isfile(f):
+                    os.remove(f)
 
         return result
 
