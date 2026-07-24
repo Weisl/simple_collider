@@ -129,3 +129,4 @@ dmypy.json
 
 # operating system files
 .DS_Store
+.mcp.json

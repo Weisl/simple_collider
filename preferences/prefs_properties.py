@@ -41,6 +41,7 @@ class CollisionAddonPrefsProperties():
     prefs_tabs: bpy.props.EnumProperty(
         name='Collider Settings',
         items=(('SETTINGS', "General", "General addon settings"),
+               ('POSTPROCESS', "Post Processing", "Settings for automatic post-processing of newly created colliders."),
                ('NAMING', "Presets", "Presets settings: Create, change and modify presets"),
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
@@ -666,7 +667,7 @@ class CollisionAddonPrefsProperties():
                                                         max=1.0,
                                                         subtype='FACTOR')
 
-    general_props = [
+    postprocess_props = [
         "fix_parent_inverse_mtrx",
         "use_parent_to",
         "keep_modifier_defaults",

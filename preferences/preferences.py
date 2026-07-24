@@ -200,13 +200,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         """Draw the settings panel"""
         box = layout.box()
         row = box.row()
-        row.label(text='General')
-        for propName in self.general_props:
-            row = box.row()
-            row.prop(self, propName)
-
-        box = layout.box()
-        row = box.row()
         row.label(text='Collections')
         for propName in self.col_props:
             row = box.row()
@@ -218,6 +211,26 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         for propName in self.display_config:
             row = box.row()
             row.prop(self, propName)
+
+    def draw_postprocess_panel(self, layout):
+        """Draw the post processing panel"""
+        box = layout.box()
+        row = box.row()
+        row.label(text='General')
+        for propName in self.postprocess_props:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        row = box.row()
+        row.label(text='Auto Apply on Creation')
+        row = box.row()
+        row.prop(self, "auto_apply_tris_limit")
+        sub = box.row()
+        sub.enabled = self.auto_apply_tris_limit
+        sub.prop(self, "auto_apply_max_triangle_count")
+        row = box.row()
+        row.prop(self, "auto_apply_origin_to_parent")
 
     def draw_naming_panel(self, layout):
         """Draw the naming panel"""
@@ -556,6 +569,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
 
         if self.prefs_tabs == 'SETTINGS':
             self.draw_settings_panel(layout)
+
+        elif self.prefs_tabs == 'POSTPROCESS':
+            self.draw_postprocess_panel(layout)
 
         elif self.prefs_tabs == 'NAMING':
             self.draw_naming_panel(layout)
