@@ -377,7 +377,64 @@ vs. ERROR), and which object it's attached to are all correct.
   sphere segments, voxel size) applied at operator invoke time, not a
   save/load preset list. Verify neither is mislabeled in the UI.
 
-### 13. Known-incomplete / release-blocking questions to resolve before ship
+### 13. Engine interop — Unity / Unreal / Godot naming conventions
+
+The addon has no export operator of its own — it only sets naming/material
+conventions in Blender (`presets/presets_data.py`). Every item below needs an
+actual FBX/glTF export and an import into the real target engine editor, since
+nothing here is exercised by CI.
+
+- [ ] Apply "UE-default" preset, generate Box/Sphere/Capsule/Convex Hull
+  colliders on a render mesh (e.g. "Wall") → names are prefixed `UBX_`/
+  `USP_`/`UCP_`/`UCX_` respectively; export as FBX and import into Unreal
+  Engine → each is auto-detected as simple collision of the matching
+  primitive shape, not imported as a separate visible static mesh.
+- [ ] Generate multiple convex-hull islands on one mesh with UE-default
+  (`UCX_Wall_00`, `UCX_Wall_01`, …) → on FBX import into Unreal, all numbered
+  hulls are picked up as one compound collision, not just the first.
+- [ ] Parent a UBX/USP/UCP collider to an object with shear (non-uniform
+  scale + rotation) → confirm the shear WARNING fires and the parent-inverse
+  is *not* silently baked; export to Unreal anyway and confirm the collider
+  imports visibly misplaced/misshapen (documents the known limitation rather
+  than a silent corruption).
+- [ ] Parent a UBX/USP/UCP collider to a normal (non-sheared) parent, run
+  "Fix Parent Inverse Matrix", then export/import into Unreal → the
+  primitive keeps its canonical axis-aligned local shape with position/
+  rotation carried entirely by the transform (regression check for the
+  inverse-matrix fix in `utility_operators.py`, "Fix inverse matrix Auto").
+- [ ] Apply "Unity-default" preset, generate each shape → names are suffixed
+  descriptively (`_Box`/`_Sphere`/`_Capsule`/`_Convex`/`_Mesh`) and
+  `replace_name` forces the base to "Collider"; after FBX import into Unity,
+  confirm objects appear as plain named child GameObjects with mesh data and
+  do **not** automatically become Collider components — Unity has no
+  built-in naming-token auto-import like UE/Godot, so this is expected
+  manual/external setup, not a bug.
+- [ ] With Unity-default's physics material enabled (`COL_DEFAULT`/`COL`
+  filter) → the assigned Blender material's slot/name survives FBX import
+  as a material on the collider mesh (Unity does not read it as a
+  PhysicMaterial asset — that mapping is manual).
+- [ ] Apply "Godot-default" preset (separator `-`, collider groups off),
+  generate each shape → names end in `-convcolonly` (box/sphere/capsule/
+  convex) or `-colonly` (mesh), e.g. `geo-convcolonly`; export as glTF/.blend
+  and import into Godot → Godot auto-generates a matching collision shape
+  (convex vs. trimesh) per its `-colonly`/`-convcolonly` convention rather
+  than importing the collider as a separate visible mesh.
+- [ ] Godot-default's rigid body suffix (`rigid`, separator `-`) → run "Set
+  Rigid Body" → confirm `-` (not `_`) is used and it composes cleanly
+  alongside a `-convcolonly` collider suffix without a doubled separator.
+- [ ] For all three engines/presets, generate a second collider with a name
+  that collides so `unique_name()` appends its digit suffix (e.g.
+  `UCX_Wall_01`, `geo-convcolonly.001`) → confirm the digit/uniquifier
+  placement doesn't break the target engine's naming-pattern recognition
+  (Unreal expects trailing digits right after the shape token; Godot expects
+  its suffix at the very end of the name, so a Blender `.001` uniquifier
+  landing after it is worth confirming either way).
+- [ ] Confirm this addon has no bundled FBX/glTF export operator (by design —
+  "Simple Export" mentioned in Preferences is a separate paid add-on) → test
+  with Blender's standard exporters and each engine's typical import
+  settings, rather than expecting the addon to configure exporter options.
+
+### 14. Known-incomplete / release-blocking questions to resolve before ship
 
 - [ ] The voxel-grid "Simplified Mesh" collider (diagonal-fill remesh
   engine in `bmesh_operations/voxel_generation.py`) has full geometry code,
