@@ -2374,11 +2374,13 @@ class OBJECT_OT_add_bounding_object():
                     bpy.context.view_layer.update()
 
                 if self.prefs.auto_apply_tris_limit:
+                    _tris_depsgraph = bpy.context.evaluated_depsgraph_get()
                     unreachable_names = []
                     for obj in self.new_colliders_list:
                         if not obj:
                             continue
-                        if not set_triangle_count_limit(obj, self.prefs.auto_apply_max_triangle_count):
+                        if not set_triangle_count_limit(obj, self.prefs.auto_apply_max_triangle_count,
+                                                         depsgraph=_tris_depsgraph):
                             unreachable_names.append(obj.name)
                     if unreachable_names:
                         self.report(

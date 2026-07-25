@@ -5,7 +5,7 @@ from mathutils import Matrix
 from ..properties.constants import DECIMATE_NAME
 
 
-def set_triangle_count_limit(obj, target_triangles, iterations=8):
+def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None):
     """Adjust obj's Decimate modifier ratio so the evaluated triangle count is
     at or below target_triangles.
 
@@ -15,6 +15,9 @@ def set_triangle_count_limit(obj, target_triangles, iterations=8):
     if obj.type != 'MESH':
         return True
 
+    if depsgraph is None:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+
     if obj.modifiers.get(DECIMATE_NAME):
         decimate = obj.modifiers.get(DECIMATE_NAME)
     else:
@@ -22,25 +25,28 @@ def set_triangle_count_limit(obj, target_triangles, iterations=8):
     decimate.decimate_type = 'COLLAPSE'
 
     def get_tri_count(ratio):
-        # Read face_count rather than evaluating the mesh through the
-        # depsgraph (obj.evaluated_get(depsgraph).to_mesh()): that path can
-        # return a stale, pre-ratio-change evaluation depending on Blender
-        # version/depsgraph state (#649), whereas face_count forces the
-        # modifier to re-run synchronously and always matches the ratio just
-        # assigned. COLLAPSE always outputs a fully triangulated mesh, so
-        # face_count here is the triangle count.
         decimate.ratio = ratio
-        return decimate.face_count
+        # Changing a modifier property only tags the depsgraph as dirty; it
+        # does not re-evaluate it. Without this explicit update(), evaluating
+        # obj through this depsgraph can keep returning the mesh from before
+        # this ratio (or even before the modifier existed) was set (#649) -
+        # background/headless runs never hit the redraw loop that would
+        # otherwise paper over this.
+        depsgraph.update()
+        obj_eval = obj.evaluated_get(depsgraph)
+        mesh = obj_eval.to_mesh()
+        count = sum(len(p.vertices) - 2 for p in mesh.polygons)
+        obj_eval.to_mesh_clear()
+        return count
 
     # If original mesh is already within budget, no decimation needed
     original_count = get_tri_count(1.0)
     if original_count <= target_triangles:
-        decimate.ratio = 1.0
         return True
 
     # Check if even maximum decimation can reach the target
     if get_tri_count(0.001) > target_triangles:
-        decimate.ratio = 1.0
+        get_tri_count(1.0)
         return False
 
     # Linear estimate: COLLAPSE decimation reduces tris roughly proportional to ratio.
@@ -65,7 +71,11 @@ def set_triangle_count_limit(obj, target_triangles, iterations=8):
         else:
             hi = mid
 
-    decimate.ratio = best_ratio
+    # Re-read at best_ratio (rather than a bare assignment) so the depsgraph
+    # ends up synced to the ratio we're actually leaving on the modifier: the
+    # loop's last get_tri_count() call may have been a rejected `mid` distinct
+    # from best_ratio.
+    get_tri_count(best_ratio)
     return True
 
 
@@ -107,11 +117,14 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     )
 
     def execute(self, context):
+        # Cache depsgraph once for all objects to avoid O(N^2) re-evaluations
+        depsgraph = context.evaluated_depsgraph_get()
+
         unreachable = []
         for obj in context.selected_objects:
             if obj.type != 'MESH':
                 continue
-            if not set_triangle_count_limit(obj, self.target_triangles, self.iterations):
+            if not set_triangle_count_limit(obj, self.target_triangles, self.iterations, depsgraph):
                 unreachable.append(obj.name)
 
         if unreachable:
