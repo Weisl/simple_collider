@@ -549,6 +549,32 @@ def check_parent_hierarchy(collider_obj, use_parent_to):
     return None
 
 
+def check_parent_inverse_matrix(collider_obj):
+    """Flag a collider whose matrix_parent_inverse has not been reset to identity.
+
+    A non-identity matrix_parent_inverse renders correctly inside Blender, but
+    common exporters (FBX, glTF) don't preserve it - they only write the
+    parent-relative transform (matrix_basis). On export/re-import the collider
+    then ends up at the wrong location/rotation relative to its parent. This
+    is left non-identity whenever a collider is parented without running "Fix
+    Parent Inverse Matrix" afterward, or when that fix was skipped because the
+    parent-relative transform contains shear it can't safely bake (see
+    fix_inverse_matrix_is_safe() in collider_operators/utility_operators.py).
+    """
+    parent = collider_obj.parent
+    if parent is None:
+        return None
+    if collider_obj.matrix_parent_inverse.is_identity:
+        return None
+    return ValidationIssue(
+        check_id='parent_inverse_matrix',
+        object_name=collider_obj.name,
+        severity='WARNING',
+        message="parent inverse matrix not reset - may export at the wrong location/rotation "
+                "(run Fix Parent Inverse Matrix)",
+    )
+
+
 def collect_validation_issues(objects, prefs, depsgraph, progress_callback=None):
     """Run every enabled check over `objects` and return the list of issues found.
 
@@ -660,6 +686,11 @@ def _collect_object_issues(obj, prefs, depsgraph):
 
     if prefs.validate_check_parent_hierarchy:
         issue = check_parent_hierarchy(obj, prefs.use_parent_to)
+        if issue:
+            issues.append(issue)
+
+    if prefs.validate_check_parent_inverse_matrix:
+        issue = check_parent_inverse_matrix(obj)
         if issue:
             issues.append(issue)
 

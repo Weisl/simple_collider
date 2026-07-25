@@ -149,6 +149,7 @@ def _make_fake_prefs(**overrides):
         validate_check_physics_material=False,
         validate_check_naming=False,
         validate_check_parent_hierarchy=False,
+        validate_check_parent_inverse_matrix=False,
         validation_bbox_tolerance=0.1,
         validation_max_collider_count=8,
         validation_max_triangle_count=100000,
@@ -674,6 +675,33 @@ class TestPrefsDependentChecks(unittest.TestCase):
         issue = _checks.check_parent_hierarchy(collider, use_parent_to=True)
         self.assertIsNotNone(issue)
         self.assertEqual(issue.check_id, 'parent_hierarchy')
+
+    # -- parent_inverse_matrix -----------------------------------------------
+
+    def test_parent_inverse_matrix_pass_no_parent(self):
+        collider = _add_collider(_TEST_PREFIX + 'UBX_Thing_001')
+        issue = _checks.check_parent_inverse_matrix(collider)
+        self.assertIsNone(issue)
+
+    def test_parent_inverse_matrix_pass_when_identity(self):
+        # obj.parent = parent (as _add_collider does) leaves
+        # matrix_parent_inverse at its default identity value.
+        render_obj = _add_parent(_TEST_PREFIX + 'render')
+        collider = _add_collider(_TEST_PREFIX + 'UBX_render_001', parent=render_obj)
+        self.assertTrue(collider.matrix_parent_inverse.is_identity)
+        issue = _checks.check_parent_inverse_matrix(collider)
+        self.assertIsNone(issue)
+
+    def test_parent_inverse_matrix_flagged_when_not_identity(self):
+        render_obj = _add_parent(_TEST_PREFIX + 'render')
+        render_obj.rotation_euler = (0.3, 0.1, 0.0)
+        bpy.context.view_layer.update()
+        collider = _add_collider(_TEST_PREFIX + 'UBX_render_001', parent=render_obj)
+        collider.matrix_parent_inverse = render_obj.matrix_world.inverted()
+        issue = _checks.check_parent_inverse_matrix(collider)
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'parent_inverse_matrix')
+        self.assertEqual(issue.severity, 'WARNING')
 
 
 # -- check_naming_convention: user-controlled regex safety -------------------

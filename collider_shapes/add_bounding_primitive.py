@@ -2343,18 +2343,16 @@ class OBJECT_OT_add_bounding_object():
                 for obj in self.new_colliders_list:
                     if not obj or not obj.parent:
                         continue
-                    if self.use_custom_rotation:
-                        continue
                     if not fix_inverse_matrix_is_safe(obj):
                         print(f"Skipping {obj.name}: parent-relative transform contains shear that "
                               f"can't be baked without distorting the mesh.")
                         skipped_names.append(obj.name)
                         continue
+                    # fix_inverse_matrix() re-expresses the parent-relative transform on
+                    # obj.location/rotation_euler/scale rather than baking it into the mesh, so
+                    # it's safe to run even when use_custom_rotation set a custom rotation above:
+                    # that rotation is preserved, just relative to a now-uncancelled parent.
                     fix_inverse_matrix(obj, update_depsgraph=False)
-
-                    obj.location = (0, 0, 0)
-                    obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
-                    obj.scale = (1, 1, 1)
                 bpy.context.view_layer.update()
                 if skipped_names:
                     self.report(

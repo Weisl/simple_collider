@@ -595,6 +595,13 @@ class CollisionAddonPrefsProperties():
                                                              description="Flag colliders that aren't parented to a render mesh",
                                                              default=True)
 
+    validate_check_parent_inverse_matrix: bpy.props.BoolProperty(name="Parent Inverse Matrix",
+                                                                  description="Flag colliders whose parent inverse matrix hasn't been reset. "
+                                                                              "Exporters like FBX/glTF don't preserve it, so the collider can end "
+                                                                              "up at the wrong location/rotation on export. Run Fix Parent Inverse "
+                                                                              "Matrix to clear it",
+                                                                  default=True)
+
     validate_check_flipped_normals: bpy.props.BoolProperty(name="Flipped Normals",
                                                             description="Flag colliders whose face winding is inverted (inside-out mesh)",
                                                             default=True)
@@ -785,6 +792,7 @@ class CollisionAddonPrefsProperties():
         "validate_check_flipped_normals",
         "validate_check_physics_material",
         "validate_check_parent_hierarchy",
+        "validate_check_parent_inverse_matrix",
         "validate_check_convex_shape_mismatch",
         "validate_check_box_shape_mismatch",
         "validate_check_mesh_could_use_primitive",

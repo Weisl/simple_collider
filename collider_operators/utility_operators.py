@@ -269,7 +269,22 @@ def fix_inverse_matrix_is_safe(obj, tol=1e-4):
 
 
 def fix_inverse_matrix(obj, update_depsgraph=True):
-    mesh = obj.data
+    """Clear obj's matrix_parent_inverse (so the parent-child relationship
+    survives exporters like FBX/glTF that don't preserve it) while keeping
+    obj.matrix_world unchanged.
+
+    This only re-expresses the existing parent-relative transform on
+    obj.location/rotation_euler/scale - it must NOT bake anything into the
+    mesh or zero the transform. UBX_/USP_/UCP_ colliders (Unreal's box/
+    sphere/capsule collision convention, as opposed to arbitrary UCX_ convex
+    hulls) rely on their local vertex data staying a canonical, axis-aligned
+    primitive, with position and rotation carried entirely by the object's
+    transform. Baking the transform into vertex coordinates instead (the
+    previous implementation) desynchronizes the two: the primitive's local
+    shape stops being axis-aligned while the transform reads as identity, so
+    engines that read shape from vertices and placement from the transform
+    reconstruct the wrong box/sphere/capsule.
+    """
     # Make a copy of the object's original world matrix before we reset any of its transform matrices
     ob_matrix_orig = obj.matrix_world.copy()
     # Reset parent inverse matrix
@@ -277,19 +292,9 @@ def fix_inverse_matrix(obj, update_depsgraph=True):
     # Calculate the difference between the parent and child world transforms and
     # set the object's basis matrix to the value of this difference
     obj.matrix_basis = obj.parent.matrix_world.inverted() @ ob_matrix_orig
-    # Apply the object's basis matrix to the mesh vertices
-    transformed_vertices = [obj.matrix_basis @ v.co for v in mesh.vertices]
-    mesh.vertices.foreach_set("co", [coord for v in transformed_vertices for coord in v])
 
-    # Reset the object's basis matrix and local matrix
-    obj.matrix_basis.identity()
-    obj.matrix_local.identity()
-
-    mesh.update()
-
-    # Tag the object and its data for update
+    # Tag the object for update
     obj.update_tag()
-    mesh.update()
     if update_depsgraph:
         bpy.context.view_layer.update()
 
@@ -359,7 +364,7 @@ class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
     """Fix the parent inverse matrix on selected colliders"""
     bl_idname = "object.fix_parent_inverse_transform"
     bl_label = "Fix Parent Inverse Matrix"
-    bl_description = "Reset the parent inverse matrix and bake the transform into mesh data"
+    bl_description = "Reset the parent inverse matrix, keeping the transform on the object (not baked into mesh data)"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
