@@ -209,15 +209,32 @@ class TestGeometryChecks(unittest.TestCase):
     def test_triangle_count_pass(self):
         # A closed cube triangulates to 6 quads * 2 tris = 12 tris.
         obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'mesh_shape'
         issue = _checks.check_triangle_count(obj, max_triangles=12, depsgraph=_depsgraph())
         self.assertIsNone(issue)
 
     def test_triangle_count_flagged(self):
         obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'mesh_shape'
         issue = _checks.check_triangle_count(obj, max_triangles=5, depsgraph=_depsgraph())
         self.assertIsNotNone(issue)
         self.assertEqual(issue.check_id, 'triangle_count')
         self.assertEqual(issue.object_name, obj.name)
+
+    def test_triangle_count_flagged_for_convex_shape(self):
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'convex_shape'
+        issue = _checks.check_triangle_count(obj, max_triangles=5, depsgraph=_depsgraph())
+        self.assertIsNotNone(issue)
+        self.assertEqual(issue.check_id, 'triangle_count')
+
+    def test_triangle_count_skipped_for_box_shape(self):
+        # box/sphere/capsule/voxel colliders are simple analytical shapes;
+        # a high triangle count on their authored geometry isn't meaningful.
+        obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'box_shape'
+        issue = _checks.check_triangle_count(obj, max_triangles=5, depsgraph=_depsgraph())
+        self.assertIsNone(issue)
 
     def test_min_dimension_pass(self):
         obj = _make_cube_object(_TEST_PREFIX + 'cube', half_extent=1.0)  # extent 2
@@ -857,6 +874,7 @@ class TestEvaluatedMeshUsage(unittest.TestCase):
         # A closed cube alone is 12 tris; Mirror doubles it to 24 in the
         # evaluated mesh without changing the 8-vert/12-tri base mesh.
         obj = _make_cube_object(_TEST_PREFIX + 'cube')
+        obj['collider_shape'] = 'mesh_shape'
         obj.modifiers.new(name='Mirror', type='MIRROR')
         depsgraph = self._evaluated_depsgraph()
         issue = _checks.check_triangle_count(obj, max_triangles=12, depsgraph=depsgraph)

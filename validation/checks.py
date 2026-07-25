@@ -65,7 +65,15 @@ def check_missing_collider(render_obj, use_parent_to):
 
 
 def check_triangle_count(collider_obj, max_triangles, depsgraph):
-    """Flag a collider whose evaluated (post-modifier) triangle count is too high."""
+    """Flag a collider whose evaluated (post-modifier) triangle count is too high.
+
+    Only meaningful for mesh_shape/convex_shape colliders: box/sphere/capsule/
+    voxel colliders are simple analytical shapes (or approximated as such at
+    export/bake time), so a high triangle count on their authored geometry
+    isn't a real cost concern."""
+    if collider_obj.get('collider_shape') not in ('mesh_shape', 'convex_shape'):
+        return None
+
     obj_eval = collider_obj.evaluated_get(depsgraph)
     mesh = obj_eval.to_mesh()
     try:
