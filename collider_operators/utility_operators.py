@@ -5,7 +5,7 @@ from mathutils import Matrix
 from ..properties.constants import DECIMATE_NAME
 
 
-def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None):
+def set_triangle_count_limit(obj, target_triangles, iterations=8):
     """Adjust obj's Decimate modifier ratio so the evaluated triangle count is
     at or below target_triangles.
 
@@ -15,9 +15,6 @@ def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None
     if obj.type != 'MESH':
         return True
 
-    if depsgraph is None:
-        depsgraph = bpy.context.evaluated_depsgraph_get()
-
     if obj.modifiers.get(DECIMATE_NAME):
         decimate = obj.modifiers.get(DECIMATE_NAME)
     else:
@@ -25,12 +22,15 @@ def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None
     decimate.decimate_type = 'COLLAPSE'
 
     def get_tri_count(ratio):
+        # Read face_count rather than evaluating the mesh through the
+        # depsgraph (obj.evaluated_get(depsgraph).to_mesh()): that path can
+        # return a stale, pre-ratio-change evaluation depending on Blender
+        # version/depsgraph state (#649), whereas face_count forces the
+        # modifier to re-run synchronously and always matches the ratio just
+        # assigned. COLLAPSE always outputs a fully triangulated mesh, so
+        # face_count here is the triangle count.
         decimate.ratio = ratio
-        obj_eval = obj.evaluated_get(depsgraph)
-        mesh = obj_eval.to_mesh()
-        count = sum(len(p.vertices) - 2 for p in mesh.polygons)
-        obj_eval.to_mesh_clear()
-        return count
+        return decimate.face_count
 
     # If original mesh is already within budget, no decimation needed
     original_count = get_tri_count(1.0)
@@ -107,14 +107,11 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     )
 
     def execute(self, context):
-        # Cache depsgraph once for all objects to avoid O(N^2) re-evaluations
-        depsgraph = context.evaluated_depsgraph_get()
-
         unreachable = []
         for obj in context.selected_objects:
             if obj.type != 'MESH':
                 continue
-            if not set_triangle_count_limit(obj, self.target_triangles, self.iterations, depsgraph):
+            if not set_triangle_count_limit(obj, self.target_triangles, self.iterations):
                 unreachable.append(obj.name)
 
         if unreachable:

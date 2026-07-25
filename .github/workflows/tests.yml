@@ -8,10 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-14]
         blender-version: ["4.2", "4.3", "4.4", "4.5", "5.0", "5.1"]
     steps:
       - uses: actions/checkout@v3
@@ -27,7 +28,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: blender-download
-          key: blender-${{ matrix.blender-version }}-linux-x64
+          key: blender-${{ matrix.blender-version }}-${{ matrix.os }}
 
       - name: Download Blender ${{ matrix.blender-version }}
         if: steps.cache-blender.outputs.cache-hit != 'true'
@@ -39,7 +40,7 @@ jobs:
       - name: Locate Blender executable
         id: blender
         run: |
-          EXE=$(find blender-download -type f -name blender | head -n 1)
+          EXE=$(find blender-download -type f -iname blender | head -n 1)
           if [ -z "$EXE" ]; then
             echo "Could not find a Blender executable under blender-download/" >&2
             exit 1
