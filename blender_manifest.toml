@@ -36,4 +36,6 @@ paths_exclude_pattern = [
     "/tests/",
     "/venv/",
     "/.github/",
+    "/CHANGELOG.md",
+    "/MANUAL_QA_CHECKLIST.md",
 ]
