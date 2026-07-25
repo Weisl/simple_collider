@@ -12,6 +12,7 @@ classes = (
     properties_panels.OBJECT_MT_collision_presets,
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.BUTTON_OT_auto_convex,
+    properties_panels.BUTTON_OT_auto_convex_coacd,
     properties_panels.VIEW3D_MT_collision_creation,
     properties_panels.VIEW3D_PT_collision_panel,
     properties_panels.VIEW3D_PT_collision_settings_panel,
@@ -20,6 +21,7 @@ classes = (
     properties_panels.OBJECT_MT_adjust_decimation_menu,
     properties_panels.COLLISION_MT_pie_menu,
     popup.VIEW3D_PT_auto_convex_popup,
+    popup.VIEW3D_PT_auto_convex_coacd_popup,
     properties_panels.OBJECT_OT_set_default_collision_preset
 )
 

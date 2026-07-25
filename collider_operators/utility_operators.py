@@ -1,8 +1,97 @@
 import bpy
-import math # for isclose
 from bpy.props import IntProperty
+from mathutils import Matrix
 
 from ..properties.constants import DECIMATE_NAME
+
+
+def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None):
+    """Adjust obj's Decimate modifier ratio so the evaluated triangle count is
+    at or below target_triangles.
+
+    Returns True if the target was reached, False if it isn't reachable even
+    at maximum decimation (in which case the ratio is left at 1.0).
+    """
+    if obj.type != 'MESH':
+        return True
+
+    if depsgraph is None:
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+
+    if obj.modifiers.get(DECIMATE_NAME):
+        decimate = obj.modifiers.get(DECIMATE_NAME)
+    else:
+        decimate = obj.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
+    decimate.decimate_type = 'COLLAPSE'
+
+    def get_tri_count(ratio):
+        decimate.ratio = ratio
+        # Changing a modifier property only tags the depsgraph as dirty; it
+        # does not re-evaluate it. Without this explicit update(), evaluating
+        # obj through this depsgraph can keep returning the mesh from before
+        # this ratio (or even before the modifier existed) was set (#649) -
+        # background/headless runs never hit the redraw loop that would
+        # otherwise paper over this.
+        depsgraph.update()
+        obj_eval = obj.evaluated_get(depsgraph)
+        mesh = obj_eval.to_mesh()
+        count = sum(len(p.vertices) - 2 for p in mesh.polygons)
+        obj_eval.to_mesh_clear()
+        return count
+
+    # If original mesh is already within budget, no decimation needed
+    original_count = get_tri_count(1.0)
+    if original_count <= target_triangles:
+        return True
+
+    # Check if even maximum decimation can reach the target
+    if get_tri_count(0.001) > target_triangles:
+        get_tri_count(1.0)
+        return False
+
+    # Linear estimate: COLLAPSE decimation reduces tris roughly proportional to ratio.
+    estimated_ratio = target_triangles / original_count
+    actual_count = get_tri_count(estimated_ratio)
+
+    # Narrow binary search correction around the estimate.
+    # The search range is a small band rather than the full 0–1 space,
+    # so `iterations` steps give much finer precision than searching 0-1 directly.
+    if actual_count <= target_triangles:
+        lo, hi = estimated_ratio, 1.0
+        best_ratio = estimated_ratio
+    else:
+        lo, hi = 0.001, estimated_ratio
+        best_ratio = 0.001
+
+    for _ in range(iterations):
+        mid = (lo + hi) * 0.5
+        if get_tri_count(mid) <= target_triangles:
+            best_ratio = mid
+            lo = mid
+        else:
+            hi = mid
+
+    # Re-read at best_ratio (rather than a bare assignment) so the depsgraph
+    # ends up synced to the ratio we're actually leaving on the modifier: the
+    # loop's last get_tri_count() call may have been a rejected `mid` distinct
+    # from best_ratio.
+    get_tri_count(best_ratio)
+    return True
+
+
+def move_origin_to_parent(obj):
+    """Move obj's origin to match its parent's, baking the offset into the
+    mesh data so the object's world-space appearance is unchanged."""
+    if obj.type != 'MESH' or obj.parent is None:
+        return
+
+    parent = obj.parent
+    parent_world = parent.matrix_world.copy()
+    child_world = obj.matrix_world.copy()
+    offset = child_world.inverted() @ parent_world
+    obj.data.transform(offset.inverted())
+    obj.data.update()
+    obj.matrix_world = parent_world
 
 
 class COLLISION_OT_adjust_decimation(bpy.types.Operator):
@@ -28,60 +117,20 @@ class COLLISION_OT_adjust_decimation(bpy.types.Operator):
     )
 
     def execute(self, context):
+        # Cache depsgraph once for all objects to avoid O(N^2) re-evaluations
+        depsgraph = context.evaluated_depsgraph_get()
+
+        unreachable = []
         for obj in context.selected_objects:
             if obj.type != 'MESH':
                 continue
+            if not set_triangle_count_limit(obj, self.target_triangles, self.iterations, depsgraph):
+                unreachable.append(obj.name)
 
-            if obj.modifiers.get(DECIMATE_NAME):
-                decimate = obj.modifiers.get(DECIMATE_NAME)
-            else:
-                decimate = obj.modifiers.new(name=DECIMATE_NAME, type='DECIMATE')
-            decimate.decimate_type = 'COLLAPSE'
-
-            def get_tri_count(ratio):
-                decimate.ratio = ratio
-                depsgraph = context.evaluated_depsgraph_get()
-                obj_eval = obj.evaluated_get(depsgraph)
-                mesh = obj_eval.to_mesh()
-                count = sum(len(p.vertices) - 2 for p in mesh.polygons)
-                obj_eval.to_mesh_clear()
-                return count
-
-            # If original mesh is already within budget, no decimation needed
-            original_count = get_tri_count(1.0)
-            if original_count <= self.target_triangles:
-                decimate.ratio = 1.0
-                continue
-
-            # Check if even maximum decimation can reach the target
-            if get_tri_count(0.001) > self.target_triangles:
-                self.report({'WARNING'}, f"{obj.name}: cannot reach {self.target_triangles} tris even at maximum decimation")
-                decimate.ratio = 1.0
-                continue
-
-            # Linear estimate: COLLAPSE decimation reduces tris roughly proportional to ratio.
-            estimated_ratio = self.target_triangles / original_count
-            actual_count = get_tri_count(estimated_ratio)
-
-            # Narrow binary search correction around the estimate.
-            # The search range is a small band rather than the full 0–1 space,
-            # so self.iterations steps give much finer precision than before.
-            if actual_count <= self.target_triangles:
-                lo, hi = estimated_ratio, 1.0
-                best_ratio = estimated_ratio
-            else:
-                lo, hi = 0.001, estimated_ratio
-                best_ratio = 0.001
-
-            for _ in range(self.iterations):
-                mid = (lo + hi) * 0.5
-                if get_tri_count(mid) <= self.target_triangles:
-                    best_ratio = mid
-                    lo = mid
-                else:
-                    hi = mid
-
-            decimate.ratio = best_ratio
+        if unreachable:
+            self.report({'WARNING'},
+                        f"Cannot reach {self.target_triangles} tris even at maximum decimation: "
+                        f"{', '.join(unreachable)}")
 
         return {'FINISHED'}
 
@@ -98,18 +147,8 @@ class COLLISION_OT_MoveOriginToParentOperator(bpy.types.Operator):
         return context.selected_objects
 
     def execute(self, context):
-        selected_objects = context.selected_objects
-        for obj in selected_objects:
-            if obj.type != 'MESH' or obj.parent is None:
-                continue
-
-            parent = obj.parent
-            parent_world = parent.matrix_world.copy()
-            child_world = obj.matrix_world.copy()
-            offset = child_world.inverted() @ parent_world
-            obj.data.transform(offset.inverted())
-            obj.data.update()
-            obj.matrix_world = parent_world
+        for obj in context.selected_objects:
+            move_origin_to_parent(obj)
 
         self.report({'INFO'}, "Origin moved to parent for selected objects")
         return {'FINISHED'}
@@ -207,8 +246,55 @@ class COLLISION_OT_ReplaceWithCleanMesh(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def fix_inverse_matrix_is_safe(obj, tol=1e-4):
+    """Whether fix_inverse_matrix() can bake obj's parent-relative transform
+    without losing information.
+
+    obj.matrix_world already equals parent.matrix_world @ matrix_parent_inverse
+    @ matrix_basis, so the parent's *current* world matrix always cancels out
+    algebraically when fix_inverse_matrix() computes
+    parent.matrix_world.inverted() @ obj.matrix_world -- the parent's live scale
+    is not actually what determines safety. What matters is whether that
+    composite matrix (effectively matrix_parent_inverse @ matrix_basis, frozen
+    from whenever the parent relationship was last set) contains shear: a
+    non-uniform scale combined with a rotation, anywhere in the ancestor chain,
+    at the moment matrix_parent_inverse was captured. Blender's loc/rot/scale
+    decomposition cannot represent shear, so this is verified directly with a
+    decompose-and-reconstruct round trip rather than inspecting parent.scale.
+    """
+    parent = obj.parent
+    if parent is None:
+        return True
+    composite = parent.matrix_world.inverted() @ obj.matrix_world
+    loc, rot, scale = composite.decompose()
+    reconstructed = Matrix.LocRotScale(loc, rot, scale)
+
+    composite_3x3 = composite.to_3x3()
+    reconstructed_3x3 = reconstructed.to_3x3()
+    magnitude = max(abs(composite_3x3[r][c]) for r in range(3) for c in range(3))
+    if magnitude < 1e-8:
+        return True
+    max_diff = max(abs(reconstructed_3x3[r][c] - composite_3x3[r][c]) for r in range(3) for c in range(3))
+    return (max_diff / magnitude) <= tol
+
+
 def fix_inverse_matrix(obj, update_depsgraph=True):
-    mesh = obj.data
+    """Clear obj's matrix_parent_inverse (so the parent-child relationship
+    survives exporters like FBX/glTF that don't preserve it) while keeping
+    obj.matrix_world unchanged.
+
+    This only re-expresses the existing parent-relative transform on
+    obj.location/rotation_euler/scale - it must NOT bake anything into the
+    mesh or zero the transform. UBX_/USP_/UCP_ colliders (Unreal's box/
+    sphere/capsule collision convention, as opposed to arbitrary UCX_ convex
+    hulls) rely on their local vertex data staying a canonical, axis-aligned
+    primitive, with position and rotation carried entirely by the object's
+    transform. Baking the transform into vertex coordinates instead (the
+    previous implementation) desynchronizes the two: the primitive's local
+    shape stops being axis-aligned while the transform reads as identity, so
+    engines that read shape from vertices and placement from the transform
+    reconstruct the wrong box/sphere/capsule.
+    """
     # Make a copy of the object's original world matrix before we reset any of its transform matrices
     ob_matrix_orig = obj.matrix_world.copy()
     # Reset parent inverse matrix
@@ -216,30 +302,79 @@ def fix_inverse_matrix(obj, update_depsgraph=True):
     # Calculate the difference between the parent and child world transforms and
     # set the object's basis matrix to the value of this difference
     obj.matrix_basis = obj.parent.matrix_world.inverted() @ ob_matrix_orig
-    # Apply the object's basis matrix to the mesh vertices
-    transformed_vertices = [obj.matrix_basis @ v.co for v in mesh.vertices]
-    mesh.vertices.foreach_set("co", [coord for v in transformed_vertices for coord in v])
 
-    # Reset the object's basis matrix and local matrix
-    obj.matrix_basis.identity()
-    obj.matrix_local.identity()
-
-    mesh.update()
-
-    # Tag the object and its data for update
+    # Tag the object for update
     obj.update_tag()
-    mesh.update()
     if update_depsgraph:
         bpy.context.view_layer.update()
 
     return
 
 
+class COLLISION_OT_ReloadAddon(bpy.types.Operator):
+    """Reload all Simple Collider scripts"""
+    bl_idname = "collision.reload_addon"
+    bl_label = "Reload Addon"
+    bl_description = "Reload all Simple Collider scripts"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        import importlib
+        import sys
+
+        root_pkg = __package__.rsplit(".", 1)[0]
+
+        mod_names = sorted(
+            [name for name in sys.modules
+             if name == root_pkg or name.startswith(root_pkg + ".")],
+            key=lambda n: (-n.count("."), n),
+        )
+
+        def _do_reload():
+            root_mod = sys.modules.get(root_pkg)
+            if root_mod and hasattr(root_mod, "unregister"):
+                try:
+                    root_mod.unregister()
+                except Exception as exc:
+                    print(f"[Simple Collider] unregister error: {exc}")
+
+            # mod_names is only an approximate dependency order (deepest
+            # modules first, alphabetical among ties). Modules that import
+            # symbols from a sibling module which happens to sort later
+            # (e.g. preferences.py doing `from .prefs_properties import X`,
+            # where "preferences" < "prefs_properties" alphabetically) would
+            # rebind to that sibling's pre-reload state. A second full pass
+            # re-executes every module again, by which point every sibling
+            # has already been refreshed at least once, so stale bindings
+            # from pass 1 get corrected.
+            for _pass in range(2):
+                for name in mod_names:
+                    mod = sys.modules.get(name)
+                    if mod is not None:
+                        try:
+                            importlib.reload(mod)
+                        except Exception as exc:
+                            print(f"[Simple Collider] reload error for '{name}': {exc}")
+
+            root_mod = sys.modules.get(root_pkg)
+            if root_mod and hasattr(root_mod, "register"):
+                try:
+                    root_mod.register()
+                except Exception as exc:
+                    print(f"[Simple Collider] register error: {exc}")
+
+            print(f"[Simple Collider] Reloaded {len(mod_names)} modules from '{root_pkg}'")
+
+        bpy.app.timers.register(_do_reload, first_interval=0.0)
+        self.report({'INFO'}, f"Queued reload of {len(mod_names)} modules…")
+        return {'FINISHED'}
+
+
 class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
     """Fix the parent inverse matrix on selected colliders"""
     bl_idname = "object.fix_parent_inverse_transform"
     bl_label = "Fix Parent Inverse Matrix"
-    bl_description = "Reset the parent inverse matrix and bake the transform into mesh data"
+    bl_description = "Reset the parent inverse matrix, keeping the transform on the object (not baked into mesh data)"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -247,21 +382,25 @@ class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
         return context.selected_objects is not None
 
     def execute(self, context):
-        selected_objects = context.selected_objects
-        for obj in selected_objects:
+        fixed_count = 0
+        skipped_names = []
+        for obj in context.selected_objects:
             if obj.type != 'MESH' or not obj.parent:
                 continue
-            parent = obj.parent
-            if parent:  # only if there is a parent
-                scale_x, scale_y, scale_z = parent.scale
-                if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z, rel_tol=1e-5):
-                    from ..collider_operators.utility_operators import fix_inverse_matrix
-                    fix_inverse_matrix(obj)
-                    # Force update
+            if fix_inverse_matrix_is_safe(obj):
+                fix_inverse_matrix(obj)
+                fixed_count += 1
+            else:
+                print(f"Skipping {obj.name}: parent-relative transform contains shear that "
+                      f"can't be baked without distorting the mesh.")
+                skipped_names.append(obj.name)
 
-                else:
-                    print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
-                    self.report({'WARNING'}, f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
-
-        self.report({'INFO'}, "Fixed collider transform for selected objects")
+        if skipped_names:
+            self.report(
+                {'WARNING'},
+                f"Fixed {fixed_count} collider(s). Skipped {len(skipped_names)} whose parent-relative "
+                f"transform contains shear and can't be reset safely: {', '.join(skipped_names)}.",
+            )
+        else:
+            self.report({'INFO'}, f"Fixed parent inverse matrix for {fixed_count} collider(s).")
         return {'FINISHED'}

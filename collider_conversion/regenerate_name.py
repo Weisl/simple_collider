@@ -24,7 +24,7 @@ class OBJECT_OT_regenerate_name(Operator):
 
         count = 0
         for obj in context.selected_objects:
-            if obj.type in VALID_OBJECT_TYPES:
+            if obj.type in VALID_OBJECT_TYPES and obj.get('isCollider'):
                 count = count + 1
         return count > 0
 

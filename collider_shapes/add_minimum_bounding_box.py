@@ -60,6 +60,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         bm = bmesh.new()
         dg = bpy.context.evaluated_depsgraph_get()
         bm.from_object(obj, dg)
+        OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, dg)
 
         chull_out = bmesh.ops.convex_hull(bm, input=bm.verts, use_existing_faces=False)
         chull_geom = chull_out["geom"]
@@ -127,8 +128,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
         self.use_custom_rotation = True
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)
@@ -139,6 +139,10 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
 
         scene = context.scene
 
@@ -229,8 +233,7 @@ class OBJECT_OT_add_aligned_bounding_box(OBJECT_OT_add_bounding_object, Operator
 
             new_collider, rotation_matrix = self.obj_rotating_calipers(temp_obj)
 
-            if not self.prefs.debug:
-                root_collection.objects.unlink(temp_obj)
+            root_collection.objects.unlink(temp_obj)
 
             root_collection = context.scene.collection
             root_collection.objects.link(new_collider)

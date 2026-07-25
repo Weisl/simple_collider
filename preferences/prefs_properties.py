@@ -2,8 +2,9 @@ import bpy
 import os
 
 from .keymap import keymaps_items_dict
-from .preferences import update_panel_category, update_keymap
+from .preferences import update_panel_category, update_keymap, update_group_colors
 from .preferences import get_default_executable_path, setDefaultTemp
+from .preferences import get_default_coacd_executable_path
 from .preferences import collection_colors
 from ..properties.constants import PRESETFOLDER, DEFAULT_PRESET
 from .. import __package__ as base_package
@@ -40,10 +41,12 @@ class CollisionAddonPrefsProperties():
     prefs_tabs: bpy.props.EnumProperty(
         name='Collider Settings',
         items=(('SETTINGS', "General", "General addon settings"),
+               ('POSTPROCESS', "Post Processing", "Settings for automatic post-processing of newly created colliders."),
                ('NAMING', "Presets", "Presets settings: Create, change and modify presets"),
                ('KEYMAP', "Keymap", "Change the hotkeys for tools associated with this addon."),
                ('UI', "Ui", "Settings related to the Ui and display of the addon."),
-               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation."),
+               ('VHACD', "Auto Convex", "Settings related to Auto Convex generation (V-HACD and CoACD)."),
+               ('VALIDATION', "Validation", "Settings for the collider validation checks."),
                ('SUPPORT', "Support", "Get support and help with the addon and help improve it"),
                ),
         default='SETTINGS',
@@ -61,6 +64,20 @@ class CollisionAddonPrefsProperties():
     fix_parent_inverse_mtrx: bpy.props.BoolProperty(name="Fix Parent Inverse Matrix",
                                           description="Fix the parent inverse matrix of the collider if the collider is parented to another object. This will ensure that the collider is correctly positioned relative to its parent.",
                                           default=True)
+
+    # Auto-apply Collider Cleanup operations right after collider creation
+    auto_apply_tris_limit: bpy.props.BoolProperty(name="Auto Apply Tris Count",
+                                                   description="Automatically limit newly created colliders to the target triangle count below",
+                                                   default=False)
+
+    auto_apply_max_triangle_count: bpy.props.IntProperty(name="Target Triangles",
+                                                          description="Target triangle count used when auto-applying the triangle count limit",
+                                                          default=800,
+                                                          min=1)
+
+    auto_apply_origin_to_parent: bpy.props.BoolProperty(name="Auto Apply Origin to Parent",
+                                                         description="Automatically move newly created colliders' origin to match their parent's, for engines that require matching origins",
+                                                         default=False)
 
     # GENERAL
     # Parent to base
@@ -234,6 +251,8 @@ class CollisionAddonPrefsProperties():
                                            description='Naming used to define convex colliders')
     mesh_shape: bpy.props.StringProperty(name="Mesh Collider", default="",
                                          description='Naming used to define triangle mesh colliders')
+    voxel_shape: bpy.props.StringProperty(name="Voxel Collider", default="UVX",
+                                          description='Naming used to define voxel grid colliders')
 
     # Rigid Body
     rigid_body_naming_position: bpy.props.EnumProperty(
@@ -312,73 +331,78 @@ class CollisionAddonPrefsProperties():
     # The object color for the bounding object
     user_group_01_color: bpy.props.FloatVectorProperty(name="User Group 1 Color",
                                                        description="Object color and alpha for User Collider Group 01",
-                                                       default=(0.36, 0.5, 1), min=0.0, max=1.0,
-                                                       subtype='COLOR', size=3)
+                                                       default=(0.4235, 0.8902, 0.4745), min=0.0, max=1.0,
+                                                       subtype='COLOR', size=3, update=update_group_colors)
 
     # The object color for the bounding object
     user_group_02_color: bpy.props.FloatVectorProperty(name="User Group 2 Color",
                                                        description="Object color and alpha for User Collider Group 02",
-                                                       default=(0.5, 1, 0.36), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=3)
+                                                       default=(0.4745, 0.4235, 0.8902), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3, update=update_group_colors)
 
     # The object color for the bounding object
     user_group_03_color: bpy.props.FloatVectorProperty(name="User Group 3 Color",
                                                        description="Object color and alpha for User Collider Group 03.",
-                                                       default=(1, 0.36, 0.36), min=0.0, max=1.0, subtype='COLOR',
-                                                       size=3)
+                                                       default=(0.8902, 0.4745, 0.4235), min=0.0, max=1.0, subtype='COLOR',
+                                                       size=3, update=update_group_colors)
 
     # The object color for the bounding object
     user_groups_alpha: bpy.props.FloatProperty(name="Alpha",
                                                description="Object alpha for User Collider Groups.",
-                                               default=0.5, min=0.0, max=1.0)
+                                               default=0.5, min=0.0, max=1.0, update=update_group_colors)
 
     # Modal Box
     use_modal_box: bpy.props.BoolProperty(name="Use Backdrop", default=True)
 
     modal_box_color: bpy.props.FloatVectorProperty(name="Backdrop Color",
                                                    description="Object color and alpha for User Collider Group 03.",
-                                                   default=(0.2, 0.2, 0.2, 0.5), min=0.0, max=1.0, subtype='COLOR',
+                                                   default=(0.141, 0.149, 0.176, 0.85), min=0.0, max=1.0, subtype='COLOR',
                                                    size=4)
 
     # Modal Fonts
     modal_color_default: bpy.props.FloatVectorProperty(name="Default",
                                                        description="Font color in the 3D viewport for settings that are reset every time the collision operator is called",
-                                                       default=(1.0, 1.0, 1.0, 1), min=0.0, max=1.0,
+                                                       default=(0.910, 0.914, 0.933, 1.0), min=0.0, max=1.0,
                                                        subtype='COLOR', size=4)
 
     modal_color_title: bpy.props.FloatVectorProperty(name="Title",
                                                      description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                     default=(1.0, 1.0, 0.5, 1), min=0.0, max=1.0,
+                                                     default=(0.133, 0.773, 0.369, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
 
     modal_color_highlight: bpy.props.FloatVectorProperty(name="Active Highlight",
                                                          description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                         default=(0.0, 1.0, 1.0, 1.0), min=0.0, max=1.0,
+                                                         default=(0.133, 0.773, 0.369, 1.0), min=0.0, max=1.0,
                                                          subtype='COLOR', size=4)
 
     modal_color_error: bpy.props.FloatVectorProperty(name="Invalid Input",
                                                      description="Font color in the 3D viewport the title when an error occurs",
-                                                     default=(1.0, 0.0, 0.0, 1.0), min=0.0, max=1.0,
+                                                     default=(0.937, 0.267, 0.267, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
+
+    modal_color_navigation: bpy.props.FloatVectorProperty(name="Ignore Input / Navigation",
+                                                          description="Font color in the 3D viewport for the whole line while input is being ignored (ALT) or while navigating the viewport",
+                                                          default=(0.604, 0.616, 0.651, 0.7), min=0.0, max=1.0,
+                                                          subtype='COLOR', size=4)
 
     modal_color_modal: bpy.props.FloatVectorProperty(name="Modal",
                                                      description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                     default=(1.0, 1.0, 0.5, 1.0), min=0.0, max=1.0,
+                                                     default=(0.910, 0.914, 0.933, 1.0), min=0.0, max=1.0,
                                                      subtype='COLOR', size=4)
 
     modal_color_bool: bpy.props.FloatVectorProperty(name="Bool",
                                                     description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(1.0, 1.0, 0.75, 1.0), min=0.0, max=1.0,
+                                                    default=(0.910, 0.914, 0.933, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_color_enum: bpy.props.FloatVectorProperty(name="Enum",
                                                     description="Font color in the 3D viewport for settings that remain after changing even when calling collision operator again",
-                                                    default=(0.36, 0.75, 0.92, 1.0), min=0.0, max=1.0,
+                                                    default=(0.843, 0.851, 0.878, 1.0), min=0.0, max=1.0,
                                                     subtype='COLOR', size=4)
 
     modal_font_size: bpy.props.IntProperty(name='Font Size',
                                            description="Changes the font size in the 3D viewport when calling the modal collider_shapes to create different collision shapes",
-                                           default=56)
+                                           default=36)
 
     ###################################################################
     # VHACD
@@ -437,6 +461,79 @@ class CollisionAddonPrefsProperties():
                                                     default=False,
                                                     description="If false, splits hulls in the middle. If true, tries to find optimal split plane location. False by default")
 
+    ###################################################################
+    # COACD (Auto Convex BETA)
+
+    coacd_default_executable_path: bpy.props.StringProperty(name='Default CoACD Build',
+                                                             description='Path to the CoACD executable distributed with this addon. (read-only)',
+                                                             default=get_default_coacd_executable_path(),
+                                                             subtype='FILE_PATH',
+                                                             )
+
+    coacd_executable_path: bpy.props.StringProperty(name='Custom CoACD Build',
+                                                     description='Specify a path to another CoACD executable if you want to use a custom build',
+                                                     default='',
+                                                     subtype='FILE_PATH'
+                                                     )
+
+    # CoACD parameters
+
+    # -pm
+    coacd_preprocessMode: bpy.props.EnumProperty(name='Preprocess Mode',
+                                                 description='Manifold preprocessing mode',
+                                                 items=(('auto', 'Auto',
+                                                         'Automatically check the input mesh manifoldness and only preprocess if needed'),
+                                                        ('on', 'On',
+                                                         'Force turn on the manifold pre-processing'),
+                                                        ('off', 'Off',
+                                                         'Force turn off the manifold pre-processing. The input mesh must be 2-manifold solid')),
+                                                 default='auto')
+
+    # -pr
+    coacd_prepResolution: bpy.props.IntProperty(name='Preprocess Resolution',
+                                                description='Resolution used for the manifold preprocessing step (20~100)',
+                                                default=50,
+                                                min=20,
+                                                max=100)
+
+    # -mi
+    coacd_mctsIterations: bpy.props.IntProperty(name='MCTS Iterations',
+                                                description='Number of search iterations in the Monte Carlo Tree Search (60~2000)',
+                                                default=150,
+                                                min=60,
+                                                max=2000)
+
+    # -md
+    coacd_mctsDepth: bpy.props.IntProperty(name='MCTS Max Depth',
+                                           description='Maximum search depth in the Monte Carlo Tree Search (2~7)',
+                                           default=3,
+                                           min=2,
+                                           max=7)
+
+    # -mn
+    coacd_mctsNodes: bpy.props.IntProperty(name='MCTS Max Nodes',
+                                           description='Maximum number of child nodes in the Monte Carlo Tree Search (10~40)',
+                                           default=20,
+                                           min=10,
+                                           max=40)
+
+    # -r
+    coacd_resolution: bpy.props.IntProperty(name='Hausdorff Sampling Resolution',
+                                            description='Sampling resolution used for the Hausdorff distance calculation (1000~10000)',
+                                            default=2000,
+                                            min=1000,
+                                            max=10000)
+
+    # -nm
+    coacd_noMerge: bpy.props.BoolProperty(name='Disable Merge',
+                                          description='Disable the merge postprocessing step. Merging is recommended in most cases as it reduces the number of convex hulls',
+                                          default=False)
+
+    # --pca
+    coacd_pca: bpy.props.BoolProperty(name='PCA Preprocessing',
+                                      description='Enable PCA (Principal Component Analysis) pre-processing, which can improve results for elongated shapes',
+                                      default=False)
+
     wireframe_mode: bpy.props.EnumProperty(name="Wireframe Mode",
                                            items=(('OFF', "Off",
                                                    "Colliders show no wireframes"),
@@ -451,11 +548,133 @@ class CollisionAddonPrefsProperties():
                                     description="Hide collider after creation.",
                                     default=False)
 
-    # DEBUG
-    debug: bpy.props.BoolProperty(name="Debug Mode",
-                                  description="Debug mode only used for debuging during development",
-                                  default=False)
-    general_props = [
+    hide_render_on_creation: bpy.props.BoolProperty(name="Hide From Render",
+                                                    description="Hide newly created colliders from rendering. "
+                                                                "Disable to keep colliders render-visible, e.g. for "
+                                                                "export pipelines that rely on the render flag",
+                                                    default=True)
+
+    ###################################################################
+    # VALIDATION
+
+    validate_check_missing_collider: bpy.props.BoolProperty(name="Missing Collider",
+                                                             description="Flag render meshes that have no collider assigned",
+                                                             default=True)
+
+    validate_check_triangle_count: bpy.props.BoolProperty(name="Triangle Count",
+                                                           description="Flag colliders whose triangle count exceeds the limit below",
+                                                           default=True)
+
+    validate_check_min_dimension: bpy.props.BoolProperty(name="Collider Too Small",
+                                                         description="Flag colliders whose bounding box is smaller than the minimum dimension below",
+                                                         default=True)
+
+    validate_check_bbox_mismatch: bpy.props.BoolProperty(name="Bounding Box Mismatch",
+                                                          description="Flag a render mesh whose colliders, combined, don't cover its bounding box. "
+                                                                      "Colliders are considered together, not individually, since several often "
+                                                                      "combine to represent one mesh (e.g. a torso box plus limb capsules)",
+                                                          default=True)
+
+    validate_check_too_many_colliders: bpy.props.BoolProperty(name="Too Many Colliders",
+                                                               description="Flag a render mesh with more collider shapes assigned than the limit below",
+                                                               default=True)
+
+    validate_check_naming: bpy.props.BoolProperty(name="Naming Convention",
+                                                  description="Flag colliders whose name doesn't match the configured naming convention",
+                                                  default=True)
+
+    validate_check_non_manifold: bpy.props.BoolProperty(name="Non-Manifold Geometry",
+                                                         description="Flag colliders with non-manifold (not watertight) edges",
+                                                         default=True)
+
+    validate_check_physics_material: bpy.props.BoolProperty(name="Missing Physics Material",
+                                                             description="Flag colliders with no physics material assigned",
+                                                             default=True)
+
+    validate_check_parent_hierarchy: bpy.props.BoolProperty(name="Parent Hierarchy",
+                                                             description="Flag colliders that aren't parented to a render mesh",
+                                                             default=True)
+
+    validate_check_parent_inverse_matrix: bpy.props.BoolProperty(name="Parent Inverse Matrix",
+                                                                  description="Flag colliders whose parent inverse matrix hasn't been reset. "
+                                                                              "Exporters like FBX/glTF don't preserve it, so the collider can end "
+                                                                              "up at the wrong location/rotation on export. Run Fix Parent Inverse "
+                                                                              "Matrix to clear it",
+                                                                  default=True)
+
+    validate_check_flipped_normals: bpy.props.BoolProperty(name="Flipped Normals",
+                                                            description="Flag colliders whose face winding is inverted (inside-out mesh)",
+                                                            default=True)
+
+    validate_check_convex_shape_mismatch: bpy.props.BoolProperty(name="Convex Shape Mismatch",
+                                                                  description="Flag colliders marked as convex whose geometry is not actually convex. "
+                                                                              "Heuristic (volume-based) - off by default since complex meshes can "
+                                                                              "produce false positives",
+                                                                  default=False)
+
+    validate_check_box_shape_mismatch: bpy.props.BoolProperty(name="Box Shape Mismatch",
+                                                               description="Flag colliders marked as a box whose geometry is not actually box-shaped. "
+                                                                           "Heuristic (volume-based) - off by default since complex meshes can "
+                                                                           "produce false positives",
+                                                               default=False)
+
+    validate_check_mesh_could_use_primitive: bpy.props.BoolProperty(name="Mesh Could Use a Primitive",
+                                                                     description="Flag mesh colliders whose geometry is already convex or box-shaped, "
+                                                                                 "suggesting a simpler primitive collider. Heuristic (volume-based) - "
+                                                                                 "off by default since complex meshes can produce false positives",
+                                                                     default=False)
+
+    validate_check_collision_shape_mismatch: bpy.props.BoolProperty(name="Collision Shape Mismatch",
+                                                                     description="Flag colliders whose assigned shape (box/sphere/convex hull) doesn't "
+                                                                                 "suit the shape of their render mesh, e.g. a box collider on a ball-like "
+                                                                                 "mesh. Heuristic (volume-based) - off by default since complex meshes "
+                                                                                 "can produce false positives",
+                                                                     default=False)
+
+    validation_max_triangle_count: bpy.props.IntProperty(name="Max Triangle Count",
+                                                         description="Maximum number of triangles allowed on a collider before it is flagged",
+                                                         default=255,
+                                                         min=1)
+
+    validation_min_dimension: bpy.props.FloatProperty(name="Min Dimension",
+                                                      description="Minimum bounding box dimension a collider can have before it is flagged as too small",
+                                                      default=0.01,
+                                                      min=0.0,
+                                                      subtype='DISTANCE')
+
+    validation_bbox_tolerance: bpy.props.FloatProperty(name="Bounding Box Tolerance",
+                                                       description="Allowed relative difference between a render mesh's colliders (combined) and its own bounding box, as a fraction of the render mesh's bounding box diagonal",
+                                                       default=0.25,
+                                                       min=0.0,
+                                                       max=1.0,
+                                                       subtype='FACTOR')
+
+    validation_max_collider_count: bpy.props.IntProperty(name="Max Collider Count",
+                                                         description="Maximum number of collider shapes a single render mesh can have before it is flagged",
+                                                         default=8,
+                                                         min=1)
+
+    validation_shape_tolerance: bpy.props.FloatProperty(name="Shape Tolerance",
+                                                        description="Allowed relative volume difference for the convex/box shape checks and the "
+                                                                    "mesh-could-use-a-primitive suggestion, as a fraction of the larger volume being compared",
+                                                        default=0.02,
+                                                        min=0.0,
+                                                        max=1.0,
+                                                        subtype='FACTOR')
+
+    validation_sphere_tolerance: bpy.props.FloatProperty(name="Sphere Fit Tolerance",
+                                                        description="Allowed relative volume difference between a render mesh and its exact minimum "
+                                                                    "enclosing sphere, used only by the collision-shape-mismatch check's sphere test. "
+                                                                    "Kept separate from, and looser than, Shape Tolerance because a low-poly but "
+                                                                    "intentionally round mesh sits measurably under its ideal enclosing sphere's "
+                                                                    "volume from facet flattening alone, unlike the exact hull/OBB volume "
+                                                                    "comparisons the other checks use",
+                                                        default=0.05,
+                                                        min=0.0,
+                                                        max=1.0,
+                                                        subtype='FACTOR')
+
+    postprocess_props = [
         "fix_parent_inverse_mtrx",
         "use_parent_to",
         "keep_modifier_defaults",
@@ -474,6 +693,7 @@ class CollisionAddonPrefsProperties():
         "capsule_shape",
         "convex_shape",
         "mesh_shape",
+        "voxel_shape",
     ]
 
     props_parent = [
@@ -533,6 +753,7 @@ class CollisionAddonPrefsProperties():
         "modal_color_bool",
         "modal_color_default",
         "modal_color_enum",
+        "modal_color_navigation",
     ]
 
     vhacd_props_config = [
@@ -543,7 +764,46 @@ class CollisionAddonPrefsProperties():
         "vhacd_optimalSplitPlane",
     ]
 
+    coacd_props_config = [
+        "coacd_preprocessMode",
+        "coacd_prepResolution",
+        "coacd_mctsIterations",
+        "coacd_mctsDepth",
+        "coacd_mctsNodes",
+        "coacd_resolution",
+        "coacd_noMerge",
+        "coacd_pca",
+    ]
+
     display_config = [
         "my_hide",
         "wireframe_mode",
+        "hide_render_on_creation",
+    ]
+
+    props_validation_checks = [
+        "validate_check_missing_collider",
+        "validate_check_triangle_count",
+        "validate_check_min_dimension",
+        "validate_check_bbox_mismatch",
+        "validate_check_too_many_colliders",
+        "validate_check_naming",
+        "validate_check_non_manifold",
+        "validate_check_flipped_normals",
+        "validate_check_physics_material",
+        "validate_check_parent_hierarchy",
+        "validate_check_parent_inverse_matrix",
+        "validate_check_convex_shape_mismatch",
+        "validate_check_box_shape_mismatch",
+        "validate_check_mesh_could_use_primitive",
+        "validate_check_collision_shape_mismatch",
+    ]
+
+    props_validation_thresholds = [
+        "validation_max_triangle_count",
+        "validation_min_dimension",
+        "validation_bbox_tolerance",
+        "validation_max_collider_count",
+        "validation_shape_tolerance",
+        "validation_sphere_tolerance",
     ]

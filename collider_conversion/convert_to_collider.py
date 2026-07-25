@@ -70,7 +70,9 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         self.use_modifier_stack = True
 
     def invoke(self, context, event):
-        super().invoke(context, event)
+        status = super().invoke(context, event)
+        if status != {'RUNNING_MODAL'}:
+            return status
 
         self.use_creation_mode = True
         self.creation_mode = ['INDIVIDUAL', 'SELECTION']
@@ -84,9 +86,8 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
-            if self.prefs.debug == False:
-                self.remove_objects(self.base_objs)
-                self.remove_empty_collection('base_obj')
+            self.remove_objects(self.base_objs)
+            self.remove_empty_collection(context, 'base_obj')
 
         status = super().modal(context, event)
         if status == {'FINISHED'}:
@@ -111,7 +112,7 @@ class OBJECT_OT_convert_to_collider(OBJECT_OT_add_bounding_object, Operator):
         # user collections of the objs
         user_collections = []
         # tmp collection for base objs
-        base_collections = [self.create_collection('base_obj')]
+        base_collections = [self.create_collection(context, 'base_obj')]
         self.base_objs = []
 
         # get list of objects to be converted

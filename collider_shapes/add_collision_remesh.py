@@ -22,8 +22,7 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
         self.initial_shape = "mesh_shape"
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
@@ -41,6 +40,10 @@ class OBJECT_OT_add_remesh_collision(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
         scene = context.scene
 
         # change bounding object settings
