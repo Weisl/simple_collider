@@ -101,6 +101,42 @@ def draw_auto_convex(layout, context):
             op.prefs_tabs = 'VHACD'
 
 
+def draw_auto_convex_coacd(layout, context):
+    """
+    Draw the Auto Convex (BETA) (CoACD) options in the layout based on the current platform and preferences.
+
+    Args:
+        layout (Layout): The layout to draw the options on.
+        context (Context): The current context.
+    """
+
+    prefs = context.preferences.addons[base_package].preferences
+    addon_name = get_addon_name()
+
+    if not (platform.system() in ['Windows', 'Linux']
+            or (platform.system() == 'Darwin' and platform.machine() == 'arm64')):
+        op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
+        op.addon_name = addon_name
+        op.prefs_tabs = 'VHACD'
+
+        text = "Auto Convex (BETA) is only supported for Windows, Linux, and macOS ARM64 at this moment."
+        label_multiline(
+            context=context,
+            text=text,
+            parent=layout
+        )
+    else:
+        if prefs.coacd_executable_path or prefs.coacd_default_executable_path:
+
+            layout.operator("button.auto_convex_coacd", text="Auto Convex (BETA)", icon='WINDOW')
+            op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
+            op.addon_name = addon_name
+            op.prefs_tabs = 'VHACD'
+        else:
+            op = layout.operator("simple_collider.open_preferences", text="Setup CoACD", icon='ERROR')
+            op.addon_name = addon_name
+            op.prefs_tabs = 'VHACD'
+
 
 def draw_auto_convex_settings(colSettings, layout):
     """
@@ -118,6 +154,25 @@ def draw_auto_convex_settings(colSettings, layout):
     row.prop(colSettings, 'maxHullVertCount')
     row = col.row(align=True)
     row.prop(colSettings, 'voxelResolution')
+
+
+def draw_auto_convex_coacd_settings(colSettings, layout):
+    """
+    Draw the settings for Auto Convex (BETA) (CoACD) in the layout.
+
+    Args:
+        colSettings (UILayout): The column layout to draw the settings on.
+        layout (Layout): The parent layout.
+    """
+    col = layout.column(align=True)
+    row = col.row(align=True)
+    row.prop(colSettings, 'coacd_threshold')
+    row.prop(colSettings, 'coacd_maxConvexHulls')
+    row = col.row(align=True)
+    row.prop(colSettings, 'coacd_decimate')
+    sub_row = row.row(align=True)
+    sub_row.enabled = colSettings.coacd_decimate
+    sub_row.prop(colSettings, 'coacd_maxHullVertCount')
 
 
 def label_multiline(context, text, parent):
@@ -246,6 +301,9 @@ def draw_creation_menu(context, layout, settings=False):
     row = col.row(align=True)
     draw_auto_convex(row, context)
 
+    row = col.row(align=True)
+    draw_auto_convex_coacd(row, context)
+
     # layout.separator()
     col = layout.column(align=True)
     row = col.row(align=True)
@@ -264,6 +322,7 @@ def draw_creation_menu(context, layout, settings=False):
               {'identifier': 'sphere_shape', 'text': '', 'icon': 'MESH_UVSPHERE'},
               {'identifier': 'capsule_shape', 'text': '', 'icon': 'MESH_CAPSULE'},
               {'identifier': 'convex_shape', 'text': '', 'icon': 'MESH_ICOSPHERE'},
+              {'identifier': 'voxel_shape', 'text': '', 'icon': 'MESH_GRID'},
               {'identifier': 'mesh_shape', 'text': '', 'icon': 'MESH_MONKEY'},
               ]
 
@@ -307,6 +366,11 @@ def draw_creation_menu(context, layout, settings=False):
     row.label(text='Operators')
     box = layout.box()
     box.menu("OBJECT_MT_adjust_decimation_menu", text="Cleanup Collider", icon='COLLAPSEMENU')
+    if settings:
+        # Only in the N-panel: this menu is also embedded (via
+        # VIEW3D_MT_collision_creation) in the pie menu, which should stay
+        # focused on creation/cleanup and not grow a diagnostics entry.
+        box.operator("collision.validate_colliders", icon='CHECKMARK')
 
     row = layout.row(align=True)
     row.label(text='Display as')
@@ -468,6 +532,10 @@ class VIEW3D_PT_collision_panel(VIEW3D_PT_collision):
         # Open Export Popup
         op = row.operator("wm.call_menu_pie", text="", icon="WINDOW")
         op.name = "COLLISION_MT_pie_menu"
+
+        # Reload Addon (only shown with Developer Extras enabled)
+        if context.preferences.view.show_developer_ui:
+            row.operator("collision.reload_addon", text="", icon='FILE_REFRESH')
 
 
 
@@ -708,15 +776,45 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class BUTTON_OT_auto_convex_coacd(bpy.types.Operator):
+    """Create convex hull colliders using CoACD (BETA)"""
+    bl_idname = "button.auto_convex_coacd"
+    bl_label = "Auto Convex (BETA)"
+    bl_description = 'Create convex hull colliders using CoACD, the successor to V-HACD (BETA)'
+
+    @classmethod
+    def poll(cls, context):
+        count = 0
+        for obj in context.selected_objects:
+            if obj.type in VALID_OBJECT_TYPES:
+                count = count + 1
+        return count > 0
+
+    def execute(self, context):
+        bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex_coacd")
+        return {'FINISHED'}
+
+
 class OBJECT_MT_adjust_decimation_menu(Menu):
     bl_label = "Collider Cleanup"
     bl_idname = "OBJECT_MT_adjust_decimation_menu"
     bl_description = "Clean up collider geometry (remove doubles, optimize, etc.)"
 
     def draw(self, context):
+        prefs = context.preferences.addons[base_package].preferences
         layout = self.layout
+
         layout.operator('object.adjust_decimation')
+        layout.prop(prefs, 'auto_apply_tris_limit', text="Auto Apply on Creation")
+        sub = layout.column()
+        sub.enabled = prefs.auto_apply_tris_limit
+        sub.prop(prefs, 'auto_apply_max_triangle_count', text="Target Triangles")
+
+        layout.separator()
         layout.operator('object.origin_to_parent')
+        layout.prop(prefs, 'auto_apply_origin_to_parent', text="Auto Apply on Creation")
+
+        layout.separator()
         layout.operator('object.fix_parent_inverse_transform')
         # Use a warning icon for Blender 4.3 and above, else use error icon
         icon = 'WARNING_LARGE' if bpy.app.version >= (4, 3, 0) else 'ERROR'

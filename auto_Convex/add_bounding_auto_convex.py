@@ -50,8 +50,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self.shape = 'convex_shape'
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)
@@ -61,6 +60,10 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
 
         if event.type == 'P' and event.value == 'RELEASE':
             self.my_use_modifier_stack = not self.my_use_modifier_stack
@@ -137,7 +140,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     def export_mesh_for_vhacd(self, context, parent, mesh, data_path):
         """Export the mesh to OBJ format for V-HACD processing."""
         joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
-        bpy.context.scene.collection.objects.link(joined_obj)
+        context.scene.collection.objects.link(joined_obj)
 
         filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
         obj_filename = os.path.join(data_path, f'{filename}.obj')
@@ -150,11 +153,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                               export_materials=False, export_uv=False, export_normals=False,
                               forward_axis='Y', up_axis='Z')
 
-        if self.prefs.debug:
-            joined_obj.color = (1.0, 0.1, 0.1, 1.0)
-            joined_obj.select_set(False)
-        else:
-            bpy.data.objects.remove(joined_obj)
+        bpy.data.objects.remove(joined_obj)
 
         return obj_filename
 

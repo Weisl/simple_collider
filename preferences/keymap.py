@@ -9,11 +9,11 @@ keymaps_items_dict = {"Collider Pie Menu": {"name": 'collision_pie', "idname": '
                       "Visibility Menu": {"name": 'collision_visibility', "idname": 'wm.call_panel',
                                           "operator": 'VIEW3D_PT_collision_visibility_panel', "type": 'P',
                                           "value": 'PRESS', "ctrl": False, "shift": True, "alt": False,
-                                          "active": True},
+                                          "active": False},
                       "Material Menu": {"name": 'collision_material', "idname": 'wm.call_panel',
                                         "operator": 'VIEW3D_PT_collision_material_panel', "type": 'P',
                                         "value": 'PRESS', "ctrl": True, "shift": True, "alt": False,
-                                        "active": True},
+                                        "active": False},
                       }
 
 

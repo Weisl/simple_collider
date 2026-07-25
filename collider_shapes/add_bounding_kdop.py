@@ -111,8 +111,7 @@ class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
         self.initial_shape = 'convex_shape'
 
     def invoke(self, context, event):
-        super().invoke(context, event)
-        return {'RUNNING_MODAL'}
+        return super().invoke(context, event)
 
     def modal(self, context, event):
         status = super().modal(context, event)
@@ -122,6 +121,10 @@ class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
             return {'CANCELLED'}
         if status == {'PASS_THROUGH'}:
             return {'PASS_THROUGH'}
+        if self.numeric_input_active:
+            # direct numeric text entry (issue #640) is in progress; don't
+            # let this shape's own hotkeys fire until it's confirmed/cancelled
+            return status
 
         # change bounding object settings
         if event.type == 'P' and event.value == 'RELEASE':
@@ -185,9 +188,6 @@ class OBJECT_OT_add_bounding_kdop(OBJECT_OT_add_bounding_object, Operator):
             # get data from dictionary
             parent = convex_collision_data['parent']
             verts_loc = convex_collision_data['verts_loc']
-
-            if self.prefs.debug:
-                self.create_debug_object_from_verts(context, verts_loc)
 
             bm = bmesh.new()
             for v in verts_loc:

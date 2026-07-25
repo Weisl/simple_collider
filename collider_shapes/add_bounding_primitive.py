@@ -2,7 +2,6 @@ import blf
 import bmesh
 import bpy
 import gpu
-import math
 import mathutils
 import numpy
 import time
@@ -17,6 +16,20 @@ from ..properties.constants import DECIMATE_NAME, VALID_OBJECT_TYPES
 from ..pyshics_materials.material_functions import assign_physics_material, create_default_material, \
     set_active_physics_material, set_material
 
+# How long the viewport-navigation HUD dimming stays on after the view was
+# last seen changing (see draw_viewport_overlay). Short enough to feel
+# responsive once navigation actually stops, long enough to bridge the gap
+# between individual redraw callbacks.
+NAVIGATION_HOLD_SECONDS = 0.2
+
+# How long a heavy modifier re-evaluation (decimate ratio / remesh voxel
+# size) waits for the dragged value to stop changing before it actually
+# runs. Without this, every MOUSEMOVE delta while dragging kicks off a new
+# evaluation; for slow operations (e.g. voxel remesh on a dense mesh) each
+# evaluation starts before the previous one finishes and the viewport falls
+# behind the input, stuttering/freezing (#641).
+MODIFIER_DEBOUNCE_SECONDS = 0.15
+
 
 def alignObjects(new, old):
     """Align two objects"""
@@ -25,6 +38,64 @@ def alignObjects(new, old):
 
 def create_name_number(name, nr, digits=3):
     return f"{name}_{nr:0{digits}}"
+
+
+def matches_local_collider_collection(collection, base_name):
+    """True if `collection` is a local collection matching `base_name`,
+    either exactly or via this addon's own "_NN" disambiguation suffix
+    (e.g. "Colliders_01").
+
+    A local collection named `base_name` may already exist elsewhere in
+    the file - e.g. another scene's own collider collection - since local
+    collection names are unique file-wide, not per scene. A same-named new
+    collection then gets our own "_NN" suffix on creation (see
+    _next_available_local_name), so later lookups must recognize that
+    suffixed form as ours too, or they'd fail to find it and create yet
+    another new collection on every call.
+    """
+    if collection.library is not None:
+        return False
+    if collection.name == base_name:
+        return True
+    suffix_prefix = base_name + '_'
+    return collection.name.startswith(suffix_prefix) and collection.name[len(suffix_prefix):].isdigit()
+
+
+def _next_available_local_name(base_name):
+    """Return `base_name`, or `base_name` with our own "_NN" suffix
+    (01, 02, ...) if a local collection already owns `base_name`.
+
+    Local collection names are unique file-wide, so a second scene's own
+    collider collection needs a distinct name. Blender's own auto-rename
+    would use ".001"; this addon uses "_NN" instead, matched by
+    matches_local_collider_collection(). Only local names are checked -
+    a same-named library-linked collection does not force a rename, since
+    it is never treated as ours (see matches_local_collider_collection).
+    """
+    local_names = {c.name for c in bpy.data.collections if c.library is None}
+    if base_name not in local_names:
+        return base_name
+    i = 1
+    while create_name_number(base_name, i, digits=2) in local_names:
+        i += 1
+    return create_name_number(base_name, i, digits=2)
+
+
+def _local_child_collection(parent_collection, name):
+    """Return the local (non-library-linked) direct child of
+    `parent_collection` matching `name` (exactly or via our "_NN"
+    suffix), or None.
+
+    Matching only among direct children - rather than a global
+    `bpy.data.collections` lookup - keeps collider collections scoped to
+    the scene they belong to: each scene gets its own collection, so
+    colliders from one scene are never bled into another via a shared
+    collection.
+    """
+    for child in parent_collection.children:
+        if matches_local_collider_collection(child, name):
+            return child
+    return None
 
 
 def set_origin_to_center_of_mass(obj, depsgraph=None):
@@ -48,30 +119,33 @@ def set_origin_to_center_of_mass(obj, depsgraph=None):
     obj_eval = obj.evaluated_get(depsgraph)
     mesh = obj_eval.data
 
-    # Calculate center of mass
-    com = mathutils.Vector((0.0, 0.0, 0.0))
-    total_mass = 0.0
-
-    for vertex in mesh.vertices:
-        com += obj.matrix_world @ vertex.co  # Convert local coordinates to world
-        total_mass += 1
-
-    if total_mass > 0:
-        com /= total_mass  # Average position of all vertices
-    else:
+    # Calculate center of mass using numpy for better performance
+    if len(mesh.vertices) == 0:
         print(f"Object '{obj.name}' has no vertices. Cannot calculate center of mass.")
         return
+    
+    # Use numpy for faster vertex operations. obj.matrix_world is a 4x4
+    # mathutils.Matrix; numpy's `@` can't multiply it directly against an
+    # (N, 3) array (shape mismatch), so the rotation/scale submatrix and
+    # translation are applied explicitly instead.
+    verts_local = numpy.array([v.co for v in mesh.vertices])
+    mat_world = numpy.array(obj.matrix_world)
+    verts_world = verts_local @ mat_world[:3, :3].T + mat_world[:3, 3]
+    com = numpy.mean(verts_world, axis=0)
 
     # Calculate the offset
-    offset = obj.matrix_world.inverted() @ com
+    offset = obj.matrix_world.inverted() @ mathutils.Vector(com)
 
-    # Apply the offset to the object's data
+    # Apply the offset to the object's own (base) mesh vertices. Note:
+    # `verts_local`/`mesh` above are the evaluated (post-modifier) mesh, used
+    # only to compute the center of mass - modifiers such as the convex hull
+    # / decimate modifiers used by Auto Convex can change the vertex count,
+    # so its vertices no longer line up 1:1 with obj.data.vertices here.
     for vertex in obj.data.vertices:
-        vertex.co -= offset
+        vertex.co = vertex.co - offset
 
     # Move the object's origin to the center of mass
-    obj.location = com
-
+    obj.location = mathutils.Vector(com)
 
 def geometry_node_group_empty_new():
     group = bpy.data.node_groups.new("Convex_Hull", 'GeometryNodeTree')
@@ -102,13 +176,13 @@ def geometry_node_group_empty_new():
 
 def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, label, value=None, type='default',
                     key='',
-                    highlight=False):
+                    highlight=False, padding_bottom=0):
     """Draw label in the 3D Viewport"""
 
     # get colors from preferences
     col_default = self.prefs.modal_color_default
     color_title = self.prefs.modal_color_title
-    color_ignore_input = [0.5, 0.5, 0.5, 0.5]
+    color_ignore_input = [0.604, 0.616, 0.651, 0.7]  # brand "text_muted" token
 
     # operator colors
     color_enum = self.prefs.modal_color_enum
@@ -116,12 +190,15 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
     color_bool = self.prefs.modal_color_bool
     color_highlight = self.prefs.modal_color_highlight
     color_error = self.prefs.modal_color_error
+    color_navigation = self.prefs.modal_color_navigation
 
-    # padding bottom
-    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
-
-    # padding_bottom = self.prefs.padding_bottom
-    padding_bottom = 0
+    # system.ui_scale reflects the OS/monitor-driven DPI scale (e.g. ~2.5 on a
+    # 4K/5K display); view.ui_scale is the user's manual "Resolution Scale"
+    # preference on top of that. Blender's native UI is scaled by both, so
+    # the overlay needs both too or it stays a fixed pixel size on HiDPI
+    # screens while the rest of the UI scales up (issue #623).
+    font_size = int(self.prefs.modal_font_size * context.preferences.system.ui_scale
+                    * context.preferences.view.ui_scale / 3.6)
 
     if bpy.app.version < (4, 00):
         # legacy support
@@ -131,7 +208,7 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 
     color_map = {
         'error': color_error,
-        'key_title': color_highlight if self.ignore_input or self.navigation else color_title,
+        'key_title': color_title,
         'disabled': color_ignore_input,
         'title': color_title,
         'default': col_default,
@@ -140,28 +217,46 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
         'modal': color_modal
     }
 
-    blf.color(font_id, *color_map.get(type, col_default))
+    # navigating the viewport or holding ALT to ignore input takes over every row
+    # (except the title, which stays the constant branded header) in its own
+    # color, distinct from both the normal per-row colors and the drag highlight.
+    # A setting currently being dragged takes over its own line in the highlight
+    # color, not just its value, so it's obvious at a glance which one is live.
+    ignoring_input = self.ignore_input or self.navigation
+    if ignoring_input and type != 'title':
+        label_color = color_navigation
+    elif highlight:
+        label_color = color_highlight
+    else:
+        label_color = color_map.get(type, col_default)
+
+    blf.color(font_id, *label_color)
     blf.position(font_id, left_margin, padding_bottom + (i * vertical_px_offset), 0)
     blf.draw(font_id, label)
 
     if key:
-        blf.color(font_id,
-                  *color_ignore_input if self.ignore_input or self.navigation else color_map.get(type, col_default))
+        # key hints are a secondary cue, not a second label - dim them so the
+        # label color still reads as the primary signal
+        key_color = list(label_color)
+        key_color[3] *= 0.5
+        blf.color(font_id, *key_color)
         blf.position(font_id, left_margin + 220 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, key)
 
     if value:
-        if self.ignore_input or self.navigation:
-            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
-                      color_ignore_input[3])
+        if ignoring_input:
+            color = color_navigation
         elif highlight:
-            blf.color(font_id, color_highlight[0], color_highlight[1], color_highlight[2], color_highlight[3])
+            color = color_highlight
+        elif type == 'bool':
+            # let True/False read as on/off at a glance, not just as text
+            color = col_default if value == 'True' else color_ignore_input
         elif type == 'disabled':
-            blf.color(font_id, color_ignore_input[0], color_ignore_input[1], color_ignore_input[2],
-                      color_ignore_input[3])
+            color = color_ignore_input
         else:  # type == 'default':
-            blf.color(font_id, col_default[0], col_default[1], col_default[2], col_default[3])
+            color = col_default
 
+        blf.color(font_id, color[0], color[1], color[2], color[3])
         blf.position(font_id, left_margin + 290 / 20 * font_size, padding_bottom + (i * vertical_px_offset), 0)
         blf.draw(font_id, value)
 
@@ -171,6 +266,25 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
     items = []
+
+    # Detecting "is the user currently navigating" from event types seen in
+    # modal() doesn't work reliably: an MMB orbit drag hands its MOUSEMOVE
+    # events - and usually even the terminating release - to Blender's own
+    # view3d.rotate modal operator before they ever reach this operator's
+    # modal(), so nothing observed there can tell whether a drag is still
+    # in progress. This draw callback runs on every actual repaint though,
+    # and Blender keeps repainting continuously for as long as the view is
+    # visibly changing - so comparing the region's view matrix frame to
+    # frame is a direct, reliable "is navigation actually happening" signal
+    # instead of an event-based guess.
+    region_3d = getattr(context.space_data, 'region_3d', None)
+    if region_3d is not None:
+        view_snapshot = (region_3d.view_matrix.copy(), region_3d.view_distance)
+        if self.navigation_view_snapshot is not None and view_snapshot != self.navigation_view_snapshot:
+            self.navigation_hold_until = time.time() + NAVIGATION_HOLD_SECONDS
+            self.arm_navigation_timer()
+        self.navigation_view_snapshot = view_snapshot
+    self.navigation = time.time() < self.navigation_hold_until
 
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
     if self.use_space:
@@ -229,6 +343,10 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(X/Y/Z)', 'type': type, 'highlight': False}
         items.append(item)
 
+    # settings above persist between operator calls; settings below reset every run -
+    # this row count marks where the HUD divider between the two groups goes
+    persistent_row_count = len(items)
+
     if self.use_modifier_stack:
         label = "Use Modifiers "
         value = str(self.my_use_modifier_stack)
@@ -257,6 +375,12 @@ def draw_viewport_overlay(self, context):
         item = {'label': label, 'value': value, 'key': '(N)', 'type': type, 'highlight': False}
         items.append(item)
 
+    if self.use_diagonal_fill:
+        label = "Diagonal Fill"
+        value = str(self.diagonal_fill)
+        item = {'label': label, 'value': value, 'key': '(F)', 'type': 'bool', 'highlight': False}
+        items.append(item)
+
     items.append({'label': "Toggle X Ray", 'value': str(self.x_ray), 'key': '(C)', 'type': 'bool', 'highlight': False})
     items.append({'label': "Use Loose Islands", 'value': str(self.use_loose_mesh), 'key': '(I)', 'type': 'bool',
                   'highlight': False})
@@ -265,54 +389,52 @@ def draw_viewport_overlay(self, context):
 
     if self.shading_modes[self.shading_idx] == 'OBJECT':
         label = "Opacity"
-        value = self.current_settings_dic['alpha']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.opacity_active, self.current_settings_dic['alpha'])
         item = {'label': label, 'value': value, 'key': '(A)', 'type': 'modal', 'highlight': self.opacity_active}
         items.append(item)
 
     label = "Shrink/Inflate"
-    value = self.current_settings_dic['displace_offset']
-    value = '{initial_value:.3f}'.format(initial_value=value)
+    value = self.format_modal_value(self.displace_active, self.current_settings_dic['displace_offset'])
     item = {'label': label, 'value': value, 'key': '(S)', 'type': 'modal', 'highlight': self.displace_active}
     items.append(item)
 
     if self.use_sphere_segments:
         label = "Sphere Segments "
-        value = str(self.current_settings_dic['sphere_segments'])
+        value = self.format_modal_value(self.sphere_segments_active, self.current_settings_dic['sphere_segments'],
+                                        is_int=True)
         item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal', 'highlight': self.sphere_segments_active}
         items.append(item)
 
     if self.use_capsule_segments:
         label = "Capsule Segments "
-        value = str(self.current_settings_dic['capsule_segments'])
+        value = self.format_modal_value(self.capsule_segments_active, self.current_settings_dic['capsule_segments'],
+                                        is_int=True)
         item = {'label': label, 'value': value, 'key': '(R)', 'type': 'modal',
                 'highlight': self.capsule_segments_active}
         items.append(item)
 
     if self.use_decimation:
         label = "Decimate Ratio"
-        value = self.current_settings_dic['decimate']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.decimate_active, self.current_settings_dic['decimate'])
         item = {'label': label, 'value': value, 'key': '(D)', 'type': 'modal', 'highlight': self.decimate_active}
         items.append(item)
 
     if self.use_height_multiplier:
         label = "Height Multiplier"
-        value = self.current_settings_dic['height_mult']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.height_active, self.current_settings_dic['height_mult'])
         item = {'label': label, 'value': value, 'key': '(H)', 'type': 'modal', 'highlight': self.height_active}
         items.append(item)
 
     if self.use_width_multiplier:
         label = "Width Multiplier"
-        value = self.current_settings_dic['width_mult']
-        value = '{initial_value:.3f}'.format(initial_value=value)
+        value = self.format_modal_value(self.width_active, self.current_settings_dic['width_mult'])
         item = {'label': label, 'value': value, 'key': '(W)', 'type': 'modal', 'highlight': self.width_active}
         items.append(item)
 
     if self.use_cylinder_segments:
         label = "Segments"
-        value = str(self.current_settings_dic['cylinder_segments'])
+        value = self.format_modal_value(self.cylinder_segments_active, self.current_settings_dic['cylinder_segments'],
+                                        is_int=True)
         key = '(E)'
         type = 'modal'
         highlight = self.cylinder_segments_active
@@ -322,7 +444,7 @@ def draw_viewport_overlay(self, context):
 
     if self.use_remesh:
         label = "Voxel Size"
-        value = str(self.current_settings_dic['voxel_size_multiplier'])
+        value = self.format_modal_value(self.remesh_active, self.current_settings_dic['voxel_size_multiplier'])
         key = '(R)'
         type = 'modal'
         highlight = self.remesh_active
@@ -334,6 +456,7 @@ def draw_viewport_overlay(self, context):
     type = 'title'
     item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': False}
     items.append(item)
+    title_row = len(items)
 
     if self.valid_input_selection:
         if self.navigation:
@@ -350,6 +473,13 @@ def draw_viewport_overlay(self, context):
             item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': highlight}
             items.append(item)
 
+        elif self.numeric_input_active:
+            label = 'TYPE VALUE - ENTER TO CONFIRM, ESC TO CANCEL'
+            type = 'key_title'
+            highlight = True
+            item = {'label': label, 'value': None, 'key': '', 'type': type, 'highlight': highlight}
+            items.append(item)
+
     else:  # Invalid selection (No colliders to be generated)
         label = 'Selection Invalid'
         type = 'error'
@@ -358,14 +488,19 @@ def draw_viewport_overlay(self, context):
 
     # text properties
     font_id = 0  # XXX, need to find out how best to get this.
-    font_size = int(self.prefs.modal_font_size * context.preferences.view.ui_scale / 3.6)
+    font_size = int(self.prefs.modal_font_size * context.preferences.system.ui_scale
+                    * context.preferences.view.ui_scale / 3.6)
     vertical_px_offset = font_size * 1.5
     left_text_margin = bpy.context.area.width / 2 - 190 / 20 * font_size
+
+    # breathing room above the title and below the bottom-most row, instead of
+    # the text sitting flush against the backdrop edges
+    row_padding = font_size * 0.5
 
     # backdrop box
     box_left = bpy.context.area.width / 2 - 240 / 20 * font_size
     box_right = bpy.context.area.width / 2 + 260 / 20 * font_size
-    box_top = font_size * len(items) * 1.75
+    box_top = font_size * len(items) * 1.75 + row_padding * 2
     box_bottom = 10
 
     prefs = self.prefs
@@ -374,10 +509,37 @@ def draw_viewport_overlay(self, context):
     if prefs.use_modal_box:
         draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, color)
 
+        # brand card treatment: a neutral hairline frame with a colored top edge,
+        # matching the store page's .grid-card--top / .section--hairline convention.
+        # Opaque colors (no alpha blending) so the lines read the same regardless
+        # of what's behind them in the viewport, instead of the previous low-alpha
+        # overlay looking faint or uneven over a busy scene.
+        frame_color = (0.204, 0.212, 0.243, 1.0)  # brand "border" token
+        accent_color = (0.133, 0.773, 0.369, 1.0)  # brand accent
+        frame_px = 1
+        accent_px = 3
+        draw_2d_backdrop(self, context, box_left, box_right, box_top, box_top - accent_px, accent_color)
+        draw_2d_backdrop(self, context, box_left, box_right, box_bottom + frame_px, box_bottom, frame_color)
+        draw_2d_backdrop(self, context, box_left, box_left + frame_px, box_top - accent_px, box_bottom, frame_color)
+        draw_2d_backdrop(self, context, box_right - frame_px, box_right, box_top - accent_px, box_bottom, frame_color)
+
+        # divider rules, full width like the brand's section hairlines: split the
+        # header from the settings, and the settings that persist between operator
+        # calls from the ones that reset every run.
+        def draw_rule(row):
+            y = row_padding + (row + 0.5) * vertical_px_offset
+            draw_2d_backdrop(self, context, box_left, box_right, y + frame_px / 2, y - frame_px / 2, frame_color)
+
+        if title_row > 1:
+            draw_rule(title_row - 1)
+        if 0 < persistent_row_count < title_row - 1:
+            draw_rule(persistent_row_count)
+
     for i, item in enumerate(items):
         draw_modal_item(self, context, font_id, i + 1, vertical_px_offset, left_text_margin, item['label'],
                         value=item['value'],
-                        key=item['key'], type=item['type'], highlight=item['highlight'])
+                        key=item['key'], type=item['type'], highlight=item['highlight'],
+                        padding_bottom=row_padding)
 
 
 def draw_2d_backdrop(self, context, left, right, top, bottom, color):
@@ -672,7 +834,8 @@ class OBJECT_OT_add_bounding_object():
 
         font_id = 0  # XXX, need to find out how best to get this.
         font_color = [0.5, 0.5, 0.5, 0.5]
-        font_size = 20
+        ui_scale = context.preferences.system.ui_scale * context.preferences.view.ui_scale
+        font_size = int(20 * ui_scale)
 
         if bpy.app.version < (4, 00):
             # legacy support
@@ -681,7 +844,7 @@ class OBJECT_OT_add_bounding_object():
             blf.size(font_id, font_size)
 
         blf.color(font_id, font_color[0], font_color[1], font_color[2], font_color[3])
-        blf.position(font_id, 100, 100, 0)
+        blf.position(font_id, 100 * ui_scale, 100 * ui_scale, 0)
         face_label = str(sum(self.face_counts))
         blf.draw(font_id, face_label)
 
@@ -702,6 +865,8 @@ class OBJECT_OT_add_bounding_object():
             return 'CAPSULE'
         elif self.shape == 'convex_shape':
             return 'CONVEX'
+        elif self.shape == 'voxel_shape':
+            return 'VOXEL'
         else:  # identifier == 'mesh_shape':
             return 'MESH'
 
@@ -716,6 +881,8 @@ class OBJECT_OT_add_bounding_object():
             return prefs.capsule_shape
         elif identifier == 'convex_shape':
             return prefs.convex_shape
+        elif identifier == 'voxel_shape':
+            return prefs.voxel_shape
         else:  # identifier == 'mesh_shape':
             return prefs.mesh_shape
 
@@ -725,6 +892,118 @@ class OBJECT_OT_add_bounding_object():
         bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
         bpy.context.space_data.overlay.show_text = not bpy.context.space_data.overlay.show_text
         pass
+
+    def arm_navigation_timer(self):
+        """Make sure poke_navigation_redraw() is scheduled. Only one timer
+        is ever in flight - it re-arms itself via its own return value for
+        as long as navigation_hold_until keeps getting pushed out, so this
+        just needs to kick it off once."""
+        if not self.navigation_timer_scheduled:
+            self.navigation_timer_scheduled = True
+            bpy.app.timers.register(self.poke_navigation_redraw, first_interval=NAVIGATION_HOLD_SECONDS)
+
+    def poke_navigation_redraw(self):
+        """bpy.app.timers callback: force a repaint once the navigation hold
+        window elapses, even if no further event ever reaches modal() or
+        draw_viewport_overlay() to notice on its own (e.g. the user stops
+        touching mouse/keyboard right after navigating, and Blender doesn't
+        repaint an idle viewport by itself).
+
+        This deliberately does NOT set self.navigation directly - it only
+        prompts a fresh repaint, and draw_viewport_overlay() re-derives the
+        real answer from the live view_matrix each time it draws. That
+        means this can never falsely clear the dimming while navigation is
+        still genuinely in progress: if the view is still changing, Blender
+        is already generating real repaints on its own, each of which
+        pushes the hold window out again before this timer's turn comes.
+        Re-arms itself via its return value, so only one timer is ever in
+        flight.
+        """
+        try:
+            remaining = self.navigation_hold_until - time.time()
+            if remaining > 0:
+                return remaining
+            self.navigation_timer_scheduled = False
+            self.navigation_area.tag_redraw()
+        except ReferenceError:
+            # operator has already finished/cancelled and its RNA was freed
+            pass
+        return None
+
+    def arm_decimate_timer(self):
+        """Make sure apply_decimate_value() runs once dragging pauses.
+        Mirrors arm_navigation_timer(): only one timer is ever in flight -
+        it re-arms itself for as long as decimate_debounce_until keeps
+        getting pushed out by further MOUSEMOVE deltas, so this just needs
+        to kick it off once."""
+        if not self.decimate_timer_scheduled:
+            self.decimate_timer_scheduled = True
+            bpy.app.timers.register(self.poke_decimate_timer, first_interval=MODIFIER_DEBOUNCE_SECONDS)
+
+    def poke_decimate_timer(self):
+        """bpy.app.timers callback: apply the dragged decimate ratio once
+        the debounce window elapses without a further MOUSEMOVE delta
+        pushing it out again. Re-arms itself via its return value."""
+        try:
+            remaining = self.decimate_debounce_until - time.time()
+            if remaining > 0:
+                return remaining
+            self.decimate_timer_scheduled = False
+            self.apply_decimate_value(bpy.context)
+        except ReferenceError:
+            # operator has already finished/cancelled and its RNA was freed
+            pass
+        return None
+
+    def apply_decimate_value(self, context):
+        """Re-evaluate the Decimate modifiers at the currently dragged
+        ratio. Forces a depsgraph evaluation per collider (via
+        mod.face_count), so callers debounce this rather than calling it on
+        every MOUSEMOVE delta."""
+        dec_amount = self.current_settings_dic['decimate']
+        # I had to iterate over all object because it crashed when just iterating over the modifiers.
+        self.face_counts = []
+        for obj in self.new_colliders_list:
+            for mod in obj.modifiers:
+                if mod in self.decimate_modifiers:
+                    mod.ratio = dec_amount
+                    self.face_counts.append(mod.face_count)
+
+        self.report({'INFO'}, "Total collider face count:" + str(sum(self.face_counts)))
+        self.draw_callback_px(context)
+
+    def arm_remesh_timer(self):
+        """Make sure apply_remesh_value() runs once dragging pauses. Same
+        debounce pattern as arm_decimate_timer() / arm_navigation_timer()."""
+        if not self.remesh_timer_scheduled:
+            self.remesh_timer_scheduled = True
+            bpy.app.timers.register(self.poke_remesh_timer, first_interval=MODIFIER_DEBOUNCE_SECONDS)
+
+    def poke_remesh_timer(self):
+        """bpy.app.timers callback: apply the dragged voxel size once the
+        debounce window elapses without a further MOUSEMOVE delta pushing
+        it out again. Re-arms itself via its return value."""
+        try:
+            remaining = self.remesh_debounce_until - time.time()
+            if remaining > 0:
+                return remaining
+            self.remesh_timer_scheduled = False
+            self.apply_remesh_value(bpy.context)
+        except ReferenceError:
+            # operator has already finished/cancelled and its RNA was freed
+            pass
+        return None
+
+    def apply_remesh_value(self, context):
+        """Re-evaluate the remesh result at the currently dragged voxel
+        size multiplier. Base implementation just nudges the Remesh
+        modifier's voxel_size (cheap - Blender's depsgraph re-evaluates it
+        lazily on the next redraw). OBJECT_OT_add_bounding_simplified_mesh
+        overrides this to rebuild its voxel grid via execute() instead,
+        which is the actually slow path callers need debounced."""
+        multiplier = self.current_settings_dic['voxel_size_multiplier']
+        for mod, max_dim in self.remesh_data:
+            mod.voxel_size = multiplier * max_dim
 
     def set_collisions_wire_preview(self, mode):
         """Show wireframe for colliders"""
@@ -781,6 +1060,7 @@ class OBJECT_OT_add_bounding_object():
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
             bm.from_object(obj, depsgraph)
+            OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, depsgraph)
 
         else:  # use_modifiers == False
             # Get a BMesh representation
@@ -820,6 +1100,7 @@ class OBJECT_OT_add_bounding_object():
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
             bm.from_object(obj, depsgraph)
+            OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, depsgraph)
             bm.verts.ensure_lookup_table()
 
         else:  # use_modifiers == False
@@ -846,6 +1127,7 @@ class OBJECT_OT_add_bounding_object():
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
             bm.from_object(obj, depsgraph)
+            OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, depsgraph)
             bm.verts.ensure_lookup_table()
             used_vertices = bm.verts
 
@@ -893,6 +1175,45 @@ class OBJECT_OT_add_bounding_object():
         return co
 
     @staticmethod
+    def merge_object_instances(bm, obj, depsgraph):
+        """Merge geometry-node / particle / dupli instances generated by obj's
+        modifier stack into bm, in obj's local space.
+
+        bmesh.from_object()/to_mesh() only capture an object's own real mesh
+        data - they silently drop unrealized instances produced by e.g. a
+        Geometry Nodes "Instance on Points" node without a "Realize Instances"
+        node downstream. depsgraph.object_instances is the API that enumerates
+        that generated geometry, so it is walked here and merged manually.
+        """
+        obj_matrix_inv = obj.matrix_world.inverted()
+
+        for inst in depsgraph.object_instances:
+            if not inst.is_instance:
+                continue
+            if inst.parent is None or inst.parent.original != obj:
+                continue
+
+            inst_obj = inst.object
+            if inst_obj.type not in VALID_OBJECT_TYPES:
+                continue  # skip lights, empties, etc. gracefully
+
+            try:
+                inst_mesh = inst_obj.to_mesh()
+            except RuntimeError:
+                continue
+
+            if inst_mesh is None:
+                continue
+            if not inst_mesh.polygons and not inst_mesh.edges and not inst_mesh.vertices:
+                inst_obj.to_mesh_clear()
+                continue
+
+            local_matrix = obj_matrix_inv @ inst.matrix_world
+            inst_mesh.transform(local_matrix)
+            bm.from_mesh(inst_mesh)
+            inst_obj.to_mesh_clear()
+
+    @staticmethod
     def mesh_from_selection(obj, use_modifiers=False):
         mesh = obj.data.copy()
         mesh.update()  # update mesh data. This is needed to get the current mesh data after editing the mesh (adding, deleting, transforming)
@@ -904,6 +1225,7 @@ class OBJECT_OT_add_bounding_object():
             depsgraph = bpy.context.evaluated_depsgraph_get()
             bm = bmesh.new()
             bm.from_object(obj, depsgraph)
+            OBJECT_OT_add_bounding_object.merge_object_instances(bm, obj, depsgraph)
             bm.verts.ensure_lookup_table()
             bm.edges.ensure_lookup_table()
             bm.faces.ensure_lookup_table()
@@ -923,32 +1245,28 @@ class OBJECT_OT_add_bounding_object():
         return True
 
     @staticmethod
-    def create_collection(collection_name):
-        """Create a collection if it doesn't exist and link it to the current scene if not already linked."""
-        import bpy
-
-        # Create the collection if it doesn't exist
-        if collection_name not in bpy.data.collections:
-            collection = bpy.data.collections.new(collection_name)
-        else:
-            collection = bpy.data.collections[collection_name]
-
-        # Get the current scene
-        current_scene = bpy.context.scene
-
-        # Link to current scene if not already linked
-        if collection.name not in current_scene.collection.children:
-            current_scene.collection.children.link(collection)
+    def create_collection(context, collection_name):
+        """Find or create a collider collection as a direct, local child of
+        context.scene's root collection. Each scene keeps its own
+        collection - never one shared/reused across scenes - and
+        library-linked collections are ignored."""
+        root = context.scene.collection
+        collection = _local_child_collection(root, collection_name)
+        if collection is None:
+            collection = bpy.data.collections.new(_next_available_local_name(collection_name))
+            root.children.link(collection)
 
         return collection
 
     # Collections
     @classmethod
-    def add_to_collections(cls, obj, collection_name, hide=False, color='NONE'):
-        col = cls.create_collection(collection_name)
+    def add_to_collections(cls, context, obj, collection_name, hide=False, color='NONE'):
+        col = cls.create_collection(context, collection_name)
         if hide:
             col.hide_viewport = True
-            col.hide_render = True
+            prefs = bpy.context.preferences.addons[base_package].preferences
+            if prefs.hide_render_on_creation:
+                col.hide_render = True
         try:
             col.objects.link(obj)
         except RuntimeError as err:
@@ -958,11 +1276,24 @@ class OBJECT_OT_add_bounding_object():
         return col
 
     @staticmethod
-    def remove_empty_collection(collection_name):
-        if collection_name in bpy.data.collections:
-            collection = bpy.data.collections[collection_name]
-            if len(collection.objects) == 0:
-                bpy.data.collections.remove(collection)
+    def remove_empty_collection(context, collection_name):
+        collection = _local_child_collection(context.scene.collection, collection_name)
+        if collection is not None and len(collection.objects) == 0:
+            bpy.data.collections.remove(collection)
+
+    def _clear_modifier_bake_cache(self):
+        """Free the mesh datablocks cached by convert_to_mesh() /
+        apply_all_modifiers() (see self._modifier_bake_cache). They're kept
+        alive only by this dict - never linked to any object - so they must
+        be removed explicitly on confirm/cancel or they'd leak as orphan
+        mesh data."""
+        cache = getattr(self, '_modifier_bake_cache', None)
+        if not cache:
+            return
+        meshes = [me for me in cache.values() if me and me.name in bpy.data.meshes]
+        if meshes:
+            bpy.data.batch_remove(meshes)
+        self._modifier_bake_cache = {}
 
     @staticmethod
     def set_collections(obj, collections):
@@ -980,12 +1311,55 @@ class OBJECT_OT_add_bounding_object():
                 col.objects.unlink(obj)
 
     # Modifiers
-    @staticmethod
-    def apply_all_modifiers(context, obj):
-        """apply all modifiers to an object"""
+    def apply_all_modifiers(self, context, obj, cache_key=None):
+        """Replace obj's mesh data with the fully evaluated result of its
+        modifier stack - including any unrealized instances a modifier like
+        Geometry Nodes "Instance on Points" produces without a "Realize
+        Instances" node - then clear the modifiers.
+
+        bpy.ops.object.modifier_apply() applied per-modifier fails outright
+        ("Evaluated geometry from modifier does not contain a mesh") once a
+        modifier's output is instances-only, since Blender's built-in Apply
+        can't bake unrealized instances into real geometry. Evaluating via
+        the depsgraph and merging instances manually (merge_object_instances)
+        sidesteps that limitation.
+
+        `cache_key`, if given, reuses/populates self._modifier_bake_cache so
+        repeated calls for the same source object (e.g. once per MOUSEMOVE
+        delta while dragging) don't each pay for a fresh depsgraph
+        evaluation - see convert_to_mesh() for why that matters (#631).
+        """
         context.view_layer.objects.active = obj
-        for mod in obj.modifiers:
-            bpy.ops.object.modifier_apply(modifier=mod.name)
+        if not obj.modifiers:
+            return
+
+        cached_mesh = self._modifier_bake_cache.get(cache_key) if cache_key else None
+        if cached_mesh is not None and cached_mesh.name in bpy.data.meshes:
+            old_data = obj.data
+            obj.data = cached_mesh.copy()
+            obj.modifiers.clear()
+            if old_data.users == 0:
+                bpy.data.meshes.remove(old_data)
+            return
+
+        depsgraph = context.evaluated_depsgraph_get()
+        me = bpy.data.meshes.new_from_object(obj.evaluated_get(depsgraph), depsgraph=depsgraph)
+
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        self.merge_object_instances(bm, obj, depsgraph)
+        bm.to_mesh(me)
+        bm.free()
+
+        old_data = obj.data
+        obj.data = me
+        obj.modifiers.clear()
+
+        if old_data.users == 0:
+            bpy.data.meshes.remove(old_data)
+
+        if cache_key:
+            self._modifier_bake_cache[cache_key] = me.copy()
 
     @staticmethod
     def remove_all_modifiers(context, obj):
@@ -1043,18 +1417,43 @@ class OBJECT_OT_add_bounding_object():
             modifier.show_in_editmode = mod_entry["show_in_editmode"]
 
     def convert_to_mesh(self, context, object, use_modifiers=False):
-        mods = self.store_obj_mod_in_dic(object)
+        # Baking (evaluated_depsgraph_get + new_from_object) is only needed
+        # for use_modifiers=True - the base object's modifier stack doesn't
+        # change between drag deltas, so reuse the last bake instead of
+        # re-evaluating the whole scene's depsgraph on every MOUSEMOVE (#631).
+        cache_key = (object, use_modifiers) if use_modifiers else None
+        cached_mesh = self._modifier_bake_cache.get(cache_key) if cache_key else None
 
-        for mod in object.modifiers:
-            mod.show_viewport = use_modifiers
-            mod.show_in_editmode = use_modifiers
+        if cached_mesh is not None and cached_mesh.name in bpy.data.meshes:
+            me = cached_mesh.copy()
+        else:
+            mods = self.store_obj_mod_in_dic(object)
 
-        deg = context.evaluated_depsgraph_get()
-        me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
+            for mod in object.modifiers:
+                mod.show_viewport = use_modifiers
+                mod.show_in_editmode = use_modifiers
+
+            if use_modifiers:
+                deg = context.evaluated_depsgraph_get()
+                me = bpy.data.meshes.new_from_object(object.evaluated_get(deg), depsgraph=deg)
+
+                bm = bmesh.new()
+                bm.from_mesh(me)
+                self.merge_object_instances(bm, object, deg)
+                bm.to_mesh(me)
+                bm.free()
+            else:
+                # Create mesh from base data without applying modifiers
+                me = object.data.copy()
+                me.update()
+
+            self.restore_obj_mod_from_dic(mods)
+
+            if cache_key:
+                self._modifier_bake_cache[cache_key] = me.copy()
+
         new_obj = bpy.data.objects.new(object.name + "_mesh", me)
-        col = self.add_to_collections(new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
-
-        self.restore_obj_mod_from_dic(mods)
+        col = self.add_to_collections(context, new_obj, 'tmp_mesh', hide=False, color=self.prefs.col_tmp_collection_color)
 
         new_obj.matrix_world = object.matrix_world
         context.view_layer.objects.active = new_obj
@@ -1072,7 +1471,7 @@ class OBJECT_OT_add_bounding_object():
 
         if self.prefs.use_col_collection:
             collection_name = self.prefs.col_collection_name
-            self.add_to_collections(bounding_object, collection_name, color=self.prefs.col_collection_color)
+            self.add_to_collections(context, bounding_object, collection_name, color=self.prefs.col_collection_color)
 
         if self.use_remesh:
             self.add_remesh_modifier(context, bounding_object)
@@ -1152,14 +1551,14 @@ class OBJECT_OT_add_bounding_object():
 
                     tmp_ob = obj.copy()
                     tmp_ob.data = obj.data.copy()
-                    col = self.add_to_collections(tmp_ob, 'tmp_mesh', hide=False,
+                    col = self.add_to_collections(context, tmp_ob, 'tmp_mesh', hide=False,
                                                   color=self.prefs.col_tmp_collection_color)
 
                     if self.obj_mode == 'EDIT':
                         tmp_ob = delete_non_selected_verts(tmp_ob)
 
                     if self.my_use_modifier_stack:
-                        self.apply_all_modifiers(context, tmp_ob)
+                        self.apply_all_modifiers(context, tmp_ob, cache_key=(base_ob, True))
                     base = tmp_ob
 
                     self.tmp_meshes.append(tmp_ob)
@@ -1170,7 +1569,7 @@ class OBJECT_OT_add_bounding_object():
                         split_objs = create_objs_from_island(base, use_world=default_world_spc)
 
                     for split in split_objs:
-                        col = self.add_to_collections(split, 'tmp_mesh', hide=False,
+                        col = self.add_to_collections(context, split, 'tmp_mesh', hide=False,
                                                       color=self.prefs.col_tmp_collection_color)
                         col.color_tag = self.prefs.col_tmp_collection_color
 
@@ -1244,12 +1643,11 @@ class OBJECT_OT_add_bounding_object():
         # Hide all temp meshes exactly once, here, rather than inside
         # primitive_postprocessing().  The old placement ran N times with N
         # objects in self.tmp_meshes → O(N²) hide_set() calls for N islands.
-        if self.prefs.debug == False:
-            for obj in self.tmp_meshes:
-                try:
-                    obj.hide_set(True)
-                except Exception:
-                    pass
+        for obj in self.tmp_meshes:
+            try:
+                obj.hide_set(True)
+            except Exception:
+                pass
 
     def add_displacement_modifier(self, context, bounding_object):
         # add displacement modifier and safe it to manipulate the strength in the modal operator
@@ -1306,11 +1704,24 @@ class OBJECT_OT_add_bounding_object():
             self.remove_objects(self.new_colliders_list)
 
         # Delete temporary objects
-        if self.prefs.debug == False:
-            self.remove_objects(self.tmp_meshes)
-            self.remove_empty_collection('tmp_mesh')
+        self.remove_objects(self.tmp_meshes)
+        self.remove_empty_collection(context, 'tmp_mesh')
+        self._clear_modifier_bake_cache()
 
         self.reset_display(context)
+
+        # execute() normally restores the starting selection/active object/mode
+        # via reset_to_initial_state() at its own end. If generation is
+        # cancelled or raises before that point is reached, none of that ever
+        # runs, so the user can be left stranded in Object Mode after starting
+        # in Edit Mode. Restore it explicitly here as a guarantee.
+        for obj in bpy.data.objects:
+            obj.select_set(False)
+        for obj in self.selected_objects:
+            obj.select_set(True)
+        context.view_layer.objects.active = self.active_obj
+        if context.object and context.object.mode != self.obj_mode:
+            bpy.ops.object.mode_set(mode=self.obj_mode)
 
         try:
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -1332,22 +1743,6 @@ class OBJECT_OT_add_bounding_object():
         new_collider = self.new_colliders_list[0]
         self.new_colliders_list = [new_collider]
         return new_collider
-
-    def create_debug_object_from_verts(self, context, verts):
-        bm = bmesh.new()
-        for v in verts:
-            bm.verts.new(v)  # add a new vert  
-
-        me = bpy.data.meshes.new("mesh")
-        bm.to_mesh(me)
-        bm.free()
-
-        root_collection = context.scene.collection
-        debug_obj = bpy.data.objects.new('temp_debug_objects', me)
-        # root_collection.objects.link(debug_obj)
-        self.add_to_collections(debug_obj, 'Debug')
-
-        return debug_obj
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1376,6 +1771,7 @@ class OBJECT_OT_add_bounding_object():
         self.use_remesh = False
         self.use_height_multiplier = False
         self.use_width_multiplier = False
+        self.use_diagonal_fill = False
 
         self.remesh_data = []
 
@@ -1392,6 +1788,18 @@ class OBJECT_OT_add_bounding_object():
         self.collision_group_idx = 0
         self._naming_cache = {}
 
+        # Modifier-stack bake results (convert_to_mesh / apply_all_modifiers),
+        # keyed by (base_ob, use_modifiers). Baking involves an
+        # evaluated_depsgraph_get() + new_from_object(), which in scenes with
+        # many other objects/modifiers costs tens to hundreds of ms - and
+        # execute() (hence this bake) reruns on every MOUSEMOVE delta while
+        # dragging the collider's own parameters, even though the base
+        # object's own modifier stack doesn't change during that drag. Caching
+        # the baked mesh here turns that into a one-time cost per base object
+        # for the operator's lifetime (#631). Cleared in
+        # _clear_modifier_bake_cache() on confirm/cancel.
+        self._modifier_bake_cache = {}
+
     @classmethod
     def poll(cls, context):
         count = 0
@@ -1400,9 +1808,219 @@ class OBJECT_OT_add_bounding_object():
                 count = count + 1
         return count > 0
 
+    # Order in which get_active_numeric_field() checks the *_active flags.
+    # At most one is ever True at a time - see set_modal_state().
+    _NUMERIC_FIELDS = (
+        'displace_active', 'decimate_active', 'opacity_active',
+        'cylinder_segments_active', 'sphere_segments_active', 'capsule_segments_active',
+        'height_active', 'width_active', 'remesh_active',
+    )
+
+    def get_active_numeric_field(self):
+        """Name of the *_active flag currently active for mouse-drag, if
+        any - the field direct numeric text entry (issue #640) would apply
+        to if the user started typing right now."""
+        for name in self._NUMERIC_FIELDS:
+            if getattr(self, name):
+                return name
+        return None
+
+    @staticmethod
+    def _numeric_char_for_event(event):
+        """Character a key event contributes to numeric text entry
+        ('0'-'9', '.', '-'), or '' if it isn't one. Prefers event.ascii,
+        which already accounts for keyboard layout/shift state; falls back
+        to the physical key for the numpad, where ascii isn't reliably
+        populated the same way across platforms."""
+        if event.ascii and event.ascii in '0123456789.-':
+            return event.ascii
+        return {
+            'NUMPAD_0': '0', 'NUMPAD_1': '1', 'NUMPAD_2': '2', 'NUMPAD_3': '3', 'NUMPAD_4': '4',
+            'NUMPAD_5': '5', 'NUMPAD_6': '6', 'NUMPAD_7': '7', 'NUMPAD_8': '8', 'NUMPAD_9': '9',
+            'NUMPAD_PERIOD': '.', 'NUMPAD_MINUS': '-',
+        }.get(event.type, '')
+
+    def start_numeric_input(self, field, first_char):
+        """Begin direct numeric text entry for `field` (issue #640), seeded
+        with the character that triggered it."""
+        self.numeric_input_active = True
+        self.numeric_input_field = field
+        self.numeric_input_str = first_char
+        self.force_redraw()
+
+    def handle_numeric_input(self, context, event):
+        """Handle a key event while direct numeric text entry (started by
+        start_numeric_input) is in progress. Takes over the keys that
+        normally finish/cancel the operator (RET/NUMPAD_ENTER, ESC) so they
+        confirm/cancel the typed number instead, and swallows every other
+        event - including MOUSEMOVE and subclasses' own hotkeys - so
+        nothing else can interfere with the value being typed."""
+        if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+            # a hard cancel of the whole operator still works while typing
+            self.cancel_numeric_input(event)
+            self.cancel_cleanup(context)
+            return {'CANCELLED'}
+
+        if event.value != 'PRESS':
+            return {'RUNNING_MODAL'}
+
+        if event.type in {'RET', 'NUMPAD_ENTER'}:
+            self.confirm_numeric_input(context, event)
+        elif event.type == 'ESC':
+            self.cancel_numeric_input(event)
+        elif event.type == 'BACK_SPACE':
+            if self.numeric_input_str:
+                self.numeric_input_str = self.numeric_input_str[:-1]
+                self.force_redraw()
+            else:
+                self.cancel_numeric_input(event)
+        else:
+            char = self._numeric_char_for_event(event)
+            if char == '-':
+                # toggle sign, matching Blender's own numeric input, rather
+                # than only accepting '-' as the very first character typed
+                if self.numeric_input_str.startswith('-'):
+                    self.numeric_input_str = self.numeric_input_str[1:]
+                else:
+                    self.numeric_input_str = '-' + self.numeric_input_str
+                self.force_redraw()
+            elif char == '.' and '.' not in self.numeric_input_str:
+                self.numeric_input_str += '.'
+                self.force_redraw()
+            elif char.isdigit():
+                self.numeric_input_str += char
+                self.force_redraw()
+
+        return {'RUNNING_MODAL'}
+
+    def confirm_numeric_input(self, context, event):
+        """Apply the typed buffer to the field entry was started for, then
+        hand control back to mouse-drag for that same field."""
+        field = self.numeric_input_field
+        text = self.numeric_input_str
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
+
+        try:
+            value = float(text)
+        except ValueError:
+            value = None
+
+        if value is not None:
+            self.apply_numeric_value(context, field, value)
+        elif text:
+            self.report({'WARNING'}, f"Ignored invalid numeric input: '{text}'")
+
+        # avoid a mouse-drag jump on the next MOUSEMOVE: re-baseline against
+        # wherever the mouse is now, exactly like the LEFT_ALT-release and
+        # LEFT_SHIFT/LEFT_CTRL handlers below already do.
+        self.ref_settings_dic = self.current_settings_dic.copy()
+        self.mouse_initial_x = event.mouse_x
+        self.mouse_position = [event.mouse_x, event.mouse_y]
+        self.force_redraw()
+
+    def cancel_numeric_input(self, event):
+        """Abort in-progress typing without applying it, handing control
+        back to mouse-drag for the field entry was started for."""
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
+
+        self.ref_settings_dic = self.current_settings_dic.copy()
+        self.mouse_initial_x = event.mouse_x
+        self.mouse_position = [event.mouse_x, event.mouse_y]
+        self.force_redraw()
+
+    def apply_numeric_value(self, context, field, value):
+        """Apply a typed numeric value (see confirm_numeric_input) to
+        `field`, mirroring the equivalent MOUSEMOVE drag handling below."""
+        if field == 'displace_active':
+            strength = value
+            for mod in self.displace_modifiers:
+                mod.strength = strength
+                mod.show_on_cage = True
+                mod.show_in_editmode = True
+            self.current_settings_dic['displace_offset'] = strength
+
+        elif field == 'decimate_active':
+            dec_amount = numpy.clip(value, 0.01, 1.0)
+            if self.current_settings_dic['decimate'] != dec_amount:
+                self.current_settings_dic['decimate'] = dec_amount
+                # A one-shot typed confirm can afford the same immediate
+                # evaluation a continuous drag can't (see apply_decimate_value).
+                self.apply_decimate_value(context)
+
+        elif field == 'opacity_active':
+            if self.shading_modes[self.shading_idx] == 'OBJECT':
+                color_alpha = numpy.clip(value, 0.0, 1.0)
+                for obj in self.new_colliders_list:
+                    obj.color[3] = color_alpha
+                self.prefs.user_groups_alpha = color_alpha
+                self.current_settings_dic['alpha'] = color_alpha
+
+        elif field == 'cylinder_segments_active':
+            segment_count = max(3, int(round(value)))
+            if segment_count != int(round(self.current_settings_dic['cylinder_segments'])):
+                self.current_settings_dic['cylinder_segments'] = segment_count
+                self.execute(context)
+
+        elif field == 'height_active':
+            height_mult = numpy.clip(value, 0, 10.0)
+            if self.current_settings_dic['height_mult'] != height_mult:
+                self.current_settings_dic['height_mult'] = height_mult
+                self.execute(context)
+
+        elif field == 'width_active':
+            width_mult = numpy.clip(value, 0, 10.0)
+            if self.current_settings_dic['width_mult'] != width_mult:
+                self.current_settings_dic['width_mult'] = width_mult
+                self.execute(context)
+
+        elif field == 'sphere_segments_active':
+            segments = max(2, int(round(value)))
+            if segments != int(round(self.current_settings_dic['sphere_segments'])):
+                self.current_settings_dic['sphere_segments'] = segments
+                self.execute(context)
+
+        elif field == 'capsule_segments_active':
+            segments = max(2, int(round(value)))
+            if segments != int(round(self.current_settings_dic['capsule_segments'])):
+                self.current_settings_dic['capsule_segments'] = segments
+                self.execute(context)
+
+        elif field == 'remesh_active':
+            # Full re-execute (rather than mirroring the MOUSEMOVE handler's
+            # direct mod.voxel_size tweak) since some shapes (e.g. Simplified
+            # Mesh) rebuild the collider mesh manually from the multiplier
+            # instead of adjusting a live Remesh modifier. A one-shot typed
+            # confirm can afford the heavier call that a continuous drag
+            # cannot.
+            multiplier = numpy.clip(value, 0.001, 1.0)
+            if self.current_settings_dic['voxel_size_multiplier'] != multiplier:
+                self.current_settings_dic['voxel_size_multiplier'] = multiplier
+                self.execute(context)
+
+    def format_modal_value(self, active, value, is_int=False):
+        """Format a modal-adjustable value for the HUD: the live typed
+        buffer while direct numeric entry (issue #640) is in progress for
+        this field, otherwise the regular mouse-drag formatted value."""
+        if active and self.numeric_input_active:
+            return self.numeric_input_str + '_'
+        if is_int:
+            return str(value)
+        return '{value:.3f}'.format(value=value)
+
     def set_modal_state(self, cylinder_segments_active=False, displace_active=False, decimate_active=False,
                         opacity_active=False, sphere_segments_active=False, capsule_segments_active=False,
                         remesh_active=False, height_active=False, width_active=False):
+
+        # Switching (or clearing) which field is active drops any in-progress
+        # typed entry (issue #640) - its buffer was never applied to
+        # current_settings_dic, so there is nothing to preserve.
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
 
         self.cylinder_segments_active = cylinder_segments_active
         self.displace_active = displace_active
@@ -1413,6 +2031,12 @@ class OBJECT_OT_add_bounding_object():
         self.remesh_active = remesh_active
         self.height_active = height_active
         self.width_active = width_active
+
+        # A keypress alone doesn't make Blender repaint the viewport (only
+        # mouse motion over the region does), so the new highlight color set
+        # above wouldn't show up until the next MOUSEMOVE. Force a repaint
+        # now so activating a parameter highlights it immediately.
+        self.force_redraw()
 
     def invoke(self, context, event):
         colSettings = context.scene.simple_collider
@@ -1435,16 +2059,19 @@ class OBJECT_OT_add_bounding_object():
 
         # INITIAL STATE
         self.navigation = False
+        self.navigation_hold_until = 0.0  # grace window keeping navigation coloring on after the view last changed
+        self.navigation_timer_scheduled = False
+        self.navigation_area = context.area
+        self.navigation_view_snapshot = None  # (view_matrix, view_distance) as of the last draw call
         self.selected_objects = context.selected_objects.copy()
         self.active_obj = context.view_layer.objects.active
         self.obj_mode = context.object.mode
-        self.prev_decimate_time = time.time()
         self.data_suffix = "_data"
         self.valid_input_selection = True
 
         self.collider_shapes_idx = 3
         self.collider_shapes = ['box_shape', 'sphere_shape', 'capsule_shape', 'convex_shape',
-                                'mesh_shape']
+                                'mesh_shape', 'voxel_shape']
 
         # General init settings
         self.new_colliders_list = []
@@ -1476,6 +2103,10 @@ class OBJECT_OT_add_bounding_object():
         self.remesh_active = False
         self.remesh_modifiers = []
         self.remesh_data = []
+        # Debounce state for the voxel-size re-evaluation while dragging,
+        # see arm_remesh_timer().
+        self.remesh_debounce_until = 0.0
+        self.remesh_timer_scheduled = False
 
         self.height_active = False
         self.width_active = False
@@ -1487,6 +2118,10 @@ class OBJECT_OT_add_bounding_object():
         # Decimate
         self.decimate_active = False
         self.decimate_modifiers = []
+        # Debounce state for the decimate-ratio re-evaluation while
+        # dragging, see arm_decimate_timer().
+        self.decimate_debounce_until = 0.0
+        self.decimate_timer_scheduled = False
 
         # Opacity
         self.opacity_active = False
@@ -1497,6 +2132,14 @@ class OBJECT_OT_add_bounding_object():
         self.cylinder_segments_active = False
         self.sphere_segments_active = False
         self.capsule_segments_active = False
+
+        # Direct numeric text entry (issue #640): once a field above is made
+        # active via its hotkey, typing a digit/./- switches it from
+        # mouse-drag to typed entry. See get_active_numeric_field(),
+        # start_numeric_input() and handle_numeric_input().
+        self.numeric_input_active = False
+        self.numeric_input_str = ''
+        self.numeric_input_field = None
 
         # Display settings
         self.color_type = context.space_data.shading.color_type
@@ -1556,12 +2199,22 @@ class OBJECT_OT_add_bounding_object():
         # stored for decimate display
         self.mouse_path = []
 
-        self.execute(context)
+        try:
+            self.execute(context)
+        except Exception as ex:
+            # If the initial generation fails, the draw handler and modal
+            # handler added above would otherwise outlive this operator
+            # instance. The viewport overlay callback keeps a reference to
+            # `self`, so once Blender frees this operator's RNA struct the
+            # next redraw raises a ReferenceError from draw_viewport_overlay.
+            self.cancel_cleanup(context)
+            self.report({'ERROR'}, f"Failed to generate collider: {ex}")
+            return {'CANCELLED'}
+
+        return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         colSettings = context.scene.simple_collider
-
-        self.navigation = False
 
         # Ignore if Alt is pressed
         if event.alt:
@@ -1570,20 +2223,34 @@ class OBJECT_OT_add_bounding_object():
             return {'RUNNING_MODAL'}
 
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
-            # allow navigation
-            self.navigation = True
-
-            self.opacity_active = False
-            self.displace_active = False
-            self.decimate_active = False
-            self.cylinder_segments_active = False
-            self.remesh_active = False
-            self.height_active = False
-            self.width_active = False
-            self.sphere_segments_active = False
-            self.capsule_segments_active = False
-
+            # Whether the view is actually navigating is now detected in
+            # draw_viewport_overlay() by watching the region's view_matrix
+            # (see there for why: this handler doesn't reliably see events
+            # for the duration of an MMB orbit drag at all, since Blender's
+            # own view3d.rotate modal operator consumes them). This branch
+            # only needs to cancel any in-progress parameter drag so
+            # navigating doesn't fight with an active (S)/(D)/(A)/etc. edit.
+            self.set_modal_state()
             return {'PASS_THROUGH'}
+
+        # Direct numeric text entry (issue #640): once a field is active for
+        # mouse-drag (S/D/A/E/H/W/R below), typing a digit/./- switches it to
+        # typed entry instead. Handled ahead of the generic RET/ESC/
+        # BACK_SPACE bindings below so those keys edit the typed number
+        # while entry is in progress, rather than finishing/cancelling the
+        # whole operator - and ahead of subclasses' own hotkeys (each
+        # subclass's modal() calls super().modal() first and must bail out
+        # via self.numeric_input_active before running its own key checks).
+        if self.numeric_input_active:
+            return self.handle_numeric_input(context, event)
+
+        if event.value == 'PRESS':
+            active_numeric_field = self.get_active_numeric_field()
+            if active_numeric_field:
+                char = self._numeric_char_for_event(event)
+                if char:
+                    self.start_numeric_input(active_numeric_field, char)
+                    return {'RUNNING_MODAL'}
 
         # User Input
         # aboard operator
@@ -1593,6 +2260,18 @@ class OBJECT_OT_add_bounding_object():
 
         # apply operator
         elif event.type in {'LEFTMOUSE', 'NUMPAD_ENTER', 'RET'}:
+            # Flush any debounced decimate/remesh re-evaluation immediately
+            # rather than leaving it to the background timer: the timer
+            # would still fire a little later, but the accepted result
+            # should reflect the last dragged value right away, not after a
+            # brief visible lag.
+            if self.decimate_timer_scheduled:
+                self.decimate_timer_scheduled = False
+                self.apply_decimate_value(context)
+            if self.remesh_timer_scheduled:
+                self.remesh_timer_scheduled = False
+                self.apply_remesh_value(context)
+
             if bpy.context.space_data.shading.color_type:
                 context.space_data.shading.color_type = self.color_type
 
@@ -1641,7 +2320,8 @@ class OBJECT_OT_add_bounding_object():
 
                 # set the display settings for the collider objects
                 obj.display_type = colSettings.display_type
-                obj.hide_render = True
+                if self.prefs.hide_render_on_creation:
+                    obj.hide_render = True
 
                 if self.prefs.my_hide:
                     obj.hide_viewport = self.prefs.my_hide
@@ -1657,33 +2337,62 @@ class OBJECT_OT_add_bounding_object():
             # Skipping the per-object update inside fix_inverse_matrix() (via
             # update_depsgraph=False) reduces 2N depsgraph evaluations to 2.
             if self.prefs.fix_parent_inverse_mtrx:
-                from ..collider_operators.utility_operators import fix_inverse_matrix
+                from ..collider_operators.utility_operators import fix_inverse_matrix, fix_inverse_matrix_is_safe
                 bpy.context.view_layer.update()
+                skipped_names = []
                 for obj in self.new_colliders_list:
-                    if not obj:
+                    if not obj or not obj.parent:
                         continue
-                    parent = obj.parent
-                    if parent:  # only if there is a parent
-                        scale_x, scale_y, scale_z = parent.scale
-                        if math.isclose(scale_x, scale_y, rel_tol=1e-5) and math.isclose(scale_y, scale_z,
-                                                                                         rel_tol=1e-5):
-                            if not self.use_custom_rotation:
-                                fix_inverse_matrix(obj, update_depsgraph=False)
-
-                                obj.location = (0, 0, 0)
-                                obj.rotation_euler = (0, 0, 0)  # Euler zero rotation
-                                obj.scale = (1, 1, 1)
-
-                        else:
-                            print(f"Object scale of {parent.name} is non-uniform. Cannot fix inverse matrix.")
-                            self.report({'WARNING'},
-                                        f"Cannot fix inverse matrix. {parent.name} has non-uniform scale.")
+                    if not fix_inverse_matrix_is_safe(obj):
+                        print(f"Skipping {obj.name}: parent-relative transform contains shear that "
+                              f"can't be baked without distorting the mesh.")
+                        skipped_names.append(obj.name)
+                        continue
+                    # fix_inverse_matrix() re-expresses the parent-relative transform on
+                    # obj.location/rotation_euler/scale rather than baking it into the mesh, so
+                    # it's safe to run even when use_custom_rotation set a custom rotation above:
+                    # that rotation is preserved, just relative to a now-uncancelled parent.
+                    fix_inverse_matrix(obj, update_depsgraph=False)
                 bpy.context.view_layer.update()
+                if skipped_names:
+                    self.report(
+                        {'WARNING'},
+                        f"Skipped {len(skipped_names)} collider(s) whose parent-relative transform "
+                        f"contains shear and can't be reset safely: {', '.join(skipped_names)}.",
+                    )
+
+            # Pass 3: optional auto-apply Collider Cleanup operations, each
+            # opt-in via its own preference (both default off). Runs after the
+            # parent-inverse fix so it sees the final, cleaned-up transforms.
+            if self.prefs.auto_apply_origin_to_parent or self.prefs.auto_apply_tris_limit:
+                from ..collider_operators.utility_operators import move_origin_to_parent, set_triangle_count_limit
+
+                if self.prefs.auto_apply_origin_to_parent:
+                    for obj in self.new_colliders_list:
+                        if obj:
+                            move_origin_to_parent(obj)
+                    bpy.context.view_layer.update()
+
+                if self.prefs.auto_apply_tris_limit:
+                    _tris_depsgraph = bpy.context.evaluated_depsgraph_get()
+                    unreachable_names = []
+                    for obj in self.new_colliders_list:
+                        if not obj:
+                            continue
+                        if not set_triangle_count_limit(obj, self.prefs.auto_apply_max_triangle_count,
+                                                         depsgraph=_tris_depsgraph):
+                            unreachable_names.append(obj.name)
+                    if unreachable_names:
+                        self.report(
+                            {'WARNING'},
+                            f"Auto tris-limit: cannot reach {self.prefs.auto_apply_max_triangle_count} tris "
+                            f"even at maximum decimation for: {', '.join(unreachable_names)}.",
+                        )
 
             # Delete temporary generated meshes
-            if self.prefs.debug == False:
-                self.remove_objects(self.tmp_meshes)
-                self.remove_empty_collection('tmp_mesh')
+            self.remove_objects(self.tmp_meshes)
+            self.remove_empty_collection(context, 'tmp_mesh')
+            self._clear_modifier_bake_cache()
 
             try:
                 bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
@@ -1850,29 +2559,11 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.current_settings_dic['decimate'] != dec_amount:
                     self.current_settings_dic['decimate'] = dec_amount
-                    # I had to iterate over all object because it crashed when just iterating over the modifiers.
-
-                    self.face_counts = []
-
-                    for obj in self.new_colliders_list:
-
-                        for mod in obj.modifiers:
-                            if mod in self.decimate_modifiers:
-                                mod.ratio = dec_amount
-                                face_count = mod.face_count
-                                self.face_counts.append(face_count)
-
-                                ## More accurate but less efficient face calculation
-                                # bmesh for getting triangle data
-                                # bm=bmesh.new()
-                                # depsgraph = bpy.context.evaluated_depsgraph_get()
-                                # bm.from_object(obj, depsgraph)
-                                # face_count = len(bm.faces)
-                                # self.polycount.append(str(face_count))
-                                # bm.free()
-
-                    self.report({'INFO'}, "Total collider face count:" + str(sum(self.face_counts)))
-                    self.draw_callback_px(context)
+                    # Debounce the actual re-evaluation (see apply_decimate_value):
+                    # it forces a depsgraph update per collider, which is too slow
+                    # to run on every intermediate mouse-move delta.
+                    self.decimate_debounce_until = time.time() + MODIFIER_DEBOUNCE_SECONDS
+                    self.arm_decimate_timer()
 
             if self.remesh_active:
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
@@ -1881,9 +2572,12 @@ class OBJECT_OT_add_bounding_object():
 
                 if self.current_settings_dic['voxel_size_multiplier'] != multiplier:
                     self.current_settings_dic['voxel_size_multiplier'] = multiplier
-
-                    for mod, max_dim in self.remesh_data:
-                        mod.voxel_size = multiplier * max_dim
+                    # Debounce the actual re-evaluation (see apply_remesh_value):
+                    # for subclasses that rebuild the mesh from scratch (voxel
+                    # grid), re-running on every delta falls behind the input
+                    # and the viewport stutters/freezes (#641).
+                    self.remesh_debounce_until = time.time() + MODIFIER_DEBOUNCE_SECONDS
+                    self.arm_remesh_timer()
 
             if self.opacity_active and self.shading_modes[self.shading_idx] == 'OBJECT':
                 delta = self.get_delta_value(delta, event, sensibility=0.002, tweak_amount=10, round_precision=1)
@@ -1974,7 +2668,7 @@ class OBJECT_OT_add_bounding_object():
         self.remove_objects(self.tmp_meshes)
 
         self.remove_objects(self.new_colliders_list)
-        self.remove_empty_collection('tmp_mesh')
+        self.remove_empty_collection(context, 'tmp_mesh')
         self.new_colliders_list = []
         self.original_obj_data = []
         self.tmp_meshes = []

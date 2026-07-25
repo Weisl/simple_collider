@@ -1,0 +1,246 @@
+import bpy
+
+from .. import __package__ as base_package
+from .checks import collect_validation_issues
+
+
+_SHAPE_ICON = {
+    'box_shape': 'MESH_CUBE',
+    'sphere_shape': 'MESH_UVSPHERE',
+    'capsule_shape': 'MESH_CAPSULE',
+    'convex_shape': 'MESH_ICOSPHERE',
+    'mesh_shape': 'MESH_MONKEY',
+    'voxel_shape': 'MESH_GRID',
+}
+
+
+def _object_icon(object_name):
+    """Icon representing the object's collider shape, or a generic object
+    icon for a render mesh (e.g. the object named by a missing_collider
+    issue, which isn't itself a collider)."""
+    obj = bpy.data.objects.get(object_name)
+    if obj is not None:
+        icon = _SHAPE_ICON.get(obj.get('collider_shape'))
+        if icon:
+            return icon
+    return 'OBJECT_DATA'
+
+
+class COLLISION_UL_validation_results(bpy.types.UIList):
+    """List of collider validation issues, grouped by the object they concern
+    (a bold header naming the object precedes its issues, since the flat
+    results collection is already grouped in that order - collect_validation_
+    issues() appends every issue for one object before moving to the next).
+    Each row has a dedicated arrow button to select/frame the object (see
+    COLLISION_OT_select_validation_object); the message itself is a plain,
+    non-interactive label. Supports filtering by severity and by a free-text
+    search across the object name/message (see filter_items/draw_filter),
+    important on scenes with many colliders where the flat report otherwise
+    gets overwhelming."""
+
+    show_errors: bpy.props.BoolProperty(name="Errors", default=True, description="Show error-level issues")
+    show_warnings: bpy.props.BoolProperty(name="Warnings", default=True, description="Show warning-level issues")
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        results = data.simple_collider_validation_results
+        # Grouping must walk back to the previous *visible* item, not just
+        # index - 1: when filtering hides some rows, the item right before
+        # this one in the raw collection may belong to the same object but
+        # not be shown, which would otherwise wrongly suppress this row's
+        # header (see filter_items, which caches the same flags used here).
+        visible_flags = getattr(self, '_visible_flags', None)
+        is_group_start = True
+        if visible_flags is not None:
+            for i in range(index - 1, -1, -1):
+                if visible_flags[i]:
+                    is_group_start = results[i].object_name != item.object_name
+                    break
+        elif index > 0:
+            is_group_start = results[index - 1].object_name != item.object_name
+
+        col = layout.column(align=True)
+        if is_group_start:
+            col.label(text=item.object_name, icon=_object_icon(item.object_name))
+
+        row = col.row(align=True)
+        row.alert = item.severity == 'ERROR'
+        select_op = row.operator('collision.select_validation_object', text='', icon='FORWARD')
+        select_op.object_name = item.object_name
+        severity_icon = 'ERROR' if item.severity == 'ERROR' else 'INFO'
+        row.label(text=item.message, icon=severity_icon)
+
+    def filter_items(self, context, data, propname):
+        results = getattr(data, propname)
+        flt_flags = [self.bitflag_filter_item] * len(results)
+
+        filter_text = self.filter_name.lower()
+        for idx, item in enumerate(results):
+            if item.severity == 'ERROR' and not self.show_errors:
+                flt_flags[idx] = 0
+            elif item.severity == 'WARNING' and not self.show_warnings:
+                flt_flags[idx] = 0
+            elif filter_text and filter_text not in item.object_name.lower() and filter_text not in item.message.lower():
+                flt_flags[idx] = 0
+
+        # Cached for draw_item's grouping logic above - filter_items always
+        # runs before draw_item within the same template_list draw call.
+        self._visible_flags = flt_flags
+        return flt_flags, []
+
+    def draw_filter(self, context, layout):
+        row = layout.row(align=True)
+        row.prop(self, 'filter_name', text='', icon='VIEWZOOM')
+        row = layout.row(align=True)
+        row.prop(self, 'show_errors', toggle=True, icon='ERROR')
+        row.prop(self, 'show_warnings', toggle=True, icon='INFO')
+
+
+def _frame_selected(context):
+    """Best-effort viewport framing after a selection change from within the
+    validation popup. Selection itself is the important part of the action -
+    framing is skipped rather than raised as an error if no 3D viewport can
+    be found (e.g. a very unusual screen layout)."""
+    if context.area and context.area.type == 'VIEW_3D' and context.region:
+        with context.temp_override(area=context.area, region=context.region):
+            bpy.ops.view3d.view_selected()
+        return
+
+    for window in context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type != 'VIEW_3D':
+                continue
+            region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+            if region is None:
+                continue
+            with context.temp_override(window=window, area=area, region=region):
+                bpy.ops.view3d.view_selected()
+            return
+
+
+class COLLISION_OT_select_validation_object(bpy.types.Operator):
+    """Select and frame the object referenced by this validation result"""
+    bl_idname = "collision.select_validation_object"
+    bl_label = "Select Object"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    object_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        obj = bpy.data.objects.get(self.object_name)
+        if obj is None:
+            self.report({'WARNING'}, f"Object '{self.object_name}' no longer exists")
+            return {'CANCELLED'}
+
+        for selected in context.selected_objects:
+            selected.select_set(False)
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+
+        _frame_selected(context)
+
+        return {'FINISHED'}
+
+
+class COLLISION_OT_copy_validation_report(bpy.types.Operator):
+    """Copy the validation report to the clipboard"""
+    bl_idname = "collision.copy_validation_report"
+    bl_label = "Copy Report to Clipboard"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        wm = context.window_manager
+        results = wm.simple_collider_validation_results
+        if not results:
+            self.report({'INFO'}, "No validation issues to copy")
+            return {'CANCELLED'}
+
+        lines = []
+        current_object = None
+        for item in results:
+            if item.object_name != current_object:
+                if current_object is not None:
+                    lines.append('')
+                lines.append(item.object_name)
+                current_object = item.object_name
+            lines.append(f"  [{item.severity}] {item.message}")
+
+        wm.clipboard = '\n'.join(lines)
+        self.report({'INFO'}, "Validation report copied to clipboard")
+        return {'FINISHED'}
+
+
+class COLLISION_OT_validate_colliders(bpy.types.Operator):
+    """Check colliders in the scene for common problems (BETA)"""
+    bl_idname = "collision.validate_colliders"
+    bl_label = "Validate Colliders (BETA)"
+    bl_options = {'REGISTER'}
+
+    scope: bpy.props.EnumProperty(
+        name="Scope",
+        items=(
+            ('VIEW_LAYER', "Whole Scene", "Check every object in the current view layer"),
+            ('SELECTION', "Selected Objects", "Check only the currently selected objects"),
+        ),
+        default='VIEW_LAYER',
+        update=lambda self, context: self._rescan(context),
+    )
+
+    def _objects(self, context):
+        if self.scope == 'SELECTION':
+            return context.selected_objects
+        return context.view_layer.objects
+
+    def _rescan(self, context):
+        prefs = context.preferences.addons[base_package].preferences
+        depsgraph = context.evaluated_depsgraph_get()
+        wm = context.window_manager
+
+        wm.progress_begin(0, 1)
+        try:
+            issues = collect_validation_issues(
+                self._objects(context), prefs, depsgraph,
+                progress_callback=lambda done, total: wm.progress_update(done / total if total else 1),
+            )
+        finally:
+            wm.progress_end()
+
+        results = wm.simple_collider_validation_results
+        results.clear()
+        for issue in issues:
+            item = results.add()
+            item.check_id = issue.check_id
+            item.object_name = issue.object_name
+            item.severity = issue.severity
+            item.message = issue.message
+        wm.simple_collider_validation_index = 0
+
+    def invoke(self, context, event):
+        self._rescan(context)
+
+        if len(context.window_manager.simple_collider_validation_results) == 0:
+            self.report({'INFO'}, "No collider issues found")
+            return {'FINISHED'}
+
+        return context.window_manager.invoke_props_dialog(self, width=480)
+
+    def draw(self, context):
+        layout = self.layout
+        wm = context.window_manager
+
+        row = layout.row()
+        row.prop(self, 'scope', expand=True)
+
+        count = len(wm.simple_collider_validation_results)
+        layout.label(text=f"{count} issue(s) found", icon='ERROR' if count else 'CHECKMARK')
+
+        layout.template_list(
+            'COLLISION_UL_validation_results', '',
+            wm, 'simple_collider_validation_results',
+            wm, 'simple_collider_validation_index',
+            rows=8,
+        )
+
+        layout.operator('collision.copy_validation_report', icon='COPYDOWN')
+
+    def execute(self, context):
+        return {'FINISHED'}

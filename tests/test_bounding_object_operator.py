@@ -6,6 +6,7 @@ Run with headless Blender::
 
     blender --background --python tests/test_loose_island_modifier_handling.py
 """
+import math
 import os
 import sys
 import types as _types
@@ -156,12 +157,12 @@ class _OperatorSpy:
     def is_valid_object(self, obj):
         return True
 
-    def add_to_collections(self, obj, collection_name, hide=False, color='NONE'):
+    def add_to_collections(self, context, obj, collection_name, hide=False, color='NONE'):
         # Return a namespace so that `col.color_tag = ...` succeeds without
         # creating real Blender collections that require separate teardown.
         return _types.SimpleNamespace(color_tag=color)
 
-    def apply_all_modifiers(self, context, obj):
+    def apply_all_modifiers(self, context, obj, cache_key=None):
         self.apply_modifier_calls.append(obj.name)
 
     def remove_objects(self, objs):
@@ -259,7 +260,6 @@ class _PostprocessingFake:
             use_col_collection=False,
             use_parent_to=True,       # True = skip the unparent branch
             wireframe_mode='NEVER',
-            debug=False,              # False = the hide loop runs (pre-fix)
             physics_material_name='',
         )
 
@@ -287,7 +287,7 @@ class _PostprocessingFake:
         # No-op: skip collection bookkeeping for this test.
         pass
 
-    def add_to_collections(self, obj, name, **kwargs):
+    def add_to_collections(self, context, obj, name, **kwargs):
         # No-op: use_col_collection is False so this is never reached.
         pass
 
@@ -868,6 +868,403 @@ class TestFixInverseMatrixUpdateDepsgraph(unittest.TestCase):
                 )
 
 
+# -- fix_inverse_matrix: must not bake rotation/location into mesh data -------
+
+
+class TestFixInverseMatrixPreservesTransform(unittest.TestCase):
+    """fix_inverse_matrix() must clear matrix_parent_inverse by re-expressing
+    the parent-relative transform on obj.location/rotation_euler/scale, not by
+    baking it into the mesh and zeroing the transform.
+
+    Regression for: a rotated, off-centre box collider (e.g. an oriented
+    bounding box, or any box with "Recenter Origin" applied) lost both its
+    origin location and its rotation after the parent-inverse fix ran, because
+    the old implementation baked the local rotation/offset into the mesh
+    vertices and reset the object's own transform to identity. That leaves the
+    mesh's local vertices no longer forming an axis-aligned box, which breaks
+    engines (e.g. Unreal's UBX_/USP_/UCP_ collision convention) that read the
+    primitive's shape from local vertex data and its placement from the
+    object's transform.
+    """
+
+    _PREFIX = '__test_fixinv_preserve_'
+
+    def setUp(self):
+        self._obj_names = []
+
+    def tearDown(self):
+        for name in self._obj_names:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                data = obj.data
+                bpy.data.objects.remove(obj, do_unlink=True)
+                if isinstance(data, bpy.types.Mesh):
+                    mesh = bpy.data.meshes.get(data.name)
+                    if mesh is not None:
+                        bpy.data.meshes.remove(mesh)
+
+    def _make_parent(self, suffix, location, rotation):
+        obj = bpy.data.objects.new(f'{self._PREFIX}parent_{suffix}', None)
+        obj.location = location
+        obj.rotation_euler = rotation
+        bpy.context.scene.collection.objects.link(obj)
+        self._obj_names.append(obj.name)
+        return obj
+
+    @staticmethod
+    def _box_verts():
+        """Unit box, corners at the extremes on every axis -- mirrors a UBX_ box collider."""
+        return (
+            [(-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
+             (-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1)],
+            [(0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)],
+        )
+
+    @staticmethod
+    def _cylinder_verts(radius=1.0, height=2.0, segments=12):
+        """Upright cylinder (two rings on the local Z axis) -- mirrors a UCP_ capsule/cylinder
+        collider, which must stay axis-aligned along local Z."""
+        verts = []
+        for z in (-height / 2, height / 2):
+            for i in range(segments):
+                a = 2 * math.pi * i / segments
+                verts.append((radius * math.cos(a), radius * math.sin(a), z))
+        faces = []
+        for i in range(segments):
+            j = (i + 1) % segments
+            faces.append((i, j, segments + j, segments + i))
+        faces.append(tuple(range(segments)))
+        faces.append(tuple(range(2 * segments - 1, segments - 1, -1)))
+        return verts, faces
+
+    @staticmethod
+    def _sphere_verts(radius=1.0, rings=6, segments=8):
+        """Sphere centred on the local origin -- mirrors a USP_ sphere collider."""
+        verts = [(0, 0, -radius)]
+        for ring in range(1, rings):
+            phi = math.pi * ring / rings
+            z = radius * math.cos(phi)
+            r = radius * math.sin(phi)
+            for seg in range(segments):
+                theta = 2 * math.pi * seg / segments
+                verts.append((r * math.cos(theta), r * math.sin(theta), z))
+        verts.append((0, 0, radius))
+        # Face winding doesn't matter for these tests (only vertex positions are checked).
+        return verts, []
+
+    def _make_child(self, suffix, parent, verts_faces, location, rotation):
+        """Parent a mesh built from (verts, faces) and then give it an offset
+        origin + custom rotation -- mirroring Recenter Origin + an oriented
+        collider (e.g. a minimum/oriented bounding box)."""
+        verts, faces = verts_faces
+        mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{suffix}')
+        mesh.from_pydata(verts, [], faces)
+        mesh.update()
+        obj = bpy.data.objects.new(f'{self._PREFIX}child_{suffix}', mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        obj.parent = parent
+        obj.matrix_parent_inverse = parent.matrix_world.inverted()
+        bpy.context.view_layer.update()
+
+        obj.location = location
+        obj.rotation_euler = rotation
+        bpy.context.view_layer.update()
+        self._obj_names.append(obj.name)
+        return obj
+
+    @staticmethod
+    def _is_axis_aligned_box(obj):
+        xs, ys, zs = zip(*(tuple(v.co) for v in obj.data.vertices))
+        return all(len({round(v, 6) for v in axis}) <= 2 for axis in (xs, ys, zs))
+
+    @staticmethod
+    def _cylinder_axis_alignment_error(obj):
+        """0 for an upright cylinder (constant radius per Z ring); grows if the
+        local axis has been tilted."""
+        radii_by_z = {}
+        for v in obj.data.vertices:
+            z = round(v.co.z, 5)
+            radii_by_z.setdefault(z, []).append(math.hypot(v.co.x, v.co.y))
+        return max(max(rs) - min(rs) for rs in radii_by_z.values())
+
+    @staticmethod
+    def _sphere_shape_error(obj):
+        """0 for a sphere centred on the local origin; grows if the centre has
+        shifted away from the local origin."""
+        dists = [v.co.length for v in obj.data.vertices]
+        return max(dists) - min(dists)
+
+    @staticmethod
+    def _world_verts(obj):
+        return [obj.matrix_world @ v.co for v in obj.data.vertices]
+
+    def _assert_transform_preserved_not_baked(self, child, shape_error_fn, shape_error_msg):
+        shape_error_before = shape_error_fn(child)
+        local_verts_before = [v.co.copy() for v in child.data.vertices]
+        world_verts_before = self._world_verts(child)
+
+        _fix_inverse_matrix(child, update_depsgraph=False)
+        bpy.context.view_layer.update()
+
+        self.assertTrue(child.matrix_parent_inverse.is_identity)
+
+        # Mesh data must be untouched -- rotation/offset must live on the
+        # object's transform, not be baked into vertex coordinates.
+        for v_before, v_after in zip(local_verts_before, child.data.vertices):
+            for axis in range(3):
+                self.assertAlmostEqual(v_before[axis], v_after.co[axis], places=6)
+        self.assertAlmostEqual(shape_error_before, shape_error_fn(child), places=4, msg=shape_error_msg)
+
+        # World-space placement must be unchanged.
+        for v_before, v_after in zip(world_verts_before, self._world_verts(child)):
+            self.assertAlmostEqual((v_before - v_after).length, 0.0, places=4)
+
+        # The collider's own origin/rotation must not collapse to the
+        # parent's origin / identity rotation.
+        self.assertGreater(child.location.length, 1e-4)
+        self.assertGreater(child.rotation_euler.to_quaternion().angle, 1e-4)
+
+    def test_rotated_offset_box_keeps_shape_and_transform(self):
+        parent = self._make_parent(
+            'box', location=(2.0, 3.0, 1.0),
+            rotation=(math.radians(30), math.radians(15), 0.0),
+        )
+        child = self._make_child(
+            'box', parent, self._box_verts(),
+            location=(0.3, -0.2, 0.1), rotation=(0.0, 0.0, math.radians(45)),
+        )
+        self.assertTrue(
+            self._is_axis_aligned_box(child),
+            "test setup precondition: child mesh must start as an axis-aligned box",
+        )
+        self._assert_transform_preserved_not_baked(
+            child,
+            lambda o: 0.0 if self._is_axis_aligned_box(o) else 1.0,
+            "mesh must remain an axis-aligned box in local space after the fix",
+        )
+
+    def test_rotated_offset_cylinder_keeps_shape_and_transform(self):
+        parent = self._make_parent(
+            'cyl', location=(2.0, 3.0, 1.0),
+            rotation=(math.radians(30), math.radians(15), 0.0),
+        )
+        child = self._make_child(
+            'cyl', parent, self._cylinder_verts(),
+            location=(0.3, -0.2, 0.1), rotation=(0.0, 0.0, math.radians(45)),
+        )
+        self._assert_transform_preserved_not_baked(
+            child,
+            self._cylinder_axis_alignment_error,
+            "cylinder/capsule must stay upright (axis-aligned along local Z) after the fix",
+        )
+
+    def test_rotated_offset_sphere_keeps_shape_and_transform(self):
+        parent = self._make_parent(
+            'sph', location=(2.0, 3.0, 1.0),
+            rotation=(math.radians(30), math.radians(15), 0.0),
+        )
+        child = self._make_child(
+            'sph', parent, self._sphere_verts(),
+            location=(0.3, -0.2, 0.1), rotation=(0.0, 0.0, math.radians(45)),
+        )
+        self._assert_transform_preserved_not_baked(
+            child,
+            self._sphere_shape_error,
+            "sphere must stay centred on the local origin after the fix",
+        )
+
+
+# -- fix_parent_inverse_transform: shear-aware skip ---------------------------
+
+_fix_inverse_matrix_is_safe = _addon.collider_operators.utility_operators.fix_inverse_matrix_is_safe
+_COLLISION_OT_FixColliderTransform = _addon.collider_operators.utility_operators.COLLISION_OT_FixColliderTransform
+
+
+def _select_only(*objs):
+    """Deselect everything, then select and activate the given objects."""
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    for o in objs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]
+
+
+class TestFixColliderTransformSkipsShearedTransforms(unittest.TestCase):
+    """object.fix_parent_inverse_transform must skip (and warn about) colliders
+    whose parent-relative transform contains shear that Blender's loc/rot/scale
+    decomposition can't represent, and fix everything else.
+
+    obj.matrix_world already equals parent.matrix_world @ matrix_parent_inverse
+    @ matrix_basis, so the parent's *current* world matrix always cancels out
+    of fix_inverse_matrix()'s math. What determines safety is whether
+    matrix_parent_inverse -- frozen at whatever moment it was last set -- itself
+    contains shear. A parent.scale check (the earlier approach) gets this wrong
+    in both directions: it needlessly skips safe cases where the parent was
+    scaled non-uniformly well after parenting, and it silently waves through
+    unsafe cases where the parent was non-uniform+rotated at parenting time and
+    later reset to a uniform scale. These tests cover both failure modes.
+    """
+
+    _PREFIX = '__test_fixshear_'
+
+    @classmethod
+    def setUpClass(cls):
+        bpy.utils.register_class(_COLLISION_OT_FixColliderTransform)
+
+    @classmethod
+    def tearDownClass(cls):
+        bpy.utils.unregister_class(_COLLISION_OT_FixColliderTransform)
+
+    def setUp(self):
+        self._obj_names = []
+
+    def tearDown(self):
+        for name in self._obj_names:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                data = obj.data
+                bpy.data.objects.remove(obj, do_unlink=True)
+                if isinstance(data, bpy.types.Mesh):
+                    mesh = bpy.data.meshes.get(data.name)
+                    if mesh is not None:
+                        bpy.data.meshes.remove(mesh)
+
+    def _make_parent(self, suffix, location=(0.0, 0.0, 0.0), scale=(1.0, 1.0, 1.0), rotation=(0.0, 0.0, 0.0)):
+        obj = bpy.data.objects.new(f'{self._PREFIX}parent_{suffix}', None)
+        obj.location = location
+        obj.scale = scale
+        obj.rotation_euler = rotation
+        bpy.context.scene.collection.objects.link(obj)
+        self._obj_names.append(obj.name)
+        return obj
+
+    def _make_child(self, suffix, parent, location=(0.3, 0.4, 0.2), rotation=(0.0, 0.0, 0.0)):
+        """Create a mesh child and parent it now, freezing matrix_parent_inverse
+        against the parent's *current* matrix_world (mirrors what a real
+        parenting operation does)."""
+        mesh = bpy.data.meshes.new(f'{self._PREFIX}mesh_{suffix}')
+        mesh.from_pydata(
+            [(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
+             (-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, 0.5)],
+            [], [(0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)],
+        )
+        mesh.update()
+        obj = bpy.data.objects.new(f'{self._PREFIX}child_{suffix}', mesh)
+        obj.location = location
+        obj.rotation_euler = rotation
+        bpy.context.scene.collection.objects.link(obj)
+        bpy.context.view_layer.update()
+        obj.parent = parent
+        obj.matrix_parent_inverse = parent.matrix_world.inverted()
+        bpy.context.view_layer.update()
+        self._obj_names.append(obj.name)
+        return obj
+
+    @staticmethod
+    def _world_verts(obj):
+        return [obj.matrix_world @ v.co for v in obj.data.vertices]
+
+    def test_direct_non_uniform_scale_no_rotation_is_fixed(self):
+        """Non-uniform scale alone, with no rotation anywhere in the chain,
+        never produces shear -- must be fixed, not skipped."""
+        parent = self._make_parent('direct_nonuniform', scale=(1.0, 2.0, 3.0))
+        child = self._make_child('direct_nonuniform', parent)
+        self.assertTrue(_fix_inverse_matrix_is_safe(child))
+
+        before = self._world_verts(child)
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+        after = self._world_verts(child)
+
+        self.assertTrue(child.matrix_parent_inverse.is_identity)
+        for v_before, v_after in zip(before, after):
+            self.assertAlmostEqual((v_before - v_after).length, 0.0, places=4)
+
+    def test_direct_non_uniform_scale_with_rotation_is_skipped(self):
+        """Non-uniform scale combined with rotation produces real shear that
+        Blender's decomposition cannot represent -- must be skipped untouched."""
+        parent = self._make_parent(
+            'direct_nonuniform_rot', scale=(1.0, 2.0, 3.0),
+            rotation=(math.radians(20), math.radians(10), 0.0),
+        )
+        child = self._make_child('direct_nonuniform_rot', parent, rotation=(0.0, 0.0, math.radians(25)))
+        self.assertFalse(_fix_inverse_matrix_is_safe(child))
+
+        mpi_before = child.matrix_parent_inverse.copy()
+        verts_before = [v.co.copy() for v in child.data.vertices]
+
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+
+        self.assertEqual(child.matrix_parent_inverse, mpi_before)
+        for v_before, v_after in zip(verts_before, child.data.vertices):
+            for axis in range(3):
+                self.assertAlmostEqual(v_before[axis], v_after.co[axis], places=6)
+
+    def test_parent_scaled_non_uniform_after_parenting_is_still_safe(self):
+        """Regression: a parent.scale-only check would skip this (parent reads
+        non-uniform right now), but it's actually safe -- matrix_parent_inverse
+        was frozen while the parent was still uniform, and the parent's
+        *current* scale cancels out of fix_inverse_matrix()'s math regardless
+        of what it is."""
+        parent = self._make_parent('mutated_after', scale=(1.0, 1.0, 1.0))
+        child = self._make_child('mutated_after', parent)
+
+        # Mutate the parent non-uniformly + add rotation AFTER matrix_parent_inverse froze.
+        parent.scale = (2.0, 0.5, 1.0)
+        parent.rotation_euler = (0.0, 0.4, 0.0)
+        bpy.context.view_layer.update()
+
+        self.assertTrue(
+            _fix_inverse_matrix_is_safe(child),
+            "matrix_parent_inverse was frozen while the parent was still uniform; "
+            "the parent's current (mutated) scale must not block the fix",
+        )
+
+        before = self._world_verts(child)
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+        after = self._world_verts(child)
+
+        self.assertTrue(child.matrix_parent_inverse.is_identity)
+        for v_before, v_after in zip(before, after):
+            self.assertAlmostEqual((v_before - v_after).length, 0.0, places=4)
+
+    def test_parent_reset_to_uniform_after_shear_was_frozen_is_still_skipped(self):
+        """Regression: a parent.scale-only check would wave this through (the
+        parent reads uniform right now), but matrix_parent_inverse froze real
+        shear back when the parent was non-uniform+rotated -- fixing it would
+        corrupt the mesh. This is the dangerous false-negative a scale-only
+        check misses silently."""
+        parent = self._make_parent(
+            'shear_then_reset', scale=(1.0, 3.0, 0.4),
+            rotation=(math.radians(25), math.radians(15), 0.0),
+        )
+        child = self._make_child('shear_then_reset', parent, rotation=(0.0, 0.0, math.radians(20)))
+
+        # Reset the parent back to a uniform scale. matrix_parent_inverse keeps
+        # the shear from when it was frozen.
+        parent.scale = (2.0, 2.0, 2.0)
+        bpy.context.view_layer.update()
+
+        self.assertFalse(
+            _fix_inverse_matrix_is_safe(child),
+            "parent.scale reads uniform now, but matrix_parent_inverse still "
+            "carries shear frozen from when the parent was non-uniform+rotated",
+        )
+
+        mpi_before = child.matrix_parent_inverse.copy()
+        verts_before = [v.co.copy() for v in child.data.vertices]
+
+        _select_only(child)
+        bpy.ops.object.fix_parent_inverse_transform()
+
+        self.assertEqual(child.matrix_parent_inverse, mpi_before)
+        for v_before, v_after in zip(verts_before, child.data.vertices):
+            for axis in range(3):
+                self.assertAlmostEqual(v_before[axis], v_after.co[axis], places=6)
+
+
 # -- set_origin_to_center_of_mass: pre-fetched depsgraph ----------------------
 
 
@@ -1131,6 +1528,166 @@ class TestGroupToggleNamingCorrectness(unittest.TestCase):
             f"  after:  {names_after_second}\n"
             "update_names() must clear _naming_cache at entry so each call "
             "restarts numbering from 001."
+        )
+
+
+class TestCreateCollectionUsesContextScene(unittest.TestCase):
+    """Regression test for #552: create_collection must link into
+    context.scene, not the global bpy.context.scene (which falls back to
+    bpy.data.scenes[0] in headless/background mode).
+    """
+
+    def setUp(self):
+        self.other_scene = bpy.data.scenes.new('SC_TestOtherScene')
+        self.created = None
+
+    def tearDown(self):
+        if self.created is not None:
+            for scene in bpy.data.scenes:
+                if scene.collection.children.get(self.created.name) is self.created:
+                    scene.collection.children.unlink(self.created)
+            bpy.data.collections.remove(self.created)
+        bpy.data.scenes.remove(self.other_scene)
+
+    def test_links_under_context_scene_not_bpy_context_scene(self):
+        name = 'SC_TestColliders'
+        context_stub = _types.SimpleNamespace(scene=self.other_scene)
+
+        self.created = _OBJECT_OT_add_bounding_object.create_collection(context_stub, name)
+
+        self.assertIs(
+            self.other_scene.collection.children.get(name), self.created,
+            "collection was not linked under the scene passed via context"
+        )
+        self.assertIsNot(
+            bpy.context.scene.collection.children.get(name), self.created,
+            "collection was linked under bpy.context.scene instead of the scene from context"
+        )
+
+
+class TestLocalChildCollectionIgnoresLinked(unittest.TestCase):
+    """Regression test for #552: linked (library) collections must be
+    ignored when looking up an existing collider collection among a
+    parent collection's direct children.
+    """
+
+    def test_skips_linked_prefers_local(self):
+        linked = _types.SimpleNamespace(name='Colliders', library=object())
+        local = _types.SimpleNamespace(name='Colliders', library=None)
+        parent = _types.SimpleNamespace(children=[linked, local])
+        result = _prim_mod._local_child_collection(parent, 'Colliders')
+        self.assertIs(result, local)
+
+    def test_returns_none_when_only_linked_exists(self):
+        linked = _types.SimpleNamespace(name='Colliders', library=object())
+        parent = _types.SimpleNamespace(children=[linked])
+        result = _prim_mod._local_child_collection(parent, 'Colliders')
+        self.assertIsNone(result)
+
+
+class TestCreateCollectionIsScopedPerScene(unittest.TestCase):
+    """Regression test for #552 follow-up: different scenes must get their
+    own collider collection rather than sharing a single collection linked
+    into multiple scenes (which would bleed one scene's colliders into
+    another via the outliner).
+    """
+
+    def setUp(self):
+        self.scene_a = bpy.data.scenes.new('SC_TestSceneA')
+        self.scene_b = bpy.data.scenes.new('SC_TestSceneB')
+        self.created = []
+
+    def tearDown(self):
+        for collection in self.created:
+            for scene in (self.scene_a, self.scene_b):
+                if any(child is collection for child in scene.collection.children):
+                    scene.collection.children.unlink(collection)
+            if collection.name in bpy.data.collections:
+                bpy.data.collections.remove(collection)
+        bpy.data.scenes.remove(self.scene_a)
+        bpy.data.scenes.remove(self.scene_b)
+
+    def test_each_scene_gets_its_own_collection(self):
+        name = 'SC_TestPerSceneColliders'
+        ctx_a = _types.SimpleNamespace(scene=self.scene_a)
+        ctx_b = _types.SimpleNamespace(scene=self.scene_b)
+
+        col_a = _OBJECT_OT_add_bounding_object.create_collection(ctx_a, name)
+        col_b = _OBJECT_OT_add_bounding_object.create_collection(ctx_b, name)
+        self.created.extend([col_a, col_b])
+
+        self.assertIsNot(
+            col_a, col_b,
+            "both scenes were given the same collection object instead of separate ones"
+        )
+        self.assertFalse(
+            any(child is col_b for child in self.scene_a.collection.children),
+            "scene B's collider collection leaked into scene A"
+        )
+        self.assertFalse(
+            any(child is col_a for child in self.scene_b.collection.children),
+            "scene A's collider collection leaked into scene B"
+        )
+
+        # A second call for the same scene must reuse the same collection,
+        # not create a third one.
+        col_a_again = _OBJECT_OT_add_bounding_object.create_collection(ctx_a, name)
+        self.assertIs(col_a_again, col_a)
+
+
+class TestCreateCollectionReusesAutoSuffixedName(unittest.TestCase):
+    """Regression test: when a local collection with the base name already
+    exists elsewhere in the file (e.g. another scene's own collider
+    collection - local collection names are unique file-wide, not per
+    scene), a new collection gets this addon's own "_NN" disambiguation
+    suffix on creation (e.g. "Colliders_01") rather than Blender's default
+    ".001" style. Later calls in the same scene must recognize and reuse
+    that suffixed collection instead of creating a new one every time -
+    otherwise a single collider-generation run produces one throwaway
+    collection per object instead of one shared collection for the scene.
+    """
+
+    def setUp(self):
+        self.other_scene = bpy.data.scenes.new('SC_TestSuffixScene')
+        # Occupy the base name elsewhere in the file so a same-named
+        # collection created afterward is forced to get a "_NN" suffix.
+        self.name_holder = bpy.data.collections.new('SC_TestSuffixColliders')
+        self.created = []
+
+    def tearDown(self):
+        for collection in self.created:
+            if any(child is collection for child in self.other_scene.collection.children):
+                self.other_scene.collection.children.unlink(collection)
+            if collection.name in bpy.data.collections:
+                bpy.data.collections.remove(collection)
+        if self.name_holder.name in bpy.data.collections:
+            bpy.data.collections.remove(self.name_holder)
+        bpy.data.scenes.remove(self.other_scene)
+
+    def test_repeated_calls_reuse_the_suffixed_collection(self):
+        name = 'SC_TestSuffixColliders'
+        context_stub = _types.SimpleNamespace(scene=self.other_scene)
+
+        col1 = _OBJECT_OT_add_bounding_object.create_collection(context_stub, name)
+        self.created.append(col1)
+        self.assertEqual(
+            col1.name, name + '_01',
+            "expected the addon's own '_01' disambiguation suffix, not Blender's default '.001'"
+        )
+
+        for _ in range(5):
+            col_n = _OBJECT_OT_add_bounding_object.create_collection(context_stub, name)
+            self.assertIs(
+                col_n, col1,
+                "repeated create_collection() calls created a new collection instead of "
+                "reusing the auto-suffixed one"
+            )
+
+        same_name_children = [c for c in self.other_scene.collection.children if c.name.startswith(name)]
+        self.assertEqual(
+            len(same_name_children), 1,
+            f"expected exactly one collider collection in the scene, found: "
+            f"{[c.name for c in same_name_children]}"
         )
 
 

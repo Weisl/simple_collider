@@ -64,6 +64,23 @@ def update_panel_category(self, context):
     return
 
 
+def update_group_colors(self, context):
+    """Refresh the cached N-panel group swatches so color preference edits
+    show immediately instead of only after a file reload.
+
+    ColliderGroup.color (drawn in the N-panel) is a stored copy of the
+    preference color, not a live read of it - it's only refreshed as a side
+    effect of set_default_group_values(), which otherwise only runs on addon
+    register and file load. Re-running it here on every preference edit keeps
+    the cached copy in sync, and tagging redraws makes the change visible
+    right away rather than on the next incidental repaint.
+    """
+    set_default_group_values()
+    for window in context.window_manager.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
+
+
 def get_default_executable_path():
     """Set the default executable path for the vhacd executable to the addon folder. """
     path = Path(str(__file__))
@@ -85,6 +102,37 @@ def get_default_executable_path():
 
     collider_addon_directory = os.path.join(
         parent, vhacd_app_folder, OS_folder)
+
+    if os.path.isdir(collider_addon_directory):
+        executable_path = os.path.join(collider_addon_directory, app_name)
+        if os.path.isfile(executable_path):
+            return executable_path
+
+    # if folder or file does not exist, return empty string
+    return ''
+
+
+def get_default_coacd_executable_path():
+    """Set the default executable path for the CoACD executable to the addon folder. """
+    path = Path(str(__file__))
+    parent = path.parent.parent.absolute()
+
+    coacd_app_folder = "coACD_app"
+
+    if platform.system() == 'Windows':
+        OS_folder = 'Win'
+        app_name = 'coacd_1_0_11_win_amd64.exe'
+    elif platform.system() == 'Linux':
+        OS_folder = 'Linux'
+        app_name = 'coacd_1_0_11_linux_amd64'
+    elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
+        OS_folder = 'Mac'
+        app_name = 'coacd_1_0_11_macos_arm64'
+    else:
+        return ''
+
+    collider_addon_directory = os.path.join(
+        parent, coacd_app_folder, OS_folder)
 
     if os.path.isdir(collider_addon_directory):
         executable_path = os.path.join(collider_addon_directory, app_name)
@@ -152,13 +200,6 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         """Draw the settings panel"""
         box = layout.box()
         row = box.row()
-        row.label(text='General')
-        for propName in self.general_props:
-            row = box.row()
-            row.prop(self, propName)
-
-        box = layout.box()
-        row = box.row()
         row.label(text='Collections')
         for propName in self.col_props:
             row = box.row()
@@ -171,8 +212,25 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             row = box.row()
             row.prop(self, propName)
 
-        row = layout.row()
-        row.prop(self, 'debug')
+    def draw_postprocess_panel(self, layout):
+        """Draw the post processing panel"""
+        box = layout.box()
+        row = box.row()
+        row.label(text='General')
+        for propName in self.postprocess_props:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        row = box.row()
+        row.label(text='Auto Apply on Creation')
+        row = box.row()
+        row.prop(self, "auto_apply_tris_limit")
+        sub = box.row()
+        sub.enabled = self.auto_apply_tris_limit
+        sub.prop(self, "auto_apply_max_triangle_count")
+        row = box.row()
+        row.prop(self, "auto_apply_origin_to_parent")
 
     def draw_naming_panel(self, layout):
         """Draw the naming panel"""
@@ -313,23 +371,31 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
 
         elif platform.system() == 'Linux':
             box.label(text="Supported (Linux Mint/Ubuntu).")
-            box.label(text="You can also use a custom build of vhacd compiled for your Linux distribution.")
-        
+            box.label(text="You can also use a custom build compiled for your Linux distribution.")
+
         elif platform.system() == 'Darwin' and platform.machine() == 'arm64':
             box.label(text="Supported (macOS ARM64)")
 
         else:
             box.label(text="Auto Convex is currently not supported on this platform", icon='ERROR')
 
-
+        box = layout.box()
+        box.label(text="Temporary Data", icon='FILE_FOLDER')
+        box.label(text="Directory used to store temporary files during Auto Convex generation.")
+        row = box.row()
+        if not self.data_path:
+            row.alert = True
+        row.prop(self, "data_path", icon='ERROR' if not self.data_path else 'FILE_FOLDER')
 
         box = layout.box()
-        box.label(text="Executable Paths", icon='FILE_FOLDER')
-        
+        row = box.row()
+        row.label(text="V-HACD", icon='MESH_ICOSPHERE')
 
+        row = box.row()
+        row.label(text="Executable Paths:")
 
         if os.path.exists(self.default_executable_path) and os.access(self.default_executable_path, os.X_OK):
-            row = box.row() 
+            row = box.row()
             row.enabled = False
             row.prop(self, 'default_executable_path', icon='CHECKMARK')
         else:
@@ -345,26 +411,76 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
             ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
             row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.default_executable_path)
 
-        
         row = box.row()
         row.label(text="Custom Executable (Optional):")
         row.prop(self, 'executable_path', text="")
 
-        box = layout.box()
-        box.label(text="Temporary Data", icon='FILE_FOLDER')
-        box.label(text="Directory used to store temporary vhacd files during convex hull generation.")
-        row = box.row()
-        if not self.data_path:
-            row.alert = True
-        row.prop(self, "data_path", icon='ERROR' if not self.data_path else 'FILE_FOLDER')
-
         if self.executable_path or self.default_executable_path:
-            box = layout.box()
-            box.label(text="VHACD Settings", icon='SETTINGS')
+            sub_box = box.box()
+            sub_box.label(text="V-HACD Settings", icon='SETTINGS')
             for propName in self.vhacd_props_config:
-                row = box.row()
+                row = sub_box.row()
                 row.prop(self, propName)
                 row.operator("wm.url_open", text="", icon='QUESTION').url = f"https://github.com/kmammou/v-hacd#{propName}"
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="CoACD (BETA)", icon='MESH_ICOSPHERE')
+        row.operator("wm.url_open", text="", icon='URL').url = "https://colin97.github.io/CoACD/"
+        box.label(text="CoACD is the successor to V-HACD and tends to produce fewer, tighter-fitting")
+        box.label(text="convex hulls. This operator is still in BETA, feedback is welcome.")
+
+        row = box.row()
+        row.label(text="Executable Paths:")
+
+        if os.path.exists(self.coacd_default_executable_path) and os.access(self.coacd_default_executable_path, os.X_OK):
+            row = box.row()
+            row.enabled = False
+            row.prop(self, 'coacd_default_executable_path', icon='CHECKMARK')
+        else:
+            box.label(text="Missing Permission", icon='ERROR')
+            row = box.row()
+            row.alert = True
+            row.prop(self, 'coacd_default_executable_path', icon='ERROR')
+            row = box.row()
+            row.operator(
+                "wm.url_open",
+                text="How to Fix",
+                icon='URL'
+            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
+            row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.coacd_default_executable_path)
+
+        row = box.row()
+        row.label(text="Custom Executable (Optional):")
+        row.prop(self, 'coacd_executable_path', text="")
+
+        if self.coacd_executable_path or self.coacd_default_executable_path:
+            sub_box = box.box()
+            sub_box.label(text="CoACD Settings", icon='SETTINGS')
+            for propName in self.coacd_props_config:
+                row = sub_box.row()
+                row.prop(self, propName)
+                row.operator("wm.url_open", text="", icon='QUESTION').url = "https://github.com/SarahWeiii/CoACD#parameters"
+
+    def draw_validation_panel(self, layout):
+        """Draw the validation panel"""
+        box = layout.box()
+        box.label(text="Collider validation is in BETA - checks, defaults and behavior may still change.",
+                  icon='INFO')
+
+        box = layout.box()
+        row = box.row()
+        row.label(text='Checks')
+        for propName in self.props_validation_checks:
+            row = box.row()
+            row.prop(self, propName)
+
+        box = layout.box()
+        row = box.row()
+        row.label(text='Thresholds')
+        for propName in self.props_validation_thresholds:
+            row = box.row()
+            row.prop(self, propName)
 
     def draw_support_panel(self, layout, context):
         """Draw the support panel"""
@@ -454,6 +570,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         if self.prefs_tabs == 'SETTINGS':
             self.draw_settings_panel(layout)
 
+        elif self.prefs_tabs == 'POSTPROCESS':
+            self.draw_postprocess_panel(layout)
+
         elif self.prefs_tabs == 'NAMING':
             self.draw_naming_panel(layout)
 
@@ -465,6 +584,9 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
 
         elif self.prefs_tabs == 'UI':
             self.draw_ui_panel(layout)
+
+        elif self.prefs_tabs == 'VALIDATION':
+            self.draw_validation_panel(layout)
 
         elif self.prefs_tabs == 'SUPPORT':
             self.draw_support_panel(layout, context)

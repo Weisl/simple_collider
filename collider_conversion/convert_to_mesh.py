@@ -2,7 +2,7 @@ import bpy
 from bpy.types import Operator
 
 from .. import __package__ as base_package
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object, matches_local_collider_collection
 from ..properties.constants import VALID_OBJECT_TYPES
 from ..pyshics_materials.material_functions import assign_physics_material, create_material, remove_materials
 
@@ -76,15 +76,16 @@ class OBJECT_OT_convert_to_mesh(Operator):
                 prefs = context.preferences.addons[base_package].preferences
                 collection_name = prefs.col_collection_name
 
-                # remove from collision collection
-                for collection in bpy.data.collections:
-                    if collection.name == collection_name:
-                        if obj.name in collection.objects:
-                            collection.objects.unlink(obj)
+                # Each scene keeps its own local collider collection (e.g.
+                # "Colliders", "Colliders_01", ...), so match against the
+                # object's own collections rather than a single exact name.
+                for collection in list(obj.users_collection):
+                    if matches_local_collider_collection(collection, collection_name):
+                        collection.objects.unlink(obj)
 
-                            # add to default scene collection if the object is not part of any collection anymore
-                            if len(obj.users_collection) == 0:
-                                bpy.context.scene.collection.objects.link(obj)
+                # add to default scene collection if the object is not part of any collection anymore
+                if len(obj.users_collection) == 0:
+                    context.scene.collection.objects.link(obj)
 
         if count == 0:
             self.report({'WARNING'}, 'No collider selected for conversion')
