@@ -1,5 +1,6 @@
 import os
 import platform
+import subprocess
 import textwrap
 
 import bpy
@@ -11,6 +12,44 @@ from ..properties.constants import VALID_OBJECT_TYPES
 
 
 import bpy
+
+class COLLIDER_OT_open_folder(bpy.types.Operator):
+    """Open a folder in the system file browser"""
+    bl_idname = "simple_collider.open_folder"
+    bl_label = "Open Folder"
+    bl_description = "Open the folder in the system file browser"
+
+    directory: bpy.props.StringProperty(options={'HIDDEN'})
+
+    def execute(self, context):
+        if not self.directory or not os.path.isdir(self.directory):
+            self.report({'ERROR'}, f"Folder not found: {self.directory}")
+            return {'CANCELLED'}
+
+        # "wm.path_open" is preferred, but some OS/Blender combinations resolve
+        # it to a backing operator without a `filepath` property (e.g. Blender
+        # 5.2 on Windows, see https://github.com/Weisl/simple_collider/issues/656),
+        # which raises TypeError for the unrecognized keyword. Fall back to
+        # opening the folder via the OS directly in that case.
+        try:
+            bpy.ops.wm.path_open(filepath=self.directory)
+            return {'FINISHED'}
+        except (TypeError, RuntimeError):
+            pass
+
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(self.directory)
+            elif platform.system() == 'Darwin':
+                subprocess.run(['open', self.directory], check=True)
+            else:
+                subprocess.run(['xdg-open', self.directory], check=True)
+        except (OSError, subprocess.SubprocessError) as error:
+            self.report({'ERROR'}, f"Could not open folder: {error}")
+            return {'CANCELLED'}
+
+        return {'FINISHED'}
+
 
 class OBJECT_OT_set_default_collision_preset(bpy.types.Operator):
     """Set the selected preset as the default"""
@@ -403,14 +442,7 @@ def draw_naming_presets(self, context):
 
     filepath = collider_presets_folder()
     if filepath:
-        # On some OS/Blender combinations "wm.path_open" resolves to a backing
-        # operator without a `filepath` property (e.g. Blender 5.2 on Windows,
-        # see https://github.com/Weisl/simple_collider/issues/656). Guard the
-        # assignment so that doesn't take the rest of this panel's draw down.
-        try:
-            row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = filepath
-        except AttributeError:
-            pass
+        row.operator("simple_collider.open_folder", text='', icon='FILE_FOLDER').directory = filepath
 
     op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
     op.addon_name = addon_name

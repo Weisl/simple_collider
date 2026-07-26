@@ -256,7 +256,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
         row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
 
-        row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
+        row.operator("simple_collider.open_folder", text='', icon='FILE_FOLDER').directory = collider_presets_folder()
 
         box_name = box.box()
         row = box.row()
