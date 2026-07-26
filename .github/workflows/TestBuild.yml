@@ -31,6 +31,8 @@ jobs:
             --exclude='venv' \
             --exclude='__pycache__' \
             --exclude='*.pyc' \
+            --exclude='CHANGELOG.md' \
+            --exclude='MANUAL_QA_CHECKLIST.md' \
             ${{ github.event.repository.name }}/ staging/simple_collider/
 
       - name: Upload zip as artifact
