@@ -21,6 +21,7 @@ from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
 from ..ui.properties_panels import label_multiline
 from ..ui.properties_panels import collider_presets_folder
+from ..ui.properties_panels import get_permission_fix_url
 
 collection_colors = [
     ("NONE", "White", "Default collection color", "OUTLINER_COLLECTION", 0),
@@ -256,7 +257,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
         row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
 
-        row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = collider_presets_folder()
+        row.operator("simple_collider.open_folder", text='', icon='FILE_FOLDER').directory = collider_presets_folder()
 
         box_name = box.box()
         row = box.row()
@@ -408,8 +409,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 "wm.url_open",
                 text="How to Fix",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
-            row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.default_executable_path)
+            ).url = get_permission_fix_url()
+            row.operator("simple_collider.open_folder", text='Open Folder', icon='FILE_FOLDER').directory = os.path.dirname(self.default_executable_path)
 
         row = box.row()
         row.label(text="Custom Executable (Optional):")
@@ -447,8 +448,8 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 "wm.url_open",
                 text="How to Fix",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
-            row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.coacd_default_executable_path)
+            ).url = get_permission_fix_url()
+            row.operator("simple_collider.open_folder", text='Open Folder', icon='FILE_FOLDER').directory = os.path.dirname(self.coacd_default_executable_path)
 
         row = box.row()
         row.label(text="Custom Executable (Optional):")

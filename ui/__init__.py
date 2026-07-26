@@ -9,6 +9,7 @@ from ..presets.presets_data import presets
 
 classes = (
     properties_panels.COLLSION_OT_open_directory_new,
+    properties_panels.COLLIDER_OT_open_folder,
     properties_panels.OBJECT_MT_collision_presets,
     properties_panels.PREFERENCES_OT_open_addon,
     properties_panels.BUTTON_OT_auto_convex,

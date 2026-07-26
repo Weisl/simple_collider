@@ -5,6 +5,7 @@ from .. import __package__ as base_package
 
 from .properties_panels import draw_auto_convex_settings
 from .properties_panels import draw_auto_convex_coacd_settings
+from .properties_panels import get_permission_fix_url
 
 
 class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
@@ -35,7 +36,7 @@ class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
                 "wm.url_open",
                 text="Solution",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
+            ).url = get_permission_fix_url()
         return
 
 
@@ -67,5 +68,5 @@ class VIEW3D_PT_auto_convex_coacd_popup(bpy.types.Panel):
                 "wm.url_open",
                 text="Solution",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
+            ).url = get_permission_fix_url()
         return
