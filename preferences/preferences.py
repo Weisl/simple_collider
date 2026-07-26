@@ -409,7 +409,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 text="How to Fix",
                 icon='URL'
             ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
-            row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.default_executable_path)
+            row.operator("simple_collider.open_folder", text='Open Folder', icon='FILE_FOLDER').directory = os.path.dirname(self.default_executable_path)
 
         row = box.row()
         row.label(text="Custom Executable (Optional):")
@@ -448,7 +448,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 text="How to Fix",
                 icon='URL'
             ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
-            row.operator("wm.path_open", text='Open Folder', icon='FILE_FOLDER').filepath = os.path.dirname(self.coacd_default_executable_path)
+            row.operator("simple_collider.open_folder", text='Open Folder', icon='FILE_FOLDER').directory = os.path.dirname(self.coacd_default_executable_path)
 
         row = box.row()
         row.label(text="Custom Executable (Optional):")
