@@ -13,6 +13,13 @@ from ..properties.constants import VALID_OBJECT_TYPES
 
 import bpy
 
+
+def get_permission_fix_url():
+    """URL to the docs section explaining how to grant execute permission for the platform."""
+    anchor = 'fix-macos-permission' if platform.system() == 'Darwin' else 'fix-linux-permission'
+    return f"https://weisl.github.io/simple_collider/collider_auto_convex/#{anchor}"
+
+
 class COLLIDER_OT_open_folder(bpy.types.Operator):
     """Open a folder in the system file browser"""
     bl_idname = "simple_collider.open_folder"

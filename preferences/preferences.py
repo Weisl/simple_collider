@@ -21,6 +21,7 @@ from ..ui.properties_panels import VIEW3D_PT_collision_settings_panel
 from ..ui.properties_panels import VIEW3D_PT_collision_visibility_panel
 from ..ui.properties_panels import label_multiline
 from ..ui.properties_panels import collider_presets_folder
+from ..ui.properties_panels import get_permission_fix_url
 
 collection_colors = [
     ("NONE", "White", "Default collection color", "OUTLINER_COLLECTION", 0),
@@ -408,7 +409,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 "wm.url_open",
                 text="How to Fix",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
+            ).url = get_permission_fix_url()
             row.operator("simple_collider.open_folder", text='Open Folder', icon='FILE_FOLDER').directory = os.path.dirname(self.default_executable_path)
 
         row = box.row()
@@ -447,7 +448,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
                 "wm.url_open",
                 text="How to Fix",
                 icon='URL'
-            ).url = "https://weisl.github.io/collider_auto_convex/#fix-linux-permission"
+            ).url = get_permission_fix_url()
             row.operator("simple_collider.open_folder", text='Open Folder', icon='FILE_FOLDER').directory = os.path.dirname(self.coacd_default_executable_path)
 
         row = box.row()
