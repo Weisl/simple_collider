@@ -403,7 +403,14 @@ def draw_naming_presets(self, context):
 
     filepath = collider_presets_folder()
     if filepath:
-        row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = filepath
+        # On some OS/Blender combinations "wm.path_open" resolves to a backing
+        # operator without a `filepath` property (e.g. Blender 5.2 on Windows,
+        # see https://github.com/Weisl/simple_collider/issues/656). Guard the
+        # assignment so that doesn't take the rest of this panel's draw down.
+        try:
+            row.operator("wm.path_open", text='', icon='FILE_FOLDER').filepath = filepath
+        except AttributeError:
+            pass
 
     op = row.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
     op.addon_name = addon_name
