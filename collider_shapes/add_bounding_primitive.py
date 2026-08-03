@@ -466,7 +466,9 @@ def draw_viewport_overlay(self, context):
     _coacd_process = getattr(self, '_coacd_process', None)
     if _coacd_process is not None:
         elapsed = time.time() - self._coacd_start_time
-        label = f'RUNNING COACD - {elapsed:0.0f}S ELAPSED - ESC TO CANCEL'
+        progress = getattr(self, '_coacd_progress_text', '')
+        status = progress if progress else 'RUNNING COACD'
+        label = f'{status.upper()} - {elapsed:0.0f}S - ESC TO CANCEL'
         item = {'label': label, 'value': None, 'key': '', 'type': 'key_title', 'highlight': True}
         items.append(item)
     elif self.valid_input_selection:

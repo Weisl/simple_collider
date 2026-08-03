@@ -1,4 +1,7 @@
 import os
+import queue
+import re
+import threading
 import time
 import subprocess
 
@@ -15,6 +18,15 @@ from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_obje
 # fractions of a second to many minutes depending on mesh complexity, and
 # there's no way to know in advance which it'll be (#660).
 COACD_POLL_INTERVAL_SECONDS = 0.2
+
+# CoACD already prints its own progress to stdout - section headers like
+# " - Decomposition (MCTS)" and per-candidate "Processing [62.3%]" lines -
+# it just wasn't being read (the subprocess inherited the console instead
+# of being piped). Parsed by _drain_progress_queue() into a short HUD
+# string, so a multi-minute run reads as "working" instead of a silent
+# elapsed-time counter that's indistinguishable from being stuck.
+_COACD_PHASE_RE = re.compile(r'\[info\]\s+-\s+(.+?)\s*$')
+_COACD_PCT_RE = re.compile(r'Processing \[([\d.]+)%\]')
 
 # True while any COACD_OT_convex_decomposition instance has a job in flight.
 # Module-level (not per-instance) because invoke() creates a brand new
@@ -91,6 +103,14 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._coacd_start_time = 0.0
         self._status_area = None
         self._coacd_run_id = None
+
+        # Live progress, parsed from the running subprocess's stdout - see
+        # _launch_coacd_process()/_drain_progress_queue() and the module
+        # docstring on _COACD_PHASE_RE above.
+        self._coacd_stdout_queue = None
+        self._coacd_progress_phase = ''
+        self._coacd_progress_pct = ''
+        self._coacd_progress_text = ''
 
         # bpy.app.timers callbacks (see _poll_coacd_process()) have no
         # guaranteed context - bpy.context.space_data is None (or belongs to
@@ -240,6 +260,59 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         return obj_filename
 
+    def _launch_coacd_process(self, cmd, cwd):
+        """Launch a CoACD subprocess with its stdout piped through a
+        daemon reader thread into a queue, instead of letting it inherit
+        the console. _drain_progress_queue() then pulls from that queue on
+        Blender's main thread (never blocking it) to update the HUD with
+        CoACD's own phase/percent output."""
+        process = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True, bufsize=1)
+        q = queue.Queue()
+
+        def _reader():
+            try:
+                for line in iter(process.stdout.readline, ''):
+                    q.put(line)
+            except Exception:
+                pass
+
+        threading.Thread(target=_reader, daemon=True).start()
+
+        self._coacd_stdout_queue = q
+        self._coacd_progress_phase = ''
+        self._coacd_progress_pct = ''
+        self._coacd_progress_text = ''
+        return process
+
+    def _drain_progress_queue(self):
+        """Pull whatever lines the reader thread has queued since the last
+        poll and refresh the HUD progress string. queue.Queue.get_nowait()
+        never blocks - it either returns immediately or raises Empty."""
+        q = self._coacd_stdout_queue
+        if q is None:
+            return
+
+        changed = False
+        while True:
+            try:
+                line = q.get_nowait()
+            except queue.Empty:
+                break
+            changed = True
+            m = _COACD_PHASE_RE.search(line)
+            if m:
+                self._coacd_progress_phase = m.group(1).strip()
+                self._coacd_progress_pct = ''  # new phase - stale % no longer applies
+                continue
+            m = _COACD_PCT_RE.search(line)
+            if m:
+                self._coacd_progress_pct = f'{m.group(1)}%'
+
+        if changed:
+            parts = [p for p in (self._coacd_progress_phase, self._coacd_progress_pct) if p]
+            self._coacd_progress_text = ' '.join(parts)
+
     def _start_next_coacd_job(self, context):
         """Pop the next collider off the queue and launch CoACD on it
         without blocking. If the queue is empty, the whole run is done."""
@@ -284,7 +357,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # No shell=True: CoACD is launched directly (not via an intermediate
         # cmd.exe/sh -c) so that killing this Popen on cancel actually kills
         # the CoACD process itself rather than leaving it running detached.
-        process = subprocess.Popen(cmd, cwd=self._coacd_data_path)
+        process = self._launch_coacd_process(cmd, self._coacd_data_path)
 
         self._coacd_process = process
         self._coacd_stage = 'decompose'
@@ -309,6 +382,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 return None
 
             if process.poll() is None:
+                self._drain_progress_queue()
                 if self._status_area is not None:
                     self._status_area.tag_redraw()
                 return COACD_POLL_INTERVAL_SECONDS
@@ -431,7 +505,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             '-t', str(col_settings.coacd_threshold), '-c', '-1', '-pm', 'off',
             '-d', '-dt', str(col_settings.coacd_maxHullVertCount),
         ]
-        process = subprocess.Popen(cmd, cwd=self._coacd_data_path)
+        process = self._launch_coacd_process(cmd, self._coacd_data_path)
 
         hull_obj.select_set(False)
 

@@ -506,21 +506,21 @@ class CollisionAddonPrefsProperties():
     # -md
     coacd_mctsDepth: bpy.props.IntProperty(name='MCTS Max Depth',
                                            description='Maximum search depth in the Monte Carlo Tree Search (2~7)',
-                                           default=3,
+                                           default=2,
                                            min=2,
                                            max=7)
 
     # -mn
     coacd_mctsNodes: bpy.props.IntProperty(name='MCTS Max Nodes',
                                            description='Maximum number of child nodes in the Monte Carlo Tree Search (10~40)',
-                                           default=20,
+                                           default=10,
                                            min=10,
                                            max=40)
 
     # -r
     coacd_resolution: bpy.props.IntProperty(name='Hausdorff Sampling Resolution',
                                             description='Sampling resolution used for the Hausdorff distance calculation (1000~10000)',
-                                            default=2000,
+                                            default=1000,
                                             min=1000,
                                             max=10000)
 
