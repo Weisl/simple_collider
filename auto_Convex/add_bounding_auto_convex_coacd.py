@@ -16,6 +16,18 @@ from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_obje
 # there's no way to know in advance which it'll be (#660).
 COACD_POLL_INTERVAL_SECONDS = 0.2
 
+# True while any COACD_OT_convex_decomposition instance has a job in flight.
+# Module-level (not per-instance) because invoke() creates a brand new
+# instance every time the operator is triggered - an instance attribute
+# can't stop a *second*, independent invocation from starting. Before the
+# CLI was made async (#660), a synchronously-frozen UI was an accidental
+# guard against exactly this: the user physically couldn't trigger the
+# operator a second time while the first call was still blocking. Now that
+# Blender stays responsive during a run, nothing else prevents overlapping
+# invocations - which would race on the same parent-name-derived temp
+# filenames (see _job_file_prefix()) and corrupt each other's output.
+_coacd_run_in_progress = False
+
 
 class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.coacd'
@@ -77,8 +89,13 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._coacd_hull_index = 0
         self._coacd_start_time = 0.0
         self._status_area = None
+        self._coacd_run_id = None
 
     def invoke(self, context, event):
+        if _coacd_run_in_progress:
+            self.report({'ERROR'}, 'Auto Convex (BETA) is already running - wait for it to finish, or select '
+                                    'it and press Escape to cancel, before starting another run')
+            return {'CANCELLED'}
         return super().invoke(context, event)
 
     def modal(self, context, event):
@@ -187,8 +204,13 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         joined_obj = bpy.data.objects.new('debug_joined_mesh', mesh.copy())
         context.scene.collection.objects.link(joined_obj)
 
+        # _coacd_run_id makes this filename unique per run (see execute()):
+        # belt-and-suspenders against the _coacd_run_in_progress guard above
+        # missing some edge case and two runs sharing the same data_path
+        # ever overlapping - without it, two runs on a similarly-named
+        # object would silently clobber each other's export/output files.
         filename = ''.join(c for c in parent.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-        obj_filename = os.path.join(data_path, f'{filename}.obj')
+        obj_filename = os.path.join(data_path, f'{filename}_{self._coacd_run_id}.obj')
 
         print(f'\nExporting mesh for CoACD: {obj_filename}...')
 
@@ -264,6 +286,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         subprocess has finished, without blocking Blender's main thread.
         Re-arms itself via its return value for as long as the process is
         still running."""
+        global _coacd_run_in_progress
         try:
             process = self._coacd_process
             if process is None:
@@ -282,7 +305,14 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 self._handle_decimate_finished(context)
         except ReferenceError:
             # operator has already finished/cancelled and its RNA was freed
-            pass
+            _coacd_run_in_progress = False
+        except Exception:
+            # Whatever went wrong, never leave the module-level run lock
+            # stuck - that would permanently block every future Auto Convex
+            # (BETA) invocation until Blender restarts. Still re-raised so
+            # the actual error is printed to the console as usual.
+            _coacd_run_in_progress = False
+            raise
         return None
 
     def import_decomposed_meshes(self, obj_path):
@@ -360,9 +390,10 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._coacd_hull_index += 1
 
         basename = ''.join(c for c in hull_obj.name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-        hull_filename = os.path.join(self._coacd_data_path, f'{basename}_hull_{i}.obj')
-        decimated_filename = os.path.join(self._coacd_data_path, f'{basename}_hull_{i}_dec.obj')
-        remesh_filename = os.path.join(self._coacd_data_path, f'{basename}_hull_{i}_dec_remesh.obj')
+        hull_filename = os.path.join(self._coacd_data_path, f'{basename}_{self._coacd_run_id}_hull_{i}.obj')
+        decimated_filename = os.path.join(self._coacd_data_path, f'{basename}_{self._coacd_run_id}_hull_{i}_dec.obj')
+        remesh_filename = os.path.join(self._coacd_data_path,
+                                       f'{basename}_{self._coacd_run_id}_hull_{i}_dec_remesh.obj')
 
         bpy.ops.wm.obj_export(filepath=hull_filename, check_existing=False, export_selected_objects=True,
                               export_materials=False, export_uv=False, export_normals=False,
@@ -418,6 +449,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         """Kill any in-flight CoACD subprocess and drop all queued/partial
         state for the current run. Called from modal()'s ESC/RIGHTMOUSE
         handling and from cancel()."""
+        global _coacd_run_in_progress
+        _coacd_run_in_progress = False
+
         if self._coacd_process is not None:
             try:
                 self._coacd_process.kill()
@@ -478,6 +512,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         """Called once every queued collider has been decomposed (and
         decimated, if enabled). Mirrors what the old synchronous execute()
         did after its blocking loop finished."""
+        global _coacd_run_in_progress
+        _coacd_run_in_progress = False
+
         self.postprocess_colliders(context, self._coacd_results)
         self._coacd_results = []
 
@@ -502,6 +539,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         """Kick off convex decomposition for the current selection. Does not
         block: it launches the first CoACD job and returns immediately,
         with _poll_coacd_process() (via bpy.app.timers) driving the rest."""
+        global _coacd_run_in_progress
         if self._coacd_process is not None:
             # Already running (e.g. a hotkey re-triggered execute() while a
             # previous run is still in flight) - ignore rather than
@@ -520,9 +558,11 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._coacd_exe = coacd_exe
         self._coacd_data_path = data_path
         self._status_area = context.area
+        self._coacd_run_id = str(id(self))
         self._coacd_pending_jobs = self.preprocess_objects_and_collect_data(context)
         self._coacd_results = []
 
+        _coacd_run_in_progress = True
         self._start_next_coacd_job(context)
 
         return {'RUNNING_MODAL'}

@@ -69,7 +69,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     coacd_maxConvexHulls: bpy.props.IntProperty(name='Max Hulls',
                                                 description='Maximum number of output convex hulls. -1 for no limit '
                                                             '(only takes effect if merge is enabled)',
-                                                default=-1,
+                                                default=16,
                                                 min=-1,
                                                 soft_min=1,
                                                 soft_max=64)
@@ -77,11 +77,11 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     # -d / -dt
     coacd_decimate: bpy.props.BoolProperty(name='Limit Hull Vertices',
                                            description='Enable a maximum vertex count constraint per convex hull',
-                                           default=False)
+                                           default=True)
 
     coacd_maxHullVertCount: bpy.props.IntProperty(name='Vert per Piece',
                                                   description='Maximum number of vertices in each output convex hull',
-                                                  default=256,
+                                                  default=32,
                                                   min=4,
                                                   soft_max=256,
                                                   max=4096)
