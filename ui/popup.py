@@ -43,7 +43,7 @@ class VIEW3D_PT_auto_convex_popup(bpy.types.Panel):
 class VIEW3D_PT_auto_convex_coacd_popup(bpy.types.Panel):
     """Tooltip"""
     bl_idname = "POPUP_PT_auto_convex_coacd"
-    bl_label = "Auto Convex (BETA) Info"
+    bl_label = "Auto Convex (High Precision) Info"
     bl_space_type = "VIEW_3D"
     bl_region_type = "WINDOW"
 
@@ -60,7 +60,7 @@ class VIEW3D_PT_auto_convex_coacd_popup(bpy.types.Panel):
             colSettings = context.scene.simple_collider
             draw_auto_convex_coacd_settings(colSettings, layout)
             layout.label(text='May take up to a few minutes', icon='ERROR')
-            layout.operator("collision.coacd", text="Auto Convex (BETA)", icon='MESH_ICOSPHERE')
+            layout.operator("collision.coacd", text="Auto Convex (High Precision)", icon='MESH_ICOSPHERE')
         else:
             layout.label(text="Missing Permission", icon='ERROR')
             row = layout.row()

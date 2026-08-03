@@ -426,10 +426,10 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
 
         box = layout.box()
         row = box.row()
-        row.label(text="CoACD (BETA)", icon='MESH_ICOSPHERE')
+        row.label(text="CoACD (High Precision)", icon='MESH_ICOSPHERE')
         row.operator("wm.url_open", text="", icon='URL').url = "https://colin97.github.io/CoACD/"
-        box.label(text="CoACD is the successor to V-HACD and tends to produce fewer, tighter-fitting")
-        box.label(text="convex hulls. This operator is still in BETA, feedback is welcome.")
+        box.label(text="CoACD tends to produce fewer, tighter-fitting convex hulls than V-HACD, but is")
+        box.label(text="significantly slower - can take minutes on complex or non-manifold meshes.")
 
         row = box.row()
         row.label(text="Executable Paths:")

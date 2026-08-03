@@ -458,10 +458,10 @@ def draw_viewport_overlay(self, context):
     items.append(item)
     title_row = len(items)
 
-    # Auto Convex (BETA) only: an external CoACD subprocess may be running
-    # asynchronously (see COACD_OT_convex_decomposition), which can take
-    # anywhere from a fraction of a second to many minutes. getattr() keeps
-    # this safe for every other shape operator, which never sets this
+    # Auto Convex (High Precision) only: an external CoACD subprocess may be
+    # running asynchronously (see COACD_OT_convex_decomposition), which can
+    # take anywhere from a fraction of a second to many minutes. getattr()
+    # keeps this safe for every other shape operator, which never sets this
     # attribute at all.
     _coacd_process = getattr(self, '_coacd_process', None)
     if _coacd_process is not None:

@@ -31,9 +31,10 @@ _coacd_run_in_progress = False
 
 class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     bl_idname = 'collision.coacd'
-    bl_label = 'Auto Convex (BETA)'
+    bl_label = 'Auto Convex (High Precision)'
     bl_description = ('Create multiple convex hull colliders using CoACD (Collision-Aware Concavity and tree '
-                      'search), the successor to V-HACD. This operator is still in BETA')
+                      'search). Produces fewer, tighter-fitting hulls than V-HACD by searching for better cuts, '
+                      'but is significantly slower - can take minutes on complex or non-manifold meshes')
     bl_options = {'REGISTER', 'PRESET', 'UNDO'}
 
     @staticmethod
@@ -93,8 +94,8 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
     def invoke(self, context, event):
         if _coacd_run_in_progress:
-            self.report({'ERROR'}, 'Auto Convex (BETA) is already running - wait for it to finish, or select '
-                                    'it and press Escape to cancel, before starting another run')
+            self.report({'ERROR'}, 'Auto Convex (High Precision) is already running - wait for it to finish, or '
+                                    'select it and press Escape to cancel, before starting another run')
             return {'CANCELLED'}
         return super().invoke(context, event)
 
@@ -150,8 +151,8 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         if not coacd_exe:
             self.report({'ERROR'},
-                        'CoACD executable is required for Auto Convex (BETA) to work. Please follow the '
-                        'installation instructions and try it again')
+                        'CoACD executable is required for Auto Convex (High Precision) to work. Please follow '
+                        'the installation instructions and try it again')
             return None, None
         if not data_path:
             self.report({'ERROR'}, 'Invalid temporary data path')
@@ -309,8 +310,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         except Exception:
             # Whatever went wrong, never leave the module-level run lock
             # stuck - that would permanently block every future Auto Convex
-            # (BETA) invocation until Blender restarts. Still re-raised so
-            # the actual error is printed to the console as usual.
+            # (High Precision) invocation until Blender restarts. Still
+            # re-raised so the actual error is printed to the console as
+            # usual.
             _coacd_run_in_progress = False
             raise
         return None
@@ -529,8 +531,8 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         super().reset_to_initial_state(context)
         elapsed_time = self.get_time_elapsed()
-        super().print_generation_time("Auto Convex (BETA) Colliders", elapsed_time)
-        self.report({'INFO'}, f"Auto Convex (BETA) Colliders: {elapsed_time}")
+        super().print_generation_time("Auto Convex (High Precision) Colliders", elapsed_time)
+        self.report({'INFO'}, f"Auto Convex (High Precision) Colliders: {elapsed_time}")
 
         if self._status_area is not None:
             self._status_area.tag_redraw()
