@@ -4,7 +4,7 @@ id = "simple_collider"
 
 version = "1.2.0"
 name = "Simple Collider"
-tagline = "Simple Collider is a Blender addon to create physics colliders for games and real-time applications."
+tagline = "Create physics colliders for games and real-time applications"
 maintainer = "Matthias Patscheider <patscheider.matthias@gmail.com>"
 type = "add-on"
 
@@ -25,13 +25,15 @@ copyright = [
 ]
 
 [permissions]
-files = "Write/Read .py preset files from/to disk, copying the Auto Convex executables (V-HACD and CoACD) to execute to avoid the need of manual installation and export/import OBJ files from/to disk for the auto convex generation"
+files = "Executes Auto Convex binaries; reads/writes preset and OBJ files"
 
 
 [build]
 paths_exclude_pattern = [
     "__pycache__/",
     "/.git/",
+    "/.gitignore",
+    "/.gitattributes",
     "/*.zip",
     "/tests/",
     "/venv/",

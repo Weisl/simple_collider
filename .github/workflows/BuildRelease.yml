@@ -1,15 +1,27 @@
-name: Test Build
+name: Build Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ github.event.repository.name }}
+
+      - name: Check manifest version matches tag
+        run: |
+          tag_version="${{ github.ref_name }}"
+          tag_version="${tag_version#v}"
+          manifest_version=$(python3 -c "import tomllib; print(tomllib.load(open('blender_manifest.toml','rb'))['version'])")
+          if [ "$tag_version" != "$manifest_version" ]; then
+            echo "::error::Tag v$tag_version != blender_manifest.toml version $manifest_version"
+            exit 1
+          fi
+        working-directory: ${{ github.event.repository.name }}
 
       - name: Cache Blender 4.2
         id: cache-blender
@@ -36,10 +48,6 @@ jobs:
           chmod +x "$EXE"
           echo "executable=$EXE" >> "$GITHUB_OUTPUT"
 
-      - name: Set short SHA
-        id: vars
-        run: echo "short_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
       - name: Validate extension manifest
         run: |
           "${{ steps.blender.outputs.executable }}" --command extension validate ${{ github.event.repository.name }}
@@ -49,9 +57,15 @@ jobs:
           mkdir -p dist
           "${{ steps.blender.outputs.executable }}" --command extension build --source-dir ${{ github.event.repository.name }} --output-dir dist
 
-      - name: Upload zip as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ github.event.repository.name }}_${{ steps.vars.outputs.short_sha }}
-          path: dist/
-          retention-days: 7
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          python3 ${{ github.event.repository.name }}/.github/scripts/extract_changelog_section.py \
+            --changelog ${{ github.event.repository.name }}/CHANGELOG.md \
+            --version "${{ github.ref_name }}" \
+            --product-name "Simple Collider" \
+            --output release_notes.md
+
+      - name: Create GitHub release
+        run: gh release create "${{ github.ref_name }}" --notes-file release_notes.md dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
