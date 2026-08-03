@@ -458,9 +458,9 @@ def draw_naming_presets(self, context):
 
 # OPERATORS 
 
-class COLLSION_OT_open_directory_new(bpy.types.Operator, ImportHelper):
+class COLLISION_OT_open_directory(bpy.types.Operator, ImportHelper):
     """Open render output directory in Explorer"""
-    bl_idname = "explorer.open_in_explorer"
+    bl_idname = "simple_collider.open_directory"
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
 
