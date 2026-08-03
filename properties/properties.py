@@ -69,7 +69,7 @@ class ColliderTools_Properties(bpy.types.PropertyGroup):
     coacd_maxConvexHulls: bpy.props.IntProperty(name='Max Hulls',
                                                 description='Maximum number of output convex hulls. -1 for no limit '
                                                             '(only takes effect if merge is enabled)',
-                                                default=16,
+                                                default=8,
                                                 min=-1,
                                                 soft_min=1,
                                                 soft_max=64)
