@@ -25,6 +25,7 @@ copyright = [
 ]
 
 [permissions]
+network = "Checks GitHub for a newer release"
 files = "Executes Auto Convex binaries; reads/writes preset and OBJ files"
 
 
