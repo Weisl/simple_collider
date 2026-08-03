@@ -1,9 +1,6 @@
 import os
-import queue
 import re
-import threading
 import time
-import subprocess
 
 import bmesh
 import bpy
@@ -22,7 +19,8 @@ COACD_POLL_INTERVAL_SECONDS = 0.2
 # CoACD already prints its own progress to stdout - section headers like
 # " - Decomposition (MCTS)" and per-candidate "Processing [62.3%]" lines -
 # it just wasn't being read (the subprocess inherited the console instead
-# of being piped). Parsed by _drain_progress_queue() into a short HUD
+# of being piped). Parsed by _parse_progress_line() (see
+# OBJECT_OT_add_bounding_object._drain_async_progress()) into a short status
 # string, so a multi-minute run reads as "working" instead of a silent
 # elapsed-time counter that's indistinguishable from being stuck.
 _COACD_PHASE_RE = re.compile(r'\[info\]\s+-\s+(.+?)\s*$')
@@ -89,7 +87,14 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # _start_next_coacd_job()/_poll_coacd_process() below: the CLI is
         # now driven from bpy.app.timers, one polled step at a time, the
         # same pattern already used for the debounce timers above.
-        self._coacd_process = None
+        #
+        # _async_process/_async_start_time are the generic names the shared
+        # status overlay (draw_async_job_overlay() in add_bounding_primitive)
+        # looks for via getattr() - VHACD_OT_convex_decomposition uses the
+        # same names so both backends drive the same overlay.
+        self._async_process = None
+        self._async_start_time = 0.0
+        self._async_job_label = 'CoACD'
         self._coacd_exe = None
         self._coacd_data_path = None
         self._coacd_pending_jobs = []
@@ -100,17 +105,15 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._coacd_hull_queue = []
         self._coacd_decimated_hulls = []
         self._coacd_hull_index = 0
-        self._coacd_start_time = 0.0
         self._status_area = None
         self._coacd_run_id = None
 
-        # Live progress, parsed from the running subprocess's stdout - see
-        # _launch_coacd_process()/_drain_progress_queue() and the module
+        # Live progress, parsed from the running subprocess's stdout via
+        # _parse_progress_line() (see OBJECT_OT_add_bounding_object -
+        # _launch_async_process()/_drain_async_progress()) and the module
         # docstring on _COACD_PHASE_RE above.
-        self._coacd_stdout_queue = None
         self._coacd_progress_phase = ''
         self._coacd_progress_pct = ''
-        self._coacd_progress_text = ''
 
         # bpy.app.timers callbacks (see _poll_coacd_process()) have no
         # guaranteed context - bpy.context.space_data is None (or belongs to
@@ -135,7 +138,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         return super().invoke(context, event)
 
     def modal(self, context, event):
-        if self._coacd_process is not None:
+        if self._async_process is not None:
             # A CoACD job is in flight: swallow all input except viewport
             # navigation (still allowed so the user isn't locked out of
             # looking around while it runs) and cancel. Everything else -
@@ -260,58 +263,20 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
 
         return obj_filename
 
-    def _launch_coacd_process(self, cmd, cwd):
-        """Launch a CoACD subprocess with its stdout piped through a
-        daemon reader thread into a queue, instead of letting it inherit
-        the console. _drain_progress_queue() then pulls from that queue on
-        Blender's main thread (never blocking it) to update the HUD with
-        CoACD's own phase/percent output."""
-        process = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                   text=True, bufsize=1)
-        q = queue.Queue()
-
-        def _reader():
-            try:
-                for line in iter(process.stdout.readline, ''):
-                    q.put(line)
-            except Exception:
-                pass
-
-        threading.Thread(target=_reader, daemon=True).start()
-
-        self._coacd_stdout_queue = q
-        self._coacd_progress_phase = ''
-        self._coacd_progress_pct = ''
-        self._coacd_progress_text = ''
-        return process
-
-    def _drain_progress_queue(self):
-        """Pull whatever lines the reader thread has queued since the last
-        poll and refresh the HUD progress string. queue.Queue.get_nowait()
-        never blocks - it either returns immediately or raises Empty."""
-        q = self._coacd_stdout_queue
-        if q is None:
-            return
-
-        changed = False
-        while True:
-            try:
-                line = q.get_nowait()
-            except queue.Empty:
-                break
-            changed = True
-            m = _COACD_PHASE_RE.search(line)
-            if m:
-                self._coacd_progress_phase = m.group(1).strip()
-                self._coacd_progress_pct = ''  # new phase - stale % no longer applies
-                continue
-            m = _COACD_PCT_RE.search(line)
-            if m:
-                self._coacd_progress_pct = f'{m.group(1)}%'
-
-        if changed:
+    def _parse_progress_line(self, line):
+        """Override of the base class hook (see _drain_async_progress()):
+        CoACD's stdout format - see _COACD_PHASE_RE / _COACD_PCT_RE above."""
+        m = _COACD_PHASE_RE.search(line)
+        if m:
+            self._coacd_progress_phase = m.group(1).strip()
+            self._coacd_progress_pct = ''  # new phase - stale % no longer applies
+            return self._coacd_progress_phase
+        m = _COACD_PCT_RE.search(line)
+        if m:
+            self._coacd_progress_pct = f'{m.group(1)}%'
             parts = [p for p in (self._coacd_progress_phase, self._coacd_progress_pct) if p]
-            self._coacd_progress_text = ' '.join(parts)
+            return ' '.join(parts)
+        return None
 
     def _start_next_coacd_job(self, context):
         """Pop the next collider off the queue and launch CoACD on it
@@ -357,9 +322,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         # No shell=True: CoACD is launched directly (not via an intermediate
         # cmd.exe/sh -c) so that killing this Popen on cancel actually kills
         # the CoACD process itself rather than leaving it running detached.
-        process = self._launch_coacd_process(cmd, self._coacd_data_path)
+        process = self._launch_async_process(cmd, self._coacd_data_path)
 
-        self._coacd_process = process
+        self._async_process = process
         self._coacd_stage = 'decompose'
         self._coacd_job_ctx = {
             'parent': parent,
@@ -367,7 +332,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             'mtx_world': mtx_world,
             'output_filename': output_filename,
         }
-        self._coacd_start_time = time.time()
+        self._async_start_time = time.time()
         bpy.app.timers.register(self._poll_coacd_process, first_interval=COACD_POLL_INTERVAL_SECONDS)
 
     def _poll_coacd_process(self):
@@ -377,17 +342,17 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         still running."""
         global _coacd_run_in_progress
         try:
-            process = self._coacd_process
+            process = self._async_process
             if process is None:
                 return None
 
             if process.poll() is None:
-                self._drain_progress_queue()
+                self._drain_async_progress()
                 if self._status_area is not None:
                     self._status_area.tag_redraw()
                 return COACD_POLL_INTERVAL_SECONDS
 
-            self._coacd_process = None
+            self._async_process = None
 
             # bpy.context here has no guaranteed space_data - it reflects
             # whatever the mouse happens to be over (or nothing) at the
@@ -505,11 +470,11 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             '-t', str(col_settings.coacd_threshold), '-c', '-1', '-pm', 'off',
             '-d', '-dt', str(col_settings.coacd_maxHullVertCount),
         ]
-        process = self._launch_coacd_process(cmd, self._coacd_data_path)
+        process = self._launch_async_process(cmd, self._coacd_data_path)
 
         hull_obj.select_set(False)
 
-        self._coacd_process = process
+        self._async_process = process
         self._coacd_stage = 'decimate'
         self._coacd_decimate_ctx = {
             'hull_obj': hull_obj,
@@ -517,7 +482,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
             'decimated_filename': decimated_filename,
             'remesh_filename': remesh_filename,
         }
-        self._coacd_start_time = time.time()
+        self._async_start_time = time.time()
         bpy.app.timers.register(self._poll_coacd_process, first_interval=COACD_POLL_INTERVAL_SECONDS)
 
     def _handle_decimate_finished(self, context):
@@ -553,13 +518,13 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         global _coacd_run_in_progress
         _coacd_run_in_progress = False
 
-        if self._coacd_process is not None:
+        if self._async_process is not None:
             try:
-                self._coacd_process.kill()
-                self._coacd_process.wait(timeout=5)
+                self._async_process.kill()
+                self._async_process.wait(timeout=5)
             except Exception:
                 pass
-            self._coacd_process = None
+            self._async_process = None
 
         if self._coacd_job_ctx is not None:
             mesh = self._coacd_job_ctx.get('mesh')
@@ -641,7 +606,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         block: it launches the first CoACD job and returns immediately,
         with _poll_coacd_process() (via bpy.app.timers) driving the rest."""
         global _coacd_run_in_progress
-        if self._coacd_process is not None:
+        if self._async_process is not None:
             # Already running (e.g. a hotkey re-triggered execute() while a
             # previous run is still in flight) - ignore rather than
             # overlapping a second subprocess run.

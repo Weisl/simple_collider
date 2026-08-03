@@ -1,3 +1,7 @@
+import queue
+import subprocess
+import threading
+
 import blf
 import bmesh
 import bpy
@@ -286,6 +290,16 @@ def draw_viewport_overlay(self, context):
         self.navigation_view_snapshot = view_snapshot
     self.navigation = time.time() < self.navigation_hold_until
 
+    # An external subprocess job (CoACD/V-HACD, see _launch_async_process()
+    # below) is running asynchronously. None of the per-row settings below
+    # (D/S/A/etc.) apply to anything yet - there are no colliders to adjust
+    # until the job finishes - so showing them as if they were live would be
+    # misleading. Replace the whole settings HUD with a dedicated status
+    # overlay instead, and skip building it at all.
+    if getattr(self, '_async_process', None) is not None:
+        draw_async_job_overlay(self, context)
+        return
+
     self.valid_input_selection = True if len(self.new_colliders_list) > 0 else False
     if self.use_space:
         label = "Global/Local"
@@ -458,20 +472,7 @@ def draw_viewport_overlay(self, context):
     items.append(item)
     title_row = len(items)
 
-    # Auto Convex (High Precision) only: an external CoACD subprocess may be
-    # running asynchronously (see COACD_OT_convex_decomposition), which can
-    # take anywhere from a fraction of a second to many minutes. getattr()
-    # keeps this safe for every other shape operator, which never sets this
-    # attribute at all.
-    _coacd_process = getattr(self, '_coacd_process', None)
-    if _coacd_process is not None:
-        elapsed = time.time() - self._coacd_start_time
-        progress = getattr(self, '_coacd_progress_text', '')
-        status = progress if progress else 'RUNNING COACD'
-        label = f'{status.upper()} - {elapsed:0.0f}S - ESC TO CANCEL'
-        item = {'label': label, 'value': None, 'key': '', 'type': 'key_title', 'highlight': True}
-        items.append(item)
-    elif self.valid_input_selection:
+    if self.valid_input_selection:
         if self.navigation:
             label = 'VIEWPORT NAVIGATION'
             type = 'key_title'
@@ -555,6 +556,74 @@ def draw_viewport_overlay(self, context):
                         padding_bottom=row_padding)
 
 
+def draw_async_job_overlay(self, context):
+    """Centered status overlay shown in place of the normal settings HUD
+    while an external subprocess job (CoACD/V-HACD, launched via
+    _launch_async_process()) is running. Deliberately not just another row
+    in the regular HUD: that list reads as "these are live, interactive
+    settings", which isn't true while a job is running - there's nothing to
+    adjust until it produces colliders. A distinct, centered, warning-styled
+    block makes that state unambiguous instead."""
+    region = context.region
+    if region is None:
+        return
+
+    prefs = self.prefs
+    font_id = 0
+    font_size = int(prefs.modal_font_size * context.preferences.system.ui_scale
+                    * context.preferences.view.ui_scale / 3.6)
+    title_font_size = int(font_size * 1.5)
+
+    elapsed = time.time() - getattr(self, '_async_start_time', time.time())
+    job_label = getattr(self, '_async_job_label', 'PROCESSING')
+    status = getattr(self, '_async_status_text', '')
+
+    lines = [(f'RUNNING {job_label.upper()}', title_font_size, prefs.modal_color_error)]
+    if status:
+        lines.append((status.upper(), font_size, prefs.modal_color_default))
+    lines.append((f'{elapsed:0.0f}S ELAPSED', font_size, prefs.modal_color_default))
+    lines.append(('ESC TO CANCEL', font_size, prefs.modal_color_navigation))
+
+    line_height = int(font_size * 1.6)
+    row_padding = font_size * 0.7
+    box_height = line_height * len(lines) + row_padding * 2
+    box_width = 420 / 20 * font_size
+
+    center_x = region.width / 2
+    center_y = region.height / 2
+
+    box_left = center_x - box_width / 2
+    box_right = center_x + box_width / 2
+    box_top = center_y + box_height / 2
+    box_bottom = center_y - box_height / 2
+
+    if prefs.use_modal_box:
+        draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, prefs.modal_box_color)
+
+        # warning-red accent (vs. the brand-green accent on the normal settings
+        # HUD) so this reads as a distinct, attention-worthy state at a glance.
+        frame_color = (0.204, 0.212, 0.243, 1.0)
+        accent_color = (0.902, 0.302, 0.302, 1.0)
+        frame_px = 1
+        accent_px = 3
+        draw_2d_backdrop(self, context, box_left, box_right, box_top, box_top - accent_px, accent_color)
+        draw_2d_backdrop(self, context, box_left, box_right, box_bottom + frame_px, box_bottom, frame_color)
+        draw_2d_backdrop(self, context, box_left, box_left + frame_px, box_top - accent_px, box_bottom, frame_color)
+        draw_2d_backdrop(self, context, box_right - frame_px, box_right, box_top - accent_px, box_bottom, frame_color)
+
+    y = box_top - row_padding - line_height * 0.75
+    for text, size, color in lines:
+        if bpy.app.version < (4, 00):
+            blf.size(font_id, 72, size)
+        else:
+            blf.size(font_id, size)
+        blf.color(font_id, *color)
+        text_width = blf.dimensions(font_id, text)[0]
+        blf.position(font_id, center_x - text_width / 2, y, 0)
+        blf.draw(font_id, text)
+        y -= line_height
+
+
 def draw_2d_backdrop(self, context, left, right, top, bottom, color):
     midWidth = bpy.context.area.width / 2
 
@@ -622,6 +691,82 @@ class OBJECT_OT_add_bounding_object():
     bl_options = {'REGISTER', 'UNDO', 'GRAB_CURSOR', 'BLOCKING'}
     # GRAB_CURSOR + BLOCKING enables wrap-around mouse feature.
     bm = []
+
+    # Shared external-subprocess-job plumbing, used by both
+    # COACD_OT_convex_decomposition and VHACD_OT_convex_decomposition to run
+    # their CLI backends asynchronously via bpy.app.timers instead of
+    # blocking Blender's main thread with Popen.wait() (#660). Both
+    # operators drive their own poll/finish/cancel state machines - the
+    # per-tool flow genuinely differs (CoACD has an extra per-hull decimate
+    # pass, V-HACD doesn't) - but share these three generic pieces: how a
+    # subprocess is launched and its stdout captured, how that stdout is
+    # drained into a live status string, and how that status is drawn (see
+    # draw_async_job_overlay() above). Subclasses set self._async_process /
+    # self._async_start_time / self._async_job_label and override
+    # _parse_progress_line() for their own CLI's output format.
+    def _launch_async_process(self, cmd, cwd):
+        """Launch cmd with its stdout/stderr piped through a daemon reader
+        thread into a queue, instead of letting it inherit the console.
+        _drain_async_progress() then pulls from that queue on Blender's main
+        thread (never blocking it) to keep the status overlay live.
+
+        The reader splits on '\\r' as well as '\\n': some CLIs (V-HACD) print
+        progress updates separated only by carriage returns, the same way a
+        terminal progress bar would - readline() alone would silently buffer
+        all of those into one giant line until a real newline eventually
+        showed up, making progress updates arrive in chunky, stale bursts
+        instead of smoothly.
+        """
+        process = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True, bufsize=1)
+        q = queue.Queue()
+
+        def _reader():
+            try:
+                buf = ''
+                while True:
+                    ch = process.stdout.read(1)
+                    if not ch:
+                        break
+                    if ch in ('\n', '\r'):
+                        if buf:
+                            q.put(buf)
+                            buf = ''
+                    else:
+                        buf += ch
+                if buf:
+                    q.put(buf)
+            except Exception:
+                pass
+
+        threading.Thread(target=_reader, daemon=True).start()
+
+        self._async_stdout_queue = q
+        self._async_status_text = ''
+        return process
+
+    def _parse_progress_line(self, line):
+        """Override per-operator: return an updated status string for this
+        line, or None if the line doesn't change the current status. Default
+        implementation never updates - the overlay just shows elapsed time."""
+        return None
+
+    def _drain_async_progress(self):
+        """Pull whatever lines the reader thread has queued since the last
+        poll and refresh self._async_status_text via _parse_progress_line().
+        queue.Queue.get_nowait() never blocks - it either returns
+        immediately or raises Empty."""
+        q = getattr(self, '_async_stdout_queue', None)
+        if q is None:
+            return
+        while True:
+            try:
+                line = q.get_nowait()
+            except queue.Empty:
+                break
+            status = self._parse_progress_line(line)
+            if status is not None:
+                self._async_status_text = status
 
     @staticmethod
     def calculate_center_of_mass(obj):
