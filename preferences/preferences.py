@@ -255,7 +255,7 @@ class CollisionAddonPrefs(bpy.types.AddonPreferences, CollisionAddonPrefsPropert
         row.menu('OBJECT_MT_collision_presets', text=OBJECT_MT_collision_presets.bl_label)
         row.operator(COLLISION_preset.bl_idname, text="", icon='ADD')
         row.operator(COLLISION_preset.bl_idname, text="", icon='REMOVE').remove_active = True
-        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/collider_import_engines/"
+        row.operator("wm.url_open", text="", icon='HELP').url = "https://weisl.github.io/simple_collider/collider_import_engines/"
 
         row.operator("simple_collider.open_folder", text='', icon='FILE_FOLDER').directory = collider_presets_folder()
 

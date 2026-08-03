@@ -4,7 +4,7 @@ All notable changes to Simple Collider are documented here. Dates are set when
 a version is actually tagged/released.
 
 Each version below mirrors the structure used on the
-[documentation site's release notes page](https://weisl.github.io/collider_overview/simple_collider/collider_release_notes/):
+[documentation site's release notes page](https://weisl.github.io/simple_collider/collider_release_notes/):
 a short summary of the release, followed by "Features & Improvements" and
 "Bug Fixes" lists whose entries link back to their GitHub issue. New releases
 are added as a new section above the previous one — existing entries are

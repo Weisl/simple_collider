@@ -8,7 +8,7 @@ tagline = "Simple Collider is a Blender addon to create physics colliders for ga
 maintainer = "Matthias Patscheider <patscheider.matthias@gmail.com>"
 type = "add-on"
 
-website = "https://weisl.github.io/collider_overview/"
+website = "https://weisl.github.io/simple_collider/collider_overview/"
 
 tags = ["3D View", "Scene", "User Interface"]
 
