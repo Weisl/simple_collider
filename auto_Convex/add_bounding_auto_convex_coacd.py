@@ -92,6 +92,21 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._status_area = None
         self._coacd_run_id = None
 
+        # bpy.app.timers callbacks (see _poll_coacd_process()) have no
+        # guaranteed context - bpy.context.space_data is None (or belongs to
+        # whatever editor the mouse happens to be over) unless the pointer
+        # is currently over this operator's own VIEW_3D, which is unlikely
+        # once a run takes minutes and the user's mouse wanders off. Capture
+        # a stable window/area/region here at invoke time and override into
+        # it for every downstream async step, rather than trusting ambient
+        # bpy.context (whose space_data being None crashed
+        # set_viewport_drawing() mid-way through postprocess_colliders()'s
+        # per-hull loop, silently leaving every hull after the crash point
+        # untransformed and unparented).
+        self._invoke_window = None
+        self._invoke_area = None
+        self._invoke_region = None
+
     def invoke(self, context, event):
         if _coacd_run_in_progress:
             self.report({'ERROR'}, 'Auto Convex (High Precision) is already running - wait for it to finish, or '
@@ -299,11 +314,21 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
                 return COACD_POLL_INTERVAL_SECONDS
 
             self._coacd_process = None
-            context = bpy.context
-            if self._coacd_stage == 'decompose':
-                self._handle_decompose_finished(context)
-            else:
-                self._handle_decimate_finished(context)
+
+            # bpy.context here has no guaranteed space_data - it reflects
+            # whatever the mouse happens to be over (or nothing) at the
+            # moment this timer fires, not this operator's own viewport.
+            # postprocess_colliders() -> primitive_postprocessing() needs a
+            # real VIEW_3D context (context.space_data.shading), so override
+            # into the window/area/region captured back in execute() rather
+            # than trusting ambient context.
+            with bpy.context.temp_override(window=self._invoke_window, area=self._invoke_area,
+                                           region=self._invoke_region):
+                context = bpy.context
+                if self._coacd_stage == 'decompose':
+                    self._handle_decompose_finished(context)
+                else:
+                    self._handle_decimate_finished(context)
         except ReferenceError:
             # operator has already finished/cancelled and its RNA was freed
             _coacd_run_in_progress = False
@@ -560,6 +585,9 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._coacd_exe = coacd_exe
         self._coacd_data_path = data_path
         self._status_area = context.area
+        self._invoke_window = context.window
+        self._invoke_area = context.area
+        self._invoke_region = next((r for r in context.area.regions if r.type == 'WINDOW'), None)
         self._coacd_run_id = str(id(self))
         self._coacd_pending_jobs = self.preprocess_objects_and_collect_data(context)
         self._coacd_results = []
