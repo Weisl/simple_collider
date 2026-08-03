@@ -33,6 +33,7 @@ classes = (
     utility_operators.COLLISION_OT_MoveOriginToParentOperator,
     utility_operators.COLLISION_OT_ReplaceWithCleanMesh,
     utility_operators.COLLISION_OT_FixColliderTransform,
+    utility_operators.COLLISION_OT_ClearStuckOverlays,
     utility_operators.COLLISION_OT_ReloadAddon,
 )
 

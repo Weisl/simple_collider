@@ -34,6 +34,65 @@ NAVIGATION_HOLD_SECONDS = 0.2
 # behind the input, stuttering/freezing (#641).
 MODIFIER_DEBOUNCE_SECONDS = 0.15
 
+# Every SpaceView3D draw handler registered by OBJECT_OT_add_bounding_object
+# (the collider-creation modal HUD, including its async-job overlay - see
+# draw_viewport_overlay()/draw_async_job_overlay()) is tracked here as it's
+# added, and untracked as it's cleanly removed. If a modal operator instance
+# is torn down abnormally (an unhandled exception in modal(), Blender itself
+# crashing/reloading mid-run, etc.) its own draw_handler_remove() call never
+# runs, leaving that overlay stuck on screen forever with no operator
+# instance left to remove it - the operator instance that registered it is
+# gone, but this module-level list survives, which is what lets
+# COLLISION_OT_ClearStuckOverlays (collider_operators/utility_operators.py)
+# find and remove it later regardless of which instance created it.
+_active_draw_handles = []
+
+
+def _register_draw_handle(handle):
+    _active_draw_handles.append(handle)
+
+
+def _remove_draw_handle(handle):
+    """Remove a SpaceView3D draw handler and forget it - the single place
+    every normal (non-crash) cleanup path should go through, so the handle
+    is never both removed and still sitting in _active_draw_handles."""
+    try:
+        bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+    except ValueError:
+        # Already removed (e.g. cancel() and the modal's own finish path
+        # both tried) - not an error, just nothing left to do.
+        pass
+    try:
+        _active_draw_handles.remove(handle)
+    except ValueError:
+        pass
+
+
+def clear_stuck_draw_handles():
+    """Force-remove every currently-tracked SpaceView3D draw handler and
+    return how many were cleared. Used by COLLISION_OT_ClearStuckOverlays
+    (collider_operators/utility_operators.py) to recover from a modal
+    operator that didn't clean up after itself.
+
+    Deliberately exposed as a function rather than having that operator
+    import/mutate _active_draw_handles directly: `from module import
+    mutable_list_name` binds the caller to whatever list object existed at
+    import time. If this module is ever reloaded (e.g. this addon's own
+    "Reload Addon" dev button), its `_active_draw_handles = []` line
+    re-executes and rebinds the name here to a brand new list - any other
+    module still holding the old imported reference would then silently
+    operate on an orphaned, forever-empty list. A function's body looks up
+    module globals by name at call time, not at import time, so it always
+    sees the current list regardless of reload ordering."""
+    cleared = len(_active_draw_handles)
+    for handle in _active_draw_handles.copy():
+        try:
+            bpy.types.SpaceView3D.draw_handler_remove(handle, 'WINDOW')
+        except ValueError:
+            pass
+    _active_draw_handles.clear()
+    return cleared
+
 
 def alignObjects(new, old):
     """Align two objects"""
@@ -269,6 +328,22 @@ def draw_modal_item(self, context, font_id, i, vertical_px_offset, left_margin, 
 
 def draw_viewport_overlay(self, context):
     """Draw 3D viewport overlay for the modal operator"""
+    try:
+        # as_pointer() is the standard way to probe whether a bpy_struct
+        # instance's underlying RNA is still alive. If the modal operator
+        # behind this draw handler was torn down without running its own
+        # draw_handler_remove() cleanup (e.g. this addon's "Reload Addon"
+        # dev button unregistering the class while a modal instance was
+        # still live, or an unhandled exception elsewhere ending the modal
+        # loop early), every later redraw would otherwise crash here
+        # forever. Skip drawing instead - the leftover handle stays in
+        # _active_draw_handles for "Clear Stuck Overlays"
+        # (collider_operators/utility_operators.py, clear_stuck_draw_handles())
+        # to find and remove.
+        self.as_pointer()
+    except ReferenceError:
+        return
+
     items = []
 
     # Detecting "is the user currently navigating" from event types seen in
@@ -577,17 +652,37 @@ def draw_async_job_overlay(self, context):
     elapsed = time.time() - getattr(self, '_async_start_time', time.time())
     job_label = getattr(self, '_async_job_label', 'PROCESSING')
     status = getattr(self, '_async_status_text', '')
+    hint = getattr(self, '_async_hint_text', '')
 
     lines = [(f'RUNNING {job_label.upper()}', title_font_size, prefs.modal_color_error)]
     if status:
         lines.append((status.upper(), font_size, prefs.modal_color_default))
     lines.append((f'{elapsed:0.0f}S ELAPSED', font_size, prefs.modal_color_default))
+    if hint:
+        lines.append((hint.upper(), font_size, prefs.modal_color_navigation))
     lines.append(('ESC TO CANCEL', font_size, prefs.modal_color_navigation))
 
     line_height = int(font_size * 1.6)
     row_padding = font_size * 0.7
-    box_height = line_height * len(lines) + row_padding * 2
-    box_width = 420 / 20 * font_size
+    # A caution-tape band across the top, tall enough that the diagonal
+    # stripes actually read as diagonal rather than blurring into a flat
+    # strip - reserved as extra height on top of the text rows rather than
+    # squeezed into the existing row padding, so it can't overlap the title.
+    accent_px = max(18, int(font_size * 1.1))
+    box_height = line_height * len(lines) + row_padding * 2 + accent_px
+
+    # Sized to the widest line rather than a fixed guess - the CoACD hint
+    # line ("THIS CAN TAKE A FEW MINUTES...") is long enough to overflow the
+    # old fixed-width box, spilling text past its edges.
+    side_padding = font_size * 1.5
+    max_text_width = 0.0
+    for text, size, _color in lines:
+        if bpy.app.version < (4, 00):
+            blf.size(font_id, 72, size)
+        else:
+            blf.size(font_id, size)
+        max_text_width = max(max_text_width, blf.dimensions(font_id, text)[0])
+    box_width = max(420 / 20 * font_size, max_text_width + side_padding * 2)
 
     center_x = region.width / 2
     center_y = region.height / 2
@@ -600,18 +695,26 @@ def draw_async_job_overlay(self, context):
     if prefs.use_modal_box:
         draw_2d_backdrop(self, context, box_left, box_right, box_top, box_bottom, prefs.modal_box_color)
 
-        # warning-red accent (vs. the brand-green accent on the normal settings
-        # HUD) so this reads as a distinct, attention-worthy state at a glance.
+        # Caution-tape stripes (vs. the brand-green accent on the normal
+        # settings HUD) so this reads as a distinct, attention-worthy state
+        # at a glance. Drawn as scrolling diagonal stripes rather than a
+        # flat fill because the async job reports no fraction-complete to
+        # drive a real progress bar with - a "barber pole" pattern is the
+        # standard way to signal "still working" without one.
         frame_color = (0.204, 0.212, 0.243, 1.0)
-        accent_color = (0.902, 0.302, 0.302, 1.0)
+        # Same red as the "RUNNING COACD" title (prefs.modal_color_error)
+        # rather than a hardcoded approximation, so a user-customized
+        # warning color stays consistent between the title and the stripes.
+        accent_color_a = tuple(prefs.modal_color_error)
+        accent_color_b = (0.106, 0.106, 0.114, 1.0)
         frame_px = 1
-        accent_px = 3
-        draw_2d_backdrop(self, context, box_left, box_right, box_top, box_top - accent_px, accent_color)
+        draw_animated_stripes(box_left, box_right, box_top, box_top - accent_px,
+                              accent_color_a, accent_color_b, stripe_width=accent_px * 1.6)
         draw_2d_backdrop(self, context, box_left, box_right, box_bottom + frame_px, box_bottom, frame_color)
         draw_2d_backdrop(self, context, box_left, box_left + frame_px, box_top - accent_px, box_bottom, frame_color)
         draw_2d_backdrop(self, context, box_right - frame_px, box_right, box_top - accent_px, box_bottom, frame_color)
 
-    y = box_top - row_padding - line_height * 0.75
+    y = box_top - accent_px - row_padding - line_height * 0.75
     for text, size, color in lines:
         if bpy.app.version < (4, 00):
             blf.size(font_id, 72, size)
@@ -643,6 +746,104 @@ def draw_2d_backdrop(self, context, left, right, top, bottom, color):
     batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
     shader.bind()
     shader.uniform_float("color", color)
+    batch.draw(shader)
+
+
+_stripe_shader = None
+
+
+def _get_stripe_shader():
+    """Lazily compile and cache the diagonal-stripe shader used by
+    draw_animated_stripes(). Compiling a GPUShader is comparatively
+    expensive; the overlay redraws on every timer tick while an async job
+    is running (see _poll_coacd_process()/_poll_vhacd_process()), so this
+    must happen once per Blender session, not once per draw call."""
+    global _stripe_shader
+    if _stripe_shader is not None:
+        return _stripe_shader
+
+    # Current Blender no longer accepts raw GLSL source directly via
+    # gpu.types.GPUShader(vertexcode, fragcode) - custom (non-builtin)
+    # shaders have to be assembled through GPUShaderCreateInfo and compiled
+    # with gpu.shader.create_from_info() instead.
+    shader_info = gpu.types.GPUShaderCreateInfo()
+    shader_info.push_constant('MAT4', "ModelViewProjectionMatrix")
+    shader_info.push_constant('VEC4', "color_a")
+    shader_info.push_constant('VEC4', "color_b")
+    shader_info.push_constant('FLOAT', "stripe_width")
+    shader_info.push_constant('FLOAT', "offset")
+    shader_info.vertex_in(0, 'VEC2', "pos")
+    shader_info.fragment_out(0, 'VEC4', "FragColor")
+    shader_info.vertex_source(
+        "void main() {"
+        "  gl_Position = ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);"
+        "}"
+    )
+    shader_info.fragment_source(
+        "void main() {"
+        "  float diag = gl_FragCoord.x + gl_FragCoord.y;"
+        "  float t = mod(diag + offset, stripe_width * 2.0);"
+        "  FragColor = (t < stripe_width) ? color_a : color_b;"
+        "}"
+    )
+    _stripe_shader = gpu.shader.create_from_info(shader_info)
+    del shader_info
+    return _stripe_shader
+
+
+def _srgb_to_linear(color):
+    """Convert an sRGB color (as used throughout this addon's color-picker
+    preferences, e.g. prefs.modal_color_error) to linear space.
+
+    Builtin shaders (gpu.shader.from_builtin(), used by draw_2d_backdrop())
+    and blf text drawing both do this conversion internally before writing
+    to the sRGB-encoded viewport framebuffer. A custom GPUShaderCreateInfo
+    shader does not get that conversion for free, so feeding it an sRGB
+    color straight from preferences gets it gamma-encoded a second time by
+    the framebuffer, washing the color out - draw_animated_stripes() must
+    do this conversion itself to match how the rest of the overlay renders
+    the same color."""
+    def channel(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    return tuple(channel(c) for c in color[:3]) + tuple(color[3:])
+
+
+def draw_animated_stripes(left, right, top, bottom, color_a, color_b,
+                          stripe_width=14.0, speed=60.0):
+    """Diagonal 'barber pole' stripes panned over time via the shader's
+    offset uniform - used as the accent bar on the async job overlay (see
+    draw_async_job_overlay()). The subprocess jobs this decorates (CoACD/
+    V-HACD) report no reliable fraction-complete to bind to a determinate
+    progress bar, so a scrolling pattern is what signals "still working"
+    instead."""
+    vertices = (
+        (left, bottom), (right, bottom),
+        (left, top), (right, top))
+    indices = ((0, 1, 2), (2, 1, 3))
+
+    shader = _get_stripe_shader()
+    batch = batch_for_shader(shader, 'TRIS', {"pos": vertices}, indices=indices)
+
+    shader.bind()
+    # Blender has already set up the pixel-space projection/view matrices
+    # for this POST_PIXEL draw callback (the same state draw_2d_backdrop()
+    # relies on implicitly via the builtin shader) - a custom GPUShader has
+    # to be told explicitly, since only builtin shaders pick it up on their
+    # own.
+    matrix = gpu.matrix.get_projection_matrix() @ gpu.matrix.get_model_view_matrix()
+    shader.uniform_float("ModelViewProjectionMatrix", matrix)
+    shader.uniform_float("color_a", _srgb_to_linear(color_a))
+    shader.uniform_float("color_b", _srgb_to_linear(color_b))
+    shader.uniform_float("stripe_width", stripe_width)
+    # time.time() is a huge Unix-epoch float (~1.7e9); at the GPU's 32-bit
+    # float precision, adding that directly to gl_FragCoord (0-2000ish)
+    # loses the small delta entirely - the pattern was rendering as a
+    # constant color instead of stripes. Reducing the offset modulo the
+    # pattern's own period *in Python* (float64) before it ever reaches the
+    # shader keeps the value small, so the GPU's 32-bit math stays precise.
+    period = stripe_width * 2.0
+    offset = -(time.time() * speed) % period
+    shader.uniform_float("offset", offset)
     batch.draw(shader)
 
 
@@ -1881,10 +2082,7 @@ class OBJECT_OT_add_bounding_object():
         if context.object and context.object.mode != self.obj_mode:
             bpy.ops.object.mode_set(mode=self.obj_mode)
 
-        try:
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-        except ValueError:
-            pass
+        _remove_draw_handle(self._handle)
 
     def join_primitives(self, context):
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -2350,6 +2548,7 @@ class OBJECT_OT_add_bounding_object():
         # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
         # self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_viewport_overlay, args, 'WINDOW', 'POST_PIXEL')
+        _register_draw_handle(self._handle)
 
         # add modal handler
         context.window_manager.modal_handler_add(self)
@@ -2552,10 +2751,7 @@ class OBJECT_OT_add_bounding_object():
             self.remove_empty_collection(context, 'tmp_mesh')
             self._clear_modifier_bake_cache()
 
-            try:
-                bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-            except ValueError:
-                pass
+            _remove_draw_handle(self._handle)
 
             # restore display settings
             self.reset_display(context)

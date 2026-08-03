@@ -7,14 +7,19 @@ import bpy
 from bpy.types import Operator
 
 from ..bmesh_operations.mesh_edit import bmesh_join
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object, _remove_draw_handle
 
 # How often the CoACD subprocess is polled for completion while it's
 # running. Polling (rather than Popen.wait()) is what keeps Blender's UI
 # thread responsive - CoACD's own MCTS search can take anywhere from
 # fractions of a second to many minutes depending on mesh complexity, and
-# there's no way to know in advance which it'll be (#660).
-COACD_POLL_INTERVAL_SECONDS = 0.2
+# there's no way to know in advance which it'll be (#660). This also drives
+# how often the status overlay redraws (draw_async_job_overlay()'s scrolling
+# stripes) - process.poll() and draining the (usually empty) progress queue
+# are both cheap, so this runs at a plain 60fps redraw cadence for smooth
+# animation rather than the coarser interval a "just check if it's done yet"
+# poll alone would need.
+COACD_POLL_INTERVAL_SECONDS = 1 / 60
 
 # CoACD already prints its own progress to stdout - section headers like
 # " - Decomposition (MCTS)" and per-candidate "Processing [62.3%]" lines -
@@ -95,6 +100,10 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
         self._async_process = None
         self._async_start_time = 0.0
         self._async_job_label = 'CoACD'
+        # CoACD's MCTS search is much slower than V-HACD on non-trivial
+        # meshes - shown on the overlay (draw_async_job_overlay()) so a
+        # multi-minute run doesn't read as hung.
+        self._async_hint_text = 'This can take a few minutes for complex meshes'
         self._coacd_exe = None
         self._coacd_data_path = None
         self._coacd_pending_jobs = []
@@ -174,10 +183,7 @@ class COACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     def cancel(self, context):
         self._cancel_coacd_job(context)
         context.space_data.shading.color_type = self.color_type
-        try:
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-        except ValueError:
-            pass
+        _remove_draw_handle(self._handle)
         return {'CANCELLED'}
 
     def validate_paths_and_settings(self, context):

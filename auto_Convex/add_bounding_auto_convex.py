@@ -7,14 +7,19 @@ import bpy
 from bpy.types import Operator
 
 from ..bmesh_operations.mesh_edit import bmesh_join
-from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object
+from ..collider_shapes.add_bounding_primitive import OBJECT_OT_add_bounding_object, _remove_draw_handle
 
 # How often the V-HACD subprocess is polled for completion while it's
 # running. Polling (rather than Popen.wait()) is what keeps Blender's UI
 # thread responsive - see COACD_OT_convex_decomposition/#660, which this
 # mirrors: V-HACD ran synchronously the same way CoACD used to, and can take
 # anywhere from a fraction of a second to several minutes on complex meshes.
-VHACD_POLL_INTERVAL_SECONDS = 0.2
+# This also drives how often the status overlay redraws (draw_async_job_
+# overlay()'s scrolling stripes) - process.poll() and draining the (usually
+# empty) progress queue are both cheap, so this runs at a plain 60fps redraw
+# cadence for smooth animation rather than the coarser interval a "just
+# check if it's done yet" poll alone would need.
+VHACD_POLL_INTERVAL_SECONDS = 1 / 60
 
 # V-HACD prints its own progress to stdout as e.g.
 # "[PERFORMING_DECOMPOSITION] : 50% : 0% : Performing recursive decomposition
@@ -139,10 +144,7 @@ class VHACD_OT_convex_decomposition(OBJECT_OT_add_bounding_object, Operator):
     def cancel(self, context):
         self._cancel_vhacd_job(context)
         context.space_data.shading.color_type = self.color_type
-        try:
-            bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
-        except ValueError:
-            pass
+        _remove_draw_handle(self._handle)
         return {'CANCELLED'}
 
     def validate_paths_and_settings(self, context):

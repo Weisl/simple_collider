@@ -848,21 +848,16 @@ class OBJECT_MT_adjust_decimation_menu(Menu):
     bl_description = "Clean up collider geometry (remove doubles, optimize, etc.)"
 
     def draw(self, context):
-        prefs = context.preferences.addons[base_package].preferences
         layout = self.layout
 
         layout.operator('object.adjust_decimation')
-        layout.prop(prefs, 'auto_apply_tris_limit', text="Auto Apply on Creation")
-        sub = layout.column()
-        sub.enabled = prefs.auto_apply_tris_limit
-        sub.prop(prefs, 'auto_apply_max_triangle_count', text="Target Triangles")
-
-        layout.separator()
         layout.operator('object.origin_to_parent')
-        layout.prop(prefs, 'auto_apply_origin_to_parent', text="Auto Apply on Creation")
 
         layout.separator()
         layout.operator('object.fix_parent_inverse_transform')
         # Use a warning icon for Blender 4.3 and above, else use error icon
         icon = 'WARNING_LARGE' if bpy.app.version >= (4, 3, 0) else 'ERROR'
         layout.operator('collision.replace_with_clean_mesh', icon=icon)
+
+        layout.separator()
+        layout.operator('collision.clear_stuck_overlays', icon=icon)
