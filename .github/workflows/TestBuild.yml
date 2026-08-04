@@ -57,13 +57,13 @@ jobs:
 
       - name: Extract built zip for artifact upload
         run: |
-          mkdir -p staging
+          mkdir -p "staging/${{ github.event.repository.name }}"
           ZIP=$(find dist -maxdepth 1 -type f -iname "*.zip" | head -n 1)
           if [ -z "$ZIP" ]; then
             echo "Could not find a built extension zip under dist/" >&2
             exit 1
           fi
-          unzip -q "$ZIP" -d staging
+          unzip -q "$ZIP" -d "staging/${{ github.event.repository.name }}"
 
       - name: Upload zip as artifact
         uses: actions/upload-artifact@v4
