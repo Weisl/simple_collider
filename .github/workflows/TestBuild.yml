@@ -49,14 +49,9 @@ jobs:
           mkdir -p dist
           "${{ steps.blender.outputs.executable }}" --command extension build --source-dir ${{ github.event.repository.name }} --output-dir dist
 
-      - name: Publish test build as pre-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete test-build --repo ${{ github.repository }} --yes --cleanup-tag || true
-          gh release create test-build dist/*.zip \
-            --repo ${{ github.repository }} \
-            --title "Test build (${{ steps.vars.outputs.short_sha }})" \
-            --notes "Ad-hoc test build from commit ${{ github.sha }}. This pre-release is overwritten by every Test Build run." \
-            --prerelease \
-            --target ${{ github.sha }}
+      - name: Upload zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}_${{ steps.vars.outputs.short_sha }}
+          path: dist/
+          retention-days: 7
