@@ -58,5 +58,8 @@ def _fetch():
 
 def start_version_check():
     """Fire a background thread to check for a newer release on GitHub."""
+    import bpy
+    if not bpy.app.online_access:
+        return
     t = threading.Thread(target=_fetch, daemon=True)
     t.start()

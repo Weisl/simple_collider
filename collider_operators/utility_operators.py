@@ -3,6 +3,7 @@ from bpy.props import IntProperty
 from mathutils import Matrix
 
 from ..properties.constants import DECIMATE_NAME
+from ..collider_shapes.add_bounding_primitive import clear_stuck_draw_handles
 
 
 def set_triangle_count_limit(obj, target_triangles, iterations=8, depsgraph=None):
@@ -403,4 +404,51 @@ class COLLISION_OT_FixColliderTransform(bpy.types.Operator):
             )
         else:
             self.report({'INFO'}, f"Fixed parent inverse matrix for {fixed_count} collider(s).")
+        return {'FINISHED'}
+
+
+class COLLISION_OT_ClearStuckOverlays(bpy.types.Operator):
+    """Remove viewport overlays (the collider-creation HUD, the CoACD/V-HACD
+    "running" overlay, etc.) left behind by a modal collider operator that
+    didn't shut down cleanly - e.g. an unhandled exception mid-run. Also
+    resets the CoACD/V-HACD "a job is already running" guard, which the same
+    kind of crash can leave stuck on, permanently blocking new Auto Convex
+    runs otherwise."""
+    bl_idname = "collision.clear_stuck_overlays"
+    bl_label = "Clear Stuck Overlays"
+    bl_description = ("Remove leftover viewport HUDs (e.g. a stuck 'Running CoACD' box) from a "
+                       "collider operator that didn't clean up after itself")
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        cleared = clear_stuck_draw_handles()
+
+        # The "already running" guards live as plain module globals in the
+        # Auto Convex backends (not bpy state), so a crash mid-run leaves
+        # them stuck True with no operator instance left to reset them -
+        # imported here (rather than at module load) to avoid a package
+        # import-order dependency between collider_operators and auto_Convex.
+        from ..auto_Convex import add_bounding_auto_convex_coacd as _coacd_mod
+        from ..auto_Convex import add_bounding_auto_convex as _vhacd_mod
+        reset_flags = []
+        if _coacd_mod._coacd_run_in_progress:
+            _coacd_mod._coacd_run_in_progress = False
+            reset_flags.append('CoACD')
+        if _vhacd_mod._vhacd_run_in_progress:
+            _vhacd_mod._vhacd_run_in_progress = False
+            reset_flags.append('V-HACD')
+
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+
+        if cleared or reset_flags:
+            parts = []
+            if cleared:
+                parts.append(f"{cleared} stuck overlay(s)")
+            if reset_flags:
+                parts.append(f"stuck {'/'.join(reset_flags)} run guard")
+            self.report({'INFO'}, f"Cleared {' and '.join(parts)}.")
+        else:
+            self.report({'INFO'}, "Nothing stuck - no leftover overlays or run guards found.")
         return {'FINISHED'}

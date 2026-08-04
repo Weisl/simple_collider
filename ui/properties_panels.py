@@ -149,7 +149,7 @@ def draw_auto_convex(layout, context):
 
 def draw_auto_convex_coacd(layout, context):
     """
-    Draw the Auto Convex (BETA) (CoACD) options in the layout based on the current platform and preferences.
+    Draw the Auto Convex (High Precision) (CoACD) options in the layout based on the current platform and preferences.
 
     Args:
         layout (Layout): The layout to draw the options on.
@@ -165,7 +165,7 @@ def draw_auto_convex_coacd(layout, context):
         op.addon_name = addon_name
         op.prefs_tabs = 'VHACD'
 
-        text = "Auto Convex (BETA) is only supported for Windows, Linux, and macOS ARM64 at this moment."
+        text = "Auto Convex (High Precision) is only supported for Windows, Linux, and macOS ARM64 at this moment."
         label_multiline(
             context=context,
             text=text,
@@ -174,7 +174,7 @@ def draw_auto_convex_coacd(layout, context):
     else:
         if prefs.coacd_executable_path or prefs.coacd_default_executable_path:
 
-            layout.operator("button.auto_convex_coacd", text="Auto Convex (BETA)", icon='WINDOW')
+            layout.operator("button.auto_convex_coacd", text="Auto Convex (High Precision)", icon='WINDOW')
             op = layout.operator("simple_collider.open_preferences", text="", icon='PREFERENCES')
             op.addon_name = addon_name
             op.prefs_tabs = 'VHACD'
@@ -204,7 +204,7 @@ def draw_auto_convex_settings(colSettings, layout):
 
 def draw_auto_convex_coacd_settings(colSettings, layout):
     """
-    Draw the settings for Auto Convex (BETA) (CoACD) in the layout.
+    Draw the settings for Auto Convex (High Precision) (CoACD) in the layout.
 
     Args:
         colSettings (UILayout): The column layout to draw the settings on.
@@ -458,9 +458,9 @@ def draw_naming_presets(self, context):
 
 # OPERATORS 
 
-class COLLSION_OT_open_directory_new(bpy.types.Operator, ImportHelper):
+class COLLISION_OT_open_directory(bpy.types.Operator, ImportHelper):
     """Open render output directory in Explorer"""
-    bl_idname = "explorer.open_in_explorer"
+    bl_idname = "simple_collider.open_directory"
     bl_label = "Open Folder"
     bl_description = "Open preset folder in explorer"
 
@@ -823,10 +823,11 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
 
 
 class BUTTON_OT_auto_convex_coacd(bpy.types.Operator):
-    """Create convex hull colliders using CoACD (BETA)"""
+    """Create convex hull colliders using CoACD - more precise but slower than V-HACD"""
     bl_idname = "button.auto_convex_coacd"
-    bl_label = "Auto Convex (BETA)"
-    bl_description = 'Create convex hull colliders using CoACD, the successor to V-HACD (BETA)'
+    bl_label = "Auto Convex (High Precision)"
+    bl_description = ('Create convex hull colliders using CoACD - produces tighter, more precise hulls than '
+                      'V-HACD, but is significantly slower')
 
     @classmethod
     def poll(cls, context):
@@ -847,21 +848,16 @@ class OBJECT_MT_adjust_decimation_menu(Menu):
     bl_description = "Clean up collider geometry (remove doubles, optimize, etc.)"
 
     def draw(self, context):
-        prefs = context.preferences.addons[base_package].preferences
         layout = self.layout
 
         layout.operator('object.adjust_decimation')
-        layout.prop(prefs, 'auto_apply_tris_limit', text="Auto Apply on Creation")
-        sub = layout.column()
-        sub.enabled = prefs.auto_apply_tris_limit
-        sub.prop(prefs, 'auto_apply_max_triangle_count', text="Target Triangles")
-
-        layout.separator()
         layout.operator('object.origin_to_parent')
-        layout.prop(prefs, 'auto_apply_origin_to_parent', text="Auto Apply on Creation")
 
         layout.separator()
         layout.operator('object.fix_parent_inverse_transform')
         # Use a warning icon for Blender 4.3 and above, else use error icon
         icon = 'WARNING_LARGE' if bpy.app.version >= (4, 3, 0) else 'ERROR'
         layout.operator('collision.replace_with_clean_mesh', icon=icon)
+
+        layout.separator()
+        layout.operator('collision.clear_stuck_overlays', icon=icon)

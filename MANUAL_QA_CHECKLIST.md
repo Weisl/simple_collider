@@ -26,8 +26,9 @@ Blender version tested: ______  OS: ______  Date: ______
   temp mesh/collection left behind.
 - [ ] Run Auto Convex (V-HACD) on a simple mesh with default settings →
   produces one or more convex hull colliders without hanging Blender.
-- [ ] Run Auto Convex (CoACD, BETA) once with default settings → completes
-  and produces hulls (acceptable to be rougher — it's BETA).
+- [ ] Run Auto Convex (CoACD, High Precision) once with default settings →
+  completes and produces hulls without freezing Blender (can take longer
+  than V-HACD — that's expected).
 - [ ] Convert to Collider on a plain mesh object → object becomes a collider
   in place; Convert to Mesh on a collider → reverses it back to a normal
   render mesh.
@@ -182,10 +183,10 @@ Blender version tested: ______  OS: ______  Date: ______
   is hidden entirely and prefs show an unsupported-platform message instead
   of a broken button.
 
-### 5. Auto Convex — CoACD (BETA)
+### 5. Auto Convex — CoACD (High Precision)
 
-- [ ] Confirm the operator/label/prefs all clearly read "BETA" so testers
-  don't hold it to the same bar as V-HACD.
+- [ ] Confirm the operator/label/prefs all clearly read "High Precision" (not
+  "BETA") and communicate the speed tradeoff vs. V-HACD.
 - [ ] Enable `coacd_decimate` with a low `coacd_maxHullVertCount` → each
   hull actually gets vertex-limited (check per-hull vert counts before/
   after); a hull whose decimation fails reports "CoACD hull decimation
