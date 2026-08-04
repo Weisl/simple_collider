@@ -30,10 +30,15 @@ stability fixes for collider creation and conversion.
   convex, etc.) or that could use a simpler primitive. Every check can be
   toggled and tuned individually in preferences.
 - [#583](https://github.com/Weisl/simple_collider/issues/583): **Auto Convex
-  (BETA) using CoACD** — an alternative convex decomposition backend
-  alongside the existing V-HACD integration, with its own set of
+  (High Precision) using CoACD** — an alternative convex decomposition
+  backend alongside the existing V-HACD integration, producing tighter
+  hulls at the cost of being significantly slower, with its own set of
   preferences (resolution, MCTS search parameters, preprocessing mode,
   etc.).
+- [#660](https://github.com/Weisl/simple_collider/issues/660): Auto Convex
+  (both V-HACD and CoACD) now runs asynchronously with a live progress
+  overlay (phase, percentage, elapsed time) instead of freezing Blender
+  for the duration of the run — Escape cancels a run in progress.
 - [#642](https://github.com/Weisl/simple_collider/issues/642): Capsule
   collider generation is no longer marked BETA.
 - [#552](https://github.com/Weisl/simple_collider/issues/552): Improved
@@ -65,6 +70,9 @@ stability fixes for collider creation and conversion.
 - [#643](https://github.com/Weisl/simple_collider/issues/643): Removed the
   debug-only preferences flag (`Prefs.debug`) and the dead
   `debug_parenting_off` flag, along with the code paths behind them.
+- The update checker now respects Blender's "Allow Online Access"
+  preference before making its network request, and the manifest now
+  declares this network permission.
 
 
 ### Bug Fixes
@@ -89,9 +97,11 @@ stability fixes for collider creation and conversion.
   several checks, one object's failure aborting the entire scan, results
   persisting across file loads instead of being scoped per file, and added
   progress feedback for large-scene scans.
+- [#660](https://github.com/Weisl/simple_collider/issues/660): Fixed a
+  crash and silent transform/parenting loss on hulls when an Auto Convex
+  job finished while the mouse wasn't over the 3D viewport.
 
 ### Known limitations
 
-- Validation Checks and Auto Convex (CoACD) both ship as BETA: expect rough
-  edges, and please report issues so they can be addressed before their
-  BETA label is removed.
+- Validation Checks ships as BETA: expect rough edges, and please report
+  issues so they can be addressed before its BETA label is removed.

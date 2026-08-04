@@ -49,9 +49,19 @@ jobs:
           mkdir -p dist
           "${{ steps.blender.outputs.executable }}" --command extension build --source-dir ${{ github.event.repository.name }} --output-dir dist
 
+      - name: Extract built zip for artifact upload
+        run: |
+          mkdir -p staging
+          ZIP=$(find dist -maxdepth 1 -type f -iname "*.zip" | head -n 1)
+          if [ -z "$ZIP" ]; then
+            echo "Could not find a built extension zip under dist/" >&2
+            exit 1
+          fi
+          unzip -q "$ZIP" -d staging
+
       - name: Upload zip as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}_${{ steps.vars.outputs.short_sha }}
-          path: dist/
+          path: staging/
           retention-days: 7
