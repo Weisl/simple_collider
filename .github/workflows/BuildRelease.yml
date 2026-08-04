@@ -8,7 +8,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           path: ${{ github.event.repository.name }}
 
@@ -25,7 +25,7 @@ jobs:
 
       - name: Cache Blender 4.2
         id: cache-blender
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: blender-download
           key: blender-4.2-ubuntu-latest
@@ -66,6 +66,6 @@ jobs:
             --output release_notes.md
 
       - name: Create GitHub release
-        run: gh release create "${{ github.ref_name }}" --notes-file release_notes.md dist/*.zip
+        run: gh release create "${{ github.ref_name }}" --repo ${{ github.repository }} --notes-file release_notes.md dist/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

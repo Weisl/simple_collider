@@ -7,13 +7,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           path: ${{ github.event.repository.name }}
 
       - name: Cache Blender 4.2
         id: cache-blender
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: blender-download
           key: blender-4.2-ubuntu-latest
@@ -53,8 +53,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete test-build --yes --cleanup-tag || true
+          gh release delete test-build --repo ${{ github.repository }} --yes --cleanup-tag || true
           gh release create test-build dist/*.zip \
+            --repo ${{ github.repository }} \
             --title "Test build (${{ steps.vars.outputs.short_sha }})" \
             --notes "Ad-hoc test build from commit ${{ github.sha }}. This pre-release is overwritten by every Test Build run." \
             --prerelease \
