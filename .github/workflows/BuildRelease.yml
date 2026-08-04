@@ -13,14 +13,20 @@ jobs:
           path: ${{ github.event.repository.name }}
 
       - name: Check manifest version matches tag
+        id: manifest
         run: |
-          tag_version="${{ github.ref_name }}"
-          tag_version="${tag_version#v}"
-          manifest_version=$(python3 -c "import tomllib; print(tomllib.load(open('blender_manifest.toml','rb'))['version'])")
-          if [ "$tag_version" != "$manifest_version" ]; then
-            echo "::error::Tag v$tag_version != blender_manifest.toml version $manifest_version"
-            exit 1
-          fi
+          python3 -c "
+          import os, sys, tomllib
+          with open('blender_manifest.toml', 'rb') as f:
+              m = tomllib.load(f)
+          tag_version = '${{ github.ref_name }}'.lstrip('v')
+          if tag_version != m['version']:
+              print(f'::error::Tag v{tag_version} != blender_manifest.toml version {m[\"version\"]}')
+              sys.exit(1)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f\"id={m['id']}\n\")
+              out.write(f\"version={m['version']}\n\")
+          "
         working-directory: ${{ github.event.repository.name }}
 
       - name: Cache Blender 4.2
@@ -56,6 +62,11 @@ jobs:
         run: |
           mkdir -p dist
           "${{ steps.blender.outputs.executable }}" --command extension build --source-dir ${{ github.event.repository.name }} --output-dir dist
+
+      - name: Rename built zip
+        run: |
+          ZIP=$(find dist -maxdepth 1 -type f -iname "*.zip" | head -n 1)
+          mv "$ZIP" "dist/${{ steps.manifest.outputs.id }}_${{ steps.manifest.outputs.version }}.zip"
 
       - name: Extract release notes from CHANGELOG.md
         run: |
