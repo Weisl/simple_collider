@@ -1,11 +1,10 @@
 name: Tests
 
+# Runs only on demand: manually from the Actions tab, or as the first job of
+# Test Build (TestBuild.yml) and Build Release (BuildRelease.yml).
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [develop]
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   test:

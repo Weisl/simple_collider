@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Run the test suite first; the build is only made if every test job passes.
+  test:
+    uses: ./.github/workflows/tests.yml
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
