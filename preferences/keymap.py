@@ -25,6 +25,9 @@ def add_key(context, idname, type, ctrl, shift, alt, operator, active):
     kmi = addon_km.keymap_items.new(idname=idname, type=type, value='PRESS', ctrl=ctrl, shift=shift, alt=alt)
     if operator != '':
         kmi.properties.name = operator
+    # Blender 5.3+: enable key accelerators in popups opened by wm.call_panel.
+    if idname == 'wm.call_panel' and hasattr(kmi.properties, 'auto_keymap'):
+        kmi.properties.auto_keymap = True
     kmi.active = active
 
 
