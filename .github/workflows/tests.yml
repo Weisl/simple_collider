@@ -16,17 +16,13 @@ jobs:
         # macos-latest (Apple Silicon) instead of a pinned image: GitHub retires
         # pinned macOS images (macos-14 was removed), which failed every macOS job.
         os: [ubuntu-latest, macos-latest]
-        blender-version: ["4.2", "4.3", "4.4", "4.5", "5.0", "5.1", "5.2", "5.3"]
+        blender-version: ["4.2", "4.5", "5.2", "5.3"]  # min, last 4.x LTS, previous, latest
         exclude:
           # blender-downloader (pip, latest 1.0.5) can't resolve macOS builds
           # for 5.0+: Blender dropped macOS x64 dmgs from 5.0 onward and
           # ships arm64-only, which this version of the tool doesn't parse.
           # Linux is unaffected. Re-include once upstream is fixed:
           # https://github.com/mondeja/blender-downloader/issues
-          - os: macos-latest
-            blender-version: "5.0"
-          - os: macos-latest
-            blender-version: "5.1"
           - os: macos-latest
             blender-version: "5.2"
           - os: macos-latest
