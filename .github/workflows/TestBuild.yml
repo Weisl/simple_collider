@@ -71,7 +71,7 @@ jobs:
           unzip -q "$ZIP" -d "staging/${{ steps.manifest.outputs.id }}"
 
       - name: Upload zip as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.manifest.outputs.id }}_${{ steps.manifest.outputs.version }}_${{ steps.vars.outputs.short_sha }}
           path: staging/
