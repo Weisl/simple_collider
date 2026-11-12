@@ -11,6 +11,32 @@ are added as a new section above the previous one — existing entries are
 never overwritten, so this file (like the docs page) accumulates the full
 release history over time.
 
+## Simple Collider v1.2.2 (2026-11-12)
+
+Blender 5.3 support release, adding collider generation for Geometry Nodes
+empties on Blender 5.2+ and fixing collider placement and modal-input issues.
+
+### Features & Improvements
+
+- Blender 5.3 support: the add-on is tested against Blender 5.3, and on 5.3+
+  the Auto Convex, Visibility and Material popups support key accelerators,
+  and multi-line help text wraps to the actual panel width. Older Blender
+  versions keep their previous behavior.
+- [#677](https://github.com/Weisl/simple_collider/issues/677): Colliders can
+  now be generated from Empty objects that carry Geometry Nodes geometry
+  (Blender 5.2+).
+
+### Bug Fixes
+
+- [#676](https://github.com/Weisl/simple_collider/issues/676): Fixed Mesh and
+  Remesh colliders sometimes being generated offset from the source geometry.
+- [#679](https://github.com/Weisl/simple_collider/issues/679): Pressing Enter
+  after typing a numeric value during collider creation now only confirms
+  that value instead of also finishing the whole operator.
+- [#680](https://github.com/Weisl/simple_collider/issues/680): Fixed the
+  Decimate Ratio drag direction being inverted compared to the other
+  draggable fields, and Capsule Segments can no longer be dragged below 2.
+
 ## Simple Collider v1.2.1 (2026-08-17)
 
 Minor bug fix release.
