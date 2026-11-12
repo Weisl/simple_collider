@@ -2,7 +2,7 @@ schema_version = "1.0.0"
 
 id = "simple_collider"
 
-version = "1.2.1"
+version = "1.2.2"
 name = "Simple Collider"
 tagline = "Create physics colliders for games and real-time applications"
 maintainer = "Matthias Patscheider <patscheider.matthias@gmail.com>"
@@ -38,6 +38,9 @@ paths_exclude_pattern = [
     "/*.zip",
     "/tests/",
     "/venv/",
+    "/.venv/",
+    "/.mcp.json",
+    "/.claude/",
     "/.github/",
     "/CHANGELOG.md",
     "/MANUAL_QA_CHECKLIST.md",

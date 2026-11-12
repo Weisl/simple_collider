@@ -54,5 +54,7 @@ python tests/run_tests.py --blender /path/to/blender
 (`--blender` defaults to `blender` on `PATH`.) Each test file can still be run individually, as documented in its own
 docstring, e.g. `blender --background --python tests/test_bounding_sphere.py`.
 
-CI (`.github/workflows/tests.yml`) runs this same suite on every push/PR across a matrix of Blender 4.2, 4.3, 4.4,
-4.5, 5.0 and 5.1 to catch version-specific API breakage.
+CI (`.github/workflows/tests.yml`) runs this same suite across a matrix of Blender 4.2, 4.5, 5.2 and 5.3 to catch
+version-specific API breakage. It does not run on every push: start it manually from the Actions tab ("Tests" → "Run
+workflow"), and it runs automatically as the first step of Test Build and Build Release, which only build or publish
+if all tests pass.

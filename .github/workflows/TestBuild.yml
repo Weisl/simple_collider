@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Run the test suite first; the build is only made if every test job passes.
+  test:
+    uses: ./.github/workflows/tests.yml
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -71,7 +76,7 @@ jobs:
           unzip -q "$ZIP" -d "staging/${{ steps.manifest.outputs.id }}"
 
       - name: Upload zip as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.manifest.outputs.id }}_${{ steps.manifest.outputs.version }}_${{ steps.vars.outputs.short_sha }}
           path: staging/

@@ -271,9 +271,14 @@ class TestBoundingSphere(unittest.TestCase):
             sys.setrecursionlimit(old_limit)
 
         pts = [tuple(obj.matrix_world @ v.co) for v in obj.data.vertices]
+        # places=3, not 4: with >2500 nearly co-spherical float32 points the
+        # final boundary sphere is fit through 4 points that all lie almost
+        # exactly on the same sphere, so its center depends on the random
+        # shuffle order and the platform's float rounding (seen up to ~7e-5
+        # on CI vs ~1e-5 locally). Enclosure is still checked strictly.
         _assert_sphere(self, center, radius, pts,
                        expected_center=(0, 0, 0),
-                       expected_radius=src_radius, places=4)
+                       expected_radius=src_radius, places=3)
 
     # -- 9. Icosphere (42 uniformly distributed vertices) --------------------
 
