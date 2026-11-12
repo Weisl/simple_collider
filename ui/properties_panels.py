@@ -225,11 +225,19 @@ def label_multiline(context, text, parent):
     """
     Draw a label with multiline text in the layout.
 
+    Uses the native ``UILayout.label_multiline()`` (Blender 5.3+), which wraps
+    to the real layout width. Older versions fall back to splitting the text
+    into one label per line based on an estimated character width.
+
     Args:
         context (Context): The current context.
         text (str): The text to display.
         parent (UILayout): The parent layout to add the label to.
     """
+    if hasattr(parent, "label_multiline"):
+        parent.label_multiline(text=text)
+        return
+
     chars = int(context.region.width / 7)  # 7 pix on 1 character
     wrapper = textwrap.TextWrapper(width=chars)
     text_lines = wrapper.wrap(text=text)
@@ -803,6 +811,22 @@ class COLLISION_MT_pie_menu(Menu, VIEW3D_PT_init):
         pie.operator("mesh.add_bounding_sphere", icon='MESH_UVSPHERE')
 
 
+def call_panel_supports_auto_keymap():
+    """True if ``wm.call_panel`` has the ``auto_keymap`` option (Blender 5.3+)."""
+    return 'auto_keymap' in bpy.ops.wm.call_panel.get_rna_type().properties
+
+
+def call_panel(name):
+    """Open a panel as a popup.
+
+    On Blender 5.3+ key accelerators are enabled for the popup's buttons
+    (``auto_keymap``); older versions open the popup without them.
+    """
+    if call_panel_supports_auto_keymap():
+        return bpy.ops.wm.call_panel(name=name, auto_keymap=True)
+    return bpy.ops.wm.call_panel(name=name)
+
+
 class BUTTON_OT_auto_convex(bpy.types.Operator):
     """Create convex hull colliders based on the voxel decomposition target"""
     bl_idname = "button.auto_convex"
@@ -818,7 +842,7 @@ class BUTTON_OT_auto_convex(bpy.types.Operator):
         return count > 0
 
     def execute(self, context):
-        bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex")
+        call_panel("POPUP_PT_auto_convex")
         return {'FINISHED'}
 
 
@@ -838,7 +862,7 @@ class BUTTON_OT_auto_convex_coacd(bpy.types.Operator):
         return count > 0
 
     def execute(self, context):
-        bpy.ops.wm.call_panel(name="POPUP_PT_auto_convex_coacd")
+        call_panel("POPUP_PT_auto_convex_coacd")
         return {'FINISHED'}
 
 
